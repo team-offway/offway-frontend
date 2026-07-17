@@ -13,6 +13,7 @@ reviews:
     - "!**/*.freezed.dart"
     - "!ios/Pods/**"
     - "!ios/Runner.xcodeproj/**"
+    - "!ios/Runner.xcworkspace/**"
     - "!android/gradle/**"
 
 chat:
