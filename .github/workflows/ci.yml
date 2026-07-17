@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.4
+          cache: true
+
+      - name: 의존성 설치
+        run: flutter pub get
+
+      - name: 포맷 검사
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: 정적 분석
+        run: flutter analyze
+
+      - name: 테스트
+        run: flutter test
