@@ -1,0 +1,20 @@
+language: "ko-KR"
+
+reviews:
+  profile: "chill"
+  high_level_summary: true
+  poem: true
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
+    - "!ios/Pods/**"
+    - "!ios/Runner.xcodeproj/**"
+    - "!ios/Runner.xcworkspace/**"
+    - "!android/gradle/**"
+
+chat:
+  auto_reply: true
