@@ -1,20 +1,110 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/course_wizard/presentation/calendar_screen.dart';
+import '../../features/course_wizard/presentation/date_gate_screen.dart';
+import '../../features/course/presentation/course_screen.dart';
+import '../../features/course_wizard/presentation/candidates_screen.dart';
+import '../../features/course_wizard/presentation/density_screen.dart';
+import '../../features/course_wizard/presentation/loading_screen.dart';
+import '../../features/course_wizard/presentation/period_style_screen.dart';
+import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/onboarding/presentation/leave_input_screen.dart';
 
 abstract final class AppRoutes {
+  static const login = '/login';
+  static const onboardingLeave = '/onboarding/leave';
   static const home = '/';
+  static const wizardDateGate = '/wizard/date-gate';
+  static const wizardCalendar = '/wizard/calendar';
+  static const wizardPeriodStyle = '/wizard/period-style';
+  static const wizardTransport = '/wizard/transport';
+  static const wizardDensity = '/wizard/density';
+  static const wizardLoading = '/wizard/loading';
+  static const wizardCandidates = '/wizard/candidates';
+
+  /// 코스확정. `:regionId` 경로 파라미터 + `days` 쿼리 파라미터 사용
+  static const course = '/course/:regionId';
+
+  /// 한글 지역 ID의 플랫폼별 URL 인코딩 불일치를 피하기 위해 명시적으로 인코딩한다
+  static String coursePath(String regionId, {required int desiredDays}) =>
+      '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    // TODO(auth): 로그인 상태 저장 후 redirect로 분기 (지금은 항상 로그인부터)
+    // 개발용: --dart-define=INITIAL_ROUTE=/onboarding/leave 로 시작 화면 지정 가능
+    initialLocation: const String.fromEnvironment(
+      'INITIAL_ROUTE',
+      defaultValue: AppRoutes.login,
+    ),
     routes: [
+      GoRoute(
+        path: AppRoutes.login,
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingLeave,
+        name: 'onboardingLeave',
+        builder: (context, state) => const LeaveInputScreen(),
+      ),
       GoRoute(
         path: AppRoutes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardDateGate,
+        name: 'wizardDateGate',
+        builder: (context, state) => const DateGateScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardCalendar,
+        name: 'wizardCalendar',
+        builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardPeriodStyle,
+        name: 'wizardPeriodStyle',
+        builder: (context, state) => const PeriodStyleScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardTransport,
+        name: 'wizardTransport',
+        builder: (context, state) => const TransportScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardDensity,
+        name: 'wizardDensity',
+        builder: (context, state) => const DensityScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardLoading,
+        name: 'wizardLoading',
+        builder: (context, state) => const WizardLoadingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardCandidates,
+        name: 'wizardCandidates',
+        builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.course,
+        name: 'course',
+        builder: (context, state) {
+          // 플랫폼에 따라 경로 파라미터가 인코딩된 채 올 수 있어 필요한 경우에만 디코딩
+          final raw = state.pathParameters['regionId']!;
+          final regionId = raw.contains('%') ? Uri.decodeComponent(raw) : raw;
+          return CourseScreen(
+            regionId: regionId,
+            desiredDays:
+                int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+          );
+        },
       ),
     ],
   );
