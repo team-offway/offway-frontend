@@ -86,7 +86,7 @@ class DateGateScreen extends ConsumerWidget {
                           if (choice == DatePathChoice.haveDates) {
                             context.push(AppRoutes.wizardCalendar);
                           } else {
-                            // TODO(wizard): 기간스타일(O-04) 화면 작업 시 연결
+                            context.push(AppRoutes.wizardPeriodStyle);
                           }
                         },
                   style: FilledButton.styleFrom(

@@ -148,4 +148,55 @@ void main() {
     expect(find.text('오는날'), findsOneWidget);
     expect(tester.widget<FilledButton>(done).onPressed, isNotNull);
   });
+
+  testWidgets('기간스타일: 당일치기는 바로, 연차만은 스테퍼 완료 후 다음이 활성화된다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    await tester.tap(find.text('바로 추천받기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('아직 안 정했어요'));
+    await tester.pump();
+    await tester.tap(find.text('다음'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('어떻게 떠날까요?'), findsOneWidget);
+    expect(find.text('2/4'), findsOneWidget);
+    expect(find.text('남은 연차일수 11일'), findsOneWidget); // mock 연차
+
+    // 이전 화면(갈림길)의 '다음'이 트리에 남아있을 수 있어 최상단 것만 조회
+    final next = find.widgetWithText(FilledButton, '다음').last;
+    expect(tester.widget<FilledButton>(next).onPressed, isNull);
+
+    // 당일치기: 모달 없이 바로 완료
+    await tester.tap(find.text('당일치기 · 반차'));
+    await tester.pump();
+    expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
+
+    // 연차만: 스테퍼 모달에서 완료해야 유지
+    await tester.tap(find.text('연차만 (주말 미포함)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
+    expect(find.text('연차를 얼마나 사용할까요?'), findsOneWidget);
+    expect(find.text('3일(2박3일)'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.pump();
+    expect(find.text('2일(1박2일)'), findsOneWidget);
+    await tester.tap(find.text('완료'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
+  });
 }

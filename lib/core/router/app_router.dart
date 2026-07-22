@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
+import '../../features/course_wizard/presentation/period_style_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 
@@ -13,6 +14,7 @@ abstract final class AppRoutes {
   static const home = '/';
   static const wizardDateGate = '/wizard/date-gate';
   static const wizardCalendar = '/wizard/calendar';
+  static const wizardPeriodStyle = '/wizard/period-style';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -48,6 +50,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCalendar,
         name: 'wizardCalendar',
         builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardPeriodStyle,
+        name: 'wizardPeriodStyle',
+        builder: (context, state) => const PeriodStyleScreen(),
       ),
     ],
   );
