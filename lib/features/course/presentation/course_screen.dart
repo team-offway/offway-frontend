@@ -289,10 +289,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
     return NaverMap(
       key: ValueKey('map-day-$_selectedDay'),
+      // 리스트 스크롤보다 지도 제스처(이동/확대)가 우선하도록 설정
+      forceGesture: true,
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(target: center, zoom: 10.5),
-        scrollGesturesEnable: false,
-        zoomGesturesEnable: false,
       ),
       onMapReady: (controller) {
         var n = 0;
