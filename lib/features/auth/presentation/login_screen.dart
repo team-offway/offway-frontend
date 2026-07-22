@@ -19,8 +19,8 @@ class LoginScreen extends StatelessWidget {
   static const _imagePlaceholder = Color(0xFFF2F3F6);
 
   void _startWithSocial(BuildContext context) {
-    // TODO(auth): 소셜 로그인 연동 후 온보딩(잔여연차 입력)으로 분기
-    context.go(AppRoutes.home);
+    // TODO(auth): 소셜 로그인 연동 후 신규/기존 회원 분기
+    context.go(AppRoutes.onboardingLeave);
   }
 
   @override
