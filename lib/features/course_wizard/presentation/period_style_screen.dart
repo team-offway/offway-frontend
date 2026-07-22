@@ -223,8 +223,14 @@ class PeriodStyleScreen extends ConsumerWidget {
       ),
       builder: (sheetContext) {
         // 정책: 연차만은 최소 2일 ~ 최대 3일 (연차소모 = 총 여행일수)
+        // 상한은 잔여 연차일수를 넘지 않는다
         const minDays = 2;
-        var days = ref.read(courseWizardProvider).leaveDaysToUse ?? 3;
+        final remaining =
+            ref.read(homeUserProvider).value?['remainingLeaveDays'] as int? ??
+            kMaxTripSpanDays + 1;
+        final maxDays = remaining.clamp(minDays, kMaxTripSpanDays + 1);
+        var days = (ref.read(courseWizardProvider).leaveDaysToUse ?? maxDays)
+            .clamp(minDays, maxDays);
         String label(int d) => '$d일(${d - 1}박$d일)';
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
@@ -297,13 +303,13 @@ class PeriodStyleScreen extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: days < kMaxTripSpanDays + 1
+                    onPressed: days < maxDays
                         ? () => setSheetState(() => days++)
                         : null,
                     icon: Icon(
                       Icons.add,
                       size: 18,
-                      color: days < kMaxTripSpanDays + 1
+                      color: days < maxDays
                           ? const Color(0xFF333D4B)
                           : _ctaDisabled,
                     ),

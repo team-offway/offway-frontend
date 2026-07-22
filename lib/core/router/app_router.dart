@@ -28,8 +28,9 @@ abstract final class AppRoutes {
   /// 코스확정. `:regionId` 경로 파라미터 + `days` 쿼리 파라미터 사용
   static const course = '/course/:regionId';
 
+  /// 한글 지역 ID의 플랫폼별 URL 인코딩 불일치를 피하기 위해 명시적으로 인코딩한다
   static String coursePath(String regionId, {required int desiredDays}) =>
-      '/course/$regionId?days=$desiredDays';
+      '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -94,11 +95,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.course,
         name: 'course',
-        builder: (context, state) => CourseScreen(
-          regionId: state.pathParameters['regionId']!,
-          desiredDays:
-              int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
-        ),
+        builder: (context, state) {
+          // 플랫폼에 따라 경로 파라미터가 인코딩된 채 올 수 있어 필요한 경우에만 디코딩
+          final raw = state.pathParameters['regionId']!;
+          final regionId = raw.contains('%') ? Uri.decodeComponent(raw) : raw;
+          return CourseScreen(
+            regionId: regionId,
+            desiredDays:
+                int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+          );
+        },
       ),
     ],
   );

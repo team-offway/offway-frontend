@@ -216,10 +216,12 @@ class _MonthCalendar extends StatelessWidget {
     }
     final date = DateTime(month.year, month.month, dayNumber);
     final isPast = date.isBefore(today);
-    // 정책: 가는날 선택 시 2박3일 초과 날짜는 즉시 비활성화
+    // 정책: 가는날 선택 시 2박3일 초과 날짜는 즉시 비활성화.
+    // 단, 범위 완성 후에는 다시 활성화해 다른 시점으로 재선택 가능하게 한다
     final start = draft.startDate;
+    final isSelecting = start != null && draft.endDate == null;
     final isBeyondLimit =
-        start != null &&
+        isSelecting &&
         date.isAfter(start.add(const Duration(days: kMaxTripSpanDays)));
     final isDisabled = isPast || isBeyondLimit;
     final isSunday = date.weekday == DateTime.sunday;
