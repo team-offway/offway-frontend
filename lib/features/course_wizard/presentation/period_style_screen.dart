@@ -222,8 +222,10 @@ class PeriodStyleScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
+        // 정책: 연차만은 최소 2일 ~ 최대 3일 (연차소모 = 총 여행일수)
+        const minDays = 2;
         var days = ref.read(courseWizardProvider).leaveDaysToUse ?? 3;
-        String label(int d) => d == 1 ? '$d일(당일)' : '$d일(${d - 1}박$d일)';
+        String label(int d) => '$d일(${d - 1}박$d일)';
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
             title: '연차를 얼마나 사용할까요?',
@@ -258,13 +260,15 @@ class PeriodStyleScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: days > 1
+                    onPressed: days > minDays
                         ? () => setSheetState(() => days--)
                         : null,
                     icon: Icon(
                       Icons.remove,
                       size: 18,
-                      color: days > 1 ? const Color(0xFF333D4B) : _ctaDisabled,
+                      color: days > minDays
+                          ? const Color(0xFF333D4B)
+                          : _ctaDisabled,
                     ),
                   ),
                   Expanded(

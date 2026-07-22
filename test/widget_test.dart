@@ -142,6 +142,10 @@ void main() {
     // 다음달 헤더 아래의 1, 2일 탭
     await tester.tap(find.text('1').last);
     await tester.pump();
+    // 정책: 가는날+2일 초과 날짜는 비활성 — 탭해도 반응 없음
+    await tester.tap(find.text('5').last);
+    await tester.pump();
+    expect(find.text('오는날'), findsNothing);
     await tester.tap(find.text('2').last);
     await tester.pump();
 
@@ -191,6 +195,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
     expect(find.text('연차를 얼마나 사용할까요?'), findsOneWidget);
     expect(find.text('3일(2박3일)'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.pump();
+    expect(find.text('2일(1박2일)'), findsOneWidget);
+    // 정책: 최소 2일 — 더 줄어들지 않음
     await tester.tap(find.byIcon(Icons.remove));
     await tester.pump();
     expect(find.text('2일(1박2일)'), findsOneWidget);

@@ -216,6 +216,12 @@ class _MonthCalendar extends StatelessWidget {
     }
     final date = DateTime(month.year, month.month, dayNumber);
     final isPast = date.isBefore(today);
+    // 정책: 가는날 선택 시 2박3일 초과 날짜는 즉시 비활성화
+    final start = draft.startDate;
+    final isBeyondLimit =
+        start != null &&
+        date.isAfter(start.add(const Duration(days: kMaxTripSpanDays)));
+    final isDisabled = isPast || isBeyondLimit;
     final isSunday = date.weekday == DateTime.sunday;
     final isStart = draft.startDate == date;
     final isEnd = draft.endDate == date;
@@ -227,7 +233,7 @@ class _MonthCalendar extends StatelessWidget {
     Color textColor;
     if (isStart || isEnd) {
       textColor = Colors.white;
-    } else if (isPast) {
+    } else if (isDisabled) {
       textColor = CalendarScreen._disabledDay;
     } else if (isSunday) {
       textColor = CalendarScreen._sunday;
@@ -243,7 +249,7 @@ class _MonthCalendar extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: isPast ? null : () => onSelect(date),
+      onTap: isDisabled ? null : () => onSelect(date),
       child: SizedBox(
         height: 52,
         child: Stack(
