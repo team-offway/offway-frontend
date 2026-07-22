@@ -1,0 +1,251 @@
+{
+  "courses": [
+    {
+      "id": "jeongseon-day",
+      "regionId": "정선",
+      "title": "정선, 당일치기 추천코스",
+      "durationDays": 1,
+      "days": [
+        {
+          "day": 1,
+          "places": [
+            {
+              "name": "가리왕산자연휴양림",
+              "category": "관광지",
+              "lcls3": "NA040600",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/19/3497919_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 가리왕산로 707",
+              "mapx": 128.570012944371,
+              "mapy": 37.4267936719748
+            },
+            {
+              "name": "정선아리랑시장",
+              "category": "관광지",
+              "lcls3": "SH060100",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/04/4073504_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 5일장길 40",
+              "mapx": 128.6647910798,
+              "mapy": 37.3805311361
+            },
+            {
+              "name": "정선농협한우타운",
+              "category": "음식",
+              "lcls3": null,
+              "imageUrl": null,
+              "address": null,
+              "mapx": null,
+              "mapy": null
+            },
+            {
+              "name": "아우라지",
+              "category": "관광지",
+              "lcls3": "NA020100",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/44/4073444_image2_1.jpg",
+              "address": "강원특별자치도 정선군 여량면 아우라지길 69",
+              "mapx": 128.723960515,
+              "mapy": 37.4757768388
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jeongseon-2n3d",
+      "regionId": "정선",
+      "title": "정선, 2박 3일 추천코스",
+      "durationDays": 3,
+      "days": [
+        {
+          "day": 1,
+          "places": [
+            {
+              "name": "가리왕산자연휴양림",
+              "category": "관광지",
+              "lcls3": "NA040600",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/19/3497919_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 가리왕산로 707",
+              "mapx": 128.570012944371,
+              "mapy": 37.4267936719748
+            },
+            {
+              "name": "정선아리랑시장",
+              "category": "관광지",
+              "lcls3": "SH060100",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/04/4073504_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 5일장길 40",
+              "mapx": 128.6647910798,
+              "mapy": 37.3805311361
+            },
+            {
+              "name": "정선농협한우타운",
+              "category": "음식",
+              "lcls3": null,
+              "imageUrl": null,
+              "address": null,
+              "mapx": null,
+              "mapy": null
+            },
+            {
+              "name": "아우라지",
+              "category": "관광지",
+              "lcls3": "NA020100",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/44/4073444_image2_1.jpg",
+              "address": "강원특별자치도 정선군 여량면 아우라지길 69",
+              "mapx": 128.723960515,
+              "mapy": 37.4757768388
+            },
+            {
+              "name": "가리왕산이야기펜션",
+              "category": "숙박",
+              "lcls3": "AC030100",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/09/582509_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 청량길 32",
+              "mapx": 128.577365097045,
+              "mapy": 37.4240635890676
+            }
+          ]
+        },
+        {
+          "day": 2,
+          "places": [
+            {
+              "name": "메이힐스리조트",
+              "category": "관광지",
+              "lcls3": "VE050200",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/00/1827300_image2_1.jpg",
+              "address": "강원특별자치도 정선군 고한읍 물한리길 8",
+              "mapx": 128.8352025949,
+              "mapy": 37.211568665
+            },
+            {
+              "name": "강원랜드카지노",
+              "category": "관광지",
+              "lcls3": "VE120200",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/23/3505523_image2_1.jpg",
+              "address": "강원특별자치도 정선군 사북읍 하이원길 265",
+              "mapx": 128.821573056248,
+              "mapy": 37.2126688752577
+            },
+            {
+              "name": "메밀촌막국수",
+              "category": "음식",
+              "lcls3": "FD010100",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/46/2855546_image2_1.JPG",
+              "address": "강원특별자치도 정선군 고한로 79",
+              "mapx": 128.8471961434,
+              "mapy": 37.205661241
+            },
+            {
+              "name": "하이원워터월드",
+              "category": "관광지",
+              "lcls3": "LS020700",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/77/2776877_image2_1.jpg",
+              "address": "강원특별자치도 정선군 사북읍 하이원길 175",
+              "mapx": 128.8158487894,
+              "mapy": 37.2109516978
+            },
+            {
+              "name": "하이원리조트",
+              "category": "숙박",
+              "lcls3": "VE050200",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/56/3578056_image2_1.jpg",
+              "address": "강원특별자치도 정선군 고한읍 하이원길 424",
+              "mapx": 128.83908825325764,
+              "mapy": 37.20730902163462
+            }
+          ]
+        },
+        {
+          "day": 3,
+          "places": [
+            {
+              "name": "병방치스카이워크",
+              "category": "관광지",
+              "lcls3": "VE010200",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/97/1690997_image2_1.jpg",
+              "address": "강원특별자치도 정선군 정선읍 병방치길 225",
+              "mapx": 128.6354715236,
+              "mapy": 37.3623780337
+            },
+            {
+              "name": "정선레일바이크",
+              "category": "관광지",
+              "lcls3": "LS011900",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/19/2731319_image2_1.jpg",
+              "address": "강원특별자치도 정선군 여량면 노추산로 745",
+              "mapx": 128.7273475088,
+              "mapy": 37.5163898119
+            },
+            {
+              "name": "회동집",
+              "category": "음식",
+              "lcls3": "FD010100",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/91/2776891_image2_1.JPG",
+              "address": "강원특별자치도 정선군 정선읍 5일장길 37-10",
+              "mapx": 128.66468223,
+              "mapy": 37.3810070012
+            },
+            {
+              "name": "화암동굴",
+              "category": "관광지",
+              "lcls3": "NA030100",
+              "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/02/3306102_image2_1.jpg",
+              "address": "강원특별자치도 정선군 화암면 화암동굴길 12",
+              "mapx": 128.7905635121,
+              "mapy": 37.3508184512
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "yeongwol-day",
+      "regionId": "영월",
+      "title": "영월, 당일치기 추천코스",
+      "durationDays": 1,
+      "days": [
+        {
+          "day": 1,
+          "places": [
+            {
+              "name": "고씨동굴",
+              "category": "관광지",
+              "lcls3": null,
+              "imageUrl": null,
+              "address": null,
+              "mapx": null,
+              "mapy": null
+            },
+            {
+              "name": "청령포",
+              "category": "관광지",
+              "lcls3": "HS011200",
+              "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/65/4041365_image2_1.jpg",
+              "address": "강원 영월군 남면 광천리",
+              "mapx": 128.44461,
+              "mapy": 37.175274
+            },
+            {
+              "name": "상동막국수",
+              "category": "음식",
+              "lcls3": null,
+              "imageUrl": null,
+              "address": null,
+              "mapx": null,
+              "mapy": null
+            },
+            {
+              "name": "장릉",
+              "category": "관광지",
+              "lcls3": "FD010100",
+              "imageUrl": null,
+              "address": "강원특별자치도 영월군 영월읍 단종로 178-10",
+              "mapx": 128.4562897948,
+              "mapy": 37.1955743921
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
