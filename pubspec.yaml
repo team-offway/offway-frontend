@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.3.2
   flutter_secure_storage: ^10.3.1
+  flutter_svg: ^2.3.0
   freezed_annotation: ^3.1.0
   go_router: ^17.3.0
   intl: ^0.20.3
@@ -27,3 +28,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/
