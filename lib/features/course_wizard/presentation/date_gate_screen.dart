@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../application/course_wizard_provider.dart';
 
 /// O-04-0 · 날짜 갈림길 (STEP 0, 와이어프레임)
@@ -82,7 +83,11 @@ class DateGateScreen extends ConsumerWidget {
                   onPressed: choice == null
                       ? null
                       : () {
-                          // TODO(wizard): 선택 경로에 따라 캘린더(A)/기간스타일(B)로 이동
+                          if (choice == DatePathChoice.haveDates) {
+                            context.push(AppRoutes.wizardCalendar);
+                          } else {
+                            // TODO(wizard): 기간스타일(O-04) 화면 작업 시 연결
+                          }
                         },
                   style: FilledButton.styleFrom(
                     backgroundColor: _ctaEnabled,

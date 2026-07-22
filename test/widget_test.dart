@@ -99,4 +99,53 @@ void main() {
     await tester.pump();
     expect(tester.widget<FilledButton>(nextButton).onPressed, isNotNull);
   });
+
+  testWidgets('캘린더에서 2박3일 범위를 선택하면 선택 완료가 활성화된다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    await tester.tap(find.text('바로 추천받기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('가고싶은 날짜가 있어요'));
+    await tester.pump();
+    await tester.tap(find.text('다음'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('여행 날짜 선택'), findsOneWidget);
+    expect(find.text('최대 2박3일까지 선택할 수 있어요'), findsOneWidget);
+
+    final done = find.widgetWithText(FilledButton, '선택 완료');
+    expect(tester.widget<FilledButton>(done).onPressed, isNull);
+
+    // 다음달 1일~2일 선택 (과거 날짜 회피, 첫 번째 달력의 셀은 중복 텍스트 가능성 → first)
+    final nextMonth = DateTime.now().month == 12
+        ? '1월'
+        : '${DateTime.now().month + 1}월';
+    await tester.scrollUntilVisible(
+      find.textContaining(nextMonth),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
+    // 다음달 헤더 아래의 1, 2일 탭
+    await tester.tap(find.text('1').last);
+    await tester.pump();
+    await tester.tap(find.text('2').last);
+    await tester.pump();
+
+    expect(find.text('가는날'), findsOneWidget);
+    expect(find.text('오는날'), findsOneWidget);
+    expect(tester.widget<FilledButton>(done).onPressed, isNotNull);
+  });
 }
