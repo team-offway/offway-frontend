@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 
@@ -133,9 +134,7 @@ class PeriodStyleScreen extends ConsumerWidget {
                         height: 54,
                         child: FilledButton(
                           onPressed: draft.isPeriodStyleComplete
-                              ? () {
-                                  // TODO(wizard): 이동수단(O-05) 화면 작업 시 연결
-                                }
+                              ? () => context.push(AppRoutes.wizardTransport)
                               : null,
                           style: FilledButton.styleFrom(
                             backgroundColor: _ctaEnabled,

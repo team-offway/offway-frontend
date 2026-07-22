@@ -30,8 +30,16 @@ enum WeekendPattern {
   satSunMon,
 }
 
+/// 이동수단(O-05)
+enum TransportMode { publicTransit, car }
+
+/// 일정 밀도(O-06)
+enum ScheduleDensity { packed, relaxed }
+
+/// 핵심 정책: 모든 코스는 최대 2박3일 → 가는날~오는날 간격 최대 2일
+const int kMaxTripSpanDays = 2;
+
 /// 코스 추천 위저드(O-04-0 ~ O-08)가 단계별로 채워가는 조건.
-/// 이후 스텝(이동수단·일정밀도) 필드를 여기에 추가한다.
 class CourseWizardDraft {
   const CourseWizardDraft({
     this.datePath,
@@ -40,6 +48,8 @@ class CourseWizardDraft {
     this.periodStyle,
     this.weekendPattern,
     this.leaveDaysToUse,
+    this.transportMode,
+    this.scheduleDensity,
   });
 
   final DatePathChoice? datePath;
@@ -55,6 +65,9 @@ class CourseWizardDraft {
   /// 연차만 선택 시 사용할 연차일수 (1~3일)
   final int? leaveDaysToUse;
 
+  final TransportMode? transportMode;
+  final ScheduleDensity? scheduleDensity;
+
   bool get hasDateRange => startDate != null && endDate != null;
 
   /// 기간스타일 스텝 완료 여부 (하위 선택까지 포함)
@@ -64,58 +77,48 @@ class CourseWizardDraft {
     PeriodStyle.leaveOnly => leaveDaysToUse != null,
     null => false,
   };
-}
 
-/// 핵심 정책: 모든 코스는 최대 2박3일 → 가는날~오는날 간격 최대 2일
-const int kMaxTripSpanDays = 2;
+  /// 날짜 필드(startDate/endDate)는 별도 시맨틱이 있어 _withDates로만 변경한다.
+  CourseWizardDraft copyWith({
+    DatePathChoice? datePath,
+    PeriodStyle? periodStyle,
+    WeekendPattern? weekendPattern,
+    int? leaveDaysToUse,
+    TransportMode? transportMode,
+    ScheduleDensity? scheduleDensity,
+  }) {
+    return CourseWizardDraft(
+      datePath: datePath ?? this.datePath,
+      startDate: startDate,
+      endDate: endDate,
+      periodStyle: periodStyle ?? this.periodStyle,
+      weekendPattern: weekendPattern ?? this.weekendPattern,
+      leaveDaysToUse: leaveDaysToUse ?? this.leaveDaysToUse,
+      transportMode: transportMode ?? this.transportMode,
+      scheduleDensity: scheduleDensity ?? this.scheduleDensity,
+    );
+  }
+
+  CourseWizardDraft _withDates(DateTime? start, DateTime? end) {
+    return CourseWizardDraft(
+      datePath: datePath,
+      startDate: start,
+      endDate: end,
+      periodStyle: periodStyle,
+      weekendPattern: weekendPattern,
+      leaveDaysToUse: leaveDaysToUse,
+      transportMode: transportMode,
+      scheduleDensity: scheduleDensity,
+    );
+  }
+}
 
 class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
   @override
   CourseWizardDraft build() => const CourseWizardDraft();
 
   void selectDatePath(DatePathChoice choice) {
-    state = CourseWizardDraft(
-      datePath: choice,
-      startDate: state.startDate,
-      endDate: state.endDate,
-      periodStyle: state.periodStyle,
-      weekendPattern: state.weekendPattern,
-      leaveDaysToUse: state.leaveDaysToUse,
-    );
-  }
-
-  /// 기간스타일 선택. 스타일이 바뀌면 하위 선택(요일 조합·연차일수)은 초기화.
-  void selectPeriodStyle(PeriodStyle style) {
-    state = CourseWizardDraft(
-      datePath: state.datePath,
-      startDate: state.startDate,
-      endDate: state.endDate,
-      periodStyle: style,
-      weekendPattern: style == state.periodStyle ? state.weekendPattern : null,
-      leaveDaysToUse: style == state.periodStyle ? state.leaveDaysToUse : null,
-    );
-  }
-
-  void selectWeekendPattern(WeekendPattern pattern) {
-    state = CourseWizardDraft(
-      datePath: state.datePath,
-      startDate: state.startDate,
-      endDate: state.endDate,
-      periodStyle: state.periodStyle,
-      weekendPattern: pattern,
-      leaveDaysToUse: state.leaveDaysToUse,
-    );
-  }
-
-  void selectLeaveDays(int days) {
-    state = CourseWizardDraft(
-      datePath: state.datePath,
-      startDate: state.startDate,
-      endDate: state.endDate,
-      periodStyle: state.periodStyle,
-      weekendPattern: state.weekendPattern,
-      leaveDaysToUse: days,
-    );
+    state = state.copyWith(datePath: choice);
   }
 
   /// 캘린더 날짜 탭 처리.
@@ -124,30 +127,48 @@ class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
     final start = state.startDate;
     final end = state.endDate;
 
-    CourseWizardDraft withRange(DateTime? newStart, DateTime? newEnd) {
-      return CourseWizardDraft(
-        datePath: state.datePath,
-        startDate: newStart,
-        endDate: newEnd,
-        periodStyle: state.periodStyle,
-        weekendPattern: state.weekendPattern,
-        leaveDaysToUse: state.leaveDaysToUse,
-      );
-    }
-
     if (start == null || end != null) {
       // 새 선택 시작 (기존 범위가 있으면 리셋)
-      state = withRange(day, null);
+      state = state._withDates(day, null);
       return;
     }
     final diff = day.difference(start).inDays;
     if (diff < 0 || diff > kMaxTripSpanDays) {
       // 시작일 이전이거나 2박3일 초과 → 해당 날짜로 다시 시작
-      state = withRange(day, null);
+      state = state._withDates(day, null);
     } else {
       // 범위 확정 (같은 날 = 당일치기)
-      state = withRange(start, day);
+      state = state._withDates(start, day);
     }
+  }
+
+  /// 기간스타일 선택. 스타일이 바뀌면 하위 선택(요일 조합·연차일수)은 초기화.
+  void selectPeriodStyle(PeriodStyle style) {
+    if (style == state.periodStyle) return;
+    state = CourseWizardDraft(
+      datePath: state.datePath,
+      startDate: state.startDate,
+      endDate: state.endDate,
+      periodStyle: style,
+      transportMode: state.transportMode,
+      scheduleDensity: state.scheduleDensity,
+    );
+  }
+
+  void selectWeekendPattern(WeekendPattern pattern) {
+    state = state.copyWith(weekendPattern: pattern);
+  }
+
+  void selectLeaveDays(int days) {
+    state = state.copyWith(leaveDaysToUse: days);
+  }
+
+  void selectTransport(TransportMode mode) {
+    state = state.copyWith(transportMode: mode);
+  }
+
+  void selectDensity(ScheduleDensity density) {
+    state = state.copyWith(scheduleDensity: density);
   }
 
   void reset() => state = const CourseWizardDraft();

@@ -119,9 +119,7 @@ class CalendarScreen extends ConsumerWidget {
                 height: 54,
                 child: FilledButton(
                   onPressed: draft.hasDateRange
-                      ? () {
-                          // TODO(wizard): 이동수단(O-05) 화면 작업 시 연결
-                        }
+                      ? () => context.push(AppRoutes.wizardTransport)
                       : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: _ctaEnabled,

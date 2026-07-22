@@ -199,4 +199,67 @@ void main() {
 
     expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
   });
+
+  testWidgets('이동수단 → 일정밀도 → 로딩 → 후보지역까지 위저드가 이어진다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    await tester.tap(find.text('바로 추천받기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('아직 안 정했어요'));
+    await tester.pump();
+    await tester.tap(find.text('다음'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('당일치기 · 반차'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '다음').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // O-05 이동수단
+    expect(find.text('어떻게 이동하세요?'), findsOneWidget);
+    expect(find.text('3/4'), findsOneWidget);
+    await tester.tap(find.text('대중교통'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '다음').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // O-06 일정밀도
+    expect(find.text('내가 선호하는 스타일은?'), findsOneWidget);
+    expect(find.text('4/4'), findsOneWidget);
+    await tester.tap(find.text('널널한 일정'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '다음').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // O-07 로딩
+    expect(find.textContaining('여행지를 찾고 있어요'), findsOneWidget);
+
+    // 2초 후 후보지역 자동 이동 (mock 로드는 실제 비동기로 대기)
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // O-08 후보지역
+    expect(find.textContaining('여행지 2곳을 찾았어요'), findsOneWidget);
+    expect(find.text('정선 · 강원'), findsOneWidget);
+    expect(find.text('추천1위'), findsOneWidget);
+    expect(find.text('영월 · 강원'), findsOneWidget);
+    expect(find.textContaining('2시간30분'), findsOneWidget); // 정선 150분
+  });
 }
