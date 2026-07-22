@@ -1,0 +1,56 @@
+{
+  "candidates": [
+    {
+      "id": "정선",
+      "name": "정선",
+      "sido": "강원",
+      "badge": "인기",
+      "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/98/3462498_image2_1.jpg",
+      "contentCount": 170,
+      "travelMinutesByCar": 150,
+      "travelMinutesByTransit": 210
+    },
+    {
+      "id": "영월",
+      "name": "영월",
+      "sido": "강원",
+      "badge": null,
+      "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/53/3388553_image2_1.JPG",
+      "contentCount": 282,
+      "travelMinutesByCar": 130,
+      "travelMinutesByTransit": 170
+    }
+  ],
+  "monthlyPicks": [
+    {
+      "id": "extra-가평",
+      "name": "가평",
+      "sido": "경기",
+      "badge": null,
+      "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/24/1900124_image2_1.jpg",
+      "contentCount": 427,
+      "travelMinutesByCar": null,
+      "travelMinutesByTransit": null
+    },
+    {
+      "id": "extra-해남",
+      "name": "해남",
+      "sido": "전남",
+      "badge": null,
+      "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/30/1972330_image2_1.jpg",
+      "contentCount": 75,
+      "travelMinutesByCar": null,
+      "travelMinutesByTransit": null
+    },
+    {
+      "id": "extra-영양",
+      "name": "영양",
+      "sido": "경북",
+      "badge": null,
+      "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/93/3526493_image2_1.jpg",
+      "contentCount": 40,
+      "travelMinutesByCar": null,
+      "travelMinutesByTransit": null
+    }
+  ]
+}

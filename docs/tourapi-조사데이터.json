@@ -1,0 +1,4785 @@
+{
+  "meta": {
+    "surveyDate": "2026-07-19",
+    "description": "행안부 인구감소지역 89곳 대상 한국관광공사 TourAPI 전수 조사 결과",
+    "apis": {
+      "korservice2": {
+        "endpoint": "https://apis.data.go.kr/B551011/KorService2",
+        "note": "분류는 lclsSystm1/2/3 사용(채움률 100%). cat1/2/3은 61.7%만 채움, 사용 금지. 지역 필터는 법정동 코드(lDongRegnCd/lDongSignguCd), 광주+전남 통합(12) 반영됨",
+        "baseYm": null
+      },
+      "tarRlteTar": {
+        "endpoint": "https://apis.data.go.kr/B551011/TarRlteTarService1/areaBasedList1",
+        "note": "행정구역 코드 스냅샷: 강원 51/전북 52 특별자치도, 군위군은 대구(27720), 전남은 구코드(46) — KorService2와 코드 체계 다름. baseYm(기준년월) 필수. 관광지 코드(tAtsCd)는 자체 해시라 KorService2 contentid와 직접 연결 불가, 이름 기반 매칭 필요",
+        "baseYm": "202605"
+      }
+    },
+    "totals": {
+      "korservice2Contents": 13189,
+      "tarRlteTarPairs": 57173
+    }
+  },
+  "regions": [
+    {
+      "name": "부산 동구",
+      "korservice2": {
+        "lDongRegnCd": "26",
+        "lDongSignguCd": "170",
+        "totalContents": 106,
+        "lclsSystmFilled": {
+          "lcls1": 106,
+          "lcls2": 106,
+          "lcls3": 106
+        },
+        "byLcls1": {
+          "FD": 16,
+          "SH": 32,
+          "AC": 17,
+          "HS": 14,
+          "EX": 3,
+          "VE": 20,
+          "NA": 1,
+          "EV": 2,
+          "C01": 1
+        },
+        "byContentType": {
+          "39": 16,
+          "38": 32,
+          "32": 17,
+          "12": 28,
+          "14": 10,
+          "15": 2,
+          "25": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "26",
+        "signguCd": "26170",
+        "totalPairs": 191,
+        "anchorSpots": 11,
+        "crossRegionPairs": 167,
+        "byCategory": {
+          "관광지": 114,
+          "음식": 69,
+          "숙박": 8
+        },
+        "anchorSamples": [
+          "168계단",
+          "금수사",
+          "묘심사",
+          "문화공감수정",
+          "보광사"
+        ]
+      }
+    },
+    {
+      "name": "부산 서구",
+      "korservice2": {
+        "lDongRegnCd": "26",
+        "lDongSignguCd": "140",
+        "totalContents": 52,
+        "lclsSystmFilled": {
+          "lcls1": 52,
+          "lcls2": 52,
+          "lcls3": 52
+        },
+        "byLcls1": {
+          "VE": 15,
+          "AC": 5,
+          "FD": 15,
+          "HS": 1,
+          "SH": 6,
+          "NA": 3,
+          "EV": 2,
+          "EX": 2,
+          "LS": 3
+        },
+        "byContentType": {
+          "14": 5,
+          "12": 16,
+          "28": 4,
+          "32": 4,
+          "39": 15,
+          "38": 6,
+          "15": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "26",
+        "signguCd": "26140",
+        "totalPairs": 394,
+        "anchorSpots": 14,
+        "crossRegionPairs": 340,
+        "byCategory": {
+          "음식": 122,
+          "숙박": 45,
+          "관광지": 227
+        },
+        "anchorSamples": [
+          "구덕문화공원",
+          "내원정사",
+          "누리바라기",
+          "닥밭골벽화마을",
+          "부산공동어시장"
+        ]
+      }
+    },
+    {
+      "name": "부산 영도구",
+      "korservice2": {
+        "lDongRegnCd": "26",
+        "lDongSignguCd": "200",
+        "totalContents": 88,
+        "lclsSystmFilled": {
+          "lcls1": 88,
+          "lcls2": 88,
+          "lcls3": 88
+        },
+        "byLcls1": {
+          "NA": 6,
+          "EV": 3,
+          "VE": 28,
+          "FD": 22,
+          "SH": 9,
+          "AC": 7,
+          "EX": 7,
+          "C01": 3,
+          "HS": 2,
+          "LS": 1
+        },
+        "byContentType": {
+          "12": 32,
+          "15": 3,
+          "14": 10,
+          "39": 22,
+          "38": 9,
+          "32": 6,
+          "25": 3,
+          "28": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "26",
+        "signguCd": "26200",
+        "totalPairs": 561,
+        "anchorSpots": 16,
+        "crossRegionPairs": 298,
+        "byCategory": {
+          "관광지": 259,
+          "음식": 259,
+          "숙박": 43
+        },
+        "anchorSamples": [
+          "감지해변",
+          "국립해양박물관",
+          "남항시장",
+          "부산항영도크루즈터미널",
+          "아미르공원"
+        ]
+      }
+    },
+    {
+      "name": "대구 남구",
+      "korservice2": {
+        "lDongRegnCd": "27",
+        "lDongSignguCd": "200",
+        "totalContents": 74,
+        "lclsSystmFilled": {
+          "lcls1": 74,
+          "lcls2": 74,
+          "lcls3": 74
+        },
+        "byLcls1": {
+          "VE": 14,
+          "NA": 3,
+          "SH": 9,
+          "EV": 2,
+          "FD": 31,
+          "C01": 2,
+          "EX": 1,
+          "HS": 5,
+          "AC": 6,
+          "LS": 1
+        },
+        "byContentType": {
+          "12": 19,
+          "38": 9,
+          "14": 4,
+          "15": 2,
+          "39": 31,
+          "25": 2,
+          "32": 6,
+          "28": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "27",
+        "signguCd": "27200",
+        "totalPairs": 347,
+        "anchorSpots": 11,
+        "crossRegionPairs": 265,
+        "byCategory": {
+          "관광지": 177,
+          "음식": 149,
+          "숙박": 21
+        },
+        "anchorSamples": [
+          "관문시장",
+          "낙동강승전기념관",
+          "대명시장",
+          "법장사",
+          "서봉사"
+        ]
+      }
+    },
+    {
+      "name": "대구 서구",
+      "korservice2": {
+        "lDongRegnCd": "27",
+        "lDongSignguCd": "170",
+        "totalContents": 41,
+        "lclsSystmFilled": {
+          "lcls1": 41,
+          "lcls2": 41,
+          "lcls3": 41
+        },
+        "byLcls1": {
+          "VE": 15,
+          "FD": 12,
+          "LS": 1,
+          "EX": 1,
+          "C01": 1,
+          "SH": 7,
+          "AC": 4
+        },
+        "byContentType": {
+          "12": 11,
+          "39": 12,
+          "14": 5,
+          "28": 1,
+          "25": 1,
+          "38": 7,
+          "32": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "27",
+        "signguCd": "27170",
+        "totalPairs": 148,
+        "anchorSpots": 5,
+        "crossRegionPairs": 123,
+        "byCategory": {
+          "관광지": 72,
+          "숙박": 5,
+          "음식": 71
+        },
+        "anchorSamples": [
+          "대평리시장",
+          "상리공원",
+          "새길시장",
+          "원대신시장",
+          "이현공원"
+        ]
+      }
+    },
+    {
+      "name": "대구 군위군",
+      "korservice2": {
+        "lDongRegnCd": "27",
+        "lDongSignguCd": "720",
+        "totalContents": 71,
+        "lclsSystmFilled": {
+          "lcls1": 71,
+          "lcls2": 71,
+          "lcls3": 71
+        },
+        "byLcls1": {
+          "VE": 10,
+          "LS": 2,
+          "FD": 12,
+          "HS": 24,
+          "AC": 11,
+          "NA": 7,
+          "SH": 1,
+          "C01": 1,
+          "EX": 3
+        },
+        "byContentType": {
+          "14": 3,
+          "28": 11,
+          "39": 12,
+          "12": 41,
+          "32": 2,
+          "38": 1,
+          "25": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "27",
+        "signguCd": "27720",
+        "totalPairs": 430,
+        "anchorSpots": 17,
+        "crossRegionPairs": 172,
+        "byCategory": {
+          "관광지": 220,
+          "음식": 191,
+          "숙박": 19
+        },
+        "anchorSamples": [
+          "군위아미타여래삼존석굴",
+          "군위화산산성풍차전망대",
+          "김수환추기경생가",
+          "리틀포레스트촬영지",
+          "법주사"
+        ]
+      }
+    },
+    {
+      "name": "인천 강화군",
+      "korservice2": {
+        "lDongRegnCd": "28",
+        "lDongSignguCd": "710",
+        "totalContents": 370,
+        "lclsSystmFilled": {
+          "lcls1": 370,
+          "lcls2": 370,
+          "lcls3": 370
+        },
+        "byLcls1": {
+          "C01": 16,
+          "HS": 54,
+          "FD": 115,
+          "NA": 40,
+          "EX": 21,
+          "AC": 58,
+          "EV": 2,
+          "SH": 11,
+          "LS": 25,
+          "VE": 28
+        },
+        "byContentType": {
+          "25": 16,
+          "12": 125,
+          "39": 115,
+          "28": 67,
+          "15": 2,
+          "38": 11,
+          "14": 18,
+          "32": 16
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "28",
+        "signguCd": "28710",
+        "totalPairs": 2494,
+        "anchorSpots": 75,
+        "crossRegionPairs": 78,
+        "byCategory": {
+          "음식": 1151,
+          "관광지": 1212,
+          "숙박": 131
+        },
+        "anchorSamples": [
+          "갑곶돈대",
+          "강화고려궁지",
+          "강화고인돌",
+          "강화광성보",
+          "강화도"
+        ]
+      }
+    },
+    {
+      "name": "인천 옹진군",
+      "korservice2": {
+        "lDongRegnCd": "28",
+        "lDongSignguCd": "720",
+        "totalContents": 135,
+        "lclsSystmFilled": {
+          "lcls1": 135,
+          "lcls2": 135,
+          "lcls3": 135
+        },
+        "byLcls1": {
+          "NA": 63,
+          "FD": 17,
+          "VE": 12,
+          "AC": 29,
+          "C01": 4,
+          "LS": 4,
+          "EX": 3,
+          "SH": 1,
+          "HS": 2
+        },
+        "byContentType": {
+          "12": 77,
+          "39": 17,
+          "32": 15,
+          "28": 19,
+          "14": 2,
+          "25": 4,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "28",
+        "signguCd": "28720",
+        "totalPairs": 797,
+        "anchorSpots": 33,
+        "crossRegionPairs": 174,
+        "byCategory": {
+          "관광지": 375,
+          "음식": 287,
+          "숙박": 135
+        },
+        "anchorSamples": [
+          "끝섬전망대",
+          "낭하리해변",
+          "넛출선착장",
+          "노가리해수욕장",
+          "능동자갈마당"
+        ]
+      }
+    },
+    {
+      "name": "경기 가평군",
+      "korservice2": {
+        "lDongRegnCd": "41",
+        "lDongSignguCd": "820",
+        "totalContents": 427,
+        "lclsSystmFilled": {
+          "lcls1": 427,
+          "lcls2": 427,
+          "lcls3": 427
+        },
+        "byLcls1": {
+          "NA": 38,
+          "AC": 160,
+          "LS": 33,
+          "EX": 12,
+          "SH": 8,
+          "HS": 17,
+          "FD": 118,
+          "VE": 29,
+          "C01": 9,
+          "EV": 3
+        },
+        "byContentType": {
+          "12": 85,
+          "32": 29,
+          "28": 166,
+          "38": 8,
+          "39": 118,
+          "14": 9,
+          "25": 9,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "41",
+        "signguCd": "41820",
+        "totalPairs": 1242,
+        "anchorSpots": 35,
+        "crossRegionPairs": 275,
+        "byCategory": {
+          "음식": 757,
+          "관광지": 361,
+          "숙박": 124
+        },
+        "anchorSamples": [
+          "K26잠수풀",
+          "가일미술관",
+          "가평별빛정원",
+          "강씨봉자연휴양림",
+          "강촌레일파크/가평역"
+        ]
+      }
+    },
+    {
+      "name": "경기 연천군",
+      "korservice2": {
+        "lDongRegnCd": "41",
+        "lDongSignguCd": "800",
+        "totalContents": 136,
+        "lclsSystmFilled": {
+          "lcls1": 136,
+          "lcls2": 136,
+          "lcls3": 136
+        },
+        "byLcls1": {
+          "C01": 20,
+          "NA": 16,
+          "AC": 26,
+          "FD": 17,
+          "VE": 16,
+          "EX": 12,
+          "HS": 15,
+          "LS": 10,
+          "EV": 2,
+          "SH": 2
+        },
+        "byContentType": {
+          "25": 20,
+          "12": 54,
+          "28": 33,
+          "39": 17,
+          "32": 3,
+          "15": 2,
+          "14": 5,
+          "38": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "41",
+        "signguCd": "41800",
+        "totalPairs": 603,
+        "anchorSpots": 17,
+        "crossRegionPairs": 194,
+        "byCategory": {
+          "관광지": 270,
+          "음식": 290,
+          "숙박": 43
+        },
+        "anchorSamples": [
+          "고대산",
+          "두루미테마파크",
+          "들꽃가람농장",
+          "숭의전",
+          "신탄리역"
+        ]
+      }
+    },
+    {
+      "name": "강원 고성군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "820",
+        "totalContents": 211,
+        "lclsSystmFilled": {
+          "lcls1": 211,
+          "lcls2": 211,
+          "lcls3": 211
+        },
+        "byLcls1": {
+          "NA": 48,
+          "SH": 5,
+          "HS": 13,
+          "FD": 50,
+          "C01": 19,
+          "VE": 25,
+          "EX": 7,
+          "EV": 2,
+          "AC": 24,
+          "LS": 18
+        },
+        "byContentType": {
+          "12": 80,
+          "38": 5,
+          "39": 50,
+          "25": 19,
+          "28": 30,
+          "14": 8,
+          "15": 2,
+          "32": 17
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51820",
+        "totalPairs": 1924,
+        "anchorSpots": 46,
+        "crossRegionPairs": 534,
+        "byCategory": {
+          "관광지": 933,
+          "숙박": 301,
+          "음식": 690
+        },
+        "anchorSamples": [
+          "DMZ박물관",
+          "가진항",
+          "가진해변",
+          "거진11리해변",
+          "거진1리해변"
+        ]
+      }
+    },
+    {
+      "name": "강원 삼척시",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "230",
+        "totalContents": 206,
+        "lclsSystmFilled": {
+          "lcls1": 206,
+          "lcls2": 206,
+          "lcls3": 206
+        },
+        "byLcls1": {
+          "AC": 34,
+          "EX": 16,
+          "NA": 50,
+          "FD": 37,
+          "C01": 12,
+          "VE": 24,
+          "SH": 7,
+          "LS": 9,
+          "HS": 15,
+          "EV": 2
+        },
+        "byContentType": {
+          "28": 27,
+          "12": 96,
+          "39": 37,
+          "25": 12,
+          "14": 8,
+          "32": 17,
+          "38": 7,
+          "15": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51230",
+        "totalPairs": 1789,
+        "anchorSpots": 49,
+        "crossRegionPairs": 466,
+        "byCategory": {
+          "관광지": 1128,
+          "숙박": 169,
+          "음식": 492
+        },
+        "anchorSamples": [
+          "갈남항",
+          "강원종합박물관",
+          "검봉산자연휴양림",
+          "궁촌항",
+          "궁촌해변"
+        ]
+      }
+    },
+    {
+      "name": "강원 양구군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "800",
+        "totalContents": 95,
+        "lclsSystmFilled": {
+          "lcls1": 95,
+          "lcls2": 95,
+          "lcls3": 95
+        },
+        "byLcls1": {
+          "FD": 17,
+          "NA": 19,
+          "C01": 8,
+          "EV": 3,
+          "VE": 18,
+          "AC": 9,
+          "HS": 10,
+          "LS": 7,
+          "EX": 2,
+          "SH": 2
+        },
+        "byContentType": {
+          "39": 17,
+          "12": 41,
+          "25": 8,
+          "15": 3,
+          "28": 12,
+          "14": 7,
+          "32": 5,
+          "38": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51800",
+        "totalPairs": 295,
+        "anchorSpots": 11,
+        "crossRegionPairs": 76,
+        "byCategory": {
+          "관광지": 140,
+          "음식": 124,
+          "숙박": 31
+        },
+        "anchorSamples": [
+          "광치자연휴양림",
+          "국토정중앙천문대",
+          "두타연",
+          "박수근미술관",
+          "비봉산"
+        ]
+      }
+    },
+    {
+      "name": "강원 양양군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "830",
+        "totalContents": 287,
+        "lclsSystmFilled": {
+          "lcls1": 287,
+          "lcls2": 287,
+          "lcls3": 287
+        },
+        "byLcls1": {
+          "NA": 60,
+          "AC": 73,
+          "C01": 8,
+          "FD": 66,
+          "LS": 23,
+          "EX": 12,
+          "VE": 17,
+          "HS": 21,
+          "SH": 3,
+          "EV": 4
+        },
+        "byContentType": {
+          "12": 103,
+          "28": 52,
+          "25": 8,
+          "39": 66,
+          "32": 48,
+          "38": 3,
+          "15": 4,
+          "14": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51830",
+        "totalPairs": 1602,
+        "anchorSpots": 38,
+        "crossRegionPairs": 582,
+        "byCategory": {
+          "관광지": 757,
+          "숙박": 252,
+          "음식": 593
+        },
+        "anchorSamples": [
+          "갯마을해변",
+          "광진해변",
+          "국립미천골자연휴양림",
+          "기사문해변",
+          "낙산사"
+        ]
+      }
+    },
+    {
+      "name": "강원 영월군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "750",
+        "totalContents": 282,
+        "lclsSystmFilled": {
+          "lcls1": 282,
+          "lcls2": 282,
+          "lcls3": 282
+        },
+        "byLcls1": {
+          "AC": 113,
+          "NA": 41,
+          "LS": 11,
+          "HS": 22,
+          "C01": 6,
+          "FD": 35,
+          "EX": 13,
+          "VE": 33,
+          "EV": 3,
+          "SH": 5
+        },
+        "byContentType": {
+          "32": 16,
+          "12": 85,
+          "28": 112,
+          "25": 6,
+          "39": 35,
+          "14": 20,
+          "15": 3,
+          "38": 5
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51750",
+        "totalPairs": 999,
+        "anchorSpots": 36,
+        "crossRegionPairs": 132,
+        "byCategory": {
+          "관광지": 491,
+          "숙박": 112,
+          "음식": 396
+        },
+        "anchorSamples": [
+          "강원특별자치도탄광문화촌/휴관중(2027년01월 개관예정)",
+          "고씨동굴",
+          "금강정",
+          "김삿갓문학관",
+          "내리계곡솔밭캠핑장"
+        ]
+      }
+    },
+    {
+      "name": "강원 정선군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "770",
+        "totalContents": 170,
+        "lclsSystmFilled": {
+          "lcls1": 170,
+          "lcls2": 170,
+          "lcls3": 170
+        },
+        "byLcls1": {
+          "NA": 30,
+          "AC": 46,
+          "EX": 11,
+          "VE": 16,
+          "LS": 15,
+          "HS": 10,
+          "SH": 5,
+          "C01": 4,
+          "FD": 29,
+          "EV": 4
+        },
+        "byContentType": {
+          "12": 57,
+          "32": 33,
+          "28": 30,
+          "38": 5,
+          "14": 8,
+          "25": 4,
+          "39": 29,
+          "15": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51770",
+        "totalPairs": 670,
+        "anchorSpots": 23,
+        "crossRegionPairs": 176,
+        "byCategory": {
+          "관광지": 332,
+          "음식": 199,
+          "숙박": 139
+        },
+        "anchorSamples": [
+          "가리왕산자연휴양림",
+          "고한야한구공탄시장",
+          "구미정",
+          "도롱이연못",
+          "두위봉"
+        ]
+      }
+    },
+    {
+      "name": "강원 철원군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "780",
+        "totalContents": 160,
+        "lclsSystmFilled": {
+          "lcls1": 160,
+          "lcls2": 160,
+          "lcls3": 160
+        },
+        "byLcls1": {
+          "C01": 10,
+          "NA": 22,
+          "FD": 46,
+          "VE": 14,
+          "HS": 22,
+          "AC": 27,
+          "EX": 2,
+          "SH": 5,
+          "LS": 11,
+          "EV": 1
+        },
+        "byContentType": {
+          "25": 10,
+          "12": 56,
+          "39": 46,
+          "32": 16,
+          "28": 24,
+          "38": 5,
+          "15": 1,
+          "14": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51780",
+        "totalPairs": 680,
+        "anchorSpots": 25,
+        "crossRegionPairs": 28,
+        "byCategory": {
+          "음식": 284,
+          "관광지": 362,
+          "숙박": 34
+        },
+        "anchorSamples": [
+          "DMZ생태평화공원방문자센터",
+          "고석정국민관광지",
+          "구철원제일교회",
+          "군탄공원",
+          "노동당사"
+        ]
+      }
+    },
+    {
+      "name": "강원 태백시",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "190",
+        "totalContents": 104,
+        "lclsSystmFilled": {
+          "lcls1": 104,
+          "lcls2": 104,
+          "lcls3": 104
+        },
+        "byLcls1": {
+          "C01": 4,
+          "FD": 20,
+          "NA": 14,
+          "VE": 17,
+          "LS": 7,
+          "HS": 18,
+          "AC": 11,
+          "SH": 5,
+          "EX": 5,
+          "EV": 3
+        },
+        "byContentType": {
+          "25": 4,
+          "39": 20,
+          "12": 46,
+          "28": 14,
+          "32": 7,
+          "38": 5,
+          "14": 5,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51190",
+        "totalPairs": 530,
+        "anchorSpots": 15,
+        "crossRegionPairs": 174,
+        "byCategory": {
+          "음식": 177,
+          "관광지": 260,
+          "숙박": 93
+        },
+        "anchorSamples": [
+          "365세이프타운",
+          "등광사",
+          "매봉산바람의언덕",
+          "석탄박물관",
+          "심원사"
+        ]
+      }
+    },
+    {
+      "name": "강원 평창군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "760",
+        "totalContents": 660,
+        "lclsSystmFilled": {
+          "lcls1": 660,
+          "lcls2": 660,
+          "lcls3": 660
+        },
+        "byLcls1": {
+          "FD": 328,
+          "AC": 127,
+          "NA": 31,
+          "EX": 40,
+          "VE": 52,
+          "LS": 39,
+          "C01": 11,
+          "HS": 20,
+          "EV": 6,
+          "SH": 6
+        },
+        "byContentType": {
+          "39": 328,
+          "32": 109,
+          "12": 122,
+          "28": 62,
+          "14": 16,
+          "25": 11,
+          "15": 6,
+          "38": 6
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51760",
+        "totalPairs": 1074,
+        "anchorSpots": 33,
+        "crossRegionPairs": 261,
+        "byCategory": {
+          "관광지": 450,
+          "음식": 468,
+          "숙박": 156
+        },
+        "anchorSamples": [
+          "계방산오토캠핑장",
+          "국립평창청소년수련원",
+          "국립한국자생식물원",
+          "대관령양떼목장",
+          "대관령주주파크"
+        ]
+      }
+    },
+    {
+      "name": "강원 홍천군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "720",
+        "totalContents": 230,
+        "lclsSystmFilled": {
+          "lcls1": 230,
+          "lcls2": 230,
+          "lcls3": 230
+        },
+        "byLcls1": {
+          "VE": 27,
+          "NA": 21,
+          "FD": 40,
+          "AC": 95,
+          "SH": 5,
+          "EX": 13,
+          "HS": 6,
+          "LS": 13,
+          "C01": 3,
+          "EV": 7
+        },
+        "byContentType": {
+          "12": 56,
+          "39": 40,
+          "28": 72,
+          "32": 39,
+          "38": 5,
+          "14": 8,
+          "25": 3,
+          "15": 7
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51720",
+        "totalPairs": 519,
+        "anchorSpots": 14,
+        "crossRegionPairs": 139,
+        "byCategory": {
+          "음식": 272,
+          "관광지": 172,
+          "숙박": 75
+        },
+        "anchorSamples": [
+          "가리산자연휴양림",
+          "모곡밤벌유원지",
+          "무궁화공원",
+          "무궁화테마파크",
+          "삼봉자연휴양림"
+        ]
+      }
+    },
+    {
+      "name": "강원 화천군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "790",
+        "totalContents": 117,
+        "lclsSystmFilled": {
+          "lcls1": 117,
+          "lcls2": 117,
+          "lcls3": 117
+        },
+        "byLcls1": {
+          "FD": 11,
+          "VE": 24,
+          "NA": 20,
+          "AC": 24,
+          "HS": 8,
+          "C01": 12,
+          "EX": 7,
+          "EV": 1,
+          "LS": 8,
+          "SH": 2
+        },
+        "byContentType": {
+          "39": 11,
+          "12": 53,
+          "28": 18,
+          "25": 12,
+          "32": 14,
+          "14": 6,
+          "15": 1,
+          "38": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51790",
+        "totalPairs": 199,
+        "anchorSpots": 12,
+        "crossRegionPairs": 93,
+        "byCategory": {
+          "관광지": 99,
+          "음식": 70,
+          "숙박": 30
+        },
+        "anchorSamples": [
+          "광덕산/운암교기점",
+          "딴산유원지",
+          "백암산케이블카",
+          "붕어섬유원지",
+          "산천어커피박물관"
+        ]
+      }
+    },
+    {
+      "name": "강원 횡성군",
+      "korservice2": {
+        "lDongRegnCd": "51",
+        "lDongSignguCd": "730",
+        "totalContents": 177,
+        "lclsSystmFilled": {
+          "lcls1": 177,
+          "lcls2": 177,
+          "lcls3": 177
+        },
+        "byLcls1": {
+          "FD": 65,
+          "C01": 1,
+          "EX": 9,
+          "EV": 7,
+          "NA": 11,
+          "AC": 48,
+          "VE": 16,
+          "LS": 13,
+          "HS": 5,
+          "SH": 2
+        },
+        "byContentType": {
+          "39": 65,
+          "25": 1,
+          "12": 34,
+          "15": 7,
+          "32": 23,
+          "28": 38,
+          "14": 7,
+          "38": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "51",
+        "signguCd": "51730",
+        "totalPairs": 373,
+        "anchorSpots": 13,
+        "crossRegionPairs": 97,
+        "byCategory": {
+          "숙박": 30,
+          "관광지": 137,
+          "음식": 206
+        },
+        "anchorSamples": [
+          "국립청태산자연휴양림",
+          "국립횡성숲체원",
+          "망향의동산",
+          "미술관 자작나무숲",
+          "봉복사"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 괴산군",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "760",
+        "totalContents": 183,
+        "lclsSystmFilled": {
+          "lcls1": 183,
+          "lcls2": 183,
+          "lcls3": 183
+        },
+        "byLcls1": {
+          "HS": 54,
+          "NA": 28,
+          "AC": 28,
+          "FD": 25,
+          "VE": 18,
+          "EX": 13,
+          "EV": 3,
+          "C01": 8,
+          "SH": 4,
+          "LS": 2
+        },
+        "byContentType": {
+          "12": 106,
+          "28": 29,
+          "39": 25,
+          "14": 6,
+          "15": 3,
+          "25": 8,
+          "38": 4,
+          "32": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43760",
+        "totalPairs": 502,
+        "anchorSpots": 25,
+        "crossRegionPairs": 219,
+        "byCategory": {
+          "관광지": 268,
+          "음식": 195,
+          "숙박": 39
+        },
+        "anchorSamples": [
+          "각연사",
+          "갈론계곡",
+          "공림사",
+          "괴산개심사",
+          "괴산고산정및제월대"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 단양군",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "800",
+        "totalContents": 171,
+        "lclsSystmFilled": {
+          "lcls1": 171,
+          "lcls2": 171,
+          "lcls3": 171
+        },
+        "byLcls1": {
+          "FD": 38,
+          "LS": 22,
+          "C01": 9,
+          "NA": 30,
+          "HS": 11,
+          "AC": 23,
+          "VE": 18,
+          "EX": 12,
+          "EV": 3,
+          "SH": 5
+        },
+        "byContentType": {
+          "39": 38,
+          "28": 38,
+          "25": 9,
+          "12": 69,
+          "15": 3,
+          "32": 7,
+          "38": 5,
+          "14": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43800",
+        "totalPairs": 626,
+        "anchorSpots": 20,
+        "crossRegionPairs": 94,
+        "byCategory": {
+          "관광지": 317,
+          "음식": 260,
+          "숙박": 49
+        },
+        "anchorSamples": [
+          "고수동굴",
+          "구인사",
+          "다리안국민관광지",
+          "단양강잔도",
+          "단양금굴구석기유적지"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 보은군",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "720",
+        "totalContents": 98,
+        "lclsSystmFilled": {
+          "lcls1": 98,
+          "lcls2": 98,
+          "lcls3": 98
+        },
+        "byLcls1": {
+          "FD": 25,
+          "SH": 3,
+          "EX": 8,
+          "NA": 12,
+          "HS": 15,
+          "AC": 15,
+          "VE": 10,
+          "EV": 2,
+          "LS": 5,
+          "C01": 3
+        },
+        "byContentType": {
+          "39": 25,
+          "38": 3,
+          "12": 40,
+          "32": 4,
+          "28": 16,
+          "15": 2,
+          "14": 5,
+          "25": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43720",
+        "totalPairs": 315,
+        "anchorSpots": 12,
+        "crossRegionPairs": 86,
+        "byCategory": {
+          "관광지": 147,
+          "음식": 142,
+          "숙박": 26
+        },
+        "anchorSamples": [
+          "말티재전망대",
+          "법주사",
+          "산모랭이풀내음펜션",
+          "삼년산성",
+          "속리산말티재자연휴양림"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 영동군",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "740",
+        "totalContents": 92,
+        "lclsSystmFilled": {
+          "lcls1": 92,
+          "lcls2": 92,
+          "lcls3": 92
+        },
+        "byLcls1": {
+          "FD": 16,
+          "NA": 10,
+          "HS": 26,
+          "VE": 6,
+          "C01": 5,
+          "LS": 2,
+          "AC": 8,
+          "EV": 4,
+          "EX": 11,
+          "SH": 4
+        },
+        "byContentType": {
+          "39": 16,
+          "12": 50,
+          "25": 5,
+          "28": 9,
+          "14": 3,
+          "15": 4,
+          "38": 4,
+          "32": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43740",
+        "totalPairs": 267,
+        "anchorSpots": 9,
+        "crossRegionPairs": 68,
+        "byCategory": {
+          "관광지": 134,
+          "숙박": 21,
+          "음식": 112
+        },
+        "anchorSamples": [
+          "과일나라테마공원",
+          "노근리평화공원",
+          "민주지산자연휴양림",
+          "반야사",
+          "심천역"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 옥천군",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "730",
+        "totalContents": 112,
+        "lclsSystmFilled": {
+          "lcls1": 112,
+          "lcls2": 112,
+          "lcls3": 112
+        },
+        "byLcls1": {
+          "HS": 19,
+          "FD": 38,
+          "NA": 6,
+          "AC": 6,
+          "C01": 5,
+          "VE": 16,
+          "EX": 14,
+          "SH": 3,
+          "EV": 1,
+          "LS": 4
+        },
+        "byContentType": {
+          "12": 49,
+          "39": 38,
+          "32": 4,
+          "25": 5,
+          "28": 6,
+          "14": 6,
+          "38": 3,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43730",
+        "totalPairs": 432,
+        "anchorSpots": 14,
+        "crossRegionPairs": 72,
+        "byCategory": {
+          "관광지": 189,
+          "음식": 231,
+          "숙박": 12
+        },
+        "anchorSamples": [
+          "가산사",
+          "교동저수지",
+          "금강유원지",
+          "수생식물학습원",
+          "옥천금강수변친수공원"
+        ]
+      }
+    },
+    {
+      "name": "충청북도 제천시",
+      "korservice2": {
+        "lDongRegnCd": "43",
+        "lDongSignguCd": "150",
+        "totalContents": 258,
+        "lclsSystmFilled": {
+          "lcls1": 258,
+          "lcls2": 258,
+          "lcls3": 258
+        },
+        "byLcls1": {
+          "FD": 55,
+          "AC": 56,
+          "HS": 47,
+          "VE": 36,
+          "EX": 14,
+          "NA": 19,
+          "SH": 12,
+          "LS": 7,
+          "C01": 8,
+          "EV": 4
+        },
+        "byContentType": {
+          "39": 55,
+          "28": 56,
+          "12": 96,
+          "14": 16,
+          "38": 12,
+          "32": 11,
+          "25": 8,
+          "15": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "43",
+        "signguCd": "43150",
+        "totalPairs": 789,
+        "anchorSpots": 35,
+        "crossRegionPairs": 128,
+        "byCategory": {
+          "음식": 381,
+          "관광지": 335,
+          "숙박": 73
+        },
+        "anchorSamples": [
+          "강천사",
+          "고산사",
+          "공전자연학교",
+          "국립제천치유의숲",
+          "금월봉관광지"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 공주시",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "150",
+        "totalContents": 235,
+        "lclsSystmFilled": {
+          "lcls1": 235,
+          "lcls2": 235,
+          "lcls3": 235
+        },
+        "byLcls1": {
+          "SH": 5,
+          "VE": 32,
+          "HS": 36,
+          "NA": 18,
+          "FD": 77,
+          "AC": 39,
+          "EX": 13,
+          "C01": 8,
+          "LS": 3,
+          "EV": 4
+        },
+        "byContentType": {
+          "38": 5,
+          "14": 20,
+          "12": 78,
+          "39": 77,
+          "28": 22,
+          "25": 8,
+          "32": 21,
+          "15": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44150",
+        "totalPairs": 1081,
+        "anchorSpots": 35,
+        "crossRegionPairs": 166,
+        "byCategory": {
+          "관광지": 445,
+          "음식": 593,
+          "숙박": 43
+        },
+        "anchorSamples": [
+          "갑사",
+          "계룡산도예촌",
+          "곰나루국민관광단지",
+          "공산성",
+          "공주고마나루"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 금산군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "710",
+        "totalContents": 96,
+        "lclsSystmFilled": {
+          "lcls1": 96,
+          "lcls2": 96,
+          "lcls3": 96
+        },
+        "byLcls1": {
+          "FD": 18,
+          "HS": 26,
+          "NA": 14,
+          "AC": 11,
+          "VE": 7,
+          "EX": 9,
+          "EV": 3,
+          "SH": 3,
+          "C01": 4,
+          "LS": 1
+        },
+        "byContentType": {
+          "39": 18,
+          "12": 51,
+          "28": 9,
+          "14": 4,
+          "15": 3,
+          "38": 3,
+          "25": 4,
+          "32": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44710",
+        "totalPairs": 252,
+        "anchorSpots": 13,
+        "crossRegionPairs": 27,
+        "byCategory": {
+          "음식": 139,
+          "숙박": 14,
+          "관광지": 99
+        },
+        "anchorSamples": [
+          "개덕사",
+          "금산역사문화박물관",
+          "금산인삼국제시장",
+          "금산인삼약령시장",
+          "기러기공원"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 논산시",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "230",
+        "totalContents": 126,
+        "lclsSystmFilled": {
+          "lcls1": 126,
+          "lcls2": 126,
+          "lcls3": 126
+        },
+        "byLcls1": {
+          "HS": 37,
+          "NA": 6,
+          "VE": 15,
+          "SH": 8,
+          "LS": 4,
+          "EV": 4,
+          "FD": 28,
+          "EX": 10,
+          "AC": 13,
+          "C01": 1
+        },
+        "byContentType": {
+          "12": 61,
+          "38": 8,
+          "28": 14,
+          "15": 4,
+          "39": 28,
+          "14": 6,
+          "32": 4,
+          "25": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44230",
+        "totalPairs": 930,
+        "anchorSpots": 28,
+        "crossRegionPairs": 181,
+        "byCategory": {
+          "관광지": 450,
+          "음식": 434,
+          "숙박": 46
+        },
+        "anchorSamples": [
+          "강경근대거리",
+          "개태사",
+          "견훤왕릉",
+          "계백장군유적지",
+          "관촉사"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 보령시",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "180",
+        "totalContents": 177,
+        "lclsSystmFilled": {
+          "lcls1": 177,
+          "lcls2": 177,
+          "lcls3": 177
+        },
+        "byLcls1": {
+          "FD": 30,
+          "EX": 12,
+          "VE": 23,
+          "AC": 26,
+          "NA": 45,
+          "HS": 19,
+          "LS": 7,
+          "EV": 5,
+          "SH": 4,
+          "C01": 6
+        },
+        "byContentType": {
+          "39": 30,
+          "12": 94,
+          "32": 17,
+          "28": 18,
+          "15": 5,
+          "38": 4,
+          "25": 6,
+          "14": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44180",
+        "totalPairs": 1392,
+        "anchorSpots": 41,
+        "crossRegionPairs": 350,
+        "byCategory": {
+          "관광지": 790,
+          "음식": 446,
+          "숙박": 156
+        },
+        "anchorSamples": [
+          "개화예술공원",
+          "군헌갯벌체험장",
+          "김좌진장군묘",
+          "냉풍욕장",
+          "대천연안여객선터미널"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 부여군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "760",
+        "totalContents": 205,
+        "lclsSystmFilled": {
+          "lcls1": 205,
+          "lcls2": 205,
+          "lcls3": 205
+        },
+        "byLcls1": {
+          "FD": 36,
+          "EX": 10,
+          "HS": 48,
+          "SH": 55,
+          "AC": 10,
+          "VE": 18,
+          "EV": 4,
+          "NA": 9,
+          "C01": 6,
+          "LS": 9
+        },
+        "byContentType": {
+          "39": 36,
+          "12": 77,
+          "38": 55,
+          "28": 16,
+          "15": 4,
+          "14": 5,
+          "25": 6,
+          "32": 6
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44760",
+        "totalPairs": 780,
+        "anchorSpots": 26,
+        "crossRegionPairs": 183,
+        "byCategory": {
+          "관광지": 384,
+          "음식": 350,
+          "숙박": 46
+        },
+        "anchorSamples": [
+          "가림성",
+          "고란사",
+          "구드래선착장",
+          "구드래조각공원",
+          "국립부여박물관"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 서천군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "770",
+        "totalContents": 130,
+        "lclsSystmFilled": {
+          "lcls1": 130,
+          "lcls2": 130,
+          "lcls3": 130
+        },
+        "byLcls1": {
+          "NA": 23,
+          "AC": 13,
+          "VE": 14,
+          "C01": 13,
+          "FD": 28,
+          "EX": 13,
+          "EV": 9,
+          "LS": 1,
+          "HS": 11,
+          "SH": 5
+        },
+        "byContentType": {
+          "12": 55,
+          "28": 14,
+          "14": 4,
+          "25": 13,
+          "39": 28,
+          "15": 9,
+          "38": 5,
+          "32": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44770",
+        "totalPairs": 827,
+        "anchorSpots": 27,
+        "crossRegionPairs": 165,
+        "byCategory": {
+          "관광지": 482,
+          "음식": 277,
+          "숙박": 68
+        },
+        "anchorSamples": [
+          "갈목해변",
+          "국립생태원",
+          "다사항",
+          "띠섬목해변",
+          "마량리동백나무숲"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 예산군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "810",
+        "totalContents": 125,
+        "lclsSystmFilled": {
+          "lcls1": 125,
+          "lcls2": 125,
+          "lcls3": 125
+        },
+        "byLcls1": {
+          "FD": 37,
+          "AC": 14,
+          "VE": 11,
+          "NA": 10,
+          "HS": 21,
+          "SH": 7,
+          "EX": 10,
+          "C01": 9,
+          "LS": 1,
+          "EV": 5
+        },
+        "byContentType": {
+          "39": 37,
+          "28": 11,
+          "12": 47,
+          "32": 5,
+          "38": 7,
+          "25": 9,
+          "14": 4,
+          "15": 5
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44810",
+        "totalPairs": 585,
+        "anchorSpots": 20,
+        "crossRegionPairs": 149,
+        "byCategory": {
+          "관광지": 272,
+          "숙박": 38,
+          "음식": 275
+        },
+        "anchorSamples": [
+          "가야산",
+          "남연군묘",
+          "내포보부상촌",
+          "대련사",
+          "대흥향교"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 청양군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "790",
+        "totalContents": 60,
+        "lclsSystmFilled": {
+          "lcls1": 60,
+          "lcls2": 60,
+          "lcls3": 60
+        },
+        "byLcls1": {
+          "EX": 14,
+          "AC": 6,
+          "NA": 9,
+          "FD": 10,
+          "SH": 3,
+          "HS": 7,
+          "VE": 6,
+          "C01": 4,
+          "EV": 1
+        },
+        "byContentType": {
+          "12": 32,
+          "28": 5,
+          "39": 10,
+          "38": 3,
+          "14": 4,
+          "25": 4,
+          "15": 1,
+          "32": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44790",
+        "totalPairs": 348,
+        "anchorSpots": 11,
+        "crossRegionPairs": 127,
+        "byCategory": {
+          "관광지": 185,
+          "음식": 142,
+          "숙박": 21
+        },
+        "anchorSamples": [
+          "고운식물원",
+          "모덕사",
+          "백제문화체험박물관",
+          "어슬티굿밤",
+          "장곡사"
+        ]
+      }
+    },
+    {
+      "name": "충청남도 태안군",
+      "korservice2": {
+        "lDongRegnCd": "44",
+        "lDongSignguCd": "825",
+        "totalContents": 370,
+        "lclsSystmFilled": {
+          "lcls1": 370,
+          "lcls2": 370,
+          "lcls3": 370
+        },
+        "byLcls1": {
+          "NA": 83,
+          "EX": 14,
+          "AC": 134,
+          "LS": 20,
+          "VE": 28,
+          "FD": 63,
+          "SH": 11,
+          "HS": 11,
+          "EV": 1,
+          "C01": 5
+        },
+        "byContentType": {
+          "12": 124,
+          "32": 93,
+          "28": 64,
+          "14": 9,
+          "39": 63,
+          "38": 11,
+          "15": 1,
+          "25": 5
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "44",
+        "signguCd": "44825",
+        "totalPairs": 3170,
+        "anchorSpots": 78,
+        "crossRegionPairs": 520,
+        "byCategory": {
+          "관광지": 1761,
+          "음식": 985,
+          "숙박": 424
+        },
+        "anchorSamples": [
+          "갈음이해수욕장",
+          "개목항",
+          "고남패총박물관",
+          "곰섬해변",
+          "구례포해수욕장"
+        ]
+      }
+    },
+    {
+      "name": "전북 고창군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "790",
+        "totalContents": 156,
+        "lclsSystmFilled": {
+          "lcls1": 156,
+          "lcls2": 156,
+          "lcls3": 156
+        },
+        "byLcls1": {
+          "FD": 37,
+          "HS": 34,
+          "NA": 21,
+          "AC": 10,
+          "VE": 18,
+          "EX": 13,
+          "SH": 4,
+          "EV": 5,
+          "LS": 3,
+          "C01": 11
+        },
+        "byContentType": {
+          "39": 37,
+          "12": 77,
+          "32": 5,
+          "14": 9,
+          "38": 4,
+          "15": 5,
+          "28": 8,
+          "25": 11
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52790",
+        "totalPairs": 685,
+        "anchorSpots": 21,
+        "crossRegionPairs": 92,
+        "byCategory": {
+          "관광지": 323,
+          "음식": 313,
+          "숙박": 49
+        },
+        "anchorSamples": [
+          "고창고인돌군",
+          "고창무장동학농민혁명기포지",
+          "고창세계유산고인돌박물관",
+          "고창운곡람사르습지자연생태공원",
+          "고창읍성"
+        ]
+      }
+    },
+    {
+      "name": "전북 김제시",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "210",
+        "totalContents": 109,
+        "lclsSystmFilled": {
+          "lcls1": 109,
+          "lcls2": 109,
+          "lcls3": 109
+        },
+        "byLcls1": {
+          "HS": 47,
+          "FD": 29,
+          "VE": 8,
+          "NA": 8,
+          "EV": 4,
+          "EX": 2,
+          "AC": 2,
+          "SH": 3,
+          "LS": 4,
+          "C01": 2
+        },
+        "byContentType": {
+          "12": 60,
+          "39": 29,
+          "14": 5,
+          "15": 4,
+          "28": 6,
+          "38": 3,
+          "25": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52210",
+        "totalPairs": 338,
+        "anchorSpots": 24,
+        "crossRegionPairs": 187,
+        "byCategory": {
+          "관광지": 192,
+          "음식": 137,
+          "숙박": 9
+        },
+        "anchorSamples": [
+          "관응사",
+          "국립청소년바이오생명센터",
+          "귀신사",
+          "금산사",
+          "김제동헌"
+        ]
+      }
+    },
+    {
+      "name": "전북 남원시",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "190",
+        "totalContents": 208,
+        "lclsSystmFilled": {
+          "lcls1": 208,
+          "lcls2": 208,
+          "lcls3": 208
+        },
+        "byLcls1": {
+          "HS": 49,
+          "VE": 28,
+          "FD": 50,
+          "NA": 18,
+          "LS": 6,
+          "SH": 14,
+          "AC": 27,
+          "EX": 8,
+          "C01": 6,
+          "EV": 2
+        },
+        "byContentType": {
+          "12": 92,
+          "39": 50,
+          "28": 16,
+          "14": 9,
+          "38": 14,
+          "32": 19,
+          "25": 6,
+          "15": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52190",
+        "totalPairs": 698,
+        "anchorSpots": 27,
+        "crossRegionPairs": 74,
+        "byCategory": {
+          "음식": 367,
+          "관광지": 260,
+          "숙박": 71
+        },
+        "anchorSamples": [
+          "광한루원",
+          "교룡산성",
+          "국립민속국악원",
+          "귀정사",
+          "남원관광단지"
+        ]
+      }
+    },
+    {
+      "name": "전북 무주군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "730",
+        "totalContents": 164,
+        "lclsSystmFilled": {
+          "lcls1": 164,
+          "lcls2": 164,
+          "lcls3": 164
+        },
+        "byLcls1": {
+          "FD": 24,
+          "C01": 9,
+          "HS": 16,
+          "LS": 26,
+          "NA": 17,
+          "AC": 43,
+          "VE": 18,
+          "EX": 8,
+          "SH": 2,
+          "EV": 1
+        },
+        "byContentType": {
+          "39": 24,
+          "25": 9,
+          "12": 48,
+          "28": 50,
+          "32": 22,
+          "14": 8,
+          "38": 2,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52730",
+        "totalPairs": 516,
+        "anchorSpots": 18,
+        "crossRegionPairs": 57,
+        "byCategory": {
+          "관광지": 206,
+          "숙박": 71,
+          "음식": 239
+        },
+        "anchorSamples": [
+          "관음사",
+          "덕유산자연휴양림",
+          "라제통문",
+          "머루와인동굴",
+          "무주구천동관광특구"
+        ]
+      }
+    },
+    {
+      "name": "전북 부안군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "800",
+        "totalContents": 176,
+        "lclsSystmFilled": {
+          "lcls1": 176,
+          "lcls2": 176,
+          "lcls3": 176
+        },
+        "byLcls1": {
+          "NA": 36,
+          "HS": 21,
+          "FD": 31,
+          "VE": 25,
+          "SH": 5,
+          "AC": 38,
+          "EX": 9,
+          "C01": 4,
+          "EV": 3,
+          "LS": 4
+        },
+        "byContentType": {
+          "12": 78,
+          "39": 31,
+          "38": 5,
+          "28": 12,
+          "32": 33,
+          "14": 10,
+          "25": 4,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52800",
+        "totalPairs": 913,
+        "anchorSpots": 28,
+        "crossRegionPairs": 104,
+        "byCategory": {
+          "관광지": 493,
+          "음식": 317,
+          "숙박": 103
+        },
+        "anchorSamples": [
+          "개암사",
+          "격포해수욕장",
+          "고사포해수욕장",
+          "곰소염전",
+          "국립변산자연휴양림"
+        ]
+      }
+    },
+    {
+      "name": "전북 순창군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "770",
+        "totalContents": 84,
+        "lclsSystmFilled": {
+          "lcls1": 84,
+          "lcls2": 84,
+          "lcls3": 84
+        },
+        "byLcls1": {
+          "HS": 19,
+          "FD": 15,
+          "NA": 15,
+          "EX": 9,
+          "C01": 2,
+          "VE": 12,
+          "AC": 6,
+          "SH": 2,
+          "LS": 2,
+          "EV": 2
+        },
+        "byContentType": {
+          "12": 49,
+          "39": 15,
+          "25": 2,
+          "28": 9,
+          "38": 2,
+          "14": 5,
+          "15": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52770",
+        "totalPairs": 146,
+        "anchorSpots": 10,
+        "crossRegionPairs": 53,
+        "byCategory": {
+          "음식": 61,
+          "관광지": 77,
+          "숙박": 8
+        },
+        "anchorSamples": [
+          "강천사",
+          "구암사",
+          "대모암",
+          "만일사",
+          "순창장류박물관"
+        ]
+      }
+    },
+    {
+      "name": "전북 임실군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "750",
+        "totalContents": 104,
+        "lclsSystmFilled": {
+          "lcls1": 104,
+          "lcls2": 104,
+          "lcls3": 104
+        },
+        "byLcls1": {
+          "FD": 27,
+          "AC": 8,
+          "HS": 30,
+          "SH": 3,
+          "EX": 9,
+          "VE": 10,
+          "NA": 10,
+          "C01": 2,
+          "EV": 3,
+          "LS": 2
+        },
+        "byContentType": {
+          "39": 27,
+          "28": 7,
+          "12": 57,
+          "38": 3,
+          "25": 2,
+          "32": 3,
+          "15": 3,
+          "14": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52750",
+        "totalPairs": 146,
+        "anchorSpots": 8,
+        "crossRegionPairs": 68,
+        "byCategory": {
+          "음식": 65,
+          "관광지": 72,
+          "숙박": 9
+        },
+        "anchorSamples": [
+          "김용택시인생가",
+          "사선대관광지",
+          "상이암",
+          "섬진강댐물문화관",
+          "영천서원"
+        ]
+      }
+    },
+    {
+      "name": "전북 장수군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "740",
+        "totalContents": 79,
+        "lclsSystmFilled": {
+          "lcls1": 79,
+          "lcls2": 79,
+          "lcls3": 79
+        },
+        "byLcls1": {
+          "HS": 33,
+          "NA": 16,
+          "AC": 5,
+          "FD": 8,
+          "EX": 2,
+          "SH": 4,
+          "EV": 2,
+          "VE": 5,
+          "LS": 3,
+          "C01": 1
+        },
+        "byContentType": {
+          "12": 53,
+          "32": 1,
+          "39": 8,
+          "28": 7,
+          "38": 4,
+          "15": 2,
+          "14": 3,
+          "25": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52740",
+        "totalPairs": 115,
+        "anchorSpots": 10,
+        "crossRegionPairs": 51,
+        "byCategory": {
+          "관광지": 60,
+          "음식": 44,
+          "숙박": 11
+        },
+        "anchorSamples": [
+          "논개사당",
+          "논개생가지",
+          "뜬봉샘생태공원",
+          "방화동자연휴양림",
+          "신광사"
+        ]
+      }
+    },
+    {
+      "name": "전북 정읍시",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "180",
+        "totalContents": 136,
+        "lclsSystmFilled": {
+          "lcls1": 136,
+          "lcls2": 136,
+          "lcls3": 136
+        },
+        "byLcls1": {
+          "HS": 40,
+          "EX": 4,
+          "VE": 28,
+          "FD": 28,
+          "AC": 7,
+          "NA": 16,
+          "C01": 3,
+          "LS": 1,
+          "SH": 6,
+          "EV": 3
+        },
+        "byContentType": {
+          "12": 75,
+          "14": 13,
+          "39": 28,
+          "28": 8,
+          "25": 3,
+          "38": 6,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52180",
+        "totalPairs": 492,
+        "anchorSpots": 26,
+        "crossRegionPairs": 130,
+        "byCategory": {
+          "관광지": 211,
+          "음식": 249,
+          "숙박": 32
+        },
+        "anchorSamples": [
+          "강증산탄생지",
+          "구파백정기의사기념관",
+          "국립전북기상과학관",
+          "내장사",
+          "내장산국민여가캠핑장"
+        ]
+      }
+    },
+    {
+      "name": "전북 진안군",
+      "korservice2": {
+        "lDongRegnCd": "52",
+        "lDongSignguCd": "720",
+        "totalContents": 110,
+        "lclsSystmFilled": {
+          "lcls1": 110,
+          "lcls2": 110,
+          "lcls3": 110
+        },
+        "byLcls1": {
+          "C01": 4,
+          "NA": 32,
+          "HS": 18,
+          "AC": 10,
+          "FD": 24,
+          "EX": 10,
+          "VE": 9,
+          "SH": 1,
+          "EV": 1,
+          "LS": 1
+        },
+        "byContentType": {
+          "25": 4,
+          "12": 66,
+          "28": 9,
+          "39": 24,
+          "32": 2,
+          "14": 3,
+          "38": 1,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "52",
+        "signguCd": "52720",
+        "totalPairs": 286,
+        "anchorSpots": 14,
+        "crossRegionPairs": 130,
+        "byCategory": {
+          "관광지": 161,
+          "숙박": 18,
+          "음식": 107
+        },
+        "anchorSamples": [
+          "고림사",
+          "고원화목원",
+          "금당사",
+          "데미샘자연휴양림",
+          "부귀편백숲산림욕장"
+        ]
+      }
+    },
+    {
+      "name": "전남 강진군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "780",
+        "totalContents": 116,
+        "lclsSystmFilled": {
+          "lcls1": 116,
+          "lcls2": 116,
+          "lcls3": 116
+        },
+        "byLcls1": {
+          "NA": 11,
+          "EX": 9,
+          "VE": 10,
+          "FD": 23,
+          "AC": 19,
+          "HS": 30,
+          "EV": 3,
+          "C01": 8,
+          "SH": 3
+        },
+        "byContentType": {
+          "12": 54,
+          "39": 23,
+          "28": 5,
+          "14": 6,
+          "32": 14,
+          "15": 3,
+          "25": 8,
+          "38": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46810",
+        "totalPairs": 758,
+        "anchorSpots": 21,
+        "crossRegionPairs": 257,
+        "byCategory": {
+          "관광지": 408,
+          "음식": 298,
+          "숙박": 52
+        },
+        "anchorSamples": [
+          "가우도",
+          "강진오감통",
+          "강진전라병영성",
+          "강진하멜기념관",
+          "고려청자박물관"
+        ]
+      }
+    },
+    {
+      "name": "전남 고흥군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "740",
+        "totalContents": 133,
+        "lclsSystmFilled": {
+          "lcls1": 133,
+          "lcls2": 133,
+          "lcls3": 133
+        },
+        "byLcls1": {
+          "VE": 18,
+          "NA": 51,
+          "LS": 2,
+          "AC": 10,
+          "FD": 20,
+          "EV": 4,
+          "HS": 15,
+          "EX": 5,
+          "C01": 5,
+          "SH": 3
+        },
+        "byContentType": {
+          "12": 82,
+          "28": 5,
+          "32": 7,
+          "39": 20,
+          "15": 4,
+          "14": 7,
+          "25": 5,
+          "38": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46770",
+        "totalPairs": 1107,
+        "anchorSpots": 41,
+        "crossRegionPairs": 238,
+        "byCategory": {
+          "관광지": 658,
+          "음식": 339,
+          "숙박": 110
+        },
+        "anchorSamples": [
+          "거금도",
+          "거금생태숲",
+          "고흥분청문화박물관",
+          "고흥우주발사전망대",
+          "고흥우주천문과학관"
+        ]
+      }
+    },
+    {
+      "name": "전남 곡성군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "720",
+        "totalContents": 103,
+        "lclsSystmFilled": {
+          "lcls1": 103,
+          "lcls2": 103,
+          "lcls3": 103
+        },
+        "byLcls1": {
+          "FD": 27,
+          "EX": 4,
+          "VE": 17,
+          "SH": 3,
+          "HS": 16,
+          "NA": 15,
+          "AC": 14,
+          "LS": 4,
+          "EV": 3
+        },
+        "byContentType": {
+          "39": 27,
+          "12": 43,
+          "38": 3,
+          "28": 15,
+          "14": 9,
+          "15": 3,
+          "32": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46720",
+        "totalPairs": 268,
+        "anchorSpots": 12,
+        "crossRegionPairs": 113,
+        "byCategory": {
+          "관광지": 130,
+          "음식": 129,
+          "숙박": 9
+        },
+        "anchorSamples": [
+          "곡성역",
+          "관음사",
+          "도림사",
+          "서산사",
+          "섬진강기차마을장미공원"
+        ]
+      }
+    },
+    {
+      "name": "전남 구례군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "730",
+        "totalContents": 148,
+        "lclsSystmFilled": {
+          "lcls1": 148,
+          "lcls2": 148,
+          "lcls3": 148
+        },
+        "byLcls1": {
+          "VE": 17,
+          "AC": 24,
+          "NA": 21,
+          "EX": 19,
+          "HS": 23,
+          "EV": 2,
+          "SH": 3,
+          "FD": 23,
+          "C01": 3,
+          "LS": 13
+        },
+        "byContentType": {
+          "12": 75,
+          "32": 18,
+          "15": 2,
+          "38": 3,
+          "14": 5,
+          "39": 23,
+          "25": 3,
+          "28": 19
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46730",
+        "totalPairs": 395,
+        "anchorSpots": 14,
+        "crossRegionPairs": 74,
+        "byCategory": {
+          "음식": 213,
+          "관광지": 157,
+          "숙박": 25
+        },
+        "anchorSamples": [
+          "곡성섬진강천문대",
+          "매천사",
+          "문수사",
+          "방산서원",
+          "번덕뜰농원"
+        ]
+      }
+    },
+    {
+      "name": "전남 담양군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "710",
+        "totalContents": 165,
+        "lclsSystmFilled": {
+          "lcls1": 165,
+          "lcls2": 165,
+          "lcls3": 165
+        },
+        "byLcls1": {
+          "NA": 14,
+          "AC": 16,
+          "C01": 5,
+          "FD": 77,
+          "LS": 4,
+          "HS": 17,
+          "VE": 20,
+          "EV": 3,
+          "EX": 6,
+          "SH": 3
+        },
+        "byContentType": {
+          "12": 43,
+          "28": 16,
+          "25": 5,
+          "39": 77,
+          "32": 6,
+          "14": 12,
+          "15": 3,
+          "38": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46710",
+        "totalPairs": 691,
+        "anchorSpots": 26,
+        "crossRegionPairs": 66,
+        "byCategory": {
+          "음식": 458,
+          "관광지": 197,
+          "숙박": 36
+        },
+        "anchorSamples": [
+          "가마골생태공원",
+          "개구리생태공원",
+          "담빛예술창고",
+          "담양곤충박물관",
+          "담양관방제림"
+        ]
+      }
+    },
+    {
+      "name": "전남 보성군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "750",
+        "totalContents": 119,
+        "lclsSystmFilled": {
+          "lcls1": 119,
+          "lcls2": 119,
+          "lcls3": 119
+        },
+        "byLcls1": {
+          "NA": 14,
+          "AC": 22,
+          "FD": 20,
+          "HS": 17,
+          "VE": 15,
+          "EX": 14,
+          "SH": 8,
+          "LS": 3,
+          "C01": 5,
+          "EV": 1
+        },
+        "byContentType": {
+          "12": 52,
+          "32": 15,
+          "39": 20,
+          "38": 8,
+          "28": 10,
+          "14": 8,
+          "25": 5,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46780",
+        "totalPairs": 489,
+        "anchorSpots": 17,
+        "crossRegionPairs": 182,
+        "byCategory": {
+          "관광지": 240,
+          "음식": 199,
+          "숙박": 50
+        },
+        "anchorSamples": [
+          "대원사",
+          "대한다원",
+          "벌교홍교",
+          "보성비봉공룡공원",
+          "보성비봉리공룡알화석산지"
+        ]
+      }
+    },
+    {
+      "name": "전남 신안군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "870",
+        "totalContents": 136,
+        "lclsSystmFilled": {
+          "lcls1": 136,
+          "lcls2": 136,
+          "lcls3": 136
+        },
+        "byLcls1": {
+          "NA": 63,
+          "FD": 19,
+          "VE": 24,
+          "HS": 9,
+          "AC": 8,
+          "EX": 2,
+          "C01": 3,
+          "LS": 8
+        },
+        "byContentType": {
+          "12": 91,
+          "39": 19,
+          "32": 2,
+          "28": 14,
+          "14": 7,
+          "25": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46910",
+        "totalPairs": 960,
+        "anchorSpots": 40,
+        "crossRegionPairs": 424,
+        "byCategory": {
+          "관광지": 569,
+          "숙박": 104,
+          "음식": 287
+        },
+        "anchorSamples": [
+          "김대중대통령생가",
+          "대광해변",
+          "두리선착장",
+          "둔장해수욕장",
+          "무한의다리"
+        ]
+      }
+    },
+    {
+      "name": "전남 영광군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "830",
+        "totalContents": 104,
+        "lclsSystmFilled": {
+          "lcls1": 104,
+          "lcls2": 104,
+          "lcls3": 104
+        },
+        "byLcls1": {
+          "NA": 16,
+          "FD": 27,
+          "HS": 15,
+          "C01": 4,
+          "EX": 8,
+          "AC": 5,
+          "VE": 22,
+          "SH": 5,
+          "EV": 1,
+          "LS": 1
+        },
+        "byContentType": {
+          "12": 56,
+          "39": 27,
+          "25": 4,
+          "28": 4,
+          "38": 5,
+          "14": 5,
+          "15": 1,
+          "32": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46870",
+        "totalPairs": 670,
+        "anchorSpots": 21,
+        "crossRegionPairs": 146,
+        "byCategory": {
+          "관광지": 349,
+          "음식": 277,
+          "숙박": 44
+        },
+        "anchorSamples": [
+          "가마미해수욕장",
+          "계마항",
+          "내산서원",
+          "모래미해수욕장",
+          "백수해안공원"
+        ]
+      }
+    },
+    {
+      "name": "전남 영암군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "800",
+        "totalContents": 89,
+        "lclsSystmFilled": {
+          "lcls1": 89,
+          "lcls2": 89,
+          "lcls3": 89
+        },
+        "byLcls1": {
+          "VE": 12,
+          "HS": 21,
+          "SH": 5,
+          "AC": 13,
+          "FD": 18,
+          "NA": 3,
+          "C01": 5,
+          "EX": 10,
+          "EV": 2
+        },
+        "byContentType": {
+          "12": 39,
+          "14": 7,
+          "38": 5,
+          "32": 8,
+          "39": 18,
+          "25": 5,
+          "28": 5,
+          "15": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46830",
+        "totalPairs": 216,
+        "anchorSpots": 10,
+        "crossRegionPairs": 108,
+        "byCategory": {
+          "관광지": 107,
+          "음식": 94,
+          "숙박": 15
+        },
+        "anchorSamples": [
+          "김완장군부조묘구고사",
+          "도갑사",
+          "마한문화공원",
+          "법흥사",
+          "영보정"
+        ]
+      }
+    },
+    {
+      "name": "전남 완도군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "850",
+        "totalContents": 125,
+        "lclsSystmFilled": {
+          "lcls1": 125,
+          "lcls2": 125,
+          "lcls3": 125
+        },
+        "byLcls1": {
+          "NA": 46,
+          "FD": 25,
+          "VE": 21,
+          "C01": 4,
+          "AC": 6,
+          "EX": 8,
+          "HS": 10,
+          "LS": 2,
+          "SH": 2,
+          "EV": 1
+        },
+        "byContentType": {
+          "12": 76,
+          "39": 25,
+          "14": 8,
+          "25": 4,
+          "32": 4,
+          "28": 5,
+          "38": 2,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46890",
+        "totalPairs": 930,
+        "anchorSpots": 35,
+        "crossRegionPairs": 280,
+        "byCategory": {
+          "관광지": 607,
+          "숙박": 95,
+          "음식": 228
+        },
+        "anchorSamples": [
+          "가사동백숲해변",
+          "고금도",
+          "금일명사십리해수욕장",
+          "당목항",
+          "동고리해수욕장"
+        ]
+      }
+    },
+    {
+      "name": "전남 장성군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "840",
+        "totalContents": 92,
+        "lclsSystmFilled": {
+          "lcls1": 92,
+          "lcls2": 92,
+          "lcls3": 92
+        },
+        "byLcls1": {
+          "HS": 15,
+          "FD": 22,
+          "AC": 18,
+          "NA": 10,
+          "EX": 7,
+          "VE": 16,
+          "EV": 1,
+          "LS": 1,
+          "C01": 1,
+          "SH": 1
+        },
+        "byContentType": {
+          "12": 43,
+          "39": 22,
+          "28": 15,
+          "32": 4,
+          "14": 5,
+          "15": 1,
+          "25": 1,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46880",
+        "totalPairs": 351,
+        "anchorSpots": 10,
+        "crossRegionPairs": 95,
+        "byCategory": {
+          "관광지": 140,
+          "음식": 197,
+          "숙박": 14
+        },
+        "anchorSamples": [
+          "국립장성치유의숲",
+          "방장산자연휴양림",
+          "백양사",
+          "임권택시네마테크",
+          "장미공원"
+        ]
+      }
+    },
+    {
+      "name": "전남 장흥군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "770",
+        "totalContents": 106,
+        "lclsSystmFilled": {
+          "lcls1": 106,
+          "lcls2": 106,
+          "lcls3": 106
+        },
+        "byLcls1": {
+          "HS": 20,
+          "VE": 16,
+          "NA": 22,
+          "AC": 14,
+          "C01": 4,
+          "FD": 18,
+          "EX": 6,
+          "SH": 3,
+          "EV": 1,
+          "LS": 2
+        },
+        "byContentType": {
+          "12": 54,
+          "28": 6,
+          "14": 7,
+          "32": 13,
+          "25": 4,
+          "39": 18,
+          "38": 3,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46800",
+        "totalPairs": 537,
+        "anchorSpots": 20,
+        "crossRegionPairs": 269,
+        "byCategory": {
+          "관광지": 313,
+          "음식": 174,
+          "숙박": 50
+        },
+        "anchorSamples": [
+          "귀족호도박물관",
+          "보림사",
+          "소등섬",
+          "수문항",
+          "수문해수욕장"
+        ]
+      }
+    },
+    {
+      "name": "전남 진도군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "860",
+        "totalContents": 119,
+        "lclsSystmFilled": {
+          "lcls1": 119,
+          "lcls2": 119,
+          "lcls3": 119
+        },
+        "byLcls1": {
+          "NA": 40,
+          "VE": 28,
+          "FD": 16,
+          "C01": 6,
+          "AC": 7,
+          "HS": 13,
+          "EV": 2,
+          "EX": 6,
+          "SH": 1
+        },
+        "byContentType": {
+          "12": 75,
+          "39": 16,
+          "25": 6,
+          "32": 6,
+          "14": 11,
+          "15": 2,
+          "28": 2,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46900",
+        "totalPairs": 715,
+        "anchorSpots": 26,
+        "crossRegionPairs": 189,
+        "byCategory": {
+          "숙박": 58,
+          "관광지": 453,
+          "음식": 204
+        },
+        "anchorSamples": [
+          "가계해변",
+          "구암사",
+          "국립진도자연휴양림",
+          "금갑해변",
+          "급치산전망대"
+        ]
+      }
+    },
+    {
+      "name": "전남 함평군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "820",
+        "totalContents": 75,
+        "lclsSystmFilled": {
+          "lcls1": 75,
+          "lcls2": 75,
+          "lcls3": 75
+        },
+        "byLcls1": {
+          "FD": 22,
+          "AC": 7,
+          "VE": 16,
+          "EV": 3,
+          "NA": 9,
+          "HS": 12,
+          "C01": 1,
+          "EX": 3,
+          "LS": 1,
+          "SH": 1
+        },
+        "byContentType": {
+          "39": 22,
+          "28": 5,
+          "12": 33,
+          "15": 3,
+          "32": 3,
+          "25": 1,
+          "14": 7,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46860",
+        "totalPairs": 287,
+        "anchorSpots": 9,
+        "crossRegionPairs": 137,
+        "byCategory": {
+          "관광지": 145,
+          "음식": 134,
+          "숙박": 8
+        },
+        "anchorSamples": [
+          "달맞이공원",
+          "돌머리해변",
+          "안악해변",
+          "용천사",
+          "자연생태공원"
+        ]
+      }
+    },
+    {
+      "name": "전남 해남군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "790",
+        "totalContents": 126,
+        "lclsSystmFilled": {
+          "lcls1": 126,
+          "lcls2": 126,
+          "lcls3": 126
+        },
+        "byLcls1": {
+          "VE": 23,
+          "AC": 19,
+          "HS": 24,
+          "NA": 22,
+          "C01": 6,
+          "SH": 3,
+          "EX": 10,
+          "FD": 19
+        },
+        "byContentType": {
+          "12": 70,
+          "32": 15,
+          "14": 8,
+          "25": 6,
+          "38": 3,
+          "28": 5,
+          "39": 19
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46820",
+        "totalPairs": 868,
+        "anchorSpots": 31,
+        "crossRegionPairs": 330,
+        "byCategory": {
+          "관광지": 499,
+          "음식": 282,
+          "숙박": 87
+        },
+        "anchorSamples": [
+          "4est수목원",
+          "고산윤선도유적지",
+          "고천암자연생태공원",
+          "달마산",
+          "대흥사"
+        ]
+      }
+    },
+    {
+      "name": "전남 화순군",
+      "korservice2": {
+        "lDongRegnCd": "12",
+        "lDongSignguCd": "760",
+        "totalContents": 128,
+        "lclsSystmFilled": {
+          "lcls1": 128,
+          "lcls2": 128,
+          "lcls3": 128
+        },
+        "byLcls1": {
+          "HS": 37,
+          "NA": 26,
+          "FD": 24,
+          "VE": 14,
+          "EX": 8,
+          "SH": 5,
+          "AC": 9,
+          "LS": 1,
+          "EV": 3,
+          "C01": 1
+        },
+        "byContentType": {
+          "12": 78,
+          "39": 24,
+          "14": 6,
+          "38": 5,
+          "28": 7,
+          "15": 3,
+          "32": 4,
+          "25": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "46",
+        "signguCd": "46790",
+        "totalPairs": 672,
+        "anchorSpots": 19,
+        "crossRegionPairs": 140,
+        "byCategory": {
+          "관광지": 258,
+          "음식": 384,
+          "숙박": 30
+        },
+        "anchorSamples": [
+          "개천사",
+          "남산공원",
+          "동구리호수공원",
+          "만연사",
+          "만연산"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 고령군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "830",
+        "totalContents": 82,
+        "lclsSystmFilled": {
+          "lcls1": 82,
+          "lcls2": 82,
+          "lcls3": 82
+        },
+        "byLcls1": {
+          "C01": 3,
+          "VE": 13,
+          "EX": 8,
+          "FD": 13,
+          "EV": 1,
+          "AC": 23,
+          "NA": 5,
+          "HS": 14,
+          "LS": 2
+        },
+        "byContentType": {
+          "25": 3,
+          "12": 34,
+          "39": 13,
+          "15": 1,
+          "28": 14,
+          "14": 6,
+          "32": 11
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47830",
+        "totalPairs": 243,
+        "anchorSpots": 12,
+        "crossRegionPairs": 37,
+        "byCategory": {
+          "관광지": 114,
+          "음식": 114,
+          "숙박": 15
+        },
+        "anchorSamples": [
+          "고령향교",
+          "관음사",
+          "다산딸기조합농원",
+          "다산문화공원",
+          "대가야생활촌"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 문경시",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "280",
+        "totalContents": 136,
+        "lclsSystmFilled": {
+          "lcls1": 136,
+          "lcls2": 136,
+          "lcls3": 136
+        },
+        "byLcls1": {
+          "SH": 7,
+          "AC": 21,
+          "EX": 10,
+          "LS": 8,
+          "HS": 12,
+          "FD": 38,
+          "NA": 13,
+          "VE": 18,
+          "C01": 5,
+          "EV": 4
+        },
+        "byContentType": {
+          "38": 7,
+          "28": 22,
+          "32": 8,
+          "12": 42,
+          "39": 38,
+          "25": 5,
+          "14": 10,
+          "15": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47280",
+        "totalPairs": 465,
+        "anchorSpots": 18,
+        "crossRegionPairs": 64,
+        "byCategory": {
+          "관광지": 202,
+          "음식": 216,
+          "숙박": 47
+        },
+        "anchorSamples": [
+          "가은역/폐역",
+          "고모산성",
+          "김룡사",
+          "대승사",
+          "대야산"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 봉화군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "920",
+        "totalContents": 88,
+        "lclsSystmFilled": {
+          "lcls1": 88,
+          "lcls2": 88,
+          "lcls3": 88
+        },
+        "byLcls1": {
+          "NA": 17,
+          "FD": 10,
+          "AC": 18,
+          "HS": 17,
+          "C01": 9,
+          "EV": 3,
+          "VE": 8,
+          "EX": 3,
+          "SH": 2,
+          "LS": 1
+        },
+        "byContentType": {
+          "12": 41,
+          "39": 10,
+          "28": 9,
+          "25": 9,
+          "32": 10,
+          "15": 3,
+          "14": 4,
+          "38": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47920",
+        "totalPairs": 264,
+        "anchorSpots": 8,
+        "crossRegionPairs": 163,
+        "byCategory": {
+          "음식": 94,
+          "관광지": 148,
+          "숙박": 22
+        },
+        "anchorSamples": [
+          "국립백두대간수목원",
+          "봉화산사",
+          "분천역",
+          "분천역산타마을",
+          "천성사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 상주시",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "250",
+        "totalContents": 141,
+        "lclsSystmFilled": {
+          "lcls1": 141,
+          "lcls2": 141,
+          "lcls3": 141
+        },
+        "byLcls1": {
+          "NA": 11,
+          "FD": 24,
+          "VE": 19,
+          "HS": 42,
+          "C01": 9,
+          "AC": 10,
+          "LS": 13,
+          "SH": 7,
+          "EX": 6
+        },
+        "byContentType": {
+          "12": 66,
+          "39": 24,
+          "14": 12,
+          "25": 9,
+          "28": 23,
+          "38": 7
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47250",
+        "totalPairs": 437,
+        "anchorSpots": 22,
+        "crossRegionPairs": 102,
+        "byCategory": {
+          "음식": 216,
+          "관광지": 189,
+          "숙박": 32
+        },
+        "anchorSamples": [
+          "경천대국민관광지전망대",
+          "경천섬공원",
+          "나각산",
+          "낙동강역사이야기관",
+          "남장사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 성주군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "840",
+        "totalContents": 86,
+        "lclsSystmFilled": {
+          "lcls1": 86,
+          "lcls2": 86,
+          "lcls3": 86
+        },
+        "byLcls1": {
+          "AC": 12,
+          "NA": 10,
+          "VE": 10,
+          "HS": 28,
+          "FD": 17,
+          "EX": 2,
+          "SH": 2,
+          "EV": 2,
+          "C01": 2,
+          "LS": 1
+        },
+        "byContentType": {
+          "28": 12,
+          "12": 46,
+          "32": 1,
+          "39": 17,
+          "14": 4,
+          "38": 2,
+          "15": 2,
+          "25": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47840",
+        "totalPairs": 87,
+        "anchorSpots": 8,
+        "crossRegionPairs": 30,
+        "byCategory": {
+          "관광지": 54,
+          "음식": 30,
+          "숙박": 3
+        },
+        "anchorSamples": [
+          "감응사",
+          "선석사",
+          "성주역사테마공원",
+          "성주향교",
+          "성주호"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 안동시",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "170",
+        "totalContents": 294,
+        "lclsSystmFilled": {
+          "lcls1": 294,
+          "lcls2": 294,
+          "lcls3": 294
+        },
+        "byLcls1": {
+          "AC": 85,
+          "VE": 40,
+          "LS": 5,
+          "HS": 69,
+          "NA": 12,
+          "C01": 7,
+          "EV": 7,
+          "FD": 31,
+          "EX": 11,
+          "SH": 27
+        },
+        "byContentType": {
+          "32": 81,
+          "14": 25,
+          "28": 9,
+          "12": 107,
+          "25": 7,
+          "15": 7,
+          "39": 31,
+          "38": 27
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47170",
+        "totalPairs": 971,
+        "anchorSpots": 31,
+        "crossRegionPairs": 97,
+        "byCategory": {
+          "관광지": 441,
+          "숙박": 110,
+          "음식": 420
+        },
+        "anchorSamples": [
+          "개목사",
+          "경상북도독립운동기념관",
+          "경상북도산림과학박물관",
+          "고산정",
+          "광흥사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 영덕군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "770",
+        "totalContents": 113,
+        "lclsSystmFilled": {
+          "lcls1": 113,
+          "lcls2": 113,
+          "lcls3": 113
+        },
+        "byLcls1": {
+          "SH": 5,
+          "NA": 28,
+          "EX": 3,
+          "AC": 16,
+          "HS": 13,
+          "FD": 21,
+          "C01": 6,
+          "VE": 15,
+          "LS": 5,
+          "EV": 1
+        },
+        "byContentType": {
+          "38": 5,
+          "12": 54,
+          "28": 9,
+          "39": 21,
+          "25": 6,
+          "32": 12,
+          "14": 5,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47770",
+        "totalPairs": 881,
+        "anchorSpots": 26,
+        "crossRegionPairs": 236,
+        "byCategory": {
+          "관광지": 548,
+          "음식": 277,
+          "숙박": 56
+        },
+        "anchorSamples": [
+          "강구항",
+          "경정항",
+          "경정해수욕장",
+          "고래불해수욕장",
+          "남호해수욕장"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 영양군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "760",
+        "totalContents": 40,
+        "lclsSystmFilled": {
+          "lcls1": 40,
+          "lcls2": 40,
+          "lcls3": 40
+        },
+        "byLcls1": {
+          "NA": 9,
+          "AC": 4,
+          "FD": 11,
+          "C01": 3,
+          "VE": 5,
+          "HS": 3,
+          "EX": 3,
+          "EV": 1,
+          "SH": 1
+        },
+        "byContentType": {
+          "12": 18,
+          "28": 2,
+          "39": 11,
+          "25": 3,
+          "32": 2,
+          "14": 2,
+          "15": 1,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47760",
+        "totalPairs": 101,
+        "anchorSpots": 8,
+        "crossRegionPairs": 44,
+        "byCategory": {
+          "관광지": 62,
+          "음식": 33,
+          "숙박": 6
+        },
+        "anchorSamples": [
+          "검마산자연휴양림",
+          "반딧불이천문대",
+          "선바위관광지",
+          "영양국제밤하늘보호공원",
+          "영양군 석보면 두들마을"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 영주시",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "210",
+        "totalContents": 154,
+        "lclsSystmFilled": {
+          "lcls1": 154,
+          "lcls2": 154,
+          "lcls3": 154
+        },
+        "byLcls1": {
+          "EV": 4,
+          "VE": 17,
+          "C01": 9,
+          "HS": 32,
+          "NA": 9,
+          "FD": 44,
+          "AC": 18,
+          "SH": 10,
+          "LS": 2,
+          "EX": 9
+        },
+        "byContentType": {
+          "15": 4,
+          "14": 6,
+          "25": 9,
+          "12": 60,
+          "39": 44,
+          "32": 12,
+          "38": 10,
+          "28": 9
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47210",
+        "totalPairs": 509,
+        "anchorSpots": 18,
+        "crossRegionPairs": 93,
+        "byCategory": {
+          "관광지": 248,
+          "음식": 219,
+          "숙박": 42
+        },
+        "anchorSamples": [
+          "국립산림치유원",
+          "금성대군신단",
+          "부석사",
+          "비로사",
+          "성혈사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 영천시",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "230",
+        "totalContents": 113,
+        "lclsSystmFilled": {
+          "lcls1": 113,
+          "lcls2": 113,
+          "lcls3": 113
+        },
+        "byLcls1": {
+          "VE": 21,
+          "HS": 30,
+          "AC": 14,
+          "FD": 18,
+          "SH": 10,
+          "NA": 8,
+          "EX": 6,
+          "C01": 3,
+          "LS": 2,
+          "EV": 1
+        },
+        "byContentType": {
+          "12": 56,
+          "32": 3,
+          "39": 18,
+          "38": 10,
+          "14": 9,
+          "28": 13,
+          "25": 3,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47230",
+        "totalPairs": 514,
+        "anchorSpots": 24,
+        "crossRegionPairs": 174,
+        "byCategory": {
+          "관광지": 283,
+          "음식": 215,
+          "숙박": 16
+        },
+        "anchorSamples": [
+          "거동사",
+          "거조사",
+          "돌할매",
+          "만불사",
+          "묘각사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 울릉군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "940",
+        "totalContents": 75,
+        "lclsSystmFilled": {
+          "lcls1": 75,
+          "lcls2": 75,
+          "lcls3": 75
+        },
+        "byLcls1": {
+          "NA": 32,
+          "FD": 13,
+          "VE": 17,
+          "EX": 3,
+          "AC": 5,
+          "HS": 1,
+          "C01": 2,
+          "LS": 2
+        },
+        "byContentType": {
+          "12": 48,
+          "39": 13,
+          "14": 5,
+          "32": 4,
+          "25": 2,
+          "28": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47940",
+        "totalPairs": 292,
+        "anchorSpots": 14,
+        "crossRegionPairs": 10,
+        "byCategory": {
+          "관광지": 188,
+          "숙박": 54,
+          "음식": 50
+        },
+        "anchorSamples": [
+          "거북바위",
+          "관음도",
+          "나리분지",
+          "내수전몽돌해변",
+          "내수전일출전망대"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 울진군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "930",
+        "totalContents": 103,
+        "lclsSystmFilled": {
+          "lcls1": 103,
+          "lcls2": 103,
+          "lcls3": 103
+        },
+        "byLcls1": {
+          "EX": 7,
+          "VE": 16,
+          "FD": 15,
+          "HS": 9,
+          "NA": 29,
+          "AC": 10,
+          "C01": 8,
+          "LS": 3,
+          "EV": 3,
+          "SH": 3
+        },
+        "byContentType": {
+          "12": 55,
+          "14": 6,
+          "39": 15,
+          "28": 10,
+          "25": 8,
+          "32": 3,
+          "15": 3,
+          "38": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47930",
+        "totalPairs": 1054,
+        "anchorSpots": 26,
+        "crossRegionPairs": 207,
+        "byCategory": {
+          "관광지": 653,
+          "음식": 319,
+          "숙박": 82
+        },
+        "anchorSamples": [
+          "구산해수욕장",
+          "구수곡자연휴양림",
+          "국립해양과학관",
+          "금강송에코리움",
+          "기성망양해수욕장"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 의성군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "730",
+        "totalContents": 69,
+        "lclsSystmFilled": {
+          "lcls1": 69,
+          "lcls2": 69,
+          "lcls3": 69
+        },
+        "byLcls1": {
+          "EX": 4,
+          "NA": 12,
+          "AC": 3,
+          "C01": 6,
+          "HS": 22,
+          "FD": 9,
+          "VE": 9,
+          "EV": 1,
+          "SH": 1,
+          "LS": 2
+        },
+        "byContentType": {
+          "12": 41,
+          "28": 4,
+          "25": 6,
+          "39": 9,
+          "15": 1,
+          "14": 6,
+          "32": 1,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47730",
+        "totalPairs": 250,
+        "anchorSpots": 14,
+        "crossRegionPairs": 110,
+        "byCategory": {
+          "음식": 83,
+          "숙박": 10,
+          "관광지": 157
+        },
+        "anchorSamples": [
+          "개천지",
+          "경덕왕릉의성조문국사적지",
+          "고운사",
+          "금봉자연휴양림",
+          "대곡사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 청도군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "820",
+        "totalContents": 142,
+        "lclsSystmFilled": {
+          "lcls1": 142,
+          "lcls2": 142,
+          "lcls3": 142
+        },
+        "byLcls1": {
+          "AC": 37,
+          "VE": 17,
+          "NA": 9,
+          "EX": 9,
+          "LS": 3,
+          "FD": 32,
+          "HS": 25,
+          "SH": 4,
+          "C01": 3,
+          "EV": 3
+        },
+        "byContentType": {
+          "28": 35,
+          "14": 4,
+          "32": 5,
+          "12": 56,
+          "39": 32,
+          "38": 4,
+          "25": 3,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47820",
+        "totalPairs": 382,
+        "anchorSpots": 19,
+        "crossRegionPairs": 64,
+        "byCategory": {
+          "관광지": 156,
+          "음식": 206,
+          "숙박": 20
+        },
+        "anchorSamples": [
+          "대비사",
+          "대산사",
+          "대운암",
+          "대적사",
+          "덕사"
+        ]
+      }
+    },
+    {
+      "name": "경상북도 청송군",
+      "korservice2": {
+        "lDongRegnCd": "47",
+        "lDongSignguCd": "750",
+        "totalContents": 101,
+        "lclsSystmFilled": {
+          "lcls1": 101,
+          "lcls2": 101,
+          "lcls3": 101
+        },
+        "byLcls1": {
+          "FD": 21,
+          "VE": 7,
+          "HS": 19,
+          "NA": 32,
+          "C01": 6,
+          "AC": 11,
+          "EX": 3,
+          "EV": 1,
+          "SH": 1
+        },
+        "byContentType": {
+          "39": 21,
+          "14": 4,
+          "12": 57,
+          "25": 6,
+          "28": 5,
+          "32": 6,
+          "15": 1,
+          "38": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "47",
+        "signguCd": "47750",
+        "totalPairs": 293,
+        "anchorSpots": 10,
+        "crossRegionPairs": 135,
+        "byCategory": {
+          "관광지": 152,
+          "음식": 114,
+          "숙박": 27
+        },
+        "anchorSamples": [
+          "객주문학관",
+          "군립청송야송미술관",
+          "대전사",
+          "백석탄포트홀",
+          "보광사"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 거창군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "880",
+        "totalContents": 148,
+        "lclsSystmFilled": {
+          "lcls1": 148,
+          "lcls2": 148,
+          "lcls3": 148
+        },
+        "byLcls1": {
+          "EX": 17,
+          "FD": 33,
+          "NA": 19,
+          "EV": 2,
+          "AC": 16,
+          "HS": 43,
+          "VE": 12,
+          "LS": 3,
+          "SH": 1,
+          "C01": 2
+        },
+        "byContentType": {
+          "12": 84,
+          "39": 33,
+          "15": 2,
+          "28": 18,
+          "14": 6,
+          "38": 1,
+          "25": 2,
+          "32": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48880",
+        "totalPairs": 233,
+        "anchorSpots": 10,
+        "crossRegionPairs": 40,
+        "byCategory": {
+          "음식": 93,
+          "관광지": 122,
+          "숙박": 18
+        },
+        "anchorSamples": [
+          "거창근대의료박물관",
+          "거창박물관",
+          "거창스포츠파크",
+          "거창창포원",
+          "금원산자연휴양림"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 고성군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "820",
+        "totalContents": 128,
+        "lclsSystmFilled": {
+          "lcls1": 128,
+          "lcls2": 128,
+          "lcls3": 128
+        },
+        "byLcls1": {
+          "AC": 32,
+          "HS": 20,
+          "NA": 18,
+          "EV": 1,
+          "VE": 18,
+          "EX": 11,
+          "SH": 1,
+          "FD": 21,
+          "C01": 4,
+          "LS": 2
+        },
+        "byContentType": {
+          "32": 17,
+          "12": 58,
+          "15": 1,
+          "14": 8,
+          "28": 18,
+          "38": 1,
+          "39": 21,
+          "25": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48820",
+        "totalPairs": 529,
+        "anchorSpots": 20,
+        "crossRegionPairs": 259,
+        "byCategory": {
+          "관광지": 287,
+          "음식": 205,
+          "숙박": 37
+        },
+        "anchorSamples": [
+          "갈모봉자연휴양림",
+          "계승사",
+          "고성공룡박물관/휴관중(2027년01월 개관예정)",
+          "고성박물관",
+          "고성생태학습관"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 남해군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "840",
+        "totalContents": 236,
+        "lclsSystmFilled": {
+          "lcls1": 236,
+          "lcls2": 236,
+          "lcls3": 236
+        },
+        "byLcls1": {
+          "AC": 43,
+          "VE": 26,
+          "FD": 55,
+          "NA": 37,
+          "HS": 16,
+          "EV": 2,
+          "C01": 11,
+          "EX": 18,
+          "SH": 6,
+          "LS": 22
+        },
+        "byContentType": {
+          "28": 39,
+          "12": 83,
+          "14": 12,
+          "32": 28,
+          "39": 55,
+          "15": 2,
+          "25": 11,
+          "38": 6
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48840",
+        "totalPairs": 1187,
+        "anchorSpots": 35,
+        "crossRegionPairs": 178,
+        "byCategory": {
+          "관광지": 570,
+          "숙박": 113,
+          "음식": 504
+        },
+        "anchorSamples": [
+          "거북선전시관",
+          "구미동해수욕장",
+          "남해가천암수바위",
+          "남해각",
+          "남해대교유람선"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 밀양시",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "270",
+        "totalContents": 213,
+        "lclsSystmFilled": {
+          "lcls1": 213,
+          "lcls2": 213,
+          "lcls3": 213
+        },
+        "byLcls1": {
+          "FD": 37,
+          "AC": 46,
+          "NA": 20,
+          "EX": 11,
+          "VE": 33,
+          "HS": 38,
+          "C01": 7,
+          "SH": 10,
+          "EV": 4,
+          "LS": 7
+        },
+        "byContentType": {
+          "39": 37,
+          "28": 44,
+          "12": 90,
+          "14": 12,
+          "25": 7,
+          "38": 10,
+          "32": 9,
+          "15": 4
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48270",
+        "totalPairs": 772,
+        "anchorSpots": 23,
+        "crossRegionPairs": 90,
+        "byCategory": {
+          "관광지": 365,
+          "음식": 351,
+          "숙박": 56
+        },
+        "anchorSamples": [
+          "금시당백곡재",
+          "대법사",
+          "만어사",
+          "미리미동국",
+          "밀양관아"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 산청군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "860",
+        "totalContents": 168,
+        "lclsSystmFilled": {
+          "lcls1": 168,
+          "lcls2": 168,
+          "lcls3": 168
+        },
+        "byLcls1": {
+          "AC": 29,
+          "FD": 28,
+          "NA": 27,
+          "LS": 8,
+          "C01": 7,
+          "HS": 43,
+          "VE": 11,
+          "EX": 8,
+          "SH": 4,
+          "EV": 3
+        },
+        "byContentType": {
+          "28": 32,
+          "39": 28,
+          "12": 81,
+          "25": 7,
+          "38": 4,
+          "32": 7,
+          "14": 6,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48860",
+        "totalPairs": 394,
+        "anchorSpots": 15,
+        "crossRegionPairs": 143,
+        "byCategory": {
+          "관광지": 231,
+          "음식": 145,
+          "숙박": 18
+        },
+        "anchorSamples": [
+          "겁외사",
+          "남사예담촌",
+          "대원사",
+          "대포숲",
+          "덕산사"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 의령군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "720",
+        "totalContents": 65,
+        "lclsSystmFilled": {
+          "lcls1": 65,
+          "lcls2": 65,
+          "lcls3": 65
+        },
+        "byLcls1": {
+          "AC": 6,
+          "HS": 17,
+          "FD": 22,
+          "C01": 1,
+          "NA": 11,
+          "VE": 6,
+          "EX": 1,
+          "SH": 1
+        },
+        "byContentType": {
+          "28": 5,
+          "12": 33,
+          "39": 22,
+          "25": 1,
+          "14": 2,
+          "38": 1,
+          "32": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48720",
+        "totalPairs": 320,
+        "anchorSpots": 12,
+        "crossRegionPairs": 137,
+        "byCategory": {
+          "관광지": 193,
+          "음식": 120,
+          "숙박": 7
+        },
+        "anchorSamples": [
+          "백산안희제생가",
+          "수암사",
+          "유학사",
+          "의령곤충생태학습관",
+          "의령예술촌"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 창녕군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "740",
+        "totalContents": 101,
+        "lclsSystmFilled": {
+          "lcls1": 101,
+          "lcls2": 101,
+          "lcls3": 101
+        },
+        "byLcls1": {
+          "C01": 10,
+          "FD": 23,
+          "HS": 27,
+          "AC": 10,
+          "LS": 3,
+          "VE": 13,
+          "EX": 6,
+          "NA": 6,
+          "SH": 2,
+          "EV": 1
+        },
+        "byContentType": {
+          "25": 10,
+          "39": 23,
+          "12": 46,
+          "28": 6,
+          "14": 5,
+          "32": 8,
+          "38": 2,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48740",
+        "totalPairs": 421,
+        "anchorSpots": 18,
+        "crossRegionPairs": 136,
+        "byCategory": {
+          "관광지": 188,
+          "음식": 176,
+          "숙박": 57
+        },
+        "anchorSamples": [
+          "관룡사",
+          "관음사",
+          "남지체육공원",
+          "도성암",
+          "박진전쟁기념관"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 하동군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "850",
+        "totalContents": 203,
+        "lclsSystmFilled": {
+          "lcls1": 203,
+          "lcls2": 203,
+          "lcls3": 203
+        },
+        "byLcls1": {
+          "VE": 27,
+          "HS": 27,
+          "SH": 5,
+          "FD": 52,
+          "EX": 25,
+          "NA": 23,
+          "LS": 15,
+          "AC": 16,
+          "C01": 10,
+          "EV": 3
+        },
+        "byContentType": {
+          "12": 94,
+          "38": 5,
+          "39": 52,
+          "28": 22,
+          "25": 10,
+          "14": 7,
+          "32": 10,
+          "15": 3
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48850",
+        "totalPairs": 675,
+        "anchorSpots": 27,
+        "crossRegionPairs": 134,
+        "byCategory": {
+          "관광지": 302,
+          "음식": 315,
+          "숙박": 58
+        },
+        "anchorSamples": [
+          "구재봉자연휴양림",
+          "금오산전망대",
+          "금정사",
+          "노량대교홍보관",
+          "노량항"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 함안군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "730",
+        "totalContents": 77,
+        "lclsSystmFilled": {
+          "lcls1": 77,
+          "lcls2": 77,
+          "lcls3": 77
+        },
+        "byLcls1": {
+          "NA": 10,
+          "AC": 2,
+          "EX": 2,
+          "HS": 27,
+          "FD": 21,
+          "VE": 8,
+          "EV": 4,
+          "C01": 1,
+          "LS": 2
+        },
+        "byContentType": {
+          "12": 42,
+          "28": 4,
+          "39": 21,
+          "15": 4,
+          "25": 1,
+          "14": 5
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48730",
+        "totalPairs": 501,
+        "anchorSpots": 15,
+        "crossRegionPairs": 132,
+        "byCategory": {
+          "관광지": 236,
+          "음식": 253,
+          "숙박": 12
+        },
+        "anchorSamples": [
+          "고려동유적지",
+          "무진정",
+          "봉성저수지",
+          "서산서원",
+          "아라가야고분군"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 함양군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "870",
+        "totalContents": 121,
+        "lclsSystmFilled": {
+          "lcls1": 121,
+          "lcls2": 121,
+          "lcls3": 121
+        },
+        "byLcls1": {
+          "FD": 28,
+          "HS": 25,
+          "NA": 18,
+          "EX": 9,
+          "VE": 7,
+          "AC": 18,
+          "LS": 6,
+          "SH": 6,
+          "C01": 3,
+          "EV": 1
+        },
+        "byContentType": {
+          "39": 28,
+          "12": 55,
+          "28": 23,
+          "38": 6,
+          "32": 2,
+          "14": 3,
+          "25": 3,
+          "15": 1
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48870",
+        "totalPairs": 377,
+        "anchorSpots": 18,
+        "crossRegionPairs": 134,
+        "byCategory": {
+          "관광지": 231,
+          "숙박": 25,
+          "음식": 121
+        },
+        "anchorSamples": [
+          "금대암",
+          "농월정",
+          "대봉산자연휴양림",
+          "벽송사",
+          "상림공원"
+        ]
+      }
+    },
+    {
+      "name": "경상남도 합천군",
+      "korservice2": {
+        "lDongRegnCd": "48",
+        "lDongSignguCd": "890",
+        "totalContents": 145,
+        "lclsSystmFilled": {
+          "lcls1": 145,
+          "lcls2": 145,
+          "lcls3": 145
+        },
+        "byLcls1": {
+          "AC": 24,
+          "NA": 22,
+          "EX": 10,
+          "HS": 27,
+          "FD": 43,
+          "EV": 2,
+          "VE": 7,
+          "SH": 2,
+          "LS": 5,
+          "C01": 3
+        },
+        "byContentType": {
+          "28": 25,
+          "12": 64,
+          "39": 43,
+          "32": 4,
+          "15": 2,
+          "38": 2,
+          "25": 3,
+          "14": 2
+        }
+      },
+      "tarRlteTar": {
+        "areaCd": "48",
+        "signguCd": "48890",
+        "totalPairs": 615,
+        "anchorSpots": 23,
+        "crossRegionPairs": 155,
+        "byCategory": {
+          "음식": 259,
+          "관광지": 307,
+          "숙박": 49
+        },
+        "anchorSamples": [
+          "다옴농촌체험휴양마을",
+          "대장경테마파크",
+          "모산재",
+          "삼가향교",
+          "신소양체육공원"
+        ]
+      }
+    }
+  ]
+}
