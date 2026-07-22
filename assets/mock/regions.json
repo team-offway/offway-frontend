@@ -8,7 +8,9 @@
       "imageUrl": "https://tong.visitkorea.or.kr/cms/resource_photo/98/3462498_image2_1.jpg",
       "contentCount": 170,
       "travelMinutesByCar": 150,
-      "travelMinutesByTransit": 210
+      "travelMinutesByTransit": 210,
+      "description": "폐광촌에서 다시 태어난 마을",
+      "benefitBadge": "숙박비 30% 지원"
     },
     {
       "id": "영월",
@@ -18,7 +20,9 @@
       "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/53/3388553_image2_1.JPG",
       "contentCount": 282,
       "travelMinutesByCar": 130,
-      "travelMinutesByTransit": 170
+      "travelMinutesByTransit": 170,
+      "description": "동강과 별빛이 흐르는 고을",
+      "benefitBadge": null
     }
   ],
   "monthlyPicks": [
@@ -30,7 +34,9 @@
       "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/24/1900124_image2_1.jpg",
       "contentCount": 427,
       "travelMinutesByCar": null,
-      "travelMinutesByTransit": null
+      "travelMinutesByTransit": null,
+      "description": "서울 옆, 물멍과 숲멍의 성지",
+      "benefitBadge": null
     },
     {
       "id": "extra-해남",
@@ -40,7 +46,9 @@
       "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/30/1972330_image2_1.jpg",
       "contentCount": 75,
       "travelMinutesByCar": null,
-      "travelMinutesByTransit": null
+      "travelMinutesByTransit": null,
+      "description": "땅끝에서 시작하는 바다 여행",
+      "benefitBadge": null
     },
     {
       "id": "extra-영양",
@@ -50,7 +58,9 @@
       "imageUrl": "https://tong.visitkorea.or.kr/cms/resource/93/3526493_image2_1.jpg",
       "contentCount": 40,
       "travelMinutesByCar": null,
-      "travelMinutesByTransit": null
+      "travelMinutesByTransit": null,
+      "description": "밤하늘 별이 쏟아지는 마을",
+      "benefitBadge": null
     }
   ]
 }

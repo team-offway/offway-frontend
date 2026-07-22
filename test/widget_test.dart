@@ -40,7 +40,34 @@ void main() {
     expect(find.text('15일'), findsOneWidget);
 
     await tester.tap(find.text('시작하기'));
+    await tester.pump();
+    // rootBundle 로드가 FakeAsync에 갇힌 채 전역 캐시에 남지 않도록 실제 비동기로 완료시킨다
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    // 홈은 네트워크 이미지 로드가 있어 pumpAndSettle 대신 유한 pump 사용
+    await tester.pump();
+    expect(find.text('남은 연차 일수'), findsOneWidget); // 홈 도착
+  });
+
+  testWidgets('홈에 mock 사용자·추천 여행지가 표시된다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    expect(find.text('Offway'), findsOneWidget); // 홈 앱바
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    // rootBundle 로드(실제 I/O)가 FakeAsync에서 멈추지 않도록 runAsync로 대기
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    // 네트워크 이미지 로드가 있어 pumpAndSettle 대신 유한 pump 사용
+    await tester.pump();
+
+    expect(find.text('11일'), findsOneWidget); // mock 잔여연차
+    expect(find.textContaining('어디로 떠날까요?'), findsOneWidget);
+    expect(find.text('이번달 추천 여행지'), findsOneWidget);
+    expect(find.text('정선 · 강원'), findsOneWidget);
+    expect(find.text('숙박비 30% 지원'), findsOneWidget);
   });
 }

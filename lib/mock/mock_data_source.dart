@@ -12,7 +12,12 @@ class MockDataSource {
   MockDataSource._();
 
   static Future<Map<String, dynamic>> _load(String name) async {
-    final text = await rootBundle.loadString('assets/mock/$name.json');
+    // cache: false — 위젯 테스트에서 FakeAsync에 갇힌 pending Future가
+    // 전역 캐시에 남아 다른 테스트를 오염시키는 것을 방지 (mock JSON은 작아 비용 무시 가능)
+    final text = await rootBundle.loadString(
+      'assets/mock/$name.json',
+      cache: false,
+    );
     return json.decode(text) as Map<String, dynamic>;
   }
 
