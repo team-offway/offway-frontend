@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
 
 /// 홈 mock 데이터 (서버 연동 시 repository 프로바이더로 교체)
@@ -200,8 +202,7 @@ class HomeScreen extends ConsumerWidget {
               width: 123,
               height: 40,
               child: FilledButton(
-                // TODO(wizard): 코스 추천 위저드(O-04-0)로 연결
-                onPressed: () {},
+                onPressed: () => context.push(AppRoutes.wizardDateGate),
                 style: FilledButton.styleFrom(
                   backgroundColor: _imagePlaceholder,
                   foregroundColor: Colors.black,

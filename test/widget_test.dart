@@ -70,4 +70,33 @@ void main() {
     expect(find.text('정선 · 강원'), findsOneWidget);
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
   });
+
+  testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 400)); // 전환 애니메이션 완료
+    await tester.pump();
+
+    await tester.tap(find.text('바로 추천받기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400)); // 페이지 전환
+
+    expect(find.text('여행 날짜가 있나요?'), findsOneWidget);
+    expect(find.text('1/4'), findsOneWidget);
+
+    // 선택 전에는 다음 버튼 비활성
+    final nextButton = find.widgetWithText(FilledButton, '다음');
+    expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+    await tester.tap(find.text('아직 안 정했어요'));
+    await tester.pump();
+    expect(tester.widget<FilledButton>(nextButton).onPressed, isNotNull);
+  });
 }

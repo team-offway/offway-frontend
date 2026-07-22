@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/course_wizard/presentation/date_gate_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 
@@ -9,6 +10,7 @@ abstract final class AppRoutes {
   static const login = '/login';
   static const onboardingLeave = '/onboarding/leave';
   static const home = '/';
+  static const wizardDateGate = '/wizard/date-gate';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -34,6 +36,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardDateGate,
+        name: 'wizardDateGate',
+        builder: (context, state) => const DateGateScreen(),
       ),
     ],
   );
