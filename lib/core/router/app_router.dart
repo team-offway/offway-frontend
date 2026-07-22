@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
+import '../../features/course/presentation/course_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
 import '../../features/course_wizard/presentation/density_screen.dart';
 import '../../features/course_wizard/presentation/loading_screen.dart';
@@ -23,6 +24,12 @@ abstract final class AppRoutes {
   static const wizardDensity = '/wizard/density';
   static const wizardLoading = '/wizard/loading';
   static const wizardCandidates = '/wizard/candidates';
+
+  /// 코스확정. `:regionId` 경로 파라미터 + `days` 쿼리 파라미터 사용
+  static const course = '/course/:regionId';
+
+  static String coursePath(String regionId, {required int desiredDays}) =>
+      '/course/$regionId?days=$desiredDays';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -83,6 +90,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCandidates,
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.course,
+        name: 'course',
+        builder: (context, state) => CourseScreen(
+          regionId: state.pathParameters['regionId']!,
+          desiredDays:
+              int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+        ),
       ),
     ],
   );

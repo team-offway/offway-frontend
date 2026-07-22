@@ -113,7 +113,13 @@ class _CandidateCard extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        // TODO(wizard): 코스확정(O-09) 화면 작업 시 지역 코스로 연결
+        final desiredDays = ref.read(courseWizardProvider).desiredTripDays;
+        context.push(
+          AppRoutes.coursePath(
+            region['id'] as String,
+            desiredDays: desiredDays,
+          ),
+        );
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

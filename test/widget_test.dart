@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 
 void main() {
@@ -261,5 +262,67 @@ void main() {
     expect(find.text('추천1위'), findsOneWidget);
     expect(find.text('영월 · 강원'), findsOneWidget);
     expect(find.textContaining('2시간30분'), findsOneWidget); // 정선 150분
+
+    // O-09 코스확정: 정선 카드 탭 → 당일치기 코스 (위저드에서 당일치기 선택했음)
+    await tester.tap(find.text('정선 · 강원'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('정선, 당일치기'), findsOneWidget);
+    expect(find.text('내 코스에 담기'), findsOneWidget);
+    // 장소 리스트는 뷰포트 아래라 스크롤 후 확인
+    await tester.scrollUntilVisible(
+      find.text('가리왕산자연휴양림'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('가리왕산자연휴양림'), findsOneWidget); // mock 실데이터 코스
+    expect(find.text('Day 1'), findsNothing); // 당일치기는 Day 탭 없음
+  });
+
+  testWidgets('2박3일 코스는 Day 탭으로 일자별 장소를 전환한다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    // 코스 화면 직접 진입 (3일 희망 → 정선 2박3일 코스 매칭)
+    final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
+    router.push('/course/정선?days=3');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('정선, 2박 3일'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Day 1'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.scrollUntilVisible(
+      find.text('가리왕산자연휴양림'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('가리왕산자연휴양림'), findsOneWidget); // Day1 첫 장소
+
+    await tester.scrollUntilVisible(
+      find.text('Day 2'),
+      -200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Day 2'));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('하이원리조트'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('하이원리조트'), findsOneWidget); // Day2 숙박
+    expect(find.text('가리왕산자연휴양림'), findsNothing);
   });
 }

@@ -70,6 +70,19 @@ class CourseWizardDraft {
 
   bool get hasDateRange => startDate != null && endDate != null;
 
+  /// 선택 조건 기준 희망 여행일수 (1~3일, 코스 매칭용)
+  int get desiredTripDays {
+    if (hasDateRange) {
+      return endDate!.difference(startDate!).inDays + 1;
+    }
+    return switch (periodStyle) {
+      PeriodStyle.dayTrip => 1,
+      PeriodStyle.weekendCombo => 3,
+      PeriodStyle.leaveOnly => leaveDaysToUse ?? 1,
+      null => 1,
+    };
+  }
+
   /// 기간스타일 스텝 완료 여부 (하위 선택까지 포함)
   bool get isPeriodStyleComplete => switch (periodStyle) {
     PeriodStyle.dayTrip => true,
