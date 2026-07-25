@@ -72,11 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _loginWithKakao() {
     return _runSocialLogin(
       provider: SocialProvider.kakao,
-      authenticate: () async {
-        final result = await _kakaoAuth.login();
-        debugPrint('카카오 로그인 성공: userId=${result.userId}');
-        return result.accessToken;
-      },
+      authenticate: _kakaoAuth.login,
       isCancelled: (e) => e is KakaoLoginCancelled,
     );
   }
@@ -85,9 +81,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return _runSocialLogin(
       provider: SocialProvider.apple,
       authenticate: () async {
-        final result = await _appleAuth.login();
-        debugPrint('Apple 로그인 성공: userIdentifier=${result.userIdentifier}');
         // 이름·이메일은 최초 로그인 1회만 제공되므로 서버가 이때 저장해야 한다
+        final result = await _appleAuth.login();
         return result.identityToken;
       },
       isCancelled: (e) => e is AppleLoginCancelled,
@@ -158,7 +153,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: _textPrimary,
                       borderColor: _borderMuted,
-                      onPressed: () => _startWithSocial(context),
+                      onPressed: _loading
+                          ? null
+                          : () => _startWithSocial(context),
                     ),
                     const SizedBox(height: 20),
                     Text.rich(
