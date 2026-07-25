@@ -6,11 +6,35 @@ import '../../../core/storage/secure_storage.dart';
 
 /// 소셜 로그인 제공자
 enum SocialProvider {
-  kakao,
-  apple,
-  google;
+  kakao('카카오'),
+  apple('Apple'),
+  google('구글');
+
+  const SocialProvider(this.label);
+
+  /// 사용자 대면 문구용 이름
+  final String label;
 
   String get path => name;
+}
+
+/// 최초 로그인 시에만 제공되는 소셜 프로필.
+/// Apple은 이름·이메일을 첫 승인 때 한 번만 내려주므로 그 시점에 서버로 넘겨야 한다.
+class SocialProfile {
+  const SocialProfile({this.email, this.fullName, this.providerUserId});
+
+  final String? email;
+  final String? fullName;
+  final String? providerUserId;
+
+  bool get isEmpty =>
+      email == null && fullName == null && providerUserId == null;
+
+  Map<String, dynamic> toJson() => {
+    if (email != null) 'email': email,
+    if (fullName != null) 'name': fullName,
+    if (providerUserId != null) 'providerUserId': providerUserId,
+  };
 }
 
 /// 서버가 발급한 우리 서비스 토큰
@@ -39,13 +63,20 @@ class AuthRepository {
   final TokenStorage _storage;
 
   /// [socialAccessToken]: 카카오 액세스 토큰 / Apple identityToken 등
+  ///
+  /// [profile]: Apple처럼 **최초 로그인 1회만** 제공되는 이름·이메일.
+  /// 이때 서버가 저장하지 않으면 이후에는 복구할 수 없으므로 함께 전달한다.
   Future<AuthTokens> loginWithSocial(
     SocialProvider provider,
-    String socialAccessToken,
-  ) async {
+    String socialAccessToken, {
+    SocialProfile? profile,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/callback/${provider.path}',
-      data: {'accessToken': socialAccessToken},
+      data: {
+        'accessToken': socialAccessToken,
+        if (profile != null) ...profile.toJson(),
+      },
       options: Options(headers: {'X-Client-Type': 'app'}),
     );
     final data = response.data?['data'] as Map<String, dynamic>?;

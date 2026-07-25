@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.20.3
   json_annotation: ^4.9.0
   kakao_flutter_sdk_user: ^2.0.0+1
+  sign_in_with_apple: ^7.0.1
 
 dev_dependencies:
   flutter_test:
