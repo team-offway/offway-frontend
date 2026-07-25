@@ -34,22 +34,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loading = false;
 
   /// 소셜 로그인 공통 흐름: 소셜 인증 → 서버 토큰 교환 → 온보딩 이동.
-  /// [authenticate]는 서버로 넘길 소셜 토큰을 반환한다.
+  ///
+  /// [authenticate]는 서버로 넘길 소셜 토큰과, 최초 로그인 시에만 얻을 수 있는
+  /// 프로필(Apple의 이름·이메일)을 함께 반환한다.
   Future<void> _runSocialLogin({
     required SocialProvider provider,
-    required Future<String> Function() authenticate,
+    required Future<({String token, SocialProfile? profile})> Function()
+    authenticate,
     required bool Function(Object error) isCancelled,
   }) async {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      final socialToken = await authenticate();
+      final result = await authenticate();
       try {
         await ref
             .read(authRepositoryProvider)
-            .loginWithSocial(provider, socialToken);
+            .loginWithSocial(provider, result.token, profile: result.profile);
       } catch (e) {
-        // TODO(auth): 서버 인증 도메인 배포 후에는 실패 시 진행을 중단할 것
+        // 서버 인증 도메인 미배포 상태라 교환 실패해도 화면 흐름은 이어간다.
+        // TODO(auth): 서버 배포 후 실패 시 진행을 중단하고 에러를 노출할 것
         debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
       }
       // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
@@ -72,7 +76,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _loginWithKakao() {
     return _runSocialLogin(
       provider: SocialProvider.kakao,
-      authenticate: _kakaoAuth.login,
+      authenticate: () async {
+        // 카카오는 프로필을 서버가 액세스 토큰으로 조회한다
+        return (token: await _kakaoAuth.login(), profile: null);
+      },
       isCancelled: (e) => e is KakaoLoginCancelled,
     );
   }
@@ -81,9 +88,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return _runSocialLogin(
       provider: SocialProvider.apple,
       authenticate: () async {
-        // 이름·이메일은 최초 로그인 1회만 제공되므로 서버가 이때 저장해야 한다
         final result = await _appleAuth.login();
-        return result.identityToken;
+        // 이름·이메일은 최초 로그인 1회만 제공되므로 이때 서버로 함께 넘긴다
+        final profile = SocialProfile(
+          email: result.email,
+          fullName: result.fullName,
+          providerUserId: result.userIdentifier.isEmpty
+              ? null
+              : result.userIdentifier,
+        );
+        return (
+          token: result.identityToken,
+          profile: profile.isEmpty ? null : profile,
+        );
       },
       isCancelled: (e) => e is AppleLoginCancelled,
     );

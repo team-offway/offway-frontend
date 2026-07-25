@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Apple 로그인 결과.
@@ -28,14 +30,25 @@ class AppleLoginCancelled implements Exception {
   const AppleLoginCancelled();
 }
 
+/// iOS 외 플랫폼에서 호출된 경우
+class AppleLoginUnsupported implements Exception {
+  const AppleLoginUnsupported();
+
+  @override
+  String toString() => 'Apple 로그인은 iOS에서만 지원합니다.';
+}
+
 class AppleAuthService {
   const AppleAuthService();
 
-  /// 취소 시 [AppleLoginCancelled]를 던진다.
+  /// 취소 시 [AppleLoginCancelled], iOS가 아니면 [AppleLoginUnsupported]를 던진다.
   ///
   /// 이름·이메일은 **최초 로그인 1회만** 내려오므로, 서버가 이때 저장해야 한다.
   /// 재로그인 시에는 null이 오는 것이 정상.
   Future<AppleLoginResult> login() async {
+    // 웹/안드로이드는 WebAuthenticationOptions(리디렉션·콜백) 설정이 필요하다.
+    // iOS 전용 앱이라 지원하지 않으며, 확장 시 이 가드부터 걷어낼 것.
+    if (!Platform.isIOS) throw const AppleLoginUnsupported();
     try {
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
