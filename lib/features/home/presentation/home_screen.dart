@@ -51,12 +51,12 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
           children: [
-            const Text(
-              'offway',
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SvgPicture.asset(
+                'assets/icons/logo_wordmark.svg',
+                height: 30,
+                semanticsLabel: 'OffWay',
               ),
             ),
             const SizedBox(height: 16),
