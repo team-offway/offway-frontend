@@ -35,12 +35,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      final result = await _kakaoAuth.login();
-      debugPrint('카카오 로그인 성공: userId=${result.userId}');
+      final socialToken = await _kakaoAuth.login();
       try {
         await ref
             .read(authRepositoryProvider)
-            .loginWithSocial(SocialProvider.kakao, result.accessToken);
+            .loginWithSocial(SocialProvider.kakao, socialToken);
       } catch (e) {
         // TODO(auth): 서버 인증 도메인 배포 후에는 실패 시 진행을 중단할 것
         debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
@@ -116,7 +115,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       iconAsset: 'assets/icons/apple_logo.svg',
                       backgroundColor: _gray950,
                       foregroundColor: Colors.white,
-                      onPressed: () => _startWithSocial(context),
+                      onPressed: _loading
+                          ? null
+                          : () => _startWithSocial(context),
                     ),
                     const SizedBox(height: 16),
                     _SocialLoginButton(
@@ -125,7 +126,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: _textPrimary,
                       borderColor: _borderMuted,
-                      onPressed: () => _startWithSocial(context),
+                      onPressed: _loading
+                          ? null
+                          : () => _startWithSocial(context),
                     ),
                     const SizedBox(height: 20),
                     Text.rich(
