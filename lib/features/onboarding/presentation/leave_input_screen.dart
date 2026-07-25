@@ -105,7 +105,8 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
       // 키보드가 올라와도 하단 CTA가 가려지지 않도록 스크롤 대응
       body: SafeArea(
         child: GestureDetector(
-          // 빈 곳을 탭하면 입력 확정
+          // 빈 곳을 탭하면 입력 확정 (opaque: 자식 없는 여백도 히트 테스트 대상)
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             if (_editing) _commitInput();
           },

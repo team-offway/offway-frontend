@@ -49,6 +49,15 @@ void main() {
     await tester.pump();
     expect(find.text('7.5일'), findsOneWidget);
 
+    // 빈 여백을 탭해도 입력이 확정된다
+    await tester.tap(find.text('7.5일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '3');
+    await tester.tap(find.text('남은 연차를 입력해 주세요'), warnIfMissed: false);
+    await tester.pump();
+    expect(find.byType(TextField), findsNothing); // 입력 모드 종료
+    expect(find.text('3일'), findsOneWidget);
+
     await tester.tap(find.text('시작하기'));
     await tester.pump();
     // rootBundle 로드가 FakeAsync에 갇힌 채 전역 캐시에 남지 않도록 실제 비동기로 완료시킨다
