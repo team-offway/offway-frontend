@@ -48,7 +48,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao4994e03bad5d46f2e22f2386053619db</string>
+				<!-- 값은 ios/Flutter/AppKeys.xcconfig 의 KAKAO_NATIVE_APP_KEY 하나로 관리 -->
+				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
 			</array>
 		</dict>
 	</array>

@@ -1,0 +1,7 @@
+// 소셜 로그인·지도 등 네이티브 설정에 필요한 공개 키.
+// Info.plist(URL scheme)와 Dart(AppConfig)가 같은 값을 쓰도록 여기서 한 번만 정의한다.
+//
+// 값을 바꿀 때는 이 파일과 `--dart-define`을 함께 바꿔야 한다:
+//   flutter build ios --dart-define=KAKAO_NATIVE_APP_KEY=<키>
+// (Dart 상수는 컴파일 타임에 결정되어 xcconfig를 읽을 수 없다)
+KAKAO_NATIVE_APP_KEY = 4994e03bad5d46f2e22f2386053619db
