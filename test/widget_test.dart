@@ -20,7 +20,9 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
 
     expect(find.text('남은 연차를 입력해 주세요'), findsOneWidget);
@@ -29,7 +31,9 @@ void main() {
   testWidgets('온보딩에서 연차를 조절하고 시작하면 홈으로 이동한다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
 
     expect(find.text('15일'), findsOneWidget);
@@ -72,7 +76,9 @@ void main() {
   testWidgets('홈에 mock 사용자·추천 여행지가 표시된다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
     await tester.pump();
@@ -93,7 +99,9 @@ void main() {
   testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
     await tester.pump();
@@ -122,7 +130,9 @@ void main() {
   testWidgets('캘린더에서 2박3일 범위를 선택하면 선택 완료가 활성화된다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
     await tester.pump();
@@ -175,7 +185,9 @@ void main() {
   testWidgets('기간스타일: 당일치기는 바로, 연차만은 스테퍼 완료 후 다음이 활성화된다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
     await tester.pump();
@@ -230,7 +242,9 @@ void main() {
   testWidgets('이동수단 → 일정밀도 → 로딩 → 후보지역까지 위저드가 이어진다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(
+      find.text('Apple로 시작하기'),
+    ); // 카카오는 실제 SDK 호출이라 stub인 Apple로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
     await tester.pump();
