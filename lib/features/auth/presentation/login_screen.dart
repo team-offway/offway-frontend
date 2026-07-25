@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../data/auth_repository.dart';
+import '../data/kakao_auth_service.dart';
 
-/// O-01 · 로그인/회원가입 (와이어프레임)
-/// 소셜 로그인은 서버·SDK 연동 전이므로 버튼 탭 시 홈으로 이동만 한다.
-class LoginScreen extends StatelessWidget {
+/// O-01 · 로그인/회원가입
+/// 카카오는 SDK 연동 완료. 서버 인증 도메인 구축 전이라 토큰 교환 실패는
+/// 경고만 남기고 온보딩으로 진행한다(서버 배포 후 실패 시 중단으로 변경).
+/// Apple·구글은 아직 stub.
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
   static const _kakaoYellow = Color(0xFFFEE500);
   static const _gray950 = Color(0xFF191B1F);
@@ -18,8 +28,41 @@ class LoginScreen extends StatelessWidget {
   static const _borderMuted = Color(0xFFDCDEE2);
   static const _imagePlaceholder = Color(0xFFF2F3F6);
 
+  final _kakaoAuth = const KakaoAuthService();
+  bool _loading = false;
+
+  Future<void> _loginWithKakao() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final result = await _kakaoAuth.login();
+      debugPrint('카카오 로그인 성공: userId=${result.userId}');
+      try {
+        await ref
+            .read(authRepositoryProvider)
+            .loginWithSocial(SocialProvider.kakao, result.accessToken);
+      } catch (e) {
+        // TODO(auth): 서버 인증 도메인 배포 후에는 실패 시 진행을 중단할 것
+        debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
+      }
+      // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
+      if (!mounted) return;
+      context.go(AppRoutes.onboardingLeave);
+    } on KakaoLoginCancelled {
+      // 사용자가 스스로 취소 — 별도 안내 없이 로그인 화면 유지
+    } catch (e) {
+      debugPrint('카카오 로그인 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   void _startWithSocial(BuildContext context) {
-    // TODO(auth): 소셜 로그인 연동 후 신규/기존 회원 분기
+    // TODO(auth): Apple·구글 로그인 연동
     context.go(AppRoutes.onboardingLeave);
   }
 
@@ -65,7 +108,7 @@ class LoginScreen extends StatelessWidget {
                       iconAsset: 'assets/icons/kakao_logo.svg',
                       backgroundColor: _kakaoYellow,
                       foregroundColor: _textPrimary,
-                      onPressed: () => _startWithSocial(context),
+                      onPressed: _loading ? null : _loginWithKakao,
                     ),
                     const SizedBox(height: 16),
                     _SocialLoginButton(
@@ -161,7 +204,9 @@ class _SocialLoginButton extends StatelessWidget {
   final Color backgroundColor;
   final Color foregroundColor;
   final Color? borderColor;
-  final VoidCallback onPressed;
+
+  /// null이면 비활성 (로그인 진행 중 중복 탭 방지)
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

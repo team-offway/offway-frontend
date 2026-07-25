@@ -20,4 +20,12 @@ abstract final class AppConfig {
     'NAVER_MAP_CLIENT_ID',
     defaultValue: 'qqdpbn2yp9',
   );
+
+  /// 카카오 네이티브 앱 키.
+  /// 앱에 내장되는 공개 키로 번들 ID로 사용이 제한된다.
+  /// REST API 키·Admin 키는 서버 전용이므로 앱/레포에 넣지 말 것.
+  static const String kakaoNativeAppKey = String.fromEnvironment(
+    'KAKAO_NATIVE_APP_KEY',
+    defaultValue: '4994e03bad5d46f2e22f2386053619db',
+  );
 }
