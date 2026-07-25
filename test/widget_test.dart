@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('offway'), findsOneWidget);
+    expect(find.bySemanticsLabel('OffWay'), findsOneWidget); // 워드마크 로고
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget);
     expect(find.text('카카오로 시작하기'), findsOneWidget);
     expect(find.text('Apple로 시작하기'), findsOneWidget);
@@ -33,12 +33,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('15일'), findsOneWidget);
+    // 반차 단위(0.5일)로 증감
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
-    expect(find.text('16일'), findsOneWidget);
+    expect(find.text('15.5일'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.remove));
     await tester.pump();
     expect(find.text('15일'), findsOneWidget);
+
+    // 숫자를 눌러 직접 입력 (소수점 허용, 0.5 단위로 보정)
+    await tester.tap(find.text('15일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '7.3');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('7.5일'), findsOneWidget);
+
+    // 빈 여백을 탭해도 입력이 확정된다
+    await tester.tap(find.text('7.5일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '3');
+    await tester.tap(find.text('남은 연차를 입력해 주세요'), warnIfMissed: false);
+    await tester.pump();
+    expect(find.byType(TextField), findsNothing); // 입력 모드 종료
+    expect(find.text('3일'), findsOneWidget);
 
     await tester.tap(find.text('시작하기'));
     await tester.pump();

@@ -44,15 +44,12 @@ class LoginScreen extends StatelessWidget {
                       color: _imagePlaceholder,
                     ),
                     const SizedBox(height: 18),
-                    const Text(
-                      'offway',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
+                    SvgPicture.asset(
+                      'assets/icons/logo_wordmark.svg',
+                      height: 40,
+                      semanticsLabel: 'OffWay',
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 12),
                     const Text(
                       '연차로 떠나는 로컬 여행',
                       style: TextStyle(
