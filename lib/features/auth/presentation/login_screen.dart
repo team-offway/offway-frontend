@@ -4,13 +4,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
 import '../data/kakao_auth_service.dart';
 
 /// O-01 · 로그인/회원가입
-/// 카카오는 SDK 연동 완료. 서버 인증 도메인 구축 전이라 토큰 교환 실패는
+/// 카카오·Apple은 SDK 연동 완료. 서버 인증 도메인 구축 전이라 토큰 교환 실패는
 /// 경고만 남기고 온보딩으로 진행한다(서버 배포 후 실패 시 중단으로 변경).
-/// Apple·구글은 아직 stub.
+/// 구글은 아직 stub.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -29,18 +30,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _imagePlaceholder = Color(0xFFF2F3F6);
 
   final _kakaoAuth = const KakaoAuthService();
+  final _appleAuth = const AppleAuthService();
   bool _loading = false;
 
-  Future<void> _loginWithKakao() async {
+  /// 소셜 로그인 공통 흐름: 소셜 인증 → 서버 토큰 교환 → 온보딩 이동.
+  /// [authenticate]는 서버로 넘길 소셜 토큰을 반환한다.
+  Future<void> _runSocialLogin({
+    required SocialProvider provider,
+    required Future<String> Function() authenticate,
+    required bool Function(Object error) isCancelled,
+  }) async {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      final result = await _kakaoAuth.login();
-      debugPrint('카카오 로그인 성공: userId=${result.userId}');
+      final socialToken = await authenticate();
       try {
         await ref
             .read(authRepositoryProvider)
-            .loginWithSocial(SocialProvider.kakao, result.accessToken);
+            .loginWithSocial(provider, socialToken);
       } catch (e) {
         // TODO(auth): 서버 인증 도메인 배포 후에는 실패 시 진행을 중단할 것
         debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
@@ -48,21 +55,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
       if (!mounted) return;
       context.go(AppRoutes.onboardingLeave);
-    } on KakaoLoginCancelled {
-      // 사용자가 스스로 취소 — 별도 안내 없이 로그인 화면 유지
     } catch (e) {
-      debugPrint('카카오 로그인 실패: $e');
+      if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지
+      debugPrint('${provider.name} 로그인 실패: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.')),
+        SnackBar(
+          content: Text('${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  Future<void> _loginWithKakao() {
+    return _runSocialLogin(
+      provider: SocialProvider.kakao,
+      authenticate: () async {
+        final result = await _kakaoAuth.login();
+        debugPrint('카카오 로그인 성공: userId=${result.userId}');
+        return result.accessToken;
+      },
+      isCancelled: (e) => e is KakaoLoginCancelled,
+    );
+  }
+
+  Future<void> _loginWithApple() {
+    return _runSocialLogin(
+      provider: SocialProvider.apple,
+      authenticate: () async {
+        final result = await _appleAuth.login();
+        debugPrint('Apple 로그인 성공: userIdentifier=${result.userIdentifier}');
+        // 이름·이메일은 최초 로그인 1회만 제공되므로 서버가 이때 저장해야 한다
+        return result.identityToken;
+      },
+      isCancelled: (e) => e is AppleLoginCancelled,
+    );
+  }
+
   void _startWithSocial(BuildContext context) {
-    // TODO(auth): Apple·구글 로그인 연동
+    // TODO(auth): 구글 로그인 연동
     context.go(AppRoutes.onboardingLeave);
   }
 
@@ -116,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       iconAsset: 'assets/icons/apple_logo.svg',
                       backgroundColor: _gray950,
                       foregroundColor: Colors.white,
-                      onPressed: () => _startWithSocial(context),
+                      onPressed: _loading ? null : _loginWithApple,
                     ),
                     const SizedBox(height: 16),
                     _SocialLoginButton(

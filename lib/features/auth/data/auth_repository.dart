@@ -6,9 +6,14 @@ import '../../../core/storage/secure_storage.dart';
 
 /// 소셜 로그인 제공자
 enum SocialProvider {
-  kakao,
-  apple,
-  google;
+  kakao('카카오'),
+  apple('Apple'),
+  google('구글');
+
+  const SocialProvider(this.label);
+
+  /// 사용자 대면 문구용 이름
+  final String label;
 
   String get path => name;
 }
