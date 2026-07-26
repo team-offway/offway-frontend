@@ -10,7 +10,7 @@
 
 **핵심 플로우**
 
-```
+```text
 로그인 → 잔여연차 입력 → 홈
   └ 코스 추천받기
       ├ 날짜가 정해졌다면 → 캘린더에서 기간 선택
@@ -35,7 +35,7 @@
 
 ## 폴더 구조
 
-```
+```text
 lib/
 ├── main.dart                  # 엔트리포인트 (SDK 초기화 + ProviderScope)
 ├── app/app.dart               # 루트 위젯 (MaterialApp.router)
@@ -113,4 +113,5 @@ PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해�
 - 번들 ID: `com.nth.offway` · App Store 등록명: **OffWay - 연차로 떠나는 로컬 여행 플래너**
 - iOS `Info.plist`에 `NSAllowsLocalNetworking`이 켜져 있어 시뮬레이터에서 로컬 Spring 서버와 통신 가능합니다
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 엽니다 (`.xcodeproj` 아님)
-- 레포가 **public**이므로 서버용 키(카카오 REST API 키·시크릿, Apple `.p8`, APNs 키)는 커밋하지 않습니다. 앱에 내장되는 공개 식별자(네이버 지도 Client ID, 카카오 네이티브 앱 키)만 포함되어 있습니다
+- 레포가 **public**이므로 시크릿은 어떤 형태로도 커밋하지 않습니다 (카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret 등 — 서버가 쓰는 값은 백엔드 환경변수로만 관리)
+- 예외적으로 **제공자가 공개 식별자로 명시했고 콘솔에서 번들 ID(`com.nth.offway`) 제한이 걸린 값**만 포함되어 있습니다: 네이버 지도 Client ID, 카카오 네이티브 앱 키. 그 외 값은 `--dart-define`으로 주입합니다

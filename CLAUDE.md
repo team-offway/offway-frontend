@@ -17,7 +17,7 @@
 | **백엔드** | [github.com/team-offway/core](https://github.com/team-offway/core) — Java Spring, 기본 브랜치 **`dev`**. 로컬 기본 주소 `http://localhost:8080` |
 | **인증** | 소셜 로그인(카카오·Apple) 액세스 토큰을 **JSON 바디**로 `POST /api/v1/auth/callback/{provider}` 전달 → 서버가 우리 JWT 발급 |
 | **응답 규격** | 모든 API가 공통 래퍼 `{status, data, detail, code}` 로 감싸짐 — `data`를 꺼내 사용 |
-| **지도** | 네이버 지도 SDK (Dynamic Map). Client ID는 공개 키라 커밋 가능, Secret은 서버 전용 |
+| **지도** | 네이버 지도 SDK (Dynamic Map). 키 취급은 아래 [주의사항](#주의사항) 참고 |
 
 ## 개발 명령어
 
@@ -33,7 +33,7 @@ dart run build_runner build --delete-conflicting-outputs  # freezed/json 코드 
 
 ## 구조
 
-```
+```text
 lib/
 ├── main.dart                  # 엔트리포인트 (SDK 초기화 + ProviderScope)
 ├── app/app.dart               # 루트 위젯 (MaterialApp.router)
@@ -91,8 +91,12 @@ lib/
 - 로컬 Flutter 3.38.4(Dart 3.10.3) 제약으로 `json_annotation`은 ^4.9.0 핀, `riverpod_lint` 미설치 (freezed 3.x와 충돌). Flutter 업그레이드 시 함께 갱신할 것
 - 번들 ID: `com.nth.offway`, 서명 팀: `AWV8LRP46J` (유료 Apple Developer)
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 열 것 (`.xcodeproj` 아님)
-- 레포가 **public**이므로 API 키·인증서·키스토어 등 민감 파일 커밋 금지
-  - 커밋 가능: 네이버 지도 Client ID, 카카오 **네이티브** 앱 키 (번들 ID로 제한되는 공개 식별자)
-  - 커밋 금지: 카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`, APNs 키
+- 레포가 **public**이므로 시크릿·인증서·키스토어 등 민감 파일 커밋 금지
+  - **원칙**: 비밀값은 어떤 형태로도 커밋하지 않는다. 서버가 쓰는 값은 백엔드 환경변수로만 관리한다
+  - **금지**: 카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret
+  - **예외** — 아래 두 조건을 **모두** 만족하는 값만 커밋한다. 하나라도 불확실하면 커밋하지 않고 `--dart-define`으로 주입한다
+    1. 제공자가 **클라이언트에 내장되는 공개 식별자**로 문서에 명시한 값일 것 (앱 바이너리에서 추출 가능하므로 은닉이 성립하지 않는 값)
+    2. 제공자 콘솔에서 **번들 ID(`com.nth.offway`) 제한이 걸려 있어** 타 앱에서 재사용할 수 없을 것
+  - 현재 예외로 커밋된 값: 네이버 지도 Client ID, 카카오 **네이티브** 앱 키 (둘 다 위 조건 충족 확인)
 - **카카오 앱 키를 바꿀 때**는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 한다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못한다
 - 위젯 테스트는 실제 SDK를 호출하지 않도록 **stub 상태인 버튼**으로 플로우에 진입한다 (현재 구글 버튼)
