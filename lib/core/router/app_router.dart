@@ -13,6 +13,7 @@ import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 import '../../features/region/presentation/region_detail_screen.dart';
+import '../../features/region/presentation/region_list_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -25,6 +26,8 @@ abstract final class AppRoutes {
   static const wizardDensity = '/wizard/density';
   static const wizardLoading = '/wizard/loading';
   static const wizardCandidates = '/wizard/candidates';
+
+  static const regionList = '/regions';
 
   /// 지역 상세. `:regionId` 경로 파라미터 사용
   static const regionDetail = '/region/:regionId';
@@ -98,6 +101,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCandidates,
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.regionList,
+        name: 'regionList',
+        builder: (context, state) => const RegionListScreen(),
       ),
       GoRoute(
         path: AppRoutes.regionDetail,

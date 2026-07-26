@@ -33,7 +33,13 @@
           "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/97/1690997_image2_1.jpg"
         }
       ],
-      "designationNote": "인구감소지역 지정 · 강원 정선군"
+      "designationNote": "인구감소지역 지정 · 강원 정선군",
+      "categoryCounts": {
+        "관광지": 71,
+        "숙박": 46,
+        "체험": 11,
+        "맛집": 29
+      }
     },
     {
       "id": "영월",
@@ -68,7 +74,13 @@
           "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/40/3557240_image2_1.JPG"
         }
       ],
-      "designationNote": "인구감소지역 지정 · 강원 영월군"
+      "designationNote": "인구감소지역 지정 · 강원 영월군",
+      "categoryCounts": {
+        "관광지": 107,
+        "숙박": 113,
+        "체험": 13,
+        "맛집": 35
+      }
     }
   ],
   "monthlyPicks": [
@@ -105,7 +117,13 @@
           "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/80/3077280_image2_1.jpg"
         }
       ],
-      "designationNote": "인구감소지역 지정 · 경기 가평군"
+      "designationNote": "인구감소지역 지정 · 경기 가평군",
+      "categoryCounts": {
+        "관광지": 117,
+        "숙박": 160,
+        "체험": 12,
+        "맛집": 118
+      }
     },
     {
       "id": "extra-해남",
@@ -140,7 +158,13 @@
           "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/76/3564276_image2_1.jpg"
         }
       ],
-      "designationNote": "인구감소지역 지정 · 전남 해남군"
+      "designationNote": "인구감소지역 지정 · 전남 해남군",
+      "categoryCounts": {
+        "관광지": 69,
+        "숙박": 19,
+        "체험": 10,
+        "맛집": 19
+      }
     },
     {
       "id": "extra-영양",
@@ -175,7 +199,13 @@
           "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/35/3465435_image2_1.jpg"
         }
       ],
-      "designationNote": "인구감소지역 지정 · 경북 영양군"
+      "designationNote": "인구감소지역 지정 · 경북 영양군",
+      "categoryCounts": {
+        "관광지": 17,
+        "숙박": 4,
+        "체험": 3,
+        "맛집": 11
+      }
     }
   ]
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../mock/mock_data_source.dart';
+import '../../region/presentation/widgets/region_card.dart';
 
 /// 홈 mock 데이터 (서버 연동 시 repository 프로바이더로 교체)
 final homeUserProvider = FutureProvider<Map<String, dynamic>>(
@@ -33,8 +34,6 @@ class HomeScreen extends ConsumerWidget {
   static const _heroBg = Color(0xFFECF0F3);
   static const _chipGray = Color(0xFFF2F3F6);
   static const _imagePlaceholder = Color(0xFFC5C8CE);
-  static const _badgeBg = Color(0x293182F6); // rgba(49,130,246,0.16)
-  static const _badgeText = Color(0xFF2272EB);
 
   static const _categories = ['전체', '관광지', '숙박', '체험', '맛집'];
 
@@ -77,8 +76,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  // TODO(home): 추천 여행지 전체 목록 화면 연결
-                  onTap: () {},
+                  onTap: () => context.push(AppRoutes.regionList),
                   child: const Text(
                     '더보기',
                     style: TextStyle(
@@ -268,90 +266,7 @@ class HomeScreen extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           itemCount: list.length,
           separatorBuilder: (_, _) => const SizedBox(width: 12),
-          itemBuilder: (context, i) => _RegionCard(region: list[i]),
-        ),
-      ),
-    );
-  }
-}
-
-class _RegionCard extends StatelessWidget {
-  const _RegionCard({required this.region});
-
-  final Map<String, dynamic> region;
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = region['imageUrl'] as String?;
-    final badge = region['benefitBadge'] as String?;
-    return GestureDetector(
-      onTap: () =>
-          context.push(AppRoutes.regionDetailPath(region['id'] as String)),
-      child: Container(
-        width: 177,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: HomeScreen._chipGray,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                height: 123,
-                width: double.infinity,
-                color: HomeScreen._imagePlaceholder,
-                child: imageUrl == null
-                    ? null
-                    : Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const SizedBox.expand(),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${region['name']} · ${region['sido']}',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: HomeScreen._labelNormal,
-                letterSpacing: -0.6,
-              ),
-            ),
-            Text(
-              (region['description'] as String?) ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: HomeScreen._textMuted,
-                letterSpacing: -0.6,
-              ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: HomeScreen._badgeBg,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: HomeScreen._badgeText,
-                  ),
-                ),
-              ),
-            ],
-          ],
+          itemBuilder: (context, i) => RegionCard(region: list[i]),
         ),
       ),
     );

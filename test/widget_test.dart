@@ -96,6 +96,39 @@ void main() {
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
   });
 
+  testWidgets('홈 더보기 → 추천 여행지 목록에서 카테고리로 필터한다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('더보기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 목록 화면: 헤더 + mock 5개 지역
+    expect(find.text('이번달 추천 여행지'), findsOneWidget);
+    expect(find.text('정선 · 강원'), findsOneWidget);
+    expect(find.text('영양 · 경북'), findsOneWidget);
+
+    // 카테고리 필터는 지역별 콘텐츠 분포(실데이터) 기준으로 동작
+    await tester.tap(find.text('체험'));
+    await tester.pump();
+    expect(find.text('정선 · 강원'), findsOneWidget); // 체험 11건
+  });
+
   testWidgets('홈에서 지역 카드를 누르면 지역 상세로 이동한다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
