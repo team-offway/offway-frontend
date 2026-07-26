@@ -361,13 +361,21 @@ void main() {
     final done = find.widgetWithText(FilledButton, '선택 완료');
     expect(tester.widget<FilledButton>(done).onPressed, isNull);
 
-    // 가는날·오는날을 고르면 활성화된다
+    // 가는날·오는날을 고르면 활성화된다.
+    // 다음 달 중순(15·16일)을 쓴다 — 월말에 실행돼도 두 날짜가 같은 달 안에 있고,
+    // 한 달 그리드에서 그 숫자는 유일하다. 아래 코스 상세 화면이 트리에 남아
+    // 같은 숫자가 또 있을 수 있으므로 화면에 실제로 보이는 셀만 대상으로 한다
     final today = DateUtils.dateOnly(DateTime.now());
-    final start = today.add(const Duration(days: 1));
-    final end = start.add(const Duration(days: 1));
-    await tester.tap(find.text('${start.day}').first);
+    final nextMonth = DateTime(today.year, today.month + 1);
+    await tester.scrollUntilVisible(
+      find.text('${nextMonth.year}년 ${nextMonth.month}월'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.pump();
-    await tester.tap(find.text('${end.day}').first);
+    await tester.tap(find.text('15').hitTestable());
+    await tester.pump();
+    await tester.tap(find.text('16').hitTestable());
     await tester.pump();
     expect(find.text('가는날'), findsOneWidget);
     expect(find.text('오는날'), findsOneWidget);
