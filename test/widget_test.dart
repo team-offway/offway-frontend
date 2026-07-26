@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/test/test_flutter_secure_storage_platform.dart';
+import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 
 void main() {
+  setUp(() {
+    // Keychain 플러그인은 테스트 환경에 없으므로 인메모리 구현으로 대체
+    FlutterSecureStoragePlatform.instance = TestFlutterSecureStoragePlatform(
+      {},
+    );
+  });
   testWidgets('앱 실행 시 로그인 화면이 보인다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
@@ -94,6 +102,47 @@ void main() {
     expect(find.text('이번달 추천 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
+  });
+
+  testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('마이'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('반가워요!'), findsOneWidget);
+    expect(find.text('개인정보처리방침'), findsOneWidget);
+    expect(find.text('회원탈퇴'), findsOneWidget);
+
+    // 로그아웃은 확인 다이얼로그를 거친다
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    expect(find.text('로그아웃할까요?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget); // 로그인 화면
   });
 
   testWidgets('홈 더보기 → 추천 여행지 목록에서 카테고리로 필터한다', (tester) async {

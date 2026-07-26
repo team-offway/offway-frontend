@@ -96,7 +96,13 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const AppTabPills(current: AppTab.home),
+      bottomNavigationBar: AppTabPills(
+        current: AppTab.home,
+        onTap: (tab) {
+          if (tab == AppTab.my) context.push(AppRoutes.my);
+          // TODO(navigation): 내 코스 화면 작업 시 연결
+        },
+      ),
     );
   }
 
