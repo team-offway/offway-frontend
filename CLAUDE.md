@@ -1,12 +1,30 @@
 # offway-frontend
 
-iOS 출시를 목표로 하는 Flutter 앱. 백엔드는 별도 레포의 Java Spring REST API (로컬 기본 주소 `http://localhost:8080`, JWT 인증 예정).
+**OffWay** — 남은 연차로 갈 수 있는 인구감소지역 여행 코스를 추천하는 iOS 앱 (Flutter).
+
+## 서비스 개요
+
+- **문제**: 연차는 남았는데 어디로 갈지 정하기 어렵다. 인구감소지역은 좋은 콘텐츠가 있어도 잘 알려지지 않는다.
+- **해법**: 남은 연차·이동수단·일정 취향을 입력하면 **도달 가능한 인구감소지역**과 **날짜별 코스**를 추천한다.
+- **핵심 플로우**: 로그인 → 잔여연차 입력 → 홈 → 코스 위저드(날짜/기간스타일 → 이동수단 → 일정밀도) → 로딩 → 후보지역 → 코스 확정
+- **핵심 정책**: 모든 코스는 **최대 2박3일** (`kMaxTripSpanDays`). 콘텐츠가 얇은 지역에서 4일 이상 코스는 빈약해지기 때문
+- **데이터 출처**: 한국관광공사 TourAPI(KorService2 + 연관관광지), 행안부 인구감소지역 89곳. 조사 결과는 [`docs/tourapi-분류체계-조사.md`](docs/tourapi-분류체계-조사.md) 참고
+
+## 연동 대상
+
+| 대상 | 내용 |
+|---|---|
+| **백엔드** | [github.com/team-offway/core](https://github.com/team-offway/core) — Java Spring, 기본 브랜치 **`dev`**. 로컬 기본 주소 `http://localhost:8080` |
+| **인증** | 소셜 로그인(카카오·Apple) 액세스 토큰을 **JSON 바디**로 `POST /api/v1/auth/callback/{provider}` 전달 → 서버가 우리 JWT 발급 |
+| **응답 규격** | 모든 API가 공통 래퍼 `{status, data, detail, code}` 로 감싸짐 — `data`를 꺼내 사용 |
+| **지도** | 네이버 지도 SDK (Dynamic Map). Client ID는 공개 키라 커밋 가능, Secret은 서버 전용 |
 
 ## 개발 명령어
 
 ```bash
 flutter run                                          # 실행 (기기 선택: -d <device-id>)
 flutter run --dart-define=API_BASE_URL=<url>         # 백엔드 주소 지정
+flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar  # 특정 화면부터 시작 (개발용)
 flutter analyze                                      # 정적 분석
 flutter test                                         # 테스트
 dart format .                                        # 포맷
@@ -17,22 +35,47 @@ dart run build_runner build --delete-conflicting-outputs  # freezed/json 코드 
 
 ```
 lib/
-├── main.dart                  # 엔트리포인트 (ProviderScope)
+├── main.dart                  # 엔트리포인트 (SDK 초기화 + ProviderScope)
 ├── app/app.dart               # 루트 위젯 (MaterialApp.router)
 ├── core/                      # 전역 공통 모듈
-│   ├── config/app_config.dart     # API base URL 등 (--dart-define 주입)
+│   ├── config/app_config.dart     # API base URL·공개 키 (--dart-define 주입)
 │   ├── network/dio_client.dart    # Dio 프로바이더 + JWT Auth 인터셉터
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# 토큰 Keychain 저장소
 │   └── theme/app_theme.dart       # Material 3 테마
-└── features/<기능명>/          # 기능 단위 모듈
-    ├── data/                      # API 호출, repository
-    ├── domain/                    # 모델 (freezed)
-    └── presentation/              # 화면, 상태(Riverpod)
+├── mock/mock_data_source.dart # 서버 구축 전 mock 로더 (assets/mock/*.json)
+└── features/
+    ├── auth/                  # O-01 로그인 (카카오·Apple)
+    ├── onboarding/            # O-02 잔여연차 입력
+    ├── home/                  # O-03 홈
+    ├── course_wizard/         # O-04~O-08 코스 추천 위저드
+    └── course/                # O-09 코스 확정 (네이버 지도)
 ```
 
 - 상태관리: flutter_riverpod 3 / 라우팅: go_router / HTTP: dio
 - 새 기능은 `features/<기능명>/` 아래 data·domain·presentation 구조로 추가
+- **위저드 상태**: `course_wizard/application/course_wizard_provider.dart`의 `CourseWizardDraft` 하나에 단계별 조건(날짜·기간스타일·이동수단·밀도)을 누적한다
+
+## 작업 방식
+
+### Figma MCP로 화면 구현
+
+와이어프레임·디자인은 Figma MCP로 읽어서 구현한다.
+
+- 사용자가 Figma 노드 URL을 주면 `get_design_context`(상세) 또는 `get_screenshot`(변형·상태 확인)으로 읽는다
+- 반환되는 React+Tailwind 코드는 **참고용** — Flutter 위젯으로 변환하고 프로젝트 컨벤션을 따른다
+- **에셋(SVG·이미지)은 URL이 7일 후 만료**되므로 즉시 `assets/`로 다운로드해 커밋한다
+- 색상은 화면 내 상수로 두고 `TODO(디자인시스템)` 주석을 남긴다 — 디자인 확정 시 일괄 교체
+- **뒤로가기·닫기·스텝 인디케이터 등 당연한 내비게이션은 지시 없이 알아서 연결**한다. 아직 없는 화면으로의 이동만 TODO로 남긴다
+- 구현 후 시뮬레이터로 실행해 디자인과 대조한다
+
+### 개발일지
+
+`~/Desktop/devlog-template.html` 템플릿을 복사해 `~/Desktop/offway-devlog-MMDD.html` 로 작성한다 (한 화면 가로형 HTML, 팀에 파일째 공유).
+
+- 구성: 헤더(워드마크+한줄요약+날짜) → 스탯 4개 → **오늘 한 일** 카드 3~4개 → **다음 예상 할 일** 4칸
+- 시간순 나열 대신 **주제별**로. 팀원(백엔드·디자이너)이 읽으므로 구현 용어보다 결과·판단 근거 위주
+- 상대가 알아야 할 제약은 `<strong>` 강조
 
 ## 워크플로우 (필수 준수)
 
@@ -49,3 +92,7 @@ lib/
 - 번들 ID: `com.nth.offway`, 서명 팀: `AWV8LRP46J` (유료 Apple Developer)
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 열 것 (`.xcodeproj` 아님)
 - 레포가 **public**이므로 API 키·인증서·키스토어 등 민감 파일 커밋 금지
+  - 커밋 가능: 네이버 지도 Client ID, 카카오 **네이티브** 앱 키 (번들 ID로 제한되는 공개 식별자)
+  - 커밋 금지: 카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`, APNs 키
+- **카카오 앱 키를 바꿀 때**는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 한다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못한다
+- 위젯 테스트는 실제 SDK를 호출하지 않도록 **stub 상태인 버튼**으로 플로우에 진입한다 (현재 구글 버튼)
