@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -46,6 +47,19 @@ abstract final class AppRoutes {
       '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays';
 }
 
+/// 하단 탭 목적지용 페이지. 탭끼리는 형제 화면이라 좌우 슬라이드 없이 바로 전환된다.
+/// [NoTransitionPage] 대신 전환 시간이 0인 [CustomTransitionPage]를 쓰는 이유는,
+/// 위에 다른 화면을 push했을 때 아래 화면이 정상적으로 offstage 처리되도록 하기 위함이다.
+CustomTransitionPage<void> _noTransitionPage(Widget child) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        child,
+  );
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     // TODO(auth): 로그인 상태 저장 후 redirect로 분기 (지금은 항상 로그인부터)
@@ -68,7 +82,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        pageBuilder: (context, state) => _noTransitionPage(const HomeScreen()),
       ),
       GoRoute(
         path: AppRoutes.wizardDateGate,
@@ -108,7 +122,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.my,
         name: 'my',
-        builder: (context, state) => const MyScreen(),
+        pageBuilder: (context, state) => _noTransitionPage(const MyScreen()),
       ),
       GoRoute(
         path: AppRoutes.regionList,

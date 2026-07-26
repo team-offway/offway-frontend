@@ -5,6 +5,9 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
+import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/my/presentation/my_screen.dart';
+import 'package:offway/features/region/presentation/region_list_screen.dart';
 
 void main() {
   setUp(() {
@@ -145,6 +148,36 @@ void main() {
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget); // 로그인 화면
   });
 
+  testWidgets('하단 탭 전환은 좌우 슬라이드 없이 한 프레임에 끝난다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 홈 → 마이: 한 프레임 뒤 이미 제자리(dx=0)에 있어야 한다
+    await tester.tap(find.text('마이'));
+    await tester.pump();
+    expect(find.byType(MyScreen), findsOneWidget);
+    expect(tester.getTopLeft(find.byType(MyScreen)).dx, 0);
+
+    await tester.pumpAndSettle();
+
+    // 마이 → 홈도 마찬가지
+    await tester.tap(find.text('홈'));
+    await tester.pump();
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(tester.getTopLeft(find.byType(HomeScreen)).dx, 0);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('홈 더보기 → 추천 여행지 목록에서 카테고리로 필터한다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
@@ -167,15 +200,40 @@ void main() {
     );
     await tester.pump();
 
-    // 목록 화면: 헤더 + mock 5개 지역
-    expect(find.text('이번달 추천 여행지'), findsOneWidget);
-    expect(find.text('정선 · 강원'), findsOneWidget);
-    expect(find.text('영양 · 경북'), findsOneWidget);
+    // 홈은 전환 없는 페이지라 목록 아래에 그대로 남아있다(불투명 배경에 가려짐).
+    // 같은 문구가 홈에도 있으므로 목록 화면 안에서만 찾는다
+    Finder inList(String text) => find.descendant(
+      of: find.byType(RegionListScreen),
+      matching: find.text(text),
+    );
 
-    // 카테고리 필터는 지역별 콘텐츠 분포(실데이터) 기준으로 동작
-    await tester.tap(find.text('체험'));
+    // 목록 화면: 헤더 + mock 5개 지역
+    expect(inList('이번달 추천 여행지'), findsOneWidget);
+    expect(inList('정선 · 강원'), findsOneWidget);
+    // 마지막 지역은 뷰포트 아래라 스크롤해서 확인
+    await tester.scrollUntilVisible(
+      inList('영양 · 경북'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(RegionListScreen),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(inList('영양 · 경북'), findsOneWidget);
+
+    // 카테고리 필터는 지역별 콘텐츠 분포(실데이터) 기준으로 동작.
+    // 위에서 스크롤을 내렸으니 카테고리 줄이 다시 보이도록 올린다
+    await tester.scrollUntilVisible(
+      inList('체험'),
+      -200,
+      scrollable: find.descendant(
+        of: find.byType(RegionListScreen),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(inList('체험'));
     await tester.pump();
-    expect(find.text('정선 · 강원'), findsOneWidget); // 체험 11건
+    expect(inList('정선 · 강원'), findsOneWidget); // 체험 11건
   });
 
   testWidgets('홈에서 지역 카드를 누르면 지역 상세로 이동한다', (tester) async {
