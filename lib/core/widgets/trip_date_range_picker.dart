@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../features/course_wizard/application/course_wizard_provider.dart'
-    show kMaxTripSpanDays;
+import '../constants/trip_constants.dart';
 
 // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
 const _textTertiary = Color(0xFFADB1BB);

@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/trip_date_range_picker.dart';
-import '../../course_wizard/application/course_wizard_provider.dart'
-    show resolveTripDateTap;
+import '../../../core/constants/trip_constants.dart';
 import 'my_courses_screen.dart';
 import 'saved_course_screen.dart';
 
