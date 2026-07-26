@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/app_tab_pills.dart';
 import '../../../mock/mock_data_source.dart';
 
 /// 홈 mock 데이터 (서버 연동 시 repository 프로바이더로 교체)
@@ -34,7 +35,6 @@ class HomeScreen extends ConsumerWidget {
   static const _imagePlaceholder = Color(0xFFC5C8CE);
   static const _badgeBg = Color(0x293182F6); // rgba(49,130,246,0.16)
   static const _badgeText = Color(0xFF2272EB);
-  static const _tabInactive = Color(0xFF6F767E);
 
   static const _categories = ['전체', '관광지', '숙박', '체험', '맛집'];
 
@@ -98,7 +98,7 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const _HomeTabPills(),
+      bottomNavigationBar: const AppTabPills(current: AppTab.home),
     );
   }
 
@@ -284,168 +284,75 @@ class _RegionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = region['imageUrl'] as String?;
     final badge = region['benefitBadge'] as String?;
-    return Container(
-      width: 177,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: HomeScreen._chipGray,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Container(
-              height: 123,
-              width: double.infinity,
-              color: HomeScreen._imagePlaceholder,
-              child: imageUrl == null
-                  ? null
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.expand(),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${region['name']} · ${region['sido']}',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: HomeScreen._labelNormal,
-              letterSpacing: -0.6,
-            ),
-          ),
-          Text(
-            (region['description'] as String?) ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: HomeScreen._textMuted,
-              letterSpacing: -0.6,
-            ),
-          ),
-          if (badge != null) ...[
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: HomeScreen._badgeBg,
-                borderRadius: BorderRadius.circular(9),
+    return GestureDetector(
+      onTap: () =>
+          context.push(AppRoutes.regionDetailPath(region['id'] as String)),
+      child: Container(
+        width: 177,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: HomeScreen._chipGray,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Container(
+                height: 123,
+                width: double.infinity,
+                color: HomeScreen._imagePlaceholder,
+                child: imageUrl == null
+                    ? null
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.expand(),
+                      ),
               ),
-              child: Text(
-                badge,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: HomeScreen._badgeText,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${region['name']} · ${region['sido']}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: HomeScreen._labelNormal,
+                letterSpacing: -0.6,
+              ),
+            ),
+            Text(
+              (region['description'] as String?) ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: HomeScreen._textMuted,
+                letterSpacing: -0.6,
+              ),
+            ),
+            if (badge != null) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: HomeScreen._badgeBg,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: HomeScreen._badgeText,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// 하단 플로팅 탭 (홈/내 코스/마이) — 내 코스·마이 화면은 추후 작업
-class _HomeTabPills extends StatelessWidget {
-  const _HomeTabPills();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 58,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xCCFFFFFF),
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    offset: Offset(0, 4),
-                    blurRadius: 16,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  _TabPill(
-                    label: '홈',
-                    iconAsset: 'assets/icons/tab_home.svg',
-                    active: true,
-                  ),
-                  SizedBox(width: 8),
-                  _TabPill(
-                    label: '내 코스',
-                    iconAsset: 'assets/icons/tab_course.svg',
-                  ),
-                  SizedBox(width: 8),
-                  _TabPill(label: '마이', iconAsset: 'assets/icons/tab_my.svg'),
-                ],
-              ),
-            ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _TabPill extends StatelessWidget {
-  const _TabPill({
-    required this.label,
-    required this.iconAsset,
-    this.active = false,
-  });
-
-  final String label;
-  final String iconAsset;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF2D3037) : HomeScreen._tabInactive;
-    return Container(
-      width: 72,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: active ? const Color(0x14000000) : Colors.transparent,
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            iconAsset,
-            width: 20,
-            height: 20,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ],
       ),
     );
   }

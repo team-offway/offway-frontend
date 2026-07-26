@@ -96,6 +96,47 @@ void main() {
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
   });
 
+  testWidgets('홈에서 지역 카드를 누르면 지역 상세로 이동한다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 지역 카드는 뷰포트 아래라 스크롤해서 올린 뒤 탭
+    await tester.scrollUntilVisible(
+      find.text('정선 · 강원'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(find.text('정선 · 강원'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('폐광촌에서 예술마을로'), findsOneWidget);
+    expect(find.text('정선 매력 포인트 장소'), findsOneWidget);
+
+    // 기본 정보는 뷰포트 아래라 스크롤해서 확인
+    await tester.scrollUntilVisible(
+      find.text('기본 정보'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('인구감소지역 지정'), findsOneWidget);
+  });
+
   testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();

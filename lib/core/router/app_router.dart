@@ -12,6 +12,7 @@ import '../../features/course_wizard/presentation/period_style_screen.dart';
 import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
+import '../../features/region/presentation/region_detail_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -24,6 +25,12 @@ abstract final class AppRoutes {
   static const wizardDensity = '/wizard/density';
   static const wizardLoading = '/wizard/loading';
   static const wizardCandidates = '/wizard/candidates';
+
+  /// 지역 상세. `:regionId` 경로 파라미터 사용
+  static const regionDetail = '/region/:regionId';
+
+  static String regionDetailPath(String regionId) =>
+      '/region/${Uri.encodeComponent(regionId)}';
 
   /// 코스확정. `:regionId` 경로 파라미터 + `days` 쿼리 파라미터 사용
   static const course = '/course/:regionId';
@@ -91,6 +98,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCandidates,
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.regionDetail,
+        name: 'regionDetail',
+        builder: (context, state) {
+          final raw = state.pathParameters['regionId']!;
+          return RegionDetailScreen(
+            regionId: raw.contains('%') ? Uri.decodeComponent(raw) : raw,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.course,
