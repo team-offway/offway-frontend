@@ -723,4 +723,28 @@ void main() {
     expect(find.text('하이원리조트'), findsOneWidget); // Day2 숙박
     expect(find.text('가리왕산자연휴양림'), findsNothing);
   });
+
+  testWidgets('코스 화면에서 내 코스에 담기를 누르면 내 코스 탭으로 이동한다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
+    router.push('/course/정선?days=3');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('내 코스에 담기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 내 코스 목록에 도착 (담기 화면으로 되돌아가지 않는다)
+    expect(find.byType(MyCoursesScreen), findsOneWidget);
+    expect(find.text('내 코스에 담기'), findsNothing);
+  });
 }

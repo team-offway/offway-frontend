@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -58,6 +59,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   void _exitToHome() {
     ref.read(courseWizardProvider.notifier).reset();
     context.go(AppRoutes.home);
+  }
+
+  /// 코스를 담고 내 코스 탭으로 이동한다. 위저드는 여기서 끝나므로 조건을 초기화한다.
+  void _saveToMyCourses() {
+    // TODO(course): 서버 저장 API 연동. mock JSON은 쓰기가 불가해 목록만 다시 불러온다
+    ref.invalidate(savedCoursesProvider);
+    ref.read(courseWizardProvider.notifier).reset();
+    context.go(AppRoutes.myCourses);
   }
 
   String _durationLabel(int days) => switch (days) {
@@ -200,12 +209,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    // TODO(my-course): 내 코스 저장 기능 연결 (내 코스 탭 작업 시)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('내 코스에 담았어요 (준비 중)')),
-                    );
-                  },
+                  onPressed: _saveToMyCourses,
                   icon: const Icon(Icons.download, size: 20),
                   label: const Text(
                     '내 코스에 담기',
