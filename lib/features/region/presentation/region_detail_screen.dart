@@ -9,11 +9,7 @@ import '../../../mock/mock_data_source.dart';
 /// 지역 상세 mock (서버 연동 시 지역 상세 API로 교체)
 final regionDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, regionId) async {
-      final data = await MockDataSource.regions();
-      final all = [
-        ...(data['candidates'] as List).cast<Map<String, dynamic>>(),
-        ...(data['monthlyPicks'] as List).cast<Map<String, dynamic>>(),
-      ];
+      final all = await MockDataSource.allRegions();
       for (final r in all) {
         if (r['id'] == regionId || r['name'] == regionId) return r;
       }

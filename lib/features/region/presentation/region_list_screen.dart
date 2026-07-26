@@ -6,15 +6,9 @@ import '../../../mock/mock_data_source.dart';
 import 'widgets/region_card.dart';
 
 /// 추천 여행지 전체 목록 mock (서버 연동 시 목록 API로 교체)
-final regionListProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  final data = await MockDataSource.regions();
-  return [
-    ...(data['candidates'] as List).cast<Map<String, dynamic>>(),
-    ...(data['monthlyPicks'] as List).cast<Map<String, dynamic>>(),
-  ];
-});
+final regionListProvider = FutureProvider<List<Map<String, dynamic>>>(
+  (ref) => MockDataSource.allRegions(),
+);
 
 /// 이번달 추천 여행지 — 카테고리 필터 + 2열 그리드
 class RegionListScreen extends ConsumerStatefulWidget {

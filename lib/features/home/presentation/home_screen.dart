@@ -12,15 +12,9 @@ import '../../region/presentation/widgets/region_card.dart';
 final homeUserProvider = FutureProvider<Map<String, dynamic>>(
   (ref) => MockDataSource.user(),
 );
-final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  final data = await MockDataSource.regions();
-  return [
-    ...(data['candidates'] as List).cast<Map<String, dynamic>>(),
-    ...(data['monthlyPicks'] as List).cast<Map<String, dynamic>>(),
-  ];
-});
+final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
+  (ref) => MockDataSource.allRegions(),
+);
 
 /// O-03 · 홈 (와이어프레임)
 class HomeScreen extends ConsumerWidget {
