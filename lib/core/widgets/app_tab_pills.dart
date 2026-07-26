@@ -16,7 +16,6 @@ enum AppTab {
 /// 홈·지역 상세 등에서 공유하는 하단 플로팅 탭.
 /// [current]가 null이면 어느 탭도 활성으로 보이지 않는다(하위 화면).
 // TODO(디자인시스템): 공통 컴포넌트 확정 시 이 위젯을 대체/이관
-// TODO(navigation): 내 코스·마이 화면 작업 시 onTap을 라우터에 연결
 class AppTabPills extends StatelessWidget {
   const AppTabPills({super.key, this.current = AppTab.home, this.onTap});
 

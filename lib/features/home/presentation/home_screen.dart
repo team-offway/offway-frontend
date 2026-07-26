@@ -100,8 +100,8 @@ class HomeScreen extends ConsumerWidget {
         current: AppTab.home,
         onTap: (tab) {
           // 탭끼리는 형제 화면이므로 스택을 쌓지 않고 교체한다
+          if (tab == AppTab.myCourse) context.go(AppRoutes.myCourses);
           if (tab == AppTab.my) context.go(AppRoutes.my);
-          // TODO(navigation): 내 코스 화면 작업 시 연결
         },
       ),
     );

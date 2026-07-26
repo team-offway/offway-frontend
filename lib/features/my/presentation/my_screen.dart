@@ -58,8 +58,9 @@ class MyScreen extends ConsumerWidget {
       bottomNavigationBar: AppTabPills(
         current: AppTab.my,
         onTap: (tab) {
+          // 탭끼리는 형제 화면이므로 스택을 쌓지 않고 교체한다
           if (tab == AppTab.home) context.go(AppRoutes.home);
-          // TODO(navigation): 내 코스 화면 작업 시 연결
+          if (tab == AppTab.myCourse) context.go(AppRoutes.myCourses);
         },
       ),
     );

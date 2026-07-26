@@ -6,6 +6,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
+import '../../features/course/presentation/my_courses_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
 import '../../features/course_wizard/presentation/density_screen.dart';
 import '../../features/course_wizard/presentation/loading_screen.dart';
@@ -28,6 +29,8 @@ abstract final class AppRoutes {
   static const wizardDensity = '/wizard/density';
   static const wizardLoading = '/wizard/loading';
   static const wizardCandidates = '/wizard/candidates';
+
+  static const myCourses = '/my-courses';
 
   static const my = '/my';
 
@@ -118,6 +121,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCandidates,
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.myCourses,
+        name: 'myCourses',
+        pageBuilder: (context, state) =>
+            _noTransitionPage(const MyCoursesScreen()),
       ),
       GoRoute(
         path: AppRoutes.my,

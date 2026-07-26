@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../mock/mock_data_source.dart';
 
@@ -51,7 +52,14 @@ class RegionDetailScreen extends ConsumerWidget {
               : _buildBody(context, data),
         ),
       ),
-      bottomNavigationBar: const AppTabPills(current: null),
+      bottomNavigationBar: AppTabPills(
+        current: null,
+        onTap: (tab) => switch (tab) {
+          AppTab.home => context.go(AppRoutes.home),
+          AppTab.myCourse => context.go(AppRoutes.myCourses),
+          AppTab.my => context.go(AppRoutes.my),
+        },
+      ),
     );
   }
 

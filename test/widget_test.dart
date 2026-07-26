@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
+import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
@@ -146,6 +147,45 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget); // 로그인 화면
+  });
+
+  testWidgets('하단 탭에서 내 코스로 이동하면 저장한 코스가 확정 여부와 함께 보인다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('내 코스'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    Finder inCourses(String text) => find.descendant(
+      of: find.byType(MyCoursesScreen),
+      matching: find.text(text),
+    );
+
+    // 최신순이 기본이라 나중에 저장한 영월(미확정)이 위에 온다
+    expect(inCourses('영월 · 당일치기'), findsOneWidget);
+    expect(inCourses('날짜 미정 · 8월경'), findsOneWidget);
+    expect(inCourses('정선 · 2박 3일'), findsOneWidget);
+    expect(inCourses('7/20(월) – 7/22(수)'), findsOneWidget);
+
+    // 정렬을 바꿔도 두 코스가 그대로 보인다
+    await tester.tap(inCourses('최신순'));
+    await tester.pump();
+    expect(inCourses('오래된순'), findsOneWidget);
+    expect(inCourses('정선 · 2박 3일'), findsOneWidget);
   });
 
   testWidgets('하단 탭 전환은 좌우 슬라이드 없이 한 프레임에 끝난다', (tester) async {
