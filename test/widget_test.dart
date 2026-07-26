@@ -188,6 +188,89 @@ void main() {
     expect(inCourses('정선 · 2박 3일'), findsOneWidget);
   });
 
+  testWidgets('내 코스에서 확정 코스를 열면 날짜와 사용 연차가 보인다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('내 코스'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 확정 코스(정선)는 목록 아래쪽이라 스크롤해서 누른다
+    await tester.scrollUntilVisible(
+      find.text('정선 · 2박 3일'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(MyCoursesScreen),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('정선 · 2박 3일'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('정선 여행'), findsOneWidget);
+    expect(find.text('2026.7.20 - 7.22'), findsOneWidget);
+    expect(find.text('사용 연차 일수 2일'), findsOneWidget);
+    // 2박3일이라 Day 탭이 3개, 코스 삭제 버튼이 하단에 있다
+    expect(find.text('Day 3'), findsOneWidget);
+    expect(find.text('코스 삭제하기'), findsOneWidget);
+  });
+
+  testWidgets('미확정 코스는 날짜 대신 일정 정하기 링크가 보인다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('내 코스'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 최신순 기본이라 미확정(영월)이 맨 위
+    await tester.tap(find.text('영월 · 당일치기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('영월 여행'), findsOneWidget);
+    expect(find.text('여행 일정 정하기'), findsOneWidget);
+    // 당일치기는 Day 탭이 하나뿐
+    expect(find.text('Day 1'), findsOneWidget);
+    expect(find.text('Day 2'), findsNothing);
+  });
+
   testWidgets('하단 탭 전환은 좌우 슬라이드 없이 한 프레임에 끝난다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();

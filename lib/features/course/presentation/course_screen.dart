@@ -1,13 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import 'widgets/course_day_tabs.dart';
+import 'widgets/course_map.dart';
+import 'widgets/course_place_list.dart';
 
 /// 지역·희망일수에 맞는 mock 코스 선택 (서버 연동 시 추천 API 응답으로 교체)
 final courseProvider = FutureProvider.autoDispose
@@ -49,16 +49,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   static const _labelNormal = Color(0xFF171719);
   static const _textTertiary = Color(0xFFADB1BB);
   static const _textSecondary = Color(0xFF686F7E);
-  static const _metaGray = Color(0xFF999999);
   static const _actionGray = Color(0xFFE9E9ED);
   static const _ctaBlack = Color(0xFF1A1A1A);
-  static const _stayAccent = Color(0xFFB55B45);
-  static const _benefitBg = Color(0xFFF6E3D5);
-  static const _benefitText = Color(0xFFB55B45);
   static const _imagePlaceholder = Color(0xFFF2F3F6);
-
-  /// 위젯 테스트에서는 플랫폼 뷰(지도)를 렌더링할 수 없어 플레이스홀더로 대체
-  static final bool _isTest = Platform.environment.containsKey('FLUTTER_TEST');
 
   int _selectedDay = 1;
 
@@ -170,40 +163,29 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30),
-                  child: SizedBox(height: 202, child: _buildMap(places)),
+                  child: SizedBox(
+                    height: 202,
+                    child: CourseMap(places: places, dayKey: _selectedDay),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
               if (durationDays > 1) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      for (var d = 1; d <= durationDays; d++) ...[
-                        if (d > 1) const SizedBox(width: 8),
-                        _DayTab(
-                          day: d,
-                          selected: _selectedDay == d,
-                          onTap: () => setState(() => _selectedDay = d),
-                        ),
-                      ],
-                    ],
+                  child: CourseDayTabs(
+                    durationDays: durationDays,
+                    selectedDay: _selectedDay,
+                    onSelect: (d) => setState(() => _selectedDay = d),
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < places.length; i++)
-                      _PlaceRow(
-                        index: i + 1,
-                        place: places[i],
-                        regionName: widget.regionId,
-                        isLast: i == places.length - 1,
-                      ),
-                  ],
+                child: CoursePlaceList(
+                  places: places,
+                  regionName: widget.regionId,
                 ),
               ),
               const SizedBox(height: 24),
@@ -267,201 +249,6 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMap(List<Map<String, dynamic>> places) {
-    final points = [
-      for (final p in places)
-        if (p['mapy'] != null && p['mapx'] != null)
-          NLatLng(p['mapy'] as double, p['mapx'] as double),
-    ];
-    if (_isTest || points.isEmpty) {
-      return Container(
-        color: const Color(0x806F767E),
-        alignment: Alignment.center,
-        child: const Text('지도', style: TextStyle(color: Colors.white)),
-      );
-    }
-    final center = NLatLng(
-      points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length,
-      points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length,
-    );
-    return NaverMap(
-      key: ValueKey('map-day-$_selectedDay'),
-      // 리스트 스크롤보다 지도 제스처(이동/확대)가 우선하도록 설정
-      forceGesture: true,
-      options: NaverMapViewOptions(
-        initialCameraPosition: NCameraPosition(target: center, zoom: 10.5),
-      ),
-      onMapReady: (controller) {
-        var n = 0;
-        for (var i = 0; i < places.length; i++) {
-          final p = places[i];
-          if (p['mapy'] == null || p['mapx'] == null) continue;
-          final marker = NMarker(
-            id: 'place-$i',
-            position: NLatLng(p['mapy'] as double, p['mapx'] as double),
-            caption: NOverlayCaption(text: '${i + 1}. ${p['name']}'),
-          );
-          controller.addOverlay(marker);
-          n++;
-        }
-        if (n >= 2) {
-          controller.updateCamera(
-            NCameraUpdate.fitBounds(
-              NLatLngBounds.from(points),
-              padding: const EdgeInsets.all(40),
-            ),
-          );
-        }
-      },
-    );
-  }
-}
-
-class _DayTab extends StatelessWidget {
-  const _DayTab({
-    required this.day,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final int day;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? _CourseScreenState._ctaBlack
-              : _CourseScreenState._actionGray,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          'Day $day',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : _CourseScreenState._textSecondary,
-            letterSpacing: -0.4,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceRow extends StatelessWidget {
-  const _PlaceRow({
-    required this.index,
-    required this.place,
-    required this.regionName,
-    required this.isLast,
-  });
-
-  final int index;
-  final Map<String, dynamic> place;
-  final String regionName;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final isStay = place['category'] == '숙박';
-    final circleColor = isStay
-        ? _CourseScreenState._stayAccent
-        : _CourseScreenState._labelNormal;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: circleColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$index',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: const Color(0xFFE5E8EB),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    place['name'] as String,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: _CourseScreenState._labelNormal,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${place['category']} · $regionName',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: _CourseScreenState._metaGray,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  if (isStay) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _CourseScreenState._benefitBg,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '숙박비 30% 지원',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _CourseScreenState._benefitText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

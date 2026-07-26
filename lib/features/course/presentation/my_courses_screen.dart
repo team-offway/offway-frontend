@@ -203,12 +203,8 @@ class _CourseCard extends StatelessWidget {
     final duration = course['durationLabel'] as String? ?? '';
 
     return GestureDetector(
-      onTap: () => context.push(
-        AppRoutes.coursePath(
-          course['regionId'] as String,
-          desiredDays: duration == '당일치기' ? 1 : 3,
-        ),
-      ),
+      onTap: () =>
+          context.push(AppRoutes.savedCoursePath(course['id'] as String)),
       behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
