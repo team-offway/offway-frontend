@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/trip_date_range_picker.dart';
 import '../../../core/constants/trip_constants.dart';
-import 'my_courses_screen.dart';
-import 'saved_course_screen.dart';
 
 // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
 const _labelNormal = Color(0xFF171719);
@@ -115,13 +113,10 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
   }
 
   void _saveSchedule() {
-    // TODO(course): 서버 일정 확정 API 연동. mock JSON은 쓰기가 불가해
-    // 지금은 프로바이더만 무효화하고 코스 상세로 돌아간다
-    ref.invalidate(savedCourseDetailProvider(widget.savedId));
-    ref.invalidate(savedCoursesProvider);
+    // TODO(course): 서버 일정 확정 API 연동. mock JSON은 쓰기가 불가해 고른 날짜를
+    // 저장할 수 없으므로 확정된 것처럼 닫지 않고 준비 중임을 알린다
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('일정 저장은 서버 연동 후 반영돼요')));
-    context.pop();
+    ).showSnackBar(const SnackBar(content: Text('일정 저장 기능은 준비 중이에요')));
   }
 }

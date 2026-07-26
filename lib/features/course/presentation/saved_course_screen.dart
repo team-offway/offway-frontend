@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
-import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -280,10 +279,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    // TODO(course): 서버 삭제 API 연동 (지금은 목록만 다시 불러온다)
-    ref.invalidate(savedCoursesProvider);
-    if (!context.mounted) return;
-    context.pop();
+    // TODO(course): 서버 삭제 API 연동. mock JSON은 쓰기가 불가해 실제로 지울 수 없으므로
+    // 삭제된 것처럼 화면을 닫지 않고 준비 중임을 알린다
+    _showPreparing('코스 삭제');
   }
 
   void _showPreparing(String feature) {

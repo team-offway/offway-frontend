@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
-import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -62,9 +61,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   }
 
   /// 코스를 담고 내 코스 탭으로 이동한다. 위저드는 여기서 끝나므로 조건을 초기화한다.
+  ///
+  /// TODO(course): 서버 저장 API 연동. mock JSON은 쓰기가 불가해 실제로 담기지는
+  /// 않고 목록 화면으로만 이동한다(목록에는 mock 코스가 그대로 보인다).
   void _saveToMyCourses() {
-    // TODO(course): 서버 저장 API 연동. mock JSON은 쓰기가 불가해 목록만 다시 불러온다
-    ref.invalidate(savedCoursesProvider);
     ref.read(courseWizardProvider.notifier).reset();
     context.go(AppRoutes.myCourses);
   }
