@@ -10,6 +10,17 @@ import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
 
+/// Keychain 삭제가 실패하는 상황을 재현하는 저장소
+class _FailingSecureStoragePlatform extends TestFlutterSecureStoragePlatform {
+  _FailingSecureStoragePlatform() : super({});
+
+  @override
+  Future<void> delete({
+    required String key,
+    required Map<String, String> options,
+  }) async => throw Exception('keychain unavailable');
+}
+
 void main() {
   setUp(() {
     // Keychain 플러그인은 테스트 환경에 없으므로 인메모리 구현으로 대체
@@ -147,6 +158,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget); // 로그인 화면
+  });
+
+  testWidgets('로그아웃이 실패하면 로그인 화면으로 넘어가지 않고 알린다', (tester) async {
+    // 토큰이 남은 채 로그인 화면으로 보내면 로그아웃된 줄 알게 되므로
+    FlutterSecureStoragePlatform.instance = _FailingSecureStoragePlatform();
+
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('마이'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('로그아웃에 실패'), findsOneWidget);
+    expect(find.byType(MyScreen), findsOneWidget); // 마이 화면에 그대로 머문다
+    expect(find.text('연차로 떠나는 로컬 여행'), findsNothing);
   });
 
   testWidgets('하단 탭에서 내 코스로 이동하면 저장한 코스가 확정 여부와 함께 보인다', (tester) async {

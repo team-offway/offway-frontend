@@ -156,8 +156,17 @@ class MyScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    // 저장된 토큰 제거 후 로그인 화면으로
-    await ref.read(authRepositoryProvider).logout();
+    // 토큰이 남은 채 로그인 화면으로 보내면 로그아웃된 줄 알고 넘어가므로,
+    // Keychain 삭제가 실패하면 세션을 유지한 채 실패를 알린다
+    try {
+      await ref.read(authRepositoryProvider).logout();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요')),
+      );
+      return;
+    }
     if (!context.mounted) return;
     context.go(AppRoutes.login);
   }
