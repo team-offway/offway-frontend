@@ -271,6 +271,60 @@ void main() {
     expect(find.text('Day 2'), findsNothing);
   });
 
+  testWidgets('미확정 코스에서 여행 일정 정하기를 누르면 캘린더로 이동한다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('구글 계정으로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('내 코스'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 미확정(영월) 코스로 들어가 일정 정하기 링크를 누른다
+    await tester.tap(find.text('영월 · 당일치기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('여행 일정 정하기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('여행 날짜 선택'), findsOneWidget);
+    expect(find.text('최대 2박3일까지 선택할 수 있어요'), findsOneWidget);
+
+    // 날짜를 고르기 전에는 선택 완료가 비활성
+    final done = find.widgetWithText(FilledButton, '선택 완료');
+    expect(tester.widget<FilledButton>(done).onPressed, isNull);
+
+    // 가는날·오는날을 고르면 활성화된다
+    final today = DateUtils.dateOnly(DateTime.now());
+    final start = today.add(const Duration(days: 1));
+    final end = start.add(const Duration(days: 1));
+    await tester.tap(find.text('${start.day}').first);
+    await tester.pump();
+    await tester.tap(find.text('${end.day}').first);
+    await tester.pump();
+    expect(find.text('가는날'), findsOneWidget);
+    expect(find.text('오는날'), findsOneWidget);
+    expect(tester.widget<FilledButton>(done).onPressed, isNotNull);
+  });
+
   testWidgets('하단 탭 전환은 좌우 슬라이드 없이 한 프레임에 끝난다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();

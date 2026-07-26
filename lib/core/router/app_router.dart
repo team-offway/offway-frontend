@@ -6,6 +6,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
+import '../../features/course/presentation/course_schedule_screen.dart';
 import '../../features/course/presentation/my_courses_screen.dart';
 import '../../features/course/presentation/saved_course_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
@@ -37,6 +38,12 @@ abstract final class AppRoutes {
   static const savedCourse = '/my-courses/:savedId';
 
   static String savedCoursePath(String savedId) => '/my-courses/$savedId';
+
+  /// 저장한 코스의 여행 일정 지정 (캘린더)
+  static const courseSchedule = '/my-courses/:savedId/schedule';
+
+  static String courseSchedulePath(String savedId) =>
+      '/my-courses/$savedId/schedule';
 
   static const my = '/my';
 
@@ -133,6 +140,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'myCourses',
         pageBuilder: (context, state) =>
             _noTransitionPage(const MyCoursesScreen()),
+      ),
+      // 더 구체적인 /schedule 경로를 :savedId 보다 먼저 등록한다
+      GoRoute(
+        path: AppRoutes.courseSchedule,
+        name: 'courseSchedule',
+        builder: (context, state) =>
+            CourseScheduleScreen(savedId: state.pathParameters['savedId']!),
       ),
       GoRoute(
         path: AppRoutes.savedCourse,

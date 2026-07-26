@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../mock/mock_data_source.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
@@ -183,8 +184,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     if (start == null) {
       return GestureDetector(
-        // TODO(course): 캘린더로 일정 지정하는 화면 작업 시 연결
-        onTap: () => _showPreparing('여행 일정 정하기'),
+        onTap: () => context.push(AppRoutes.courseSchedulePath(widget.savedId)),
         behavior: HitTestBehavior.opaque,
         child: const Text(
           '여행 일정 정하기',
