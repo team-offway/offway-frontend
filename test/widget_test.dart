@@ -113,7 +113,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('11일'), findsOneWidget); // mock 잔여연차
-    expect(find.textContaining('어디로 떠날까요?'), findsOneWidget);
+    expect(find.textContaining('어디로 떠나볼까요?'), findsOneWidget);
     expect(find.text('이번달 추천 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
     expect(find.text('숙박비 30% 지원'), findsOneWidget);

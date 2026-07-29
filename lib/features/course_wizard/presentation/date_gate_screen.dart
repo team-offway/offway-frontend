@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
 import '../application/course_wizard_provider.dart';
 
-/// O-04-0 · 날짜 갈림길 (STEP 0, 와이어프레임)
+/// O-04-0 · 날짜 갈림길 (STEP 0)
 /// "가고싶은 날짜가 있어요" → 캘린더 / "아직 안 정했어요" → 기간스타일
 class DateGateScreen extends ConsumerWidget {
   const DateGateScreen({super.key});
 
-  // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-  static const _labelNormal = Color(0xFF171719);
-  static const _textTertiary = Color(0xFFADB1BB);
-  static const _stepText = Color(0xFF545A66);
-  static const _optionFill = Color(0x0D07194C); // rgba(7,25,76,0.05)
-  static const _optionText = Color(0xB3031228); // rgba(3,18,40,0.7)
-  static const _imagePlaceholder = Color(0xFFF2F3F6);
-  static const _ctaDisabled = Color(0xFFC5C8CE);
-  static const _ctaEnabled = Color(0xFF191B1F);
+  // 시안이 DS 토큰 대신 지정한 보조 텍스트 색 (구 체계 값)
+  // TODO(디자인시스템): 디자이너가 토큰으로 정리하면 교체
+  static const _subtitleColor = Color(0xFFADB1BB);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,34 +23,31 @@ class DateGateScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: Column(
           children: [
             _buildTopBar(context),
-            const SizedBox(height: 22),
-            Container(width: 79, height: 79, color: _imagePlaceholder),
-            const SizedBox(height: 24),
-            const Text(
+            const SizedBox(height: 60),
+            SvgPicture.asset(
+              'assets/icons/ic_calendar_blue.svg',
+              width: 48,
+              height: 48,
+            ),
+            const SizedBox(height: 28),
+            Text(
               '여행 날짜가 있나요?',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: _labelNormal,
-                letterSpacing: -0.6,
+              style: AppTypography.title3Bold.copyWith(
+                color: AppColors.labelNormal,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '날짜를 직접 선택하거나,\n추천부터 받아볼 수 있어요.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: _textTertiary,
-                letterSpacing: -0.6,
-                height: 26 / 18,
+              style: AppTypography.body1NormalMedium.copyWith(
+                color: _subtitleColor,
               ),
             ),
             const SizedBox(height: 40),
@@ -65,7 +58,7 @@ class DateGateScreen extends ConsumerWidget {
                   .read(courseWizardProvider.notifier)
                   .selectDatePath(DatePathChoice.haveDates),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
             _OptionButton(
               label: '아직 안 정했어요',
               selected: choice == DatePathChoice.undecided,
@@ -75,10 +68,9 @@ class DateGateScreen extends ConsumerWidget {
             ),
             const Spacer(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: SizedBox(
                 width: double.infinity,
-                height: 54,
                 child: FilledButton(
                   onPressed: choice == null
                       ? null
@@ -90,22 +82,16 @@ class DateGateScreen extends ConsumerWidget {
                           }
                         },
                   style: FilledButton.styleFrom(
-                    backgroundColor: _ctaEnabled,
-                    disabledBackgroundColor: _ctaDisabled,
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white,
+                    backgroundColor: AppColors.primaryNormal,
+                    disabledBackgroundColor: AppColors.interactionDisable,
+                    foregroundColor: AppColors.staticWhite,
+                    disabledForegroundColor: AppColors.labelAssistive,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    '다음',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
+                  child: Text('다음', style: AppTypography.body1NormalBold),
                 ),
               ),
             ),
@@ -117,25 +103,23 @@ class DateGateScreen extends ConsumerWidget {
 
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => context.pop(),
+            behavior: HitTestBehavior.opaque,
             child: const Icon(
               Icons.arrow_back_ios_new,
               size: 22,
-              color: _stepText,
+              color: AppColors.labelNormal,
             ),
           ),
           const Spacer(),
-          const Text(
+          Text(
             '1/4',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: _stepText,
-              letterSpacing: -0.6,
+            style: AppTypography.label1NormalMedium.copyWith(
+              color: const Color(0xFF545A66),
             ),
           ),
         ],
@@ -160,22 +144,21 @@ class _OptionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 307,
-        constraints: const BoxConstraints(minHeight: 56),
+        width: 213,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: DateGateScreen._optionFill,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(12),
+          // 시안에 선택 상태 표기가 없어 홈 카테고리 칩과 같은 규칙을 쓴다
           border: selected
-              ? Border.all(color: DateGateScreen._ctaEnabled, width: 1.5)
+              ? Border.all(color: AppColors.primaryNormal, width: 1.5)
               : null,
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: DateGateScreen._optionText,
+          style: AppTypography.body1NormalMedium.copyWith(
+            color: AppColors.labelNeutral,
           ),
         ),
       ),
