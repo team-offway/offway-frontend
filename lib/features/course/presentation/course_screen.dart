@@ -62,9 +62,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   /// 코스를 담고 내 코스 탭으로 이동한다. 위저드는 여기서 끝나므로 조건을 초기화한다.
   ///
-  /// TODO(course): 서버 저장 API 연동. mock JSON은 쓰기가 불가해 실제로 담기지는
-  /// 않고 목록 화면으로만 이동한다(목록에는 mock 코스가 그대로 보인다).
+  /// TODO(course): 서버 저장 API 연동. 지금은 mock JSON에 쓸 수 없어 실제로 담기지
+  /// 않으므로, 담긴 것으로 오해하지 않도록 이동 전에 안내를 띄운다.
   void _saveToMyCourses() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('코스 담기는 준비 중이에요. 내 코스 화면으로 이동할게요')),
+    );
     ref.read(courseWizardProvider.notifier).reset();
     context.go(AppRoutes.myCourses);
   }

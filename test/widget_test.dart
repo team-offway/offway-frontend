@@ -803,5 +803,7 @@ void main() {
     // 내 코스 목록에 도착 (담기 화면으로 되돌아가지 않는다)
     expect(find.byType(MyCoursesScreen), findsOneWidget);
     expect(find.text('내 코스에 담기'), findsNothing);
+    // 아직 실제로 담기지는 않으므로 담긴 것으로 오해하지 않도록 안내가 보인다
+    expect(find.textContaining('코스 담기는 준비 중'), findsOneWidget);
   });
 }
