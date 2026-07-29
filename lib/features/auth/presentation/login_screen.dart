@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
 import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
 import '../data/kakao_auth_service.dart';
@@ -20,14 +21,11 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
+  // 소셜 브랜드 색은 DS 토큰이 아니라 각 플랫폼 가이드 값이다
   static const _kakaoYellow = Color(0xFFFEE500);
   static const _gray950 = Color(0xFF191B1F);
   static const _textPrimary = Color(0xFF2D3037);
-  static const _textSecondary = Color(0xFF686F7E);
-  static const _textTertiary = Color(0xFFADB1BB);
   static const _borderMuted = Color(0xFFDCDEE2);
-  static const _imagePlaceholder = Color(0xFFF2F3F6);
 
   final _kakaoAuth = const KakaoAuthService();
   final _appleAuth = const AppleAuthService();
@@ -125,29 +123,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   children: [
                     const Spacer(flex: 3),
-                    // 로고 일러스트 자리 (디자인 확정 전 플레이스홀더)
-                    Container(
-                      width: 190,
-                      height: 190,
-                      color: _imagePlaceholder,
-                    ),
-                    const SizedBox(height: 18),
                     SvgPicture.asset(
-                      'assets/icons/logo_wordmark.svg',
-                      height: 40,
+                      'assets/icons/logo_wordmark_blue.svg',
+                      height: 38,
                       semanticsLabel: 'OffWay',
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    const SizedBox(height: 10),
+                    Text(
                       '연차로 떠나는 로컬 여행',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF171719),
-                        letterSpacing: -0.6,
+                      style: AppTypography.headline1Bold.copyWith(
+                        color: AppColors.labelNeutral,
                       ),
                     ),
-                    const Spacer(flex: 2),
+                    const Spacer(flex: 4),
                     _SocialLoginButton(
                       label: '카카오로 시작하기',
                       iconAsset: 'assets/icons/kakao_logo.svg',
@@ -165,7 +153,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     _SocialLoginButton(
-                      label: '구글 계정으로 시작하기',
+                      label: 'Google로 시작하기',
                       iconAsset: 'assets/icons/google_logo.svg',
                       backgroundColor: Colors.white,
                       foregroundColor: _textPrimary,
@@ -177,11 +165,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 20),
                     Text.rich(
                       TextSpan(
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: _textSecondary,
-                          letterSpacing: -0.6,
+                        style: AppTypography.label1NormalMedium.copyWith(
+                          color: AppColors.labelNeutral,
                         ),
                         children: [
                           const TextSpan(text: '이미 계정이 있으신가요? '),
@@ -196,23 +181,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    const Text.rich(
+                    Text.rich(
                       TextSpan(
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _textTertiary,
-                          letterSpacing: -0.4,
+                        style: AppTypography.caption1Medium.copyWith(
+                          color: AppColors.labelAssistive,
                         ),
-                        children: [
-                          TextSpan(text: '가입 시 '),
-                          TextSpan(
-                            text: '이용약관',
-                            style: TextStyle(
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                          TextSpan(text: ' 및 '),
+                        children: const [
+                          TextSpan(text: '가입 시 이용약관 및 '),
                           TextSpan(
                             text: '개인정보 처리방침',
                             style: TextStyle(
