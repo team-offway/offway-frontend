@@ -67,5 +67,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- HTTPS 등 표준 암호화만 사용(면제 대상) — TestFlight 업로드마다 받는 수출 규정 질문 생략 -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
