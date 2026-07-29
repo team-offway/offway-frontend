@@ -7,10 +7,8 @@ import 'package:offway/core/theme/tokens/tokens.dart';
 /// 토큰을 고칠 일이 생기면 Figma를 먼저 확인하고 여기 기대값도 함께 바꾼다.
 void main() {
   group('크기 스케일은 Figma와 일치한다', () {
-    test('Display · Title', () {
-      expect(AppTypography.display1Bold.fontSize, 56);
-      expect(AppTypography.display2Bold.fontSize, 40);
-      expect(AppTypography.display3Bold.fontSize, 36);
+    test('Title', () {
+      // Display(56~36)는 2026-07-30 DS 개편으로 제거됐다
       expect(AppTypography.title1Bold.fontSize, 32);
       expect(AppTypography.title2Bold.fontSize, 28);
       expect(AppTypography.title3Bold.fontSize, 24);
@@ -31,9 +29,9 @@ void main() {
   });
 
   group('굵기', () {
-    test('Display·Title의 Bold는 700, Heading 이하는 600이다', () {
+    test('Title의 Bold는 700, Heading 이하는 600이다', () {
       // DS가 큰 스케일만 진짜 Bold를 쓰고 나머지는 SemiBold를 쓴다
-      expect(AppTypography.display1Bold.fontWeight, FontWeight.w700);
+      expect(AppTypography.title1Bold.fontWeight, FontWeight.w700);
       expect(AppTypography.title3Bold.fontWeight, FontWeight.w700);
       expect(AppTypography.heading1Bold.fontWeight, FontWeight.w600);
       expect(AppTypography.body1NormalBold.fontWeight, FontWeight.w600);
@@ -50,7 +48,6 @@ void main() {
 
   group('행간·자간', () {
     test('대표 스타일의 행간이 Figma 값과 같다', () {
-      expect(AppTypography.display1Bold.height, closeTo(1.286, 0.0005));
       expect(AppTypography.title1Bold.height, closeTo(1.375, 0.0005));
       expect(AppTypography.body1NormalRegular.height, closeTo(1.5, 0.0005));
       expect(AppTypography.caption2Regular.height, closeTo(1.273, 0.0005));
@@ -73,12 +70,12 @@ void main() {
     });
 
     test('자간은 큰 글씨일수록 좁고 작은 글씨일수록 넓다', () {
-      // Figma가 px 값으로 준다. Display는 음수, Caption은 양수.
-      expect(AppTypography.display1Bold.letterSpacing, -3.19);
+      // Figma가 px 값으로 준다. Title은 음수, Caption은 양수.
+      expect(AppTypography.title1Bold.letterSpacing, -2.53);
       expect(AppTypography.headline2Bold.letterSpacing, 0);
       expect(AppTypography.caption2Bold.letterSpacing, 3.11);
       expect(
-        AppTypography.display1Bold.letterSpacing!,
+        AppTypography.title1Bold.letterSpacing!,
         lessThan(AppTypography.caption2Bold.letterSpacing!),
       );
     });
@@ -88,7 +85,7 @@ void main() {
     // 토큰은 서체를 비워두고 테마가 공급한다. 둘 중 하나만 검사하면
     // 계약이 깨져도(예: 테마에서 fontFamily가 빠져도) 드러나지 않는다.
     test('토큰에는 fontFamily가 없다', () {
-      expect(AppTypography.display1Bold.fontFamily, isNull);
+      expect(AppTypography.title1Bold.fontFamily, isNull);
       expect(AppTypography.body1NormalRegular.fontFamily, isNull);
       expect(AppTypography.caption2Regular.fontFamily, isNull);
     });
