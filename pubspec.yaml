@@ -29,6 +29,15 @@ dev_dependencies:
   json_serializable: ^6.11.2
   freezed: ^3.2.3
   flutter_secure_storage_platform_interface: ^2.0.2
+  flutter_launcher_icons: ^0.14.4
+
+# 앱 아이콘 생성 설정. 원본(assets/icon/app_icon.png) 교체 후
+# `dart run flutter_launcher_icons` 실행하면 iOS 아이콘 세트가 재생성된다.
+flutter_launcher_icons:
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  # iOS는 알파 채널이 있으면 App Store 업로드가 거부된다
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
