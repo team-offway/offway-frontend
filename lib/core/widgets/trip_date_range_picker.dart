@@ -123,9 +123,9 @@ class _MonthCalendar extends StatelessWidget {
     // 단, 범위 완성 후에는 다시 활성화해 다른 시점으로 재선택 가능하게 한다
     final start = startDate;
     final isSelecting = start != null && endDate == null;
+    // Duration 더하기 대신 달력 일수로 비교한다 (서머타임 지역에서 어긋남 방지)
     final isBeyondLimit =
-        isSelecting &&
-        date.isAfter(start.add(const Duration(days: kMaxTripSpanDays)));
+        isSelecting && calendarDaysBetween(start, date) > kMaxTripSpanDays;
     final isDisabled = isPast || isBeyondLimit;
     final isSunday = date.weekday == DateTime.sunday;
     final isStart = startDate == date;
