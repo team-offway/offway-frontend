@@ -36,7 +36,7 @@ void main() {
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget);
     expect(find.text('카카오로 시작하기'), findsOneWidget);
     expect(find.text('Apple로 시작하기'), findsOneWidget);
-    expect(find.text('구글 계정으로 시작하기'), findsOneWidget);
+    expect(find.text('Google로 시작하기'), findsOneWidget);
   });
 
   testWidgets('소셜 로그인 버튼을 누르면 잔여연차 온보딩으로 이동한다', (tester) async {
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
 
@@ -55,7 +55,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
 
@@ -100,7 +100,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -123,7 +123,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -167,7 +167,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -202,7 +202,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -241,7 +241,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -287,7 +287,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -324,7 +324,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -386,7 +386,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -416,7 +416,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -474,7 +474,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -515,7 +515,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -546,7 +546,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -601,7 +601,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));
@@ -658,7 +658,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('구글 계정으로 시작하기'),
+      find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
     await tester.tap(find.text('건너뛰기'));

@@ -15,6 +15,9 @@ import 'package:flutter/painting.dart';
 /// `ThemeData(fontFamily:)`에서 한 번만 지정해 앱 전체에 적용한다.
 /// 토큰마다 서체를 박아두면 나중에 바꿀 때 여기 57곳을 모두 고쳐야 한다.
 ///
+/// 자간은 Figma가 em(폰트 크기 대비 %)으로 정의해 px로 환산해 넣었다
+/// (예: Caption 1 = 12px × 2.52% = 0.3024).
+///
 /// 스케일은 크기 순으로 Title(32~24) → Heading(22~20) → Headline(18~17)
 /// → Body(16~15) → Label(14~13) → Caption(12~11).
 /// (Display 56~36은 2026-07-30 DS 개편으로 제거됐다 — 모바일에서 쓸 일이 없음)
@@ -25,57 +28,57 @@ abstract final class AppTypography {
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 1.375,
-    letterSpacing: -2.53,
+    letterSpacing: -0.8096,
   );
   static const title1Medium = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.w500,
     height: 1.375,
-    letterSpacing: -2.53,
+    letterSpacing: -0.8096,
   );
   static const title1Regular = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.w400,
     height: 1.375,
-    letterSpacing: -2.53,
+    letterSpacing: -0.8096,
   );
 
   static const title2Bold = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     height: 1.358,
-    letterSpacing: -2.36,
+    letterSpacing: -0.6608,
   );
   static const title2Medium = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w500,
     height: 1.358,
-    letterSpacing: -2.36,
+    letterSpacing: -0.6608,
   );
   static const title2Regular = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w400,
     height: 1.358,
-    letterSpacing: -2.36,
+    letterSpacing: -0.6608,
   );
 
   static const title3Bold = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w700,
     height: 1.334,
-    letterSpacing: -2.3,
+    letterSpacing: -0.552,
   );
   static const title3Medium = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.334,
-    letterSpacing: -2.3,
+    letterSpacing: -0.552,
   );
   static const title3Regular = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w400,
     height: 1.334,
-    letterSpacing: -2.3,
+    letterSpacing: -0.552,
   );
 
   // ── Heading · 섹션 제목 ─────────────────────────────────────────────
@@ -84,38 +87,38 @@ abstract final class AppTypography {
     fontSize: 22,
     fontWeight: FontWeight.w600,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4268,
   );
   static const heading1Medium = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w500,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4268,
   );
   static const heading1Regular = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w400,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4268,
   );
 
   static const heading2Bold = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
   );
   static const heading2Medium = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w500,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
   );
   static const heading2Regular = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w400,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
   );
 
   // ── Headline · 소제목 ───────────────────────────────────────────────
@@ -123,19 +126,19 @@ abstract final class AppTypography {
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 1.445,
-    letterSpacing: -0.02,
+    letterSpacing: -0.0036,
   );
   static const headline1Medium = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w500,
     height: 1.445,
-    letterSpacing: -0.02,
+    letterSpacing: -0.0036,
   );
   static const headline1Regular = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w400,
     height: 1.445,
-    letterSpacing: -0.02,
+    letterSpacing: -0.0036,
   );
 
   static const headline2Bold = TextStyle(
@@ -163,76 +166,76 @@ abstract final class AppTypography {
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
   static const body1NormalMedium = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
   static const body1NormalRegular = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
 
   static const body1ReadingBold = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.625,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
   static const body1ReadingMedium = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.625,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
   static const body1ReadingRegular = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.625,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
   );
 
   static const body2NormalBold = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.467,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
   static const body2NormalMedium = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w500,
     height: 1.467,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
   static const body2NormalRegular = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.467,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
 
   static const body2ReadingBold = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.6,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
   static const body2ReadingMedium = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w500,
     height: 1.6,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
   static const body2ReadingRegular = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.6,
-    letterSpacing: 0.96,
+    letterSpacing: 0.144,
   );
 
   // ── Label · 버튼·탭 등 UI 텍스트 ────────────────────────────────────
@@ -240,19 +243,19 @@ abstract final class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
   static const label1NormalMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
   static const label1NormalRegular = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
 
   // Reading 변형의 행간은 Bold만 1.5714, 나머지는 1.571 (Figma 값 그대로)
@@ -260,38 +263,38 @@ abstract final class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.5714,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
   static const label1ReadingMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.571,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
   static const label1ReadingRegular = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.571,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
   );
 
   static const label2Bold = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w600,
     height: 1.385,
-    letterSpacing: 1.94,
+    letterSpacing: 0.2522,
   );
   static const label2Medium = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     height: 1.385,
-    letterSpacing: 1.94,
+    letterSpacing: 0.2522,
   );
   static const label2Regular = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     height: 1.385,
-    letterSpacing: 1.94,
+    letterSpacing: 0.2522,
   );
 
   // ── Caption · 가장 작은 보조 텍스트 ─────────────────────────────────
@@ -304,37 +307,37 @@ abstract final class AppTypography {
     fontSize: 12,
     fontWeight: FontWeight.w600,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
   );
   static const caption1Medium = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
   );
   static const caption1Regular = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
   );
 
   static const caption2Bold = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w600,
     height: 1.273,
-    letterSpacing: 3.11,
+    letterSpacing: 0.3421,
   );
   static const caption2Medium = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     height: 1.273,
-    letterSpacing: 3.11,
+    letterSpacing: 0.3421,
   );
   static const caption2Regular = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     height: 1.273,
-    letterSpacing: 3.11,
+    letterSpacing: 0.3421,
   );
 }

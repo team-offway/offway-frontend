@@ -70,10 +70,11 @@ void main() {
     });
 
     test('자간은 큰 글씨일수록 좁고 작은 글씨일수록 넓다', () {
-      // Figma가 px 값으로 준다. Title은 음수, Caption은 양수.
-      expect(AppTypography.title1Bold.letterSpacing, -2.53);
+      // Figma는 em(크기 대비 %)으로 주므로 px로 환산돼 있어야 한다.
+      // 예: Title 1 = 32 × -2.53% = -0.8096 (에 -2.53을 그대로 넣으면 자간이 붕 뜬다)
+      expect(AppTypography.title1Bold.letterSpacing, closeTo(-0.8096, 0.0001));
       expect(AppTypography.headline2Bold.letterSpacing, 0);
-      expect(AppTypography.caption2Bold.letterSpacing, 3.11);
+      expect(AppTypography.caption2Bold.letterSpacing, closeTo(0.3421, 0.0001));
       expect(
         AppTypography.title1Bold.letterSpacing!,
         lessThan(AppTypography.caption2Bold.letterSpacing!),
