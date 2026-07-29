@@ -57,9 +57,12 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
                   final list = _filter(all);
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      // 카드 높이 = 4:3 썸네일(칸 너비×0.75) + 텍스트·뱃지 영역
+                      // 셀 높이 공식은 카드가 소유한다 (구성 변경 시 한 곳만 수정)
                       final columnWidth = (constraints.maxWidth - 40 - 12) / 2;
-                      final cardExtent = columnWidth * 0.75 + 88;
+                      final cardExtent = RegionCard.mainAxisExtentFor(
+                        context,
+                        columnWidth,
+                      );
                       return _buildScroll(list, cardExtent);
                     },
                   );

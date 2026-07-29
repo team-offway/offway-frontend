@@ -25,6 +25,17 @@ class RegionCard extends StatelessWidget {
   final Map<String, dynamic> region;
   final RegionCardStyle style;
 
+  /// 텍스트·뱃지 영역의 기본 높이 (제목·설명 각 1줄 + 뱃지 + 간격)
+  static const _textAreaHeight = 84.0;
+
+  /// 그리드가 이 카드를 담을 때 필요한 셀 높이.
+  /// 카드 구성이 바뀌면 이 공식만 고치면 되도록 카드 옆에 둔다.
+  /// 텍스트는 시스템 글자 크기 배율을 따르므로 그 배율만큼 여유를 준다.
+  static double mainAxisExtentFor(BuildContext context, double columnWidth) {
+    final textScale = MediaQuery.textScalerOf(context).scale(10) / 10;
+    return columnWidth * 3 / 4 + _textAreaHeight * textScale + 8;
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = Column(
@@ -45,6 +56,8 @@ class RegionCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           '${region['name']} · ${region['sido']}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: AppTypography.body2NormalBold.copyWith(
             color: AppColors.labelNormal,
           ),
