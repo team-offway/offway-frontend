@@ -53,7 +53,20 @@ abstract final class AppPalette {
   static const coolNeutral98 = Color(0xFFF4F4F5);
   static const coolNeutral99 = Color(0xFFF7F7F8);
 
-  // ── Blue (Primary 계열) ──────────────────────────────────────────────
+  // ── Offway (브랜드 전용 하늘색) ──────────────────────────────────────
+  static const offway10 = Color(0xFF063540);
+  static const offway20 = Color(0xFF0C697F);
+  static const offway30 = Color(0xFF1193B2);
+  static const offway40 = Color(0xFF14B3D8);
+  static const offway50 = Color(0xFF18D2FE);
+  static const offway60 = Color(0xFF3BD9FE);
+  static const offway70 = Color(0xFF62E0FE);
+  static const offway80 = Color(0xFF8CE9FF);
+  static const offway90 = Color(0xFFBEF2FF);
+  static const offway95 = Color(0xFFDCF8FF);
+  static const offway99 = Color(0xFFF6FDFF);
+
+  // ── Blue ───────────────────────────────────────────────────────────
   static const blue10 = Color(0xFF001536);
   static const blue20 = Color(0xFF002966);
   static const blue30 = Color(0xFF003E9C);

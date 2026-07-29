@@ -15,10 +15,10 @@ void main() {
       expect(AppColors.labelDisable, const Color(0x2937383C)); // CN25 · 16%
     });
 
-    test('Primary', () {
-      expect(AppColors.primaryNormal, const Color(0xFF0066FF));
-      expect(AppColors.primaryStrong, const Color(0xFF005EEB));
-      expect(AppColors.primaryHeavy, const Color(0xFF0054D1));
+    test('Primary — 2026-07-30 DS 개편으로 하늘색 계열', () {
+      expect(AppColors.primaryNormal, const Color(0xFF3DC2FF));
+      expect(AppColors.primaryStrong, const Color(0xFF00AEFF));
+      expect(AppColors.primaryHeavy, const Color(0xFF008DCF));
     });
 
     test('Background', () {
@@ -74,7 +74,7 @@ void main() {
   group('Semantic은 Atomic을 가리킨다', () {
     test('같은 색이면 같은 상수를 참조한다', () {
       expect(AppColors.labelNormal, AppPalette.coolNeutral10);
-      expect(AppColors.primaryNormal, AppPalette.blue50);
+      expect(AppColors.primaryNormal, AppPalette.lightBlue60);
       expect(AppColors.statusNegative, AppPalette.red50);
       expect(AppColors.backgroundNormalAlternative, AppPalette.coolNeutral99);
     });
@@ -105,6 +105,9 @@ void main() {
       expect(AppPalette.common0, const Color(0xFF000000));
       expect(AppPalette.common100, const Color(0xFFFFFFFF));
       expect(AppPalette.blue50, const Color(0xFF0066FF));
+      expect(AppPalette.offway50, const Color(0xFF18D2FE));
+      expect(AppPalette.offway10, const Color(0xFF063540));
+      expect(AppPalette.offway99, const Color(0xFFF6FDFF));
       expect(AppPalette.coolNeutral50, const Color(0xFF70737C));
       expect(AppPalette.green50, const Color(0xFF00BF40));
       expect(AppPalette.pink46, const Color(0xFFE846CD));

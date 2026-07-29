@@ -15,68 +15,11 @@ import 'package:flutter/painting.dart';
 /// `ThemeData(fontFamily:)`에서 한 번만 지정해 앱 전체에 적용한다.
 /// 토큰마다 서체를 박아두면 나중에 바꿀 때 여기 57곳을 모두 고쳐야 한다.
 ///
-/// 스케일은 크기 순으로 Display(56~36) → Title(32~24) → Heading(22~20)
-/// → Headline(18~17) → Body(16~15) → Label(14~13) → Caption(12~11).
+/// 스케일은 크기 순으로 Title(32~24) → Heading(22~20) → Headline(18~17)
+/// → Body(16~15) → Label(14~13) → Caption(12~11).
+/// (Display 56~36은 2026-07-30 DS 개편으로 제거됐다 — 모바일에서 쓸 일이 없음)
 /// Body·Label에는 행간이 넓은 `Reading` 변형이 있어 긴 글에 쓴다.
 abstract final class AppTypography {
-  // ── Display · 가장 큰 표시용 ────────────────────────────────────────
-  static const display1Bold = TextStyle(
-    fontSize: 56,
-    fontWeight: FontWeight.w700,
-    height: 1.286,
-    letterSpacing: -3.19,
-  );
-  static const display1Medium = TextStyle(
-    fontSize: 56,
-    fontWeight: FontWeight.w500,
-    height: 1.286,
-    letterSpacing: -3.19,
-  );
-  static const display1Regular = TextStyle(
-    fontSize: 56,
-    fontWeight: FontWeight.w400,
-    height: 1.286,
-    letterSpacing: -3.19,
-  );
-
-  static const display2Bold = TextStyle(
-    fontSize: 40,
-    fontWeight: FontWeight.w700,
-    height: 1.3,
-    letterSpacing: -2.82,
-  );
-  static const display2Medium = TextStyle(
-    fontSize: 40,
-    fontWeight: FontWeight.w500,
-    height: 1.3,
-    letterSpacing: -2.82,
-  );
-  static const display2Regular = TextStyle(
-    fontSize: 40,
-    fontWeight: FontWeight.w400,
-    height: 1.3,
-    letterSpacing: -2.82,
-  );
-
-  static const display3Bold = TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.w700,
-    height: 1.334,
-    letterSpacing: -2.7,
-  );
-  static const display3Medium = TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.w500,
-    height: 1.334,
-    letterSpacing: -2.7,
-  );
-  static const display3Regular = TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.w400,
-    height: 1.334,
-    letterSpacing: -2.7,
-  );
-
   // ── Title · 화면 제목 ───────────────────────────────────────────────
   static const title1Bold = TextStyle(
     fontSize: 32,
