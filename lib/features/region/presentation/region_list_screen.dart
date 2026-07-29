@@ -55,42 +55,13 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
                 error: (e, _) => Center(child: Text('여행지를 불러오지 못했어요\n$e')),
                 data: (all) {
                   final list = _filter(all);
-                  return CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(child: _buildCategoryRow()),
-                      const SliverToBoxAdapter(child: SizedBox(height: 20)),
-                      if (list.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Text(
-                              '해당 카테고리의 여행지가 아직 없어요',
-                              style: TextStyle(fontSize: 14, color: _textMuted),
-                            ),
-                          ),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                          sliver: SliverGrid(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 24,
-                                  // 이미지 177 + 텍스트 3줄 영역
-                                  mainAxisExtent: 268,
-                                ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, i) => RegionCard(
-                                region: list[i],
-                                style: RegionCardStyle.plain,
-                              ),
-                              childCount: list.length,
-                            ),
-                          ),
-                        ),
-                    ],
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 카드 높이 = 4:3 썸네일(칸 너비×0.75) + 텍스트·뱃지 영역
+                      final columnWidth = (constraints.maxWidth - 40 - 12) / 2;
+                      final cardExtent = columnWidth * 0.75 + 88;
+                      return _buildScroll(list, cardExtent);
+                    },
                   );
                 },
               ),
@@ -98,6 +69,42 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildScroll(List<Map<String, dynamic>> list, double cardExtent) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: _buildCategoryRow()),
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
+        if (list.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                '해당 카테고리의 여행지가 아직 없어요',
+                style: TextStyle(fontSize: 14, color: _textMuted),
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 24,
+                mainAxisExtent: cardExtent,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, i) =>
+                    RegionCard(region: list[i], style: RegionCardStyle.plain),
+                childCount: list.length,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
