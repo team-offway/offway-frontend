@@ -84,9 +84,9 @@ void main() {
   });
 
   group('fontFamily는 비어 있다', () {
-    test('앱에 Pretendard가 없어 시스템 폰트로 렌더된다', () {
-      // 폰트를 번들하면 ThemeData(fontFamily:)로 한 번에 적용한다.
-      // 여기에 이름만 박아두면 조용히 기본 폰트로 대체돼 혼란스럽다.
+    test('서체는 테마에서 한 번만 지정한다', () {
+      // Pretendard는 ThemeData(fontFamily:)로 앱 전체에 적용된다.
+      // 토큰마다 서체를 박아두면 나중에 바꿀 때 57곳을 고쳐야 한다.
       expect(AppTypography.display1Bold.fontFamily, isNull);
       expect(AppTypography.body1NormalRegular.fontFamily, isNull);
       expect(AppTypography.caption2Regular.fontFamily, isNull);

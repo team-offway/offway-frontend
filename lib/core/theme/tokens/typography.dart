@@ -353,8 +353,10 @@ abstract final class AppTypography {
 
   // ── Caption · 가장 작은 보조 텍스트 ─────────────────────────────────
   // TODO(DS): Figma의 `Caption 1/Bold`가 weight 400(Regular)으로 정의돼 있다.
-  // 다른 Bold는 모두 600 이상이라 DS 쪽 오설정으로 보여 여기서는 600을 쓴다.
-  // 디자이너 확인 후 Figma가 맞다면 400으로 되돌린다.
+  // Caption 1/Regular와 값이 같아 Bold를 써도 굵기가 구분되지 않으며, DS 문서
+  // 스크린샷에서도 Caption 1 행만 Bold 열이 굵지 않다(Caption 2는 정상).
+  // 다른 Bold 15종이 모두 600 이상이라 DS 오설정으로 보고 600을 쓴다.
+  // 디자이너 확인 후 의도한 것이라면 400으로 되돌린다.
   static const caption1Bold = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
