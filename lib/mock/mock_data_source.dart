@@ -28,6 +28,17 @@ class MockDataSource {
   /// monthlyPicks(홈 '이번달 추천 여행지'용)
   static Future<Map<String, dynamic>> regions() => _load('regions');
 
+  /// candidates + monthlyPicks를 합친 전체 지역 목록.
+  /// 홈·목록·상세가 같은 집합을 봐야 하므로 병합은 여기서만 한다
+  /// (서버 연동 시 지역 목록 API 하나로 교체).
+  static Future<List<Map<String, dynamic>>> allRegions() async {
+    final data = await regions();
+    return [
+      ...(data['candidates'] as List).cast<Map<String, dynamic>>(),
+      ...(data['monthlyPicks'] as List).cast<Map<String, dynamic>>(),
+    ];
+  }
+
   /// 추천 코스: courses[] — 당일치기/2박3일, Day별 장소(이름·카테고리·이미지·좌표)
   static Future<Map<String, dynamic>> courses() => _load('courses');
 }

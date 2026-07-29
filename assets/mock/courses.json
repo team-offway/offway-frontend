@@ -247,5 +247,30 @@
         }
       ]
     }
+  ],
+  "savedCourses": [
+    {
+      "id": "saved-jeongseon-2n3d",
+      "courseId": "jeongseon-2n3d",
+      "regionId": "정선",
+      "regionName": "정선",
+      "durationLabel": "2박 3일",
+      "confirmed": true,
+      "startDate": "2026-07-20",
+      "endDate": "2026-07-22",
+      "thumbnailUrl": null
+    },
+    {
+      "id": "saved-yeongwol-day",
+      "courseId": "yeongwol-day",
+      "regionId": "영월",
+      "regionName": "영월",
+      "durationLabel": "당일치기",
+      "confirmed": false,
+      "startDate": null,
+      "endDate": null,
+      "plannedNote": "8월경",
+      "thumbnailUrl": null
+    }
   ]
 }

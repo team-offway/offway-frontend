@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';

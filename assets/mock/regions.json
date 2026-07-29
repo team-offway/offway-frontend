@@ -10,7 +10,36 @@
       "travelMinutesByCar": 150,
       "travelMinutesByTransit": 210,
       "description": "폐광촌에서 다시 태어난 마을",
-      "benefitBadge": "숙박비 30% 지원"
+      "benefitBadge": "숙박비 30% 지원",
+      "headline": "🏔️ 폐광촌에서 예술마을로",
+      "story": "한때 검은 석탄을 캐내던 삼탄아트마인은 이제 빛과 색으로 가득한 복합문화공간으로 다시 태어났다. 화암동굴의 신비로운 종유석 사이를 걷고 아리랑시장 좌판에서 곤드레밥 한 그릇을 비우면, 정선의 하루가 저문다.",
+      "transitInfo": "서울에서 대중교통 약 3시간30분",
+      "photos": [
+        "https://tong.visitkorea.or.kr/cms/resource_photo/98/3462498_image2_1.jpg",
+        "https://tong.visitkorea.or.kr/cms/resource/09/582509_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/30/3533330_image2_1.jpg",
+        "https://tong.visitkorea.or.kr/cms/resource/17/2579017_image2_1.jpg",
+        "https://tong.visitkorea.or.kr/cms/resource/23/3505523_image2_1.jpg",
+        "https://tong.visitkorea.or.kr/cms/resource/04/1825804_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/95/2731295_image2_1.jpg"
+      ],
+      "highlightSpots": [
+        {
+          "name": "메이힐스리조트",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/00/1827300_image2_1.jpg"
+        },
+        {
+          "name": "병방치 스카이워크",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/97/1690997_image2_1.jpg"
+        }
+      ],
+      "designationNote": "인구감소지역 지정 · 강원 정선군",
+      "categoryCounts": {
+        "관광지": 71,
+        "숙박": 46,
+        "체험": 11,
+        "맛집": 29
+      }
     },
     {
       "id": "영월",
@@ -22,7 +51,36 @@
       "travelMinutesByCar": 130,
       "travelMinutesByTransit": 170,
       "description": "동강과 별빛이 흐르는 고을",
-      "benefitBadge": "체험비 지원"
+      "benefitBadge": "체험비 지원",
+      "headline": "🌊 동강과 별빛이 흐르는 고을",
+      "story": "동강 물길이 산을 휘감아 돌고, 밤이면 별이 쏟아진다. 단종의 유배지 청령포에서 역사를 걷고 고씨동굴의 서늘한 공기를 지나면 영월의 시간은 느리게 흐른다.",
+      "transitInfo": "서울에서 대중교통 약 2시간50분",
+      "photos": [
+        "https://tong.visitkorea.or.kr/cms/resource/77/4010077_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/53/3388553_image2_1.JPG",
+        "https://tong.visitkorea.or.kr/cms/resource/56/1822156_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/26/3585026_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/90/483990_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/84/3379284_image2_1.JPG",
+        "https://tong.visitkorea.or.kr/cms/resource/06/1841606_image2_1.jpg"
+      ],
+      "highlightSpots": [
+        {
+          "name": "영월관광센터",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/06/3544506_image2_1.jpg"
+        },
+        {
+          "name": "영월중앙시장",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/40/3557240_image2_1.JPG"
+        }
+      ],
+      "designationNote": "인구감소지역 지정 · 강원 영월군",
+      "categoryCounts": {
+        "관광지": 107,
+        "숙박": 113,
+        "체험": 13,
+        "맛집": 35
+      }
     }
   ],
   "monthlyPicks": [
@@ -36,7 +94,36 @@
       "travelMinutesByCar": null,
       "travelMinutesByTransit": null,
       "description": "서울 옆, 물멍과 숲멍의 성지",
-      "benefitBadge": null
+      "benefitBadge": null,
+      "headline": "🌲 서울 옆, 물멍과 숲멍의 성지",
+      "story": "북한강을 따라 이어지는 물길과 자라섬의 초록이 도심의 소음을 지운다. 서울에서 가장 가까운 휴식이자, 당일치기로도 충분한 곳.",
+      "transitInfo": "서울에서 대중교통 약 1시간30분",
+      "photos": [
+        "http://tong.visitkorea.or.kr/cms/resource/24/1900124_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/17/2909617_image2_1.JPG",
+        "http://tong.visitkorea.or.kr/cms/resource/45/3096245_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/30/2763630_image2_1.JPG",
+        "http://tong.visitkorea.or.kr/cms/resource/69/2752069_image2_1.JPG",
+        "http://tong.visitkorea.or.kr/cms/resource/21/3346921_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/82/3475682_image2_1.JPG"
+      ],
+      "highlightSpots": [
+        {
+          "name": "꿈의동산",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/11/2932211_image2_1.jpg"
+        },
+        {
+          "name": "대성리 국민관광지",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/80/3077280_image2_1.jpg"
+        }
+      ],
+      "designationNote": "인구감소지역 지정 · 경기 가평군",
+      "categoryCounts": {
+        "관광지": 117,
+        "숙박": 160,
+        "체험": 12,
+        "맛집": 118
+      }
     },
     {
       "id": "extra-해남",
@@ -48,7 +135,36 @@
       "travelMinutesByCar": null,
       "travelMinutesByTransit": null,
       "description": "땅끝에서 시작하는 바다 여행",
-      "benefitBadge": null
+      "benefitBadge": null,
+      "headline": "🌅 땅끝에서 시작하는 바다 여행",
+      "story": "한반도의 마지막 땅끝, 갈두마을에서 해가 진다. 두륜산 케이블카로 오르면 다도해가 한눈에 펼쳐지고, 고산 윤선도의 정원에서 오백 년 전 시심을 만난다.",
+      "transitInfo": "서울에서 대중교통 약 5시간",
+      "photos": [
+        "http://tong.visitkorea.or.kr/cms/resource/36/3061236_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/38/2573738_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/63/3021963_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/51/3383051_image2_1.JPG",
+        "http://tong.visitkorea.or.kr/cms/resource/74/3563074_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/47/3562847_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/62/3381362_image2_1.JPG"
+      ],
+      "highlightSpots": [
+        {
+          "name": "고산 윤선도 유적지",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/74/3563074_image2_1.jpg"
+        },
+        {
+          "name": "두륜산케이블카",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/76/3564276_image2_1.jpg"
+        }
+      ],
+      "designationNote": "인구감소지역 지정 · 전남 해남군",
+      "categoryCounts": {
+        "관광지": 69,
+        "숙박": 19,
+        "체험": 10,
+        "맛집": 19
+      }
     },
     {
       "id": "extra-영양",
@@ -60,7 +176,36 @@
       "travelMinutesByCar": null,
       "travelMinutesByTransit": null,
       "description": "밤하늘 별이 쏟아지는 마을",
-      "benefitBadge": null
+      "benefitBadge": null,
+      "headline": "✨ 밤하늘 별이 쏟아지는 마을",
+      "story": "아시아 최초 국제밤하늘보호공원. 반딧불이 천문대에서 은하수를 보고, 선바위 아래 남대천을 따라 걸으면 도시에서 잃어버린 어둠을 되찾는다.",
+      "transitInfo": "서울에서 대중교통 약 4시간30분",
+      "photos": [
+        "https://tong.visitkorea.or.kr/cms/resource/32/4089332_image2_1.jpg",
+        "https://tong.visitkorea.or.kr/cms/resource/93/3526493_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/91/2739891_image2_1.JPG",
+        "http://tong.visitkorea.or.kr/cms/resource/37/3531137_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/26/2832126_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/42/898442_image2_1.jpg",
+        "http://tong.visitkorea.or.kr/cms/resource/35/3465435_image2_1.jpg"
+      ],
+      "highlightSpots": [
+        {
+          "name": "선바위관광지",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/32/3531132_image2_1.jpg"
+        },
+        {
+          "name": "반딧불이 천문대",
+          "imageUrl": "http://tong.visitkorea.or.kr/cms/resource/35/3465435_image2_1.jpg"
+        }
+      ],
+      "designationNote": "인구감소지역 지정 · 경북 영양군",
+      "categoryCounts": {
+        "관광지": 17,
+        "숙박": 4,
+        "체험": 3,
+        "맛집": 11
+      }
     }
   ]
 }

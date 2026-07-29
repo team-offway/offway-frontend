@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/trip_constants.dart';
+
 /// STEP0 갈림길 선택지
 enum DatePathChoice {
   /// 가고싶은 날짜가 있어요 → 캘린더 직접 선택(A 경로)
@@ -36,8 +38,7 @@ enum TransportMode { publicTransit, car }
 /// 일정 밀도(O-06)
 enum ScheduleDensity { packed, relaxed }
 
-/// 핵심 정책: 모든 코스는 최대 2박3일 → 가는날~오는날 간격 최대 2일
-const int kMaxTripSpanDays = 2;
+// 2박3일 정책과 날짜 해석 규칙은 core로 이관 (core가 feature에 의존하지 않도록)
 
 /// 코스 추천 위저드(O-04-0 ~ O-08)가 단계별로 채워가는 조건.
 class CourseWizardDraft {
@@ -134,25 +135,14 @@ class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
     state = state.copyWith(datePath: choice);
   }
 
-  /// 캘린더 날짜 탭 처리.
-  /// 시작일 없음 → 시작일 지정 / 시작일만 있음 → 범위 확정(2박3일 이내) 또는 재시작
+  /// 캘린더 날짜 탭 처리
   void selectDate(DateTime day) {
-    final start = state.startDate;
-    final end = state.endDate;
-
-    if (start == null || end != null) {
-      // 새 선택 시작 (기존 범위가 있으면 리셋)
-      state = state._withDates(day, null);
-      return;
-    }
-    final diff = day.difference(start).inDays;
-    if (diff < 0 || diff > kMaxTripSpanDays) {
-      // 시작일 이전이거나 2박3일 초과 → 해당 날짜로 다시 시작
-      state = state._withDates(day, null);
-    } else {
-      // 범위 확정 (같은 날 = 당일치기)
-      state = state._withDates(start, day);
-    }
+    final range = resolveTripDateTap(
+      day: day,
+      start: state.startDate,
+      end: state.endDate,
+    );
+    state = state._withDates(range.start, range.end);
   }
 
   /// 기간스타일 선택. 스타일이 바뀌면 하위 선택(요일 조합·연차일수)은 초기화.
