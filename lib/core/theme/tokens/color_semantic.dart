@@ -34,9 +34,10 @@ abstract final class AppColors {
   static const labelDisable = Color(0x2937383C);
 
   // ── Primary · 브랜드 ────────────────────────────────────────────────
-  static const primaryNormal = AppPalette.blue50;
-  static const primaryStrong = AppPalette.blue45;
-  static const primaryHeavy = AppPalette.blue40;
+  // 2026-07-30 DS 개편: 진파랑(Blue) → 하늘색(Light Blue) 계열로 변경
+  static const primaryNormal = AppPalette.lightBlue60;
+  static const primaryStrong = AppPalette.lightBlue50;
+  static const primaryHeavy = AppPalette.lightBlue40;
 
   // ── Background · 화면 배경 ──────────────────────────────────────────
   static const backgroundNormal = AppPalette.common100;
