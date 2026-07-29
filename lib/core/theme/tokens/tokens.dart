@@ -8,8 +8,10 @@
 /// ```
 ///
 /// - [AppColors] · [AppAccentColors] — 용도별 색 (화면에서 쓰는 것)
+/// - [AppTypography] — 텍스트 스타일 (색은 별도로 지정)
 /// - [AppPalette] · [AppOpacity] — 원시 팔레트 (Semantic 정의용, 화면에서 직접 쓰지 않음)
 library;
 
 export 'color_atomic.dart';
 export 'color_semantic.dart';
+export 'typography.dart';
