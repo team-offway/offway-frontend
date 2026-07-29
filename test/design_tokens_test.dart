@@ -28,7 +28,10 @@ void main() {
       expect(AppColors.backgroundElevatedAlternative, const Color(0xFFF7F7F8));
       // Transparent 계열은 Figma가 불투명 흰색으로 내려준다 (디자이너 확인 대기)
       expect(AppColors.backgroundTransparent, const Color(0xFFFFFFFF));
-      expect(AppColors.backgroundTransparentAlternative, const Color(0xFFFFFFFF));
+      expect(
+        AppColors.backgroundTransparentAlternative,
+        const Color(0xFFFFFFFF),
+      );
     });
 
     test('Line — 반투명과 불투명 계열이 구분된다', () {
