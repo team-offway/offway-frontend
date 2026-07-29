@@ -70,5 +70,9 @@
 	<!-- HTTPS 등 표준 암호화만 사용(면제 대상) — TestFlight 업로드마다 받는 수출 규정 질문 생략 -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- 네이버 지도 SDK가 위치 API를 참조해 문구가 필수(App Store 검증 90683).
+	     실제 위치 사용은 서버 추천 API(출발 좌표) 연동 시 시작된다 -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
 </dict>
 </plist>
