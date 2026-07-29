@@ -1,5 +1,6 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 
 /// Figma DS의 텍스트 스타일과 코드가 어긋나지 않도록 고정한다.
@@ -83,13 +84,19 @@ void main() {
     });
   });
 
-  group('fontFamily는 비어 있다', () {
-    test('서체는 테마에서 한 번만 지정한다', () {
-      // Pretendard는 ThemeData(fontFamily:)로 앱 전체에 적용된다.
-      // 토큰마다 서체를 박아두면 나중에 바꿀 때 57곳을 고쳐야 한다.
+  group('서체는 테마에서 한 번만 지정한다', () {
+    // 토큰은 서체를 비워두고 테마가 공급한다. 둘 중 하나만 검사하면
+    // 계약이 깨져도(예: 테마에서 fontFamily가 빠져도) 드러나지 않는다.
+    test('토큰에는 fontFamily가 없다', () {
       expect(AppTypography.display1Bold.fontFamily, isNull);
       expect(AppTypography.body1NormalRegular.fontFamily, isNull);
       expect(AppTypography.caption2Regular.fontFamily, isNull);
+    });
+
+    test('테마가 Pretendard를 공급한다', () {
+      for (final theme in [AppTheme.light, AppTheme.dark]) {
+        expect(theme.textTheme.bodyMedium?.fontFamily, 'Pretendard');
+      }
     });
   });
 

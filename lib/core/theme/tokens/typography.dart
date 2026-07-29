@@ -11,9 +11,9 @@ import 'package:flutter/painting.dart';
 /// ));
 /// ```
 ///
-/// **fontFamily는 의도적으로 비워둔다.** DS는 Pretendard를 쓰지만 앱에 폰트가
-/// 번들되어 있지 않아, 지금은 시스템 폰트로 렌더된다. 폰트를 추가하면
-/// `ThemeData(fontFamily: ...)` 한 곳만 지정하면 전체에 적용된다.
+/// **fontFamily는 의도적으로 비워둔다.** 서체(Pretendard)는 [AppTheme]의
+/// `ThemeData(fontFamily:)`에서 한 번만 지정해 앱 전체에 적용한다.
+/// 토큰마다 서체를 박아두면 나중에 바꿀 때 여기 57곳을 모두 고쳐야 한다.
 ///
 /// 스케일은 크기 순으로 Display(56~36) → Title(32~24) → Heading(22~20)
 /// → Headline(18~17) → Body(16~15) → Label(14~13) → Caption(12~11).
