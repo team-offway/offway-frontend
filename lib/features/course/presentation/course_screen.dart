@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import 'widgets/course_day_tabs.dart';
@@ -111,30 +112,23 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          // 버튼이 아이콘보다 넓으므로 좌우 여백을 줄여 아이콘 위치를 맞춘다
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              GestureDetector(
+              AppIconButton(
+                icon: Icons.close,
                 onTap: _exitToHome,
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(
-                  Icons.close,
-                  size: 24,
-                  color: AppColors.labelNormal,
-                ),
+                semanticLabel: '닫기',
               ),
               const Spacer(),
-              GestureDetector(
+              AppIconButton(
+                icon: Icons.ios_share,
                 onTap: () => CourseShareSheets.showEntry(
                   context,
                   dayCount: durationDays,
                 ),
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(
-                  Icons.ios_share,
-                  size: 24,
-                  color: AppColors.labelNormal,
-                ),
+                semanticLabel: '공유하기',
               ),
             ],
           ),

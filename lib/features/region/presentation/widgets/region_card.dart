@@ -119,9 +119,18 @@ class RegionCard extends StatelessWidget {
 /// 카드가 들어올 자리를 미리 잡아둬 데이터가 도착할 때 화면이 밀리지 않는다.
 /// 치수는 카드와 같은 값을 써야 하므로 카드 옆에 둔다.
 class RegionCardSkeleton extends StatelessWidget {
-  const RegionCardSkeleton({super.key, this.style = RegionCardStyle.boxed});
+  const RegionCardSkeleton({
+    super.key,
+    this.style = RegionCardStyle.boxed,
+    this.hasBadge = true,
+  });
 
   final RegionCardStyle style;
+
+  /// 들어올 카드에 혜택 뱃지가 있는지.
+  /// 실제 카드는 뱃지가 없으면 그 줄을 통째로 빼므로, 여기서도 맞춰야
+  /// 데이터가 도착할 때 카드 아래가 들썩이지 않는다.
+  final bool hasBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -142,8 +151,10 @@ class RegionCardSkeleton extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: _Block(height: 18),
         ),
-        const SizedBox(height: 6),
-        const _Block(width: 62, height: 20),
+        if (hasBadge) ...[
+          const SizedBox(height: 6),
+          const _Block(width: 62, height: 20),
+        ],
       ],
     );
 

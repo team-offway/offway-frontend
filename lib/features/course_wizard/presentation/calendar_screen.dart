@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
 import '../application/course_wizard_provider.dart';
 
@@ -25,18 +26,18 @@ class CalendarScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-              child: GestureDetector(
-                onTap: () {
-                  // 위저드 이탈: 조건 초기화 후 홈으로
-                  ref.read(courseWizardProvider.notifier).reset();
-                  context.go(AppRoutes.home);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(
-                  Icons.close,
-                  size: 24,
-                  color: AppColors.labelNormal,
+              // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+              padding: const EdgeInsets.fromLTRB(10, 0, 20, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AppIconButton(
+                  icon: Icons.close,
+                  onTap: () {
+                    // 위저드 이탈: 조건 초기화 후 홈으로
+                    ref.read(courseWizardProvider.notifier).reset();
+                    context.go(AppRoutes.home);
+                  },
+                  semanticLabel: '닫기',
                 ),
               ),
             ),
@@ -83,8 +84,9 @@ class CalendarScreen extends ConsumerWidget {
   Widget _buildActionArea(BuildContext context, CourseWizardDraft draft) {
     final start = draft.startDate;
     final end = draft.endDate;
+    // 주말은 연차가 깎이지 않으므로 평일만 센다
     final leaveDays = start != null && end != null
-        ? calendarDaysBetween(start, end) + 1
+        ? leaveDaysBetween(start, end)
         : null;
 
     return Padding(

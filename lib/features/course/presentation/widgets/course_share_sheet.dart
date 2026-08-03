@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/widgets/app_icon_button.dart';
 
 /// 코스 공유 바텀시트 묶음 (O-09 공유).
 ///
@@ -127,15 +128,12 @@ class _SheetTitleBar extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 16,
-            child: GestureDetector(
+            // 버튼이 아이콘보다 넓으므로 여백을 줄여 아이콘 위치를 맞춘다
+            right: 6,
+            child: AppIconButton(
+              icon: Icons.close,
               onTap: () => Navigator.of(context).pop(),
-              behavior: HitTestBehavior.opaque,
-              child: const Icon(
-                Icons.close,
-                size: 24,
-                color: AppColors.labelNormal,
-              ),
+              semanticLabel: '닫기',
             ),
           ),
         ],

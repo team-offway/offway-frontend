@@ -71,4 +71,31 @@ void main() {
     expect(skeleton.width, card.width);
     expect(skeleton.height, closeTo(card.height, 1));
   });
+
+  testWidgets('뱃지 없는 카드는 스켈레톤도 뱃지 자리를 비운다', (tester) async {
+    // 홈의 '이번달 추천'에는 혜택 뱃지가 없는 지역이 섞여 있다.
+    // 스켈레톤이 늘 뱃지를 그리면 데이터 도착 순간 카드가 그만큼 줄어든다.
+    const region = {
+      'id': '영월',
+      'name': '영월',
+      'sido': '강원',
+      'description': '동강과 별빛이 흐르는 고을',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RegionCard(region: region),
+            RegionCardSkeleton(hasBadge: false),
+          ],
+        ),
+      ),
+    );
+
+    final card = tester.getSize(find.byType(RegionCard));
+    final skeleton = tester.getSize(find.byType(RegionCardSkeleton));
+    expect(skeleton.height, closeTo(card.height, 1));
+  });
 }

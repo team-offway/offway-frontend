@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_inline_notice.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 
@@ -145,17 +147,15 @@ class PeriodStyleScreen extends ConsumerWidget {
   /// 뒤로가기 + 단계 표시. 단계는 오른쪽에 옅게 둔다.
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         children: [
-          GestureDetector(
+          AppIconButton(
+            icon: Icons.arrow_back_ios_new,
+            size: 20,
             onTap: () => context.pop(),
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 20,
-              color: AppColors.labelNormal,
-            ),
+            semanticLabel: '뒤로 가기',
           ),
           const Spacer(),
           Text(
@@ -251,25 +251,16 @@ class PeriodStyleScreen extends ConsumerWidget {
             },
             // 상한에 닿았을 때만 왜 더 못 늘리는지 알린다(늘 띄우면 잔소리가 된다).
             // 자리는 항상 차지해 문구가 오갈 때 시트 높이가 출렁이지 않게 한다.
-            footer: SizedBox(
-              height: 44,
+            footer: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
               child: days >= maxDays
-                  ? Row(
-                      children: [
-                        // 아이콘 원본이 이미 label/assistive와 같은 색이라 그대로 쓴다
-                        SvgPicture.asset(
-                          'assets/icons/ic_circle_exclamation.svg',
-                          width: 24,
-                          height: 24,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
+                  ? AppInlineNotice(
+                      // 아이콘 원본이 이미 label/assistive와 같은 색이라 그대로 쓴다
+                      iconAsset: 'assets/icons/ic_circle_exclamation.svg',
+                      message:
                           '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
-                          style: AppTypography.label2Medium.copyWith(
-                            color: AppColors.labelAssistive,
-                          ),
-                        ),
-                      ],
+                      color: AppColors.labelAssistive,
+                      minHeight: 44,
                     )
                   : null,
             ),
@@ -455,9 +446,10 @@ class _StyleCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 78,
+        // 고정 높이 대신 최소 높이 — 글자 배율을 키워도 넘치지 않는다
+        constraints: const BoxConstraints(minHeight: 78),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
           // 선택되면 채움을 걷어내고 테두리로만 표시한다
           color: selected ? null : AppColors.fillNormal,

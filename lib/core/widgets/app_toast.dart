@@ -40,7 +40,7 @@ class AppToast extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          // 어두운 배경(52%) 위에 브랜드색을 아주 옅게(5%) 겹친다
+          // 뒤가 비쳐 보이도록 어두운 면을 52%로 깐다
           decoration: BoxDecoration(
             color: AppColors.inverseBackground.withValues(
               alpha: AppOpacity.o52,

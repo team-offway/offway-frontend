@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../constants/trip_constants.dart';
 import '../theme/tokens/tokens.dart';
+import 'app_inline_notice.dart';
 
 /// 고른 날짜 사이를 잇는 옅은 띠 (Primary 12%)
 const _rangeBand = Color(0x1F3DC2FF);
@@ -225,28 +225,13 @@ class TripDateLimitBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 52,
-      color: AppColors.backgroundNormalAlternative,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // 아이콘 원본이 이미 label/alternative와 같은 색이라 그대로 쓴다
-          SvgPicture.asset(
-            'assets/icons/ic_circle_info.svg',
-            width: 24,
-            height: 24,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
-            style: AppTypography.label2Medium.copyWith(
-              color: AppColors.labelAlternative,
-            ),
-          ),
-        ],
-      ),
+    return AppInlineNotice(
+      // 아이콘 원본이 이미 label/alternative와 같은 색이라 그대로 쓴다
+      iconAsset: 'assets/icons/ic_circle_info.svg',
+      message: '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
+      color: AppColors.labelAlternative,
+      backgroundColor: AppColors.backgroundNormalAlternative,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
     );
   }
 }

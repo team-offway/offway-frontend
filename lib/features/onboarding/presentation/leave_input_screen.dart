@@ -180,7 +180,8 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
             onBlockedTap: () => showAppToast(context, '0일보다 적게 입력할 수 없어요.'),
           ),
           Container(
-            width: 64,
+            // 상한을 넘는 '100' 같은 입력도 '일'과 함께 들어갈 만큼은 잡는다
+            width: 78,
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -232,7 +233,8 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: textWidth.clamp(12.0, 42.0),
+          // 상한을 넘는 '100' 같은 입력도 잘리지 않고 보여야 안내가 이해된다
+          width: textWidth.clamp(12.0, 56.0),
           child: TextField(
             controller: _controller,
             focusNode: _focusNode,
@@ -241,8 +243,10 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textInputAction: TextInputAction.done,
             inputFormatters: [
-              // 숫자와 소수점 한 자리까지만 허용
-              FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}(\.\d?)?')),
+              // 숫자와 소수점 한 자리까지만 허용. 자릿수를 상한(99)에 맞춰
+              // 자르면 100을 쳤을 때 조용히 10이 되어 왜 안 되는지 알 수 없다.
+              // 범위는 _commitInput에서 걸러 안내와 함께 보정한다.
+              FilteringTextInputFormatter.allow(RegExp(r'^\d{0,3}(\.\d?)?')),
             ],
             style: _numberStyle,
             decoration: const InputDecoration(

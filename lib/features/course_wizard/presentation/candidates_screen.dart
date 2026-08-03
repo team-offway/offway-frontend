@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
 import '../../../mock/mock_data_source.dart';
 import '../application/course_wizard_provider.dart';
 
@@ -96,18 +97,18 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-              child: GestureDetector(
-                onTap: () {
-                  // 위저드 종료: 조건 초기화 후 홈으로
-                  ref.read(courseWizardProvider.notifier).reset();
-                  context.go(AppRoutes.home);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(
-                  Icons.close,
-                  size: 24,
-                  color: AppColors.labelNormal,
+              // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+              padding: const EdgeInsets.fromLTRB(10, 0, 20, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AppIconButton(
+                  icon: Icons.close,
+                  onTap: () {
+                    // 위저드 종료: 조건 초기화 후 홈으로
+                    ref.read(courseWizardProvider.notifier).reset();
+                    context.go(AppRoutes.home);
+                  },
+                  semanticLabel: '닫기',
                 ),
               ),
             ),
@@ -184,11 +185,14 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             SizedBox(
               width: 150,
               child: FilledButton(
-                // TODO(wizard): 어느 단계로 되돌릴지 정해지면 연결한다
-                onPressed: () {},
+                // TODO(wizard): 어느 단계로 되돌릴지 정해지면 연결한다.
+                // 그때까지는 비활성 — 눌리는데 아무 일도 없으면 고장으로 보인다
+                onPressed: null,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.fillNormal,
                   foregroundColor: AppColors.labelNormal,
+                  disabledBackgroundColor: AppColors.interactionDisable,
+                  disabledForegroundColor: AppColors.labelAssistive,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/widgets/app_icon_button.dart';
 
 /// 위저드 공통 선택 스텝 레이아웃 (STEP0/이동수단/일정밀도가 공유하는 패턴)
 /// 상단 뒤로가기+스텝, 아이콘, 질문, 선택 버튼들, 하단 다음 CTA.
@@ -109,17 +110,15 @@ class WizardChoiceStep extends StatelessWidget {
   /// 뒤로가기 + 단계 표시. 단계는 오른쪽에 옅게 둔다.
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         children: [
-          GestureDetector(
+          AppIconButton(
+            icon: Icons.arrow_back_ios_new,
+            size: 20,
             onTap: () => context.pop(),
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 20,
-              color: AppColors.labelNormal,
-            ),
+            semanticLabel: '뒤로 가기',
           ),
           const Spacer(),
           Text(

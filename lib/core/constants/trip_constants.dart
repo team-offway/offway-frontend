@@ -15,6 +15,22 @@ int calendarDaysBetween(DateTime from, DateTime to) {
   return b.difference(a).inDays;
 }
 
+/// [from]~[to] 사이에서 연차를 써야 하는 날 수 (양 끝 포함).
+///
+/// 주말은 원래 쉬는 날이라 연차가 깎이지 않으므로 평일만 센다.
+/// 공휴일도 실제로는 빠져야 하지만 달력 데이터가 없어 아직 반영하지 못한다.
+/// TODO(server): 공휴일 목록이 생기면 여기서 함께 걸러낸다.
+int leaveDaysBetween(DateTime from, DateTime to) {
+  var count = 0;
+  for (var d = 0; d <= calendarDaysBetween(from, to); d++) {
+    final day = DateTime(from.year, from.month, from.day + d);
+    if (day.weekday != DateTime.saturday && day.weekday != DateTime.sunday) {
+      count++;
+    }
+  }
+  return count;
+}
+
 /// 캘린더 날짜 탭을 가는날/오는날 범위로 해석한다.
 /// 시작일 없음 → 시작일 지정 / 시작일만 있음 → 범위 확정([kMaxTripSpanDays]박 이내) 또는 재시작.
 /// 위저드와 저장한 코스 일정 지정이 같은 규칙을 쓰도록 한 곳에 둔다.
