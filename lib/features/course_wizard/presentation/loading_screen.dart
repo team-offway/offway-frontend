@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
-/// O-07 · 로딩 (와이어프레임)
+/// O-07 · 로딩
 /// 서버 연동 전이므로 일정 시간 후 후보지역으로 자동 이동한다.
 class WizardLoadingScreen extends StatefulWidget {
   const WizardLoadingScreen({super.key});
@@ -39,31 +41,27 @@ class _WizardLoadingScreenState extends State<WizardLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
+    return Scaffold(
+      backgroundColor: AppColors.backgroundNormal,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 100,
-              height: 100,
-              child: CircularProgressIndicator(
-                strokeWidth: 9,
-                color: Color(0xFF191B1F),
-                backgroundColor: Color(0xFFF2F3F6),
-              ),
-            ),
-            SizedBox(height: 40),
+            const AppLoadingIndicator(),
+            const SizedBox(height: 24),
             Text(
               '조건에 맞는\n여행지를 찾고 있어요..',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF171719),
-                letterSpacing: -0.6,
-                height: 1.5,
+              style: AppTypography.headline1Bold.copyWith(
+                color: AppColors.labelNormal,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '잠시만 기다려주세요.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body2NormalMedium.copyWith(
+                color: AppColors.labelAssistive,
               ),
             ),
           ],
