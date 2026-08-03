@@ -51,6 +51,39 @@ void main() {
     expect(find.text('남은 연차를 입력해 주세요'), findsOneWidget);
   });
 
+  testWidgets('온보딩 연차가 한계에 닿으면 왜 못 바꾸는지 토스트로 알린다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('Google로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+
+    // 0일까지 내린 뒤 한 번 더 누르면 하한 안내가 뜬다
+    await tester.tap(find.text('15일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '0');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('0일'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0일보다 적게'), findsOneWidget);
+
+    // 상한(99일)에서도 마찬가지
+    await tester.tap(find.text('0일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '99');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('99일'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('최대 99일까지'), findsOneWidget);
+  });
+
   testWidgets('온보딩에서 연차를 조절하고 시작하면 홈으로 이동한다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
