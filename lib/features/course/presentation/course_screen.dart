@@ -10,6 +10,7 @@ import '../../course_wizard/application/course_wizard_provider.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
+import 'widgets/course_share_sheet.dart';
 
 /// 지역·희망일수에 맞는 mock 코스 선택 (서버 연동 시 추천 API 응답으로 교체)
 final courseProvider = FutureProvider.autoDispose
@@ -124,10 +125,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               ),
               const Spacer(),
               GestureDetector(
-                // TODO(share): 코스 공유 기능 정책 확정 시 연결
-                onTap: () => ScaffoldMessenger.of(
+                onTap: () => CourseShareSheets.showEntry(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('공유 기능은 준비 중이에요'))),
+                  dayCount: durationDays,
+                ),
                 behavior: HitTestBehavior.opaque,
                 child: const Icon(
                   Icons.ios_share,
