@@ -662,7 +662,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('다음'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // 전환이 끝나기 전에는 카드 탭이 흡수되므로 화면이 자리잡을 때까지 기다린다
+    await tester.pumpAndSettle();
 
     expect(find.text('어떻게 떠날까요?'), findsOneWidget);
     expect(find.text('2/4'), findsOneWidget);
@@ -678,6 +679,12 @@ void main() {
     expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
 
     // 연차만: 스테퍼 모달에서 완료해야 유지
+    // 세 번째 카드는 작은 화면에서 액션 영역 아래로 밀려 있어 스크롤해서 누른다
+    await tester.scrollUntilVisible(
+      find.text('연차만 (주말 미포함)'),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('연차만 (주말 미포함)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
@@ -758,9 +765,21 @@ void main() {
     // 개수만 브랜드색으로 강조하느라 한 Text를 조각으로 나눠 담는다
     expect(find.textContaining('조건에 맞는 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
-    expect(find.text('영월 · 강원'), findsOneWidget);
     expect(find.text('폐광촌에서 다시 태어난 마을'), findsOneWidget);
     expect(find.text('추천순'), findsOneWidget); // 정렬 칩
+    // 카드가 커서 두 번째 후보는 첫 화면 밖에 있다
+    await tester.scrollUntilVisible(
+      find.text('영월 · 강원'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('영월 · 강원'), findsOneWidget);
+    // 다음 단계는 첫 카드에서 이어가므로 되돌려 놓는다
+    await tester.scrollUntilVisible(
+      find.text('정선 · 강원'),
+      -200,
+      scrollable: find.byType(Scrollable).last,
+    );
 
     // O-09 코스확정: 정선 카드 탭 → 당일치기 코스 (위저드에서 당일치기 선택했음)
     await tester.tap(find.text('정선 · 강원'));
