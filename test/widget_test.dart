@@ -150,6 +150,19 @@ void main() {
     expect(find.text('이번달 추천 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
+
+    // 히어로 CTA는 브랜드 하늘색이 아니라 검정(Neutral/22)이다.
+    // 다른 화면 CTA와 같아 보여 무심코 Primary로 바꾸기 쉬워 고정해 둔다.
+    final cta = tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.text('바로 추천받기'),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(
+      cta.style?.backgroundColor?.resolve({}),
+      const Color(0xFF303030),
+    );
   });
 
   testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {

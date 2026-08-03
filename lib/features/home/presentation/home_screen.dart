@@ -31,6 +31,9 @@ enum _Category {
   final String iconAsset;
 }
 
+/// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
+const _heroCtaBackground = AppPalette.neutral22;
+
 /// O-03 · 홈
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -221,8 +224,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: AppColors.backgroundNormalAlternative,
         borderRadius: BorderRadius.circular(14),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
+          // 카드 패딩 밖으로 나가 아래·왼쪽에 걸치는 배경 일러스트.
+          // 문구·버튼보다 먼저 그려 뒤에 깔리게 한다.
+          // 발밑은 카드 바닥에 잘려 들어간다 — 띄우면 붕 뜬 것처럼 보인다.
+          Positioned(
+            left: -7,
+            bottom: -24,
+            child: SvgPicture.asset(
+              'assets/images/home_hero_character.svg',
+              width: 228,
+              excludeFromSemantics: true,
+            ),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -247,7 +264,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: FilledButton(
               onPressed: () => context.push(AppRoutes.wizardDateGate),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryNormal,
+                // TODO(디자인시스템): 디자인이 Atomic Neutral/22를 직접 참조한다.
+                // 이 검정을 가리키는 Semantic 토큰이 생기면 그걸로 교체할 것.
+                backgroundColor: _heroCtaBackground,
                 foregroundColor: AppColors.staticWhite,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
