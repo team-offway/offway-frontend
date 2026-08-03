@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
@@ -115,6 +116,7 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('후보지역을 불러오지 못했어요\n$e')),
                 data: (all) {
+                  if (all.isEmpty) return _buildEmpty();
                   final list = _sorted(all);
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
@@ -140,6 +142,76 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                     ],
                   );
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 조건에 걸리는 지역이 하나도 없을 때.
+  /// 헤드라인·정렬은 보여줄 게 없으니 걷어내고 다음에 뭘 하면 되는지만 남긴다.
+  Widget _buildEmpty() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/ic_empty_result.svg',
+              width: 48,
+              height: 48,
+            ),
+            const SizedBox(height: 32),
+            Text(
+              '조건에 맞는 여행지가 없어요',
+              textAlign: TextAlign.center,
+              style: AppTypography.title3Bold.copyWith(
+                color: AppColors.labelNormal,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '이동수단이나 여행 기간을 변경하면\n새로운 여행지를 찾을 수 있어요.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
+            ),
+            const SizedBox(height: 36),
+            SizedBox(
+              width: 150,
+              child: FilledButton(
+                // TODO(wizard): 어느 단계로 되돌릴지 정해지면 연결한다
+                onPressed: () {},
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.fillNormal,
+                  foregroundColor: AppColors.labelNormal,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('다시 설정하기', style: AppTypography.body1NormalBold),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                ref.read(courseWizardProvider.notifier).reset();
+                context.go(AppRoutes.home);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  '홈으로 돌아가기',
+                  style: AppTypography.label1NormalMedium.copyWith(
+                    color: AppColors.labelAlternative,
+                  ),
+                ),
               ),
             ),
           ],
