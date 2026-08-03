@@ -43,4 +43,59 @@ void main() {
       expect(tester.takeException(), isNull, reason: '배율 $scale에서 넘침');
     }
   });
+
+  testWidgets('스켈레톤은 실제 카드와 같은 높이를 차지한다', (tester) async {
+    // 높이가 어긋나면 데이터가 도착하는 순간 화면이 튄다.
+    const region = {
+      'id': '정선',
+      'name': '정선',
+      'sido': '강원',
+      'description': '폐광촌에서 다시 태어난 마을',
+      'benefitBadge': '숙박비 30% 지원',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RegionCard(region: region),
+            RegionCardSkeleton(),
+          ],
+        ),
+      ),
+    );
+
+    final card = tester.getSize(find.byType(RegionCard));
+    final skeleton = tester.getSize(find.byType(RegionCardSkeleton));
+    expect(skeleton.width, card.width);
+    expect(skeleton.height, closeTo(card.height, 1));
+  });
+
+  testWidgets('뱃지 없는 카드는 스켈레톤도 뱃지 자리를 비운다', (tester) async {
+    // 홈의 '이번달 추천'에는 혜택 뱃지가 없는 지역이 섞여 있다.
+    // 스켈레톤이 늘 뱃지를 그리면 데이터 도착 순간 카드가 그만큼 줄어든다.
+    const region = {
+      'id': '영월',
+      'name': '영월',
+      'sido': '강원',
+      'description': '동강과 별빛이 흐르는 고을',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RegionCard(region: region),
+            RegionCardSkeleton(hasBadge: false),
+          ],
+        ),
+      ),
+    );
+
+    final card = tester.getSize(find.byType(RegionCard));
+    final skeleton = tester.getSize(find.byType(RegionCardSkeleton));
+    expect(skeleton.height, closeTo(card.height, 1));
+  });
 }

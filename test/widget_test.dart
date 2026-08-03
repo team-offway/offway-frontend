@@ -51,6 +51,39 @@ void main() {
     expect(find.text('남은 연차를 입력해 주세요'), findsOneWidget);
   });
 
+  testWidgets('온보딩 연차가 한계에 닿으면 왜 못 바꾸는지 토스트로 알린다', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('Google로 시작하기'),
+    ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
+    await tester.pumpAndSettle();
+
+    // 0일까지 내린 뒤 한 번 더 누르면 하한 안내가 뜬다
+    await tester.tap(find.text('15일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '0');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('0일'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0일보다 적게'), findsOneWidget);
+
+    // 상한(99일)에서도 마찬가지
+    await tester.tap(find.text('0일'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '99');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('99일'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('최대 99일까지'), findsOneWidget);
+  });
+
   testWidgets('온보딩에서 연차를 조절하고 시작하면 홈으로 이동한다', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
     await tester.pumpAndSettle();
@@ -103,7 +136,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     // rootBundle 로드(실제 I/O)가 FakeAsync에서 멈추지 않도록 runAsync로 대기
     await tester.runAsync(
@@ -117,6 +150,16 @@ void main() {
     expect(find.text('이번달 추천 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
+
+    // 히어로 CTA는 브랜드 하늘색이 아니라 검정(Neutral/22)이다.
+    // 다른 화면 CTA와 같아 보여 무심코 Primary로 바꾸기 쉬워 고정해 둔다.
+    final cta = tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.text('바로 추천받기'),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(cta.style?.backgroundColor?.resolve({}), const Color(0xFF303030));
   });
 
   testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {
@@ -126,7 +169,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -170,7 +213,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -205,7 +248,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -244,7 +287,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -290,7 +333,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -327,7 +370,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -389,7 +432,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -419,7 +462,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -477,7 +520,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -518,7 +561,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -549,7 +592,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -604,7 +647,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -619,7 +662,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('다음'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // 전환이 끝나기 전에는 카드 탭이 흡수되므로 화면이 자리잡을 때까지 기다린다
+    await tester.pumpAndSettle();
 
     expect(find.text('어떻게 떠날까요?'), findsOneWidget);
     expect(find.text('2/4'), findsOneWidget);
@@ -635,10 +679,16 @@ void main() {
     expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
 
     // 연차만: 스테퍼 모달에서 완료해야 유지
+    // 세 번째 카드는 작은 화면에서 액션 영역 아래로 밀려 있어 스크롤해서 누른다
+    await tester.scrollUntilVisible(
+      find.text('연차만 (주말 미포함)'),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('연차만 (주말 미포함)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
-    expect(find.text('연차를 얼마나 사용할까요?'), findsOneWidget);
+    expect(find.text('평일 연차, 며칠 쓸까요?'), findsOneWidget);
     expect(find.text('3일(2박3일)'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.remove));
     await tester.pump();
@@ -661,7 +711,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -692,7 +742,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // O-06 일정밀도
-    expect(find.text('내가 선호하는 스타일은?'), findsOneWidget);
+    expect(find.text('내가 선호하는 여행 스타일은?'), findsOneWidget);
     expect(find.text('4/4'), findsOneWidget);
     await tester.tap(find.text('널널한 일정'));
     await tester.pump();
@@ -712,11 +762,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // O-08 후보지역
-    expect(find.textContaining('여행지 2곳을 찾았어요'), findsOneWidget);
+    // 개수만 브랜드색으로 강조하느라 한 Text를 조각으로 나눠 담는다
+    expect(find.textContaining('조건에 맞는 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
-    expect(find.text('추천1위'), findsOneWidget);
+    expect(find.text('폐광촌에서 다시 태어난 마을'), findsOneWidget);
+    expect(find.text('추천순'), findsOneWidget); // 정렬 칩
+    // 카드가 커서 두 번째 후보는 첫 화면 밖에 있다
+    await tester.scrollUntilVisible(
+      find.text('영월 · 강원'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('영월 · 강원'), findsOneWidget);
-    expect(find.textContaining('2시간30분'), findsOneWidget); // 정선 150분
+    // 다음 단계는 첫 카드에서 이어가므로 되돌려 놓는다
+    await tester.scrollUntilVisible(
+      find.text('정선 · 강원'),
+      -200,
+      scrollable: find.byType(Scrollable).last,
+    );
 
     // O-09 코스확정: 정선 카드 탭 → 당일치기 코스 (위저드에서 당일치기 선택했음)
     await tester.tap(find.text('정선 · 강원'));
@@ -752,7 +815,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('정선, 2박 3일'), findsOneWidget);
+    // 지역·기간만 브랜드색으로 강조하느라 한 Text를 조각으로 나눠 담는다
+    expect(find.textContaining('추천코스입니다'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Day 1'),
       200,

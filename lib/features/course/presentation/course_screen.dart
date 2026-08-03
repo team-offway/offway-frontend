@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
+import 'widgets/course_share_sheet.dart';
 
 /// 지역·희망일수에 맞는 mock 코스 선택 (서버 연동 시 추천 API 응답으로 교체)
 final courseProvider = FutureProvider.autoDispose
@@ -29,7 +33,7 @@ final courseProvider = FutureProvider.autoDispose
       return courses.first;
     });
 
-/// O-09 · 코스확정 (당일치기 / 2박3일, 와이어프레임)
+/// O-09 · 코스확정 (당일치기 / 1박 이상)
 class CourseScreen extends ConsumerStatefulWidget {
   const CourseScreen({
     super.key,
@@ -45,14 +49,6 @@ class CourseScreen extends ConsumerStatefulWidget {
 }
 
 class _CourseScreenState extends ConsumerState<CourseScreen> {
-  // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-  static const _labelNormal = Color(0xFF171719);
-  static const _textTertiary = Color(0xFFADB1BB);
-  static const _textSecondary = Color(0xFF686F7E);
-  static const _actionGray = Color(0xFFE9E9ED);
-  static const _ctaBlack = Color(0xFF1A1A1A);
-  static const _imagePlaceholder = Color(0xFFF2F3F6);
-
   int _selectedDay = 1;
 
   void _exitToHome() {
@@ -74,8 +70,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   String _durationLabel(int days) => switch (days) {
     1 => '당일치기',
-    2 => '1박 2일',
-    _ => '2박 3일',
+    2 => '1박2일',
+    _ => '2박3일',
   };
 
   @override
@@ -88,7 +84,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: course.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -116,183 +112,156 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          // 버튼이 아이콘보다 넓으므로 좌우 여백을 줄여 아이콘 위치를 맞춘다
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              GestureDetector(
+              AppIconButton(
+                icon: Icons.close,
                 onTap: _exitToHome,
-                child: const Icon(Icons.close, size: 26, color: _labelNormal),
+                semanticLabel: '닫기',
               ),
               const Spacer(),
-              GestureDetector(
-                // TODO(share): 코스 공유 기능 정책 확정 시 연결
-                onTap: () {},
-                child: const Icon(
-                  Icons.ios_share,
-                  size: 24,
-                  color: _labelNormal,
+              AppIconButton(
+                icon: Icons.ios_share,
+                onTap: () => CourseShareSheets.showEntry(
+                  context,
+                  dayCount: durationDays,
                 ),
+                semanticLabel: '공유하기',
               ),
             ],
           ),
         ),
         Expanded(
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
             children: [
               Center(
-                child: Container(
-                  width: 79,
-                  height: 79,
-                  color: _imagePlaceholder,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${widget.regionId}, ${_durationLabel(durationDays)}\n추천코스입니다.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: _labelNormal,
-                  letterSpacing: -0.6,
-                  height: 32 / 24,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                '맞춤코스로 연차 여행을 떠나보세요.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _textTertiary,
-                  letterSpacing: -0.6,
+                child: SvgPicture.asset(
+                  'assets/icons/ic_pin_location.svg',
+                  width: 48,
+                  height: 48,
                 ),
               ),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: SizedBox(
-                    height: 202,
-                    child: CourseMap(places: places, dayKey: _selectedDay),
-                  ),
+              _buildHeadline(durationDays),
+              const SizedBox(height: 8),
+              Text(
+                '맞춤코스로 연차 여행을 떠나보세요.',
+                textAlign: TextAlign.center,
+                style: AppTypography.body1NormalMedium.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 198,
+                  child: CourseMap(places: places, dayKey: _selectedDay),
                 ),
               ),
               const SizedBox(height: 20),
               if (durationDays > 1) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: CourseDayTabs(
-                    durationDays: durationDays,
-                    selectedDay: _selectedDay,
-                    onSelect: (d) => setState(() => _selectedDay = d),
-                  ),
+                CourseDayTabs(
+                  durationDays: durationDays,
+                  selectedDay: _selectedDay,
+                  onSelect: (d) => setState(() => _selectedDay = d),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
               ],
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: CoursePlaceList(
-                  places: places,
-                  regionName: widget.regionId,
-                ),
-              ),
-              const SizedBox(height: 24),
+              CoursePlaceList(places: places, regionName: widget.regionId),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-          child: Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: _saveToMyCourses,
-                  icon: const Icon(Icons.download, size: 20),
-                  label: const Text(
-                    '내 코스에 담기',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _ctaBlack,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: Icons.repeat,
-                      label: '새로운 추천 받기',
-                      onTap: () =>
-                          context.pushReplacement(AppRoutes.wizardLoading),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: Icons.home_outlined,
-                      label: '홈으로 가기',
-                      onTap: _exitToHome,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _buildActionArea(),
       ],
     );
   }
-}
 
-class _SecondaryAction extends StatelessWidget {
-  const _SecondaryAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: FilledButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20, color: _CourseScreenState._textSecondary),
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: _CourseScreenState._textSecondary,
-            letterSpacing: -0.6,
+  /// "정선, 2박3일 추천코스입니다." — 지역·기간만 브랜드색으로 짚는다
+  Widget _buildHeadline(int durationDays) {
+    final base = AppTypography.title3Bold.copyWith(
+      color: AppColors.labelNormal,
+    );
+    return Text.rich(
+      textAlign: TextAlign.center,
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: '${widget.regionId}, '),
+          TextSpan(
+            text: _durationLabel(durationDays),
+            style: base.copyWith(color: AppColors.primaryNormal),
           ),
-        ),
-        style: FilledButton.styleFrom(
-          backgroundColor: _CourseScreenState._actionGray,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          const TextSpan(text: '\n추천코스입니다.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionArea() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        children: [
+          Text(
+            '추천 코스를 내 코스에 담으면\n언제든 확인이 가능해요!',
+            textAlign: TextAlign.center,
+            style: AppTypography.label1ReadingMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _saveToMyCourses,
+              icon: const Icon(Icons.download, size: 20),
+              label: Text('내 코스에 담기', style: AppTypography.body1NormalBold),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryNormal,
+                foregroundColor: AppColors.staticWhite,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.pushReplacement(AppRoutes.wizardLoading),
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text('새로운 추천 받기', style: AppTypography.body1NormalBold),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryNormal,
+                side: const BorderSide(color: AppColors.primaryNormal),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _exitToHome,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                '홈으로 가기',
+                style: AppTypography.label1ReadingMedium.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

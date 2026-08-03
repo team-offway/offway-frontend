@@ -6,7 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../application/course_wizard_provider.dart';
 import 'widgets/wizard_choice_step.dart';
 
-/// O-06 · 일정 밀도 (STEP 4/4, 와이어프레임)
+/// O-06 · 일정 밀도 (STEP 4/4)
 class DensityScreen extends ConsumerWidget {
   const DensityScreen({super.key});
 
@@ -20,7 +20,8 @@ class DensityScreen extends ConsumerWidget {
 
     return WizardChoiceStep(
       stepLabel: '4/4',
-      title: '내가 선호하는 스타일은?',
+      iconAsset: 'assets/icons/ic_route.svg',
+      title: '내가 선호하는 여행 스타일은?',
       subtitle: '원하는 스타일을 반영할게요.',
       options: const ['빼곡한 일정', '널널한 일정'],
       selectedIndex: density == null ? null : _densities.indexOf(density),

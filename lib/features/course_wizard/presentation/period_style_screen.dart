@@ -1,29 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_inline_notice.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 
-/// O-04 · 기간스타일 (B 경로, STEP 2/4, 와이어프레임)
+/// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.
 class PeriodStyleScreen extends ConsumerWidget {
   const PeriodStyleScreen({super.key});
-
-  // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-  static const _labelNormal = Color(0xFF171719);
-  static const _stepText = Color(0xFF545A66);
-  static const _cardBg = Color(0xFFF7F7F7);
-  static const _cardIcon = Color(0xFF545A66);
-  static const _cardSub = Color(0xFF6F6F6F);
-  static const _leaveText = Color(0x9400132B); // rgba(0,19,43,0.58)
-  static const _imagePlaceholder = Color(0xFFF2F3F6);
-  static const _chipBg = Color(0xFFF2F3F6);
-  static const _textTertiary = Color(0xFFADB1BB);
-  static const _ctaDisabled = Color(0xFFC5C8CE);
-  static const _ctaEnabled = Color(0xFF191B1F);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,61 +22,46 @@ class PeriodStyleScreen extends ConsumerWidget {
     final leaveDays = ref.watch(homeUserProvider).value?['remainingLeaveDays'];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
+        // 액션 영역은 스크롤 밖에 두어 화면이 작아도 항상 닿는다.
+        // 안에 넣으면 콘텐츠에 밀려 화면 밖으로 나가버린다.
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => context.pop(),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 22,
-                              color: _stepText,
-                            ),
-                          ),
-                          const Spacer(),
-                          const Text(
-                            '2/4',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                              color: _stepText,
-                              letterSpacing: -0.6,
-                            ),
-                          ),
-                        ],
-                      ),
+                    _buildTopBar(context),
+                    const SizedBox(height: 68),
+                    SvgPicture.asset(
+                      'assets/icons/ic_plane.svg',
+                      width: 48,
+                      height: 48,
                     ),
-                    const SizedBox(height: 10),
-                    Container(width: 79, height: 79, color: _imagePlaceholder),
-                    const SizedBox(height: 28),
-                    const Text(
+                    const SizedBox(height: 20),
+                    Text(
                       '어떻게 떠날까요?',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: _labelNormal,
-                        letterSpacing: -0.6,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.title3Bold.copyWith(
+                        color: AppColors.labelNormal,
                       ),
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 8),
+                    Text(
+                      '여행 스타일에 맞는 코스를\n찾아드려요.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.body1NormalMedium.copyWith(
+                        color: AppColors.labelAlternative,
+                      ),
+                    ),
+                    const SizedBox(height: 37),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 19),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
                           _StyleCard(
+                            iconAsset: 'assets/icons/ic_timer_bold.svg',
                             title: '당일치기 · 반차',
                             subtitle: '짧게 다녀와요',
                             selected: draft.periodStyle == PeriodStyle.dayTrip,
@@ -93,8 +69,9 @@ class PeriodStyleScreen extends ConsumerWidget {
                                 .read(courseWizardProvider.notifier)
                                 .selectPeriodStyle(PeriodStyle.dayTrip),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _StyleCard(
+                            iconAsset: 'assets/icons/ic_clock.svg',
                             title: '주말 포함 여행',
                             subtitle: '주말을 이어 떠나요',
                             selected:
@@ -106,8 +83,9 @@ class PeriodStyleScreen extends ConsumerWidget {
                               _showWeekendPatternSheet(context, ref);
                             },
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _StyleCard(
+                            iconAsset: 'assets/icons/ic_coffee.svg',
                             title: '연차만 (주말 미포함)',
                             subtitle: '평일에 여유를 즐겨요',
                             selected:
@@ -122,58 +100,83 @@ class PeriodStyleScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '남은 연차일수 ${leaveDays ?? '-'}일',
-                      style: const TextStyle(fontSize: 16, color: _leaveText),
-                    ),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: FilledButton(
-                          onPressed: draft.isPeriodStyleComplete
-                              ? () => context.push(AppRoutes.wizardTransport)
-                              : null,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _ctaEnabled,
-                            disabledBackgroundColor: _ctaDisabled,
-                            foregroundColor: Colors.white,
-                            disabledForegroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '다음',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.6,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                children: [
+                  Text(
+                    '남은 연차일수 ${leaveDays ?? '-'}일',
+                    style: AppTypography.label1ReadingMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: draft.isPeriodStyleComplete
+                          ? () => context.push(AppRoutes.wizardTransport)
+                          : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryNormal,
+                        disabledBackgroundColor: AppColors.interactionDisable,
+                        foregroundColor: AppColors.staticWhite,
+                        disabledForegroundColor: AppColors.labelAssistive,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('다음', style: AppTypography.body1NormalBold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// 모달: 언제 하루 더 쉴까요? (금토일 / 토일월)
+  /// 뒤로가기 + 단계 표시. 단계는 오른쪽에 옅게 둔다.
+  Widget _buildTopBar(BuildContext context) {
+    return Padding(
+      // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
+      child: Row(
+        children: [
+          AppIconButton(
+            icon: Icons.arrow_back_ios_new,
+            size: 20,
+            onTap: () => context.pop(),
+            semanticLabel: '뒤로 가기',
+          ),
+          const Spacer(),
+          Text(
+            '2/4',
+            style: AppTypography.body1NormalBold.copyWith(
+              color: AppColors.labelAssistive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 모달: 언제 하루 더 쉴까요? (금요일 / 월요일 하루를 붙인다)
   void _showWeekendPatternSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundElevated,
+      barrierColor: AppColors.materialDimmer,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
         WeekendPattern? selected = ref
@@ -194,14 +197,18 @@ class PeriodStyleScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _PatternChip(
-                  label: '금 토 일',
+                  // 고르는 건 '어느 하루를 더 쉬는지'라 요일을 크게 보이고
+                  // 그 결과 생기는 연휴를 아래에 덧붙인다
+                  label: '금요일',
+                  caption: '금·토·일 연휴',
                   selected: selected == WeekendPattern.friSatSun,
                   onTap: () =>
                       setSheetState(() => selected = WeekendPattern.friSatSun),
                 ),
                 const SizedBox(width: 16),
                 _PatternChip(
-                  label: '토 일 월',
+                  label: '월요일',
+                  caption: '토·일·월 연휴',
                   selected: selected == WeekendPattern.satSunMon,
                   onTap: () =>
                       setSheetState(() => selected = WeekendPattern.satSunMon),
@@ -214,13 +221,14 @@ class PeriodStyleScreen extends ConsumerWidget {
     );
   }
 
-  /// 모달: 연차를 얼마나 사용할까요? (1~3일 스테퍼)
+  /// 모달: 평일 연차, 며칠 쓸까요? (2~3일 스테퍼)
   void _showLeaveStepperSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundElevated,
+      barrierColor: AppColors.materialDimmer,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
         // 정책: 연차만은 최소 2일 ~ 최대 3일 (연차소모 = 총 여행일수)
@@ -235,85 +243,69 @@ class PeriodStyleScreen extends ConsumerWidget {
         String label(int d) => '$d일(${d - 1}박$d일)';
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
-            title: '연차를 얼마나 사용할까요?',
+            title: '평일 연차, 며칠 쓸까요?',
             confirmEnabled: true,
             onConfirm: () {
               ref.read(courseWizardProvider.notifier).selectLeaveDays(days);
               Navigator.of(sheetContext).pop();
             },
-            footer: const Row(
-              children: [
-                Icon(Icons.error, size: 18, color: _labelNormal),
-                SizedBox(width: 8),
-                Text(
-                  '최대 2박3일까지 선택할 수 있어요',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: _stepText,
-                    letterSpacing: -0.6,
-                  ),
-                ),
-              ],
+            // 상한에 닿았을 때만 왜 더 못 늘리는지 알린다(늘 띄우면 잔소리가 된다).
+            // 자리는 항상 차지해 문구가 오갈 때 시트 높이가 출렁이지 않게 한다.
+            footer: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: days >= maxDays
+                  ? AppInlineNotice(
+                      // 아이콘 원본이 이미 label/assistive와 같은 색이라 그대로 쓴다
+                      iconAsset: 'assets/icons/ic_circle_exclamation.svg',
+                      message:
+                          '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
+                      color: AppColors.labelAssistive,
+                      minHeight: 44,
+                    )
+                  : null,
             ),
             child: Container(
               height: 58,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
-                color: const Color(0x0D07194C),
+                color: AppColors.fillNormal,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  IconButton(
-                    onPressed: days > minDays
-                        ? () => setSheetState(() => days--)
-                        : null,
-                    icon: Icon(
-                      Icons.remove,
-                      size: 18,
-                      color: days > minDays
-                          ? const Color(0xFF333D4B)
-                          : _ctaDisabled,
-                    ),
+                  _StepperButton(
+                    icon: Icons.remove,
+                    enabled: days > minDays,
+                    onTap: () => setSheetState(() => days--),
                   ),
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x1A001B37),
-                            offset: Offset(0, 1),
-                            blurRadius: 1.5,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        label(days),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF333D4B),
+                  // 숫자 칸은 폭을 고정한다 — 자릿수가 바뀌어도 ±버튼이 움직이지 않는다
+                  Container(
+                    width: 107,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundNormal,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1A000000),
+                          offset: Offset(0, 1),
+                          blurRadius: 1.5,
                         ),
+                      ],
+                    ),
+                    child: Text(
+                      label(days),
+                      style: AppTypography.headline2Bold.copyWith(
+                        color: AppColors.labelNeutral,
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: days < maxDays
-                        ? () => setSheetState(() => days++)
-                        : null,
-                    icon: Icon(
-                      Icons.add,
-                      size: 18,
-                      color: days < maxDays
-                          ? const Color(0xFF333D4B)
-                          : _ctaDisabled,
-                    ),
+                  _StepperButton(
+                    icon: Icons.add,
+                    enabled: days < maxDays,
+                    onTap: () => setSheetState(() => days++),
                   ),
                 ],
               ),
@@ -325,7 +317,37 @@ class PeriodStyleScreen extends ConsumerWidget {
   }
 }
 
-/// 바텀시트 공통 레이아웃 (일러스트 자리 + 타이틀 + 내용 + 완료 버튼)
+/// 스테퍼의 증감 버튼 — 한계에 닿으면 흐려진다
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        onPressed: enabled ? onTap : null,
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          icon,
+          size: 16,
+          color: enabled ? AppColors.labelNeutral : AppColors.labelDisable,
+        ),
+      ),
+    );
+  }
+}
+
+/// 바텀시트 공통 레이아웃 (타이틀 + 내용 + 완료 버튼)
 class _SheetScaffold extends StatelessWidget {
   const _SheetScaffold({
     required this.title,
@@ -347,63 +369,46 @@ class _SheetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+        padding: const EdgeInsets.fromLTRB(20, 31, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 58,
-              height: 58,
-              color: PeriodStyleScreen._imagePlaceholder,
-            ),
-            const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: PeriodStyleScreen._labelNormal,
-                letterSpacing: -0.6,
+              textAlign: TextAlign.center,
+              style: AppTypography.heading2Bold.copyWith(
+                color: AppColors.labelNormal,
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 subtitle!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: PeriodStyleScreen._textTertiary,
-                  letterSpacing: -0.6,
+                textAlign: TextAlign.center,
+                style: AppTypography.body2ReadingMedium.copyWith(
+                  color: AppColors.labelAlternative,
                 ),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             child,
-            if (footer != null) ...[const SizedBox(height: 18), footer!],
-            const SizedBox(height: 24),
+            // 경고 영역(높이 44)이 있으면 그 자체가 여백이 되므로 덧대지 않는다
+            footer ?? const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 54,
               child: FilledButton(
                 onPressed: confirmEnabled ? onConfirm : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: PeriodStyleScreen._ctaEnabled,
-                  disabledBackgroundColor: PeriodStyleScreen._ctaDisabled,
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: Colors.white,
+                  backgroundColor: AppColors.primaryNormal,
+                  disabledBackgroundColor: AppColors.interactionDisable,
+                  foregroundColor: AppColors.staticWhite,
+                  disabledForegroundColor: AppColors.labelAssistive,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  '완료',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.6,
-                  ),
-                ),
+                child: Text('완료', style: AppTypography.body1NormalBold),
               ),
             ),
           ],
@@ -413,14 +418,19 @@ class _SheetScaffold extends StatelessWidget {
   }
 }
 
+/// 기간 스타일 선택지 카드.
+///
+/// 고르면 배경 대신 Primary 테두리를 두르고 글자·아이콘까지 Primary로 바뀐다.
 class _StyleCard extends StatelessWidget {
   const _StyleCard({
+    required this.iconAsset,
     required this.title,
     required this.subtitle,
     required this.selected,
     required this.onTap,
   });
 
+  final String iconAsset;
   final String title;
   final String subtitle;
   final bool selected;
@@ -428,50 +438,71 @@ class _StyleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground = selected
+        ? AppColors.primaryNormal
+        : AppColors.labelNormal;
+
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 95,
+        // 고정 높이 대신 최소 높이 — 글자 배율을 키워도 넘치지 않는다
+        constraints: const BoxConstraints(minHeight: 78),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 19),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: PeriodStyleScreen._cardBg,
-          borderRadius: BorderRadius.circular(15),
-          border: selected
-              ? Border.all(color: PeriodStyleScreen._ctaEnabled, width: 1.5)
-              : null,
+          // 선택되면 채움을 걷어내고 테두리로만 표시한다
+          color: selected ? null : AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(14),
+          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
         ),
         child: Row(
           children: [
             Container(
-              width: 46,
-              height: 46,
-              color: PeriodStyleScreen._cardIcon,
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.backgroundNormal,
+                borderRadius: BorderRadius.circular(15.556),
+              ),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(
+                iconAsset,
+                width: 24,
+                height: 24,
+                // 아이콘마다 원본 색이 달라(타이머는 선택 상태로 뽑혀 있다) 여기서 통일한다.
+                // 미선택 색은 반투명 토큰이 아니라 불투명한 같은 색조를 쓴다 —
+                // 시계·커피는 SVG 안에 이미 61% 레이어가 있어 반투명끼리 곱해지면
+                // 형체가 흐려진다.
+                colorFilter: ColorFilter.mode(
+                  selected ? AppColors.primaryNormal : AppPalette.coolNeutral25,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
-            const SizedBox(width: 18),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: PeriodStyleScreen._labelNormal,
-                    letterSpacing: -0.6,
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.headline2Bold.copyWith(
+                      color: foreground,
+                    ),
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: PeriodStyleScreen._cardSub,
-                    letterSpacing: -0.6,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTypography.caption1Medium.copyWith(
+                      color: selected
+                          ? AppColors.primaryNormal
+                          : AppColors.labelAlternative,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -480,38 +511,54 @@ class _StyleCard extends StatelessWidget {
   }
 }
 
+/// 요일 선택 칩 — 고른 요일과 그때 생기는 연휴를 함께 보여준다
 class _PatternChip extends StatelessWidget {
   const _PatternChip({
     required this.label,
+    required this.caption,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final String caption;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final foreground = selected
+        ? AppColors.primaryNormal
+        : AppColors.labelNormal;
+
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        width: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
         decoration: BoxDecoration(
-          color: PeriodStyleScreen._chipBg,
-          borderRadius: BorderRadius.circular(12),
-          border: selected
-              ? Border.all(color: PeriodStyleScreen._ctaEnabled, width: 1.5)
-              : null,
+          // 카드와 같은 규칙: 고르면 채움 대신 테두리
+          color: selected ? null : AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(14),
+          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: PeriodStyleScreen._labelNormal,
-            letterSpacing: -0.6,
-          ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: AppTypography.headline2Bold.copyWith(color: foreground),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              caption,
+              style: AppTypography.caption1Medium.copyWith(
+                color: selected
+                    ? AppColors.primaryNormal
+                    : AppColors.labelAlternative,
+              ),
+            ),
+          ],
         ),
       ),
     );

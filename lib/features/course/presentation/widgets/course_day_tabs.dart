@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-// TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-const _textSecondary = Color(0xFF686F7E);
-const _actionGray = Color(0xFFE9E9ED);
-const _ctaBlack = Color(0xFF1A1A1A);
+import '../../../../core/theme/tokens/tokens.dart';
 
 /// Day 1 · Day 2 … 를 알약 버튼으로 늘어놓는 탭.
 /// 코스 추천 결과·저장한 코스 화면이 공유한다.
@@ -47,19 +44,21 @@ class _DayTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _ctaBlack : _actionGray,
+          // 고른 날은 반전, 나머지는 테두리만 둘러 눌러볼 수 있음을 남긴다
+          color: selected ? AppColors.inverseBackground : null,
           borderRadius: BorderRadius.circular(999),
+          border: selected
+              ? null
+              : Border.all(color: AppColors.lineNormalNeutral),
         ),
         child: Text(
           'Day $day',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : _textSecondary,
-            letterSpacing: -0.4,
+          style: AppTypography.label1NormalBold.copyWith(
+            color: selected ? AppColors.inverseLabel : AppColors.labelNormal,
           ),
         ),
       ),

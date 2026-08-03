@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_toast.dart';
 
 /// O-02 · 잔여연차 입력 (온보딩)
-/// 입력값 저장은 사용자 상태 확정 후 연결한다. 건너뛰기/시작하기 모두 홈으로 이동.
+/// 입력값 저장은 사용자 상태 확정 후 연결한다. 시작하기를 누르면 홈으로 이동.
 class LeaveInputScreen extends StatefulWidget {
   const LeaveInputScreen({super.key});
 
@@ -17,7 +18,7 @@ class LeaveInputScreen extends StatefulWidget {
 
 class _LeaveInputScreenState extends State<LeaveInputScreen> {
   static const _minDays = 0.0;
-  static const _maxDays = 30.0;
+  static const _maxDays = 99.0;
 
   /// 반차 단위(0.5일)로 증감한다
   static const _step = 0.5;
@@ -69,14 +70,22 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
   /// 입력값을 0.5 단위로 반올림하고 허용 범위로 맞춘다. 빈 값·오입력은 이전 값 유지
   void _commitInput() {
     final parsed = double.tryParse(_controller.text.trim());
+    String? clampMessage;
     setState(() {
       if (parsed != null) {
         final snapped = (parsed / _step).round() * _step;
+        // 범위를 벗어난 값은 조용히 깎지 않고 왜 바뀌었는지 알려준다
+        if (snapped > _maxDays) {
+          clampMessage = '최대 ${_maxDays.toStringAsFixed(0)}일까지 입력할 수 있어요.';
+        } else if (snapped < _minDays) {
+          clampMessage = '0일보다 적게 입력할 수 없어요.';
+        }
         _days = snapped.clamp(_minDays, _maxDays);
       }
       _editing = false;
     });
     _focusNode.unfocus();
+    if (clampMessage != null) showAppToast(context, clampMessage!);
   }
 
   void _changeBy(double delta) {
@@ -105,26 +114,7 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10, right: 20),
-                  child: GestureDetector(
-                    onTap: _complete,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        '건너뛰기',
-                        style: AppTypography.headline2Regular.copyWith(
-                          color: AppColors.labelAlternative,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 56),
+              const SizedBox(height: 108),
               SvgPicture.asset(
                 'assets/icons/ic_calendar_edit.svg',
                 width: 49,
@@ -187,9 +177,11 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
             icon: Icons.remove,
             enabled: _days > _minDays,
             onTap: () => _changeBy(-_step),
+            onBlockedTap: () => showAppToast(context, '0일보다 적게 입력할 수 없어요.'),
           ),
           Container(
-            width: 64,
+            // 상한을 넘는 '100' 같은 입력도 '일'과 함께 들어갈 만큼은 잡는다
+            width: 78,
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
@@ -209,6 +201,10 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
             icon: Icons.add,
             enabled: _days < _maxDays,
             onTap: () => _changeBy(_step),
+            onBlockedTap: () => showAppToast(
+              context,
+              '최대 ${_maxDays.toStringAsFixed(0)}일까지 입력할 수 있어요.',
+            ),
           ),
         ],
       ),
@@ -237,7 +233,8 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: textWidth.clamp(12.0, 42.0),
+          // 상한을 넘는 '100' 같은 입력도 잘리지 않고 보여야 안내가 이해된다
+          width: textWidth.clamp(12.0, 56.0),
           child: TextField(
             controller: _controller,
             focusNode: _focusNode,
@@ -246,8 +243,10 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textInputAction: TextInputAction.done,
             inputFormatters: [
-              // 숫자와 소수점 한 자리까지만 허용
-              FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}(\.\d?)?')),
+              // 숫자와 소수점 한 자리까지만 허용. 자릿수를 상한(99)에 맞춰
+              // 자르면 100을 쳤을 때 조용히 10이 되어 왜 안 되는지 알 수 없다.
+              // 범위는 _commitInput에서 걸러 안내와 함께 보정한다.
+              FilteringTextInputFormatter.allow(RegExp(r'^\d{0,3}(\.\d?)?')),
             ],
             style: _numberStyle,
             decoration: const InputDecoration(
@@ -278,11 +277,16 @@ class _SpinnerButton extends StatelessWidget {
     required this.icon,
     required this.enabled,
     required this.onTap,
+    required this.onBlockedTap,
   });
 
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
+
+  /// 한계에 도달해 눌러도 값이 바뀌지 않을 때. 비활성으로 보이지만 탭은 받아
+  /// 왜 더 못 누르는지 알려준다(그냥 막으면 고장으로 오해한다).
+  final VoidCallback onBlockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +294,7 @@ class _SpinnerButton extends StatelessWidget {
       width: 44,
       height: 44,
       child: IconButton(
-        onPressed: enabled ? onTap : null,
+        onPressed: enabled ? onTap : onBlockedTap,
         icon: Icon(
           icon,
           size: 18,

@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
-// TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-const _labelNormal = Color(0xFF171719);
-const _metaGray = Color(0xFF999999);
-const _stayAccent = Color(0xFFB55B45);
-const _benefitBg = Color(0xFFF6E3D5);
-const _benefitText = Color(0xFFB55B45);
-const _timeline = Color(0xFFE5E8EB);
+import '../../../../core/theme/tokens/tokens.dart';
 
 /// 하루치 장소를 번호·연결선과 함께 세로로 늘어놓는 목록.
 /// 코스 추천 결과·저장한 코스 화면이 공유한다.
@@ -51,88 +45,104 @@ class _PlaceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isStay = place['category'] == '숙박';
-    final circleColor = isStay ? _stayAccent : _labelNormal;
+    final imageUrl = place['imageUrl'] as String?;
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: circleColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$index',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+          // 순번과 이어지는 선 — 어디부터 어디까지 도는지 한 줄로 읽힌다
+          SizedBox(
+            width: 24,
+            child: Column(
+              children: [
+                const SizedBox(height: 15),
+                SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: Text(
+                      '$index',
+                      style: AppTypography.body1NormalBold.copyWith(
+                        color: AppColors.primaryNormal,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: _timeline,
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      color: AppColors.lineNormalNeutral,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 18),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 22),
-              child: Column(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    place['name'] as String,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: _labelNormal,
-                      letterSpacing: -0.6,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            place['name'] as String,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.body1NormalBold.copyWith(
+                              color: AppColors.labelNormal,
+                            ),
+                          ),
+                          // 혜택이 있으면 왜 이 곳을 추천하는지 먼저 알린다.
+                          // TODO(server): 장소별 추천 문구가 생기면 혜택 대신 그걸 쓴다
+                          if (place['category'] == '숙박') ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '추천 숙박비 30% 지원',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.label1ReadingMedium.copyWith(
+                                color: AppColors.primaryNormal,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Text(
+                            '${place['category']} · $regionName',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.label2Regular.copyWith(
+                              color: AppColors.labelAlternative,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${place['category']} · $regionName',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: _metaGray,
-                      letterSpacing: -0.4,
+                  const SizedBox(width: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      color: AppColors.backgroundNormalAlternative,
+                      child: imageUrl == null
+                          ? null
+                          : Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.expand(),
+                            ),
                     ),
                   ),
-                  if (isStay) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _benefitBg,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '숙박비 30% 지원',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _benefitText,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

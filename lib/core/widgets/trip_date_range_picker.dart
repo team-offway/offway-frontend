@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../constants/trip_constants.dart';
+import '../theme/tokens/tokens.dart';
+import 'app_inline_notice.dart';
 
-// TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-const _textTertiary = Color(0xFFADB1BB);
-const _textMuted = Color(0xFF545A66);
-const _sunday = Color(0xFFE60012);
-const _selectedBlue = Color(0xFF3182F6);
-const _rangeBand = Color(0x1A3182F6);
-const _disabledDay = Color(0xFFC5C8CE);
+/// 고른 날짜 사이를 잇는 옅은 띠 (Primary 12%)
+const _rangeBand = Color(0x1F3DC2FF);
 
 /// 가는날~오는날을 고르는 월별 스크롤 캘린더.
 /// 코스 위저드와 저장한 코스 일정 지정 화면이 공유한다.
@@ -22,7 +19,7 @@ class TripDateRangePicker extends StatelessWidget {
     required this.startDate,
     required this.endDate,
     required this.onSelect,
-    this.monthCount = 3,
+    this.monthCount = 12,
     this.padding = const EdgeInsets.fromLTRB(22, 28, 22, 24),
   });
 
@@ -31,7 +28,7 @@ class TripDateRangePicker extends StatelessWidget {
   final DateTime? endDate;
   final ValueChanged<DateTime> onSelect;
 
-  /// 오늘 기준으로 노출할 월 수
+  /// 이번 달부터 노출할 월 수 (기본 1년치)
   final int monthCount;
 
   final EdgeInsets padding;
@@ -69,21 +66,29 @@ class _MonthCalendar extends StatelessWidget {
 
   static const _weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
+  /// 이 달에 고를 수 있는 날이 하루도 없는지.
+  /// 가는날을 고른 뒤 상한을 넘어버린 달은 제목까지 흐려 왜 못 고르는지 보이게 한다.
+  bool get _isMonthUnavailable {
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    for (var d = 1; d <= daysInMonth; d++) {
+      if (!_isDisabled(DateTime(month.year, month.month, d))) return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final firstDay = DateTime(month.year, month.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     final leadingEmpty = firstDay.weekday % 7; // 일요일 시작 그리드
+    final monthOff = _isMonthUnavailable;
 
     return Column(
       children: [
         Text(
           '${month.year}년 ${month.month}월',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: _textMuted,
-            letterSpacing: -0.6,
+          style: AppTypography.headline1Medium.copyWith(
+            color: monthOff ? AppColors.labelAssistive : AppColors.labelNormal,
           ),
         ),
         const SizedBox(height: 18),
@@ -94,7 +99,9 @@ class _MonthCalendar extends StatelessWidget {
                 child: Text(
                   w,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: _textTertiary),
+                  style: AppTypography.caption2Bold.copyWith(
+                    color: AppColors.labelAssistive,
+                  ),
                 ),
               ),
           ],
@@ -112,21 +119,23 @@ class _MonthCalendar extends StatelessWidget {
     );
   }
 
+  /// 정책: 지난 날짜와, 가는날을 고른 뒤 상한을 넘는 날짜는 고를 수 없다.
+  /// 단, 범위가 완성된 뒤에는 다시 열어 다른 시점으로 재선택할 수 있게 한다.
+  bool _isDisabled(DateTime date) {
+    if (date.isBefore(today)) return true;
+    final start = startDate;
+    final isSelecting = start != null && endDate == null;
+    // Duration 더하기 대신 달력 일수로 비교한다 (서머타임 지역에서 어긋남 방지)
+    return isSelecting && calendarDaysBetween(start, date) > kMaxTripSpanDays;
+  }
+
   Widget _buildCell(int dayNumber) {
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     if (dayNumber < 1 || dayNumber > daysInMonth) {
       return const SizedBox(height: 52);
     }
     final date = DateTime(month.year, month.month, dayNumber);
-    final isPast = date.isBefore(today);
-    // 정책: 가는날 선택 시 상한 초과 날짜는 즉시 비활성화.
-    // 단, 범위 완성 후에는 다시 활성화해 다른 시점으로 재선택 가능하게 한다
-    final start = startDate;
-    final isSelecting = start != null && endDate == null;
-    // Duration 더하기 대신 달력 일수로 비교한다 (서머타임 지역에서 어긋남 방지)
-    final isBeyondLimit =
-        isSelecting && calendarDaysBetween(start, date) > kMaxTripSpanDays;
-    final isDisabled = isPast || isBeyondLimit;
+    final isDisabled = _isDisabled(date);
     final isSunday = date.weekday == DateTime.sunday;
     final isStart = startDate == date;
     final isEnd = endDate == date;
@@ -136,13 +145,13 @@ class _MonthCalendar extends StatelessWidget {
 
     Color textColor;
     if (isStart || isEnd) {
-      textColor = Colors.white;
+      textColor = AppColors.staticWhite;
     } else if (isDisabled) {
-      textColor = _disabledDay;
+      textColor = AppColors.labelAssistive;
     } else if (isSunday) {
-      textColor = _sunday;
+      textColor = AppAccentColors.foregroundRed;
     } else {
-      textColor = Colors.black;
+      textColor = AppColors.labelNormal;
     }
 
     final label = isStart && !isEnd || (isStart && isEnd)
@@ -174,26 +183,32 @@ class _MonthCalendar extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: const BoxDecoration(
-                  color: _selectedBlue,
+                  color: AppColors.primaryNormal,
                   shape: BoxShape.circle,
                 ),
               ),
             Positioned(
-              top: 7,
+              top: 8,
               child: Text(
                 '$dayNumber',
-                style: TextStyle(fontSize: 17, color: textColor),
+                style: AppTypography.body2NormalMedium.copyWith(
+                  color: textColor,
+                ),
               ),
             ),
             if (label != null)
               Positioned(
                 top: 38,
+                left: 0,
+                right: 0,
+                // 셀 폭에 가둔다 — 글자 배율이 커져도 옆 날짜와 겹치지 않는다
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _selectedBlue,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: AppTypography.caption2Bold.copyWith(
+                    color: AppColors.primaryNormal,
                   ),
                 ),
               ),
@@ -208,31 +223,15 @@ class _MonthCalendar extends StatelessWidget {
 class TripDateLimitBanner extends StatelessWidget {
   const TripDateLimitBanner({super.key});
 
-  static const _bannerBg = Color(0xFFC5C8CE);
-  static const _labelNormal = Color(0xFF171719);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 44,
-      color: _bannerBg,
-      padding: const EdgeInsets.symmetric(horizontal: 27),
-      child: const Row(
-        children: [
-          Icon(Icons.error, size: 20, color: _labelNormal),
-          SizedBox(width: 10),
-          Text(
-            '최대 2박3일까지 선택할 수 있어요',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: _textMuted,
-              letterSpacing: -0.6,
-            ),
-          ),
-        ],
-      ),
+    return AppInlineNotice(
+      // 아이콘 원본이 이미 label/alternative와 같은 색이라 그대로 쓴다
+      iconAsset: 'assets/icons/ic_circle_info.svg',
+      message: '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
+      color: AppColors.labelAlternative,
+      backgroundColor: AppColors.backgroundNormalAlternative,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
     );
   }
 }

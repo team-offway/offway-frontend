@@ -2,6 +2,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/constants/trip_constants.dart';
 
 void main() {
+  group('leaveDaysBetween', () {
+    // 2026-07-20은 월요일
+    test('평일만 세고 주말은 빼놓는다', () {
+      // 월~수 3일: 전부 평일
+      expect(leaveDaysBetween(DateTime(2026, 7, 20), DateTime(2026, 7, 22)), 3);
+      // 금~일 3일: 토·일이 빠져 하루만 연차
+      expect(leaveDaysBetween(DateTime(2026, 7, 24), DateTime(2026, 7, 26)), 1);
+    });
+
+    test('주말만 고르면 연차는 하루도 깎이지 않는다', () {
+      expect(leaveDaysBetween(DateTime(2026, 7, 25), DateTime(2026, 7, 26)), 0);
+    });
+
+    test('하루짜리도 양 끝을 포함해 센다', () {
+      expect(leaveDaysBetween(DateTime(2026, 7, 20), DateTime(2026, 7, 20)), 1);
+      expect(leaveDaysBetween(DateTime(2026, 7, 25), DateTime(2026, 7, 25)), 0);
+    });
+
+    test('월 경계를 넘어도 평일만 센다', () {
+      // 2026-07-30(목) ~ 2026-08-03(월): 목·금·월 = 3일
+      expect(leaveDaysBetween(DateTime(2026, 7, 30), DateTime(2026, 8, 3)), 3);
+    });
+  });
+
   group('calendarDaysBetween', () {
     test('같은 날은 0, 하루 뒤는 1', () {
       final a = DateTime(2026, 7, 20);
