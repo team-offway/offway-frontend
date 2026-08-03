@@ -796,7 +796,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('정선, 2박 3일'), findsOneWidget);
+    // 지역·기간만 브랜드색으로 강조하느라 한 Text를 조각으로 나눠 담는다
+    expect(find.textContaining('추천코스입니다'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Day 1'),
       200,
