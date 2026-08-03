@@ -113,3 +113,63 @@ class RegionCard extends StatelessWidget {
     );
   }
 }
+
+/// 로딩 중 [RegionCard] 자리에 놓는 회색 블록.
+///
+/// 카드가 들어올 자리를 미리 잡아둬 데이터가 도착할 때 화면이 밀리지 않는다.
+/// 치수는 카드와 같은 값을 써야 하므로 카드 옆에 둔다.
+class RegionCardSkeleton extends StatelessWidget {
+  const RegionCardSkeleton({super.key, this.style = RegionCardStyle.boxed});
+
+  final RegionCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AspectRatio(
+          aspectRatio: 4 / 3,
+          child: _Block(radius: 12, height: double.infinity),
+        ),
+        const SizedBox(height: 6),
+        // 제목 한 줄 — 카드에서 body2NormalBold 1줄이 차지하는 높이
+        const _Block(width: double.infinity, height: 22),
+        const SizedBox(height: 4),
+        // 설명 한 줄 — 실제 문구처럼 제목보다 살짝 짧게 둔다
+        const FractionallySizedBox(
+          widthFactor: 0.82,
+          alignment: Alignment.centerLeft,
+          child: _Block(height: 18),
+        ),
+        const SizedBox(height: 6),
+        const _Block(width: 62, height: 20),
+      ],
+    );
+
+    return style == RegionCardStyle.boxed
+        ? SizedBox(width: 152, child: content)
+        : content;
+  }
+}
+
+/// 스켈레톤을 이루는 회색 사각형 하나
+class _Block extends StatelessWidget {
+  const _Block({this.width, required this.height, this.radius = 6});
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.backgroundNormalAlternative,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}

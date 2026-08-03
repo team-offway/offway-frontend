@@ -40,6 +40,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
+  static const _skeletonCardCount = 3;
+
   _Category _selected = _Category.all;
 
   /// 선택된 카테고리의 콘텐츠가 있는 지역만 남긴다 (목록 화면과 같은 규칙)
@@ -284,7 +287,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return SizedBox(
       height: 230,
       child: regions.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다 (O-03 스켈레톤)
+        loading: () => ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: _skeletonCardCount,
+          separatorBuilder: (_, _) => const SizedBox(width: 20),
+          itemBuilder: (_, _) => const RegionCardSkeleton(),
+        ),
         error: (e, _) => Center(child: Text('추천 여행지를 불러오지 못했어요\n$e')),
         data: (all) {
           final list = _filter(all);

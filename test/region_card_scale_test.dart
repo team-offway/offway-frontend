@@ -43,4 +43,29 @@ void main() {
       expect(tester.takeException(), isNull, reason: '배율 $scale에서 넘침');
     }
   });
+
+  testWidgets('스켈레톤은 실제 카드와 같은 높이를 차지한다', (tester) async {
+    // 높이가 어긋나면 데이터가 도착하는 순간 화면이 튄다.
+    const region = {
+      'id': '정선',
+      'name': '정선',
+      'sido': '강원',
+      'description': '폐광촌에서 다시 태어난 마을',
+      'benefitBadge': '숙박비 30% 지원',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [RegionCard(region: region), RegionCardSkeleton()],
+        ),
+      ),
+    );
+
+    final card = tester.getSize(find.byType(RegionCard));
+    final skeleton = tester.getSize(find.byType(RegionCardSkeleton));
+    expect(skeleton.width, card.width);
+    expect(skeleton.height, closeTo(card.height, 1));
+  });
 }
