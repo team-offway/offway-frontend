@@ -159,10 +159,7 @@ void main() {
         matching: find.byType(FilledButton),
       ),
     );
-    expect(
-      cta.style?.backgroundColor?.resolve({}),
-      const Color(0xFF303030),
-    );
+    expect(cta.style?.backgroundColor?.resolve({}), const Color(0xFF303030));
   });
 
   testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {
@@ -738,7 +735,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // O-06 일정밀도
-    expect(find.text('내가 선호하는 스타일은?'), findsOneWidget);
+    expect(find.text('내가 선호하는 여행 스타일은?'), findsOneWidget);
     expect(find.text('4/4'), findsOneWidget);
     await tester.tap(find.text('널널한 일정'));
     await tester.pump();
