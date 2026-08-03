@@ -684,7 +684,7 @@ void main() {
     await tester.tap(find.text('연차만 (주말 미포함)'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
-    expect(find.text('연차를 얼마나 사용할까요?'), findsOneWidget);
+    expect(find.text('평일 연차, 며칠 쓸까요?'), findsOneWidget);
     expect(find.text('3일(2박3일)'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.remove));
     await tester.pump();
