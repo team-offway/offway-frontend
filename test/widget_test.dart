@@ -755,11 +755,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // O-08 후보지역
-    expect(find.textContaining('여행지 2곳을 찾았어요'), findsOneWidget);
+    // 개수만 브랜드색으로 강조하느라 한 Text를 조각으로 나눠 담는다
+    expect(find.textContaining('조건에 맞는 여행지'), findsOneWidget);
     expect(find.text('정선 · 강원'), findsOneWidget);
-    expect(find.text('추천1위'), findsOneWidget);
     expect(find.text('영월 · 강원'), findsOneWidget);
-    expect(find.textContaining('2시간30분'), findsOneWidget); // 정선 150분
+    expect(find.text('폐광촌에서 다시 태어난 마을'), findsOneWidget);
+    expect(find.text('추천순'), findsOneWidget); // 정렬 칩
 
     // O-09 코스확정: 정선 카드 탭 → 당일치기 코스 (위저드에서 당일치기 선택했음)
     await tester.tap(find.text('정선 · 강원'));
