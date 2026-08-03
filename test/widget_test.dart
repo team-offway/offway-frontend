@@ -103,7 +103,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     // rootBundle 로드(실제 I/O)가 FakeAsync에서 멈추지 않도록 runAsync로 대기
     await tester.runAsync(
@@ -126,7 +126,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -170,7 +170,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -205,7 +205,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -244,7 +244,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -290,7 +290,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -327,7 +327,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -389,7 +389,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -419,7 +419,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -477,7 +477,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -518,7 +518,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -549,7 +549,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -604,7 +604,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -661,7 +661,7 @@ void main() {
       find.text('Google로 시작하기'),
     ); // 카카오·Apple은 실제 SDK 호출이라 stub인 구글로 진입
     await tester.pumpAndSettle();
-    await tester.tap(find.text('건너뛰기'));
+    await tester.tap(find.text('시작하기'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),

@@ -7,7 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 
 /// O-02 · 잔여연차 입력 (온보딩)
-/// 입력값 저장은 사용자 상태 확정 후 연결한다. 건너뛰기/시작하기 모두 홈으로 이동.
+/// 입력값 저장은 사용자 상태 확정 후 연결한다. 시작하기를 누르면 홈으로 이동.
 class LeaveInputScreen extends StatefulWidget {
   const LeaveInputScreen({super.key});
 
@@ -105,26 +105,7 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10, right: 20),
-                  child: GestureDetector(
-                    onTap: _complete,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        '건너뛰기',
-                        style: AppTypography.headline2Regular.copyWith(
-                          color: AppColors.labelAlternative,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 56),
+              const SizedBox(height: 108),
               SvgPicture.asset(
                 'assets/icons/ic_calendar_edit.svg',
                 width: 49,
