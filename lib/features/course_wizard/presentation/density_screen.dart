@@ -20,6 +20,7 @@ class DensityScreen extends ConsumerWidget {
 
     return WizardChoiceStep(
       stepLabel: '4/4',
+      iconAsset: 'assets/icons/ic_plane.svg',
       title: '내가 선호하는 스타일은?',
       subtitle: '원하는 스타일을 반영할게요.',
       options: const ['빼곡한 일정', '널널한 일정'],

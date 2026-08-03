@@ -6,7 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../application/course_wizard_provider.dart';
 import 'widgets/wizard_choice_step.dart';
 
-/// O-05 · 이동수단 (STEP 3/4, 와이어프레임)
+/// O-05 · 이동수단 (STEP 3/4)
 class TransportScreen extends ConsumerWidget {
   const TransportScreen({super.key});
 
@@ -20,6 +20,7 @@ class TransportScreen extends ConsumerWidget {
 
     return WizardChoiceStep(
       stepLabel: '3/4',
+      iconAsset: 'assets/icons/ic_car.svg',
       title: '어떻게 이동하세요?',
       subtitle: '이동수단을 선택해주세요.',
       options: const ['대중교통', '자차'],

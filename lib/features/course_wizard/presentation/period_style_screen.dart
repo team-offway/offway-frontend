@@ -462,9 +462,7 @@ class _StyleCard extends StatelessWidget {
           // 선택되면 채움을 걷어내고 테두리로만 표시한다
           color: selected ? null : AppColors.fillNormal,
           borderRadius: BorderRadius.circular(14),
-          border: selected
-              ? Border.all(color: AppColors.primaryNormal)
-              : null,
+          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
         ),
         child: Row(
           children: [
@@ -485,9 +483,7 @@ class _StyleCard extends StatelessWidget {
                 // 시계·커피는 SVG 안에 이미 61% 레이어가 있어 반투명끼리 곱해지면
                 // 형체가 흐려진다.
                 colorFilter: ColorFilter.mode(
-                  selected
-                      ? AppColors.primaryNormal
-                      : AppPalette.coolNeutral25,
+                  selected ? AppColors.primaryNormal : AppPalette.coolNeutral25,
                   BlendMode.srcIn,
                 ),
               ),
@@ -553,9 +549,7 @@ class _PatternChip extends StatelessWidget {
           // 카드와 같은 규칙: 고르면 채움 대신 테두리
           color: selected ? null : AppColors.fillNormal,
           borderRadius: BorderRadius.circular(14),
-          border: selected
-              ? Border.all(color: AppColors.primaryNormal)
-              : null,
+          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
         ),
         child: Column(
           children: [

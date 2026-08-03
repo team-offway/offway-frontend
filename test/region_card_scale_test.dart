@@ -58,7 +58,10 @@ void main() {
       const MaterialApp(
         home: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [RegionCard(region: region), RegionCardSkeleton()],
+          children: [
+            RegionCard(region: region),
+            RegionCardSkeleton(),
+          ],
         ),
       ),
     );
