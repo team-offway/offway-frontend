@@ -6,7 +6,9 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
+import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
+import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
@@ -44,11 +46,42 @@ class _FakeLeaveRepository extends LeaveRepository {
   Future<double> updateTotalDays(double totalDays) async => totalDays;
 }
 
+/// 후보지역 추천 — mock 후보를 새 카드 형태로 돌려준다.
+/// id가 mock 코스의 키('정선')와 같아 코스 화면까지 이어지는 플로우가 유지된다.
+class _FakeRegionRecommendRepository extends RegionRecommendRepository {
+  _FakeRegionRecommendRepository() : super(Dio());
+
+  @override
+  Future<List<Map<String, dynamic>>> recommend({
+    required Origin origin,
+    required String transport,
+  }) async {
+    final data = await MockDataSource.regions();
+    final list = (data['candidates'] as List).cast<Map<String, dynamic>>();
+    return [
+      for (final r in list)
+        {
+          'id': r['id'],
+          'name': r['name'],
+          'sido': r['sido'],
+          'imageUrl': r['imageUrl'],
+          'badge': r['badge'],
+          'description': r['description'],
+          'reachMinutes': r['travelMinutesByCar'],
+          if (r['benefitBadge'] != null) 'benefitBadge': r['benefitBadge'],
+        },
+    ];
+  }
+}
+
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
 /// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
 final _serverOverrides = [
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
+  regionRecommendRepositoryProvider.overrideWithValue(
+    _FakeRegionRecommendRepository(),
+  ),
 ];
 
 void main() {
