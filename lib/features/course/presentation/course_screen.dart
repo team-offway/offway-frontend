@@ -9,6 +9,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
@@ -40,6 +41,9 @@ final courseProvider = FutureProvider.autoDispose
             travelDate: draft.travelStartDate(
               DateUtils.dateOnly(DateTime.now()),
             ),
+            // 캘린더에서 직접 고른 날짜만 확정으로 저장한다 — 추정 날짜를 실으면
+            // 일정이 확정된 것처럼 보인다
+            confirmedDate: draft.startDate,
           );
     });
 
@@ -66,16 +70,28 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     context.go(AppRoutes.home);
   }
 
-  /// 코스를 담고 내 코스 탭으로 이동한다. 위저드는 여기서 끝나므로 조건을 초기화한다.
-  ///
-  /// TODO(course): 서버 저장 API 연동. 지금은 mock JSON에 쓸 수 없어 실제로 담기지
-  /// 않으므로, 담긴 것으로 오해하지 않도록 이동 전에 안내를 띄운다.
-  void _saveToMyCourses() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('코스 담기는 준비 중이에요. 내 코스 화면으로 이동할게요')),
-    );
-    ref.read(courseWizardProvider.notifier).reset();
-    context.go(AppRoutes.myCourses);
+  /// 저장 요청 중 — 중복 탭과 이중 저장을 막는다
+  bool _saving = false;
+
+  /// 코스를 서버에 저장하고 내 코스 탭으로 이동한다.
+  /// 위저드는 여기서 끝나므로 조건을 초기화한다.
+  Future<void> _saveToMyCourses(Map<String, dynamic> course) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(courseRepositoryProvider)
+          .save(course['_save'] as Map<String, dynamic>);
+      if (!mounted) return;
+      showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
+      ref.read(courseWizardProvider.notifier).reset();
+      context.go(AppRoutes.myCourses);
+    } on ApiException catch (e) {
+      // 담기지 않았는데 이동하면 담긴 줄 안다 — 머물러 알린다
+      if (mounted) showAppToast(context, e.detail);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   String _durationLabel(int days) => switch (days) {
@@ -198,7 +214,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
             ],
           ),
         ),
-        _buildActionArea(),
+        _buildActionArea(course),
       ],
     );
   }
@@ -226,7 +242,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  Widget _buildActionArea() {
+  Widget _buildActionArea(Map<String, dynamic> course) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
@@ -242,7 +258,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _saveToMyCourses,
+              onPressed: _saving ? null : () => _saveToMyCourses(course),
               icon: const Icon(Icons.download, size: 20),
               label: Text('내 코스에 담기', style: AppTypography.body1NormalBold),
               style: FilledButton.styleFrom(

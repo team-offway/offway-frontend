@@ -87,6 +87,7 @@ class _FakeCourseRepository extends CourseRepository {
     required String transport,
     required Origin origin,
     required DateTime travelDate,
+    DateTime? confirmedDate,
   }) async {
     final data = await MockDataSource.courses();
     final courses = (data['courses'] as List)
@@ -98,8 +99,42 @@ class _FakeCourseRepository extends CourseRepository {
         ((b['durationDays'] as int) - travelDays).abs(),
       ),
     );
-    return {...courses.first, 'regionName': regionId};
+    return {
+      ...courses.first,
+      'regionName': regionId,
+      '_save': <String, dynamic>{},
+    };
   }
+
+  @override
+  Future<int> save(Map<String, dynamic> savePayload) async => 1;
+
+  @override
+  Future<List<Map<String, dynamic>>> savedCourseCards() async {
+    final data = await MockDataSource.courses();
+    return (data['savedCourses'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
+  }
+
+  @override
+  Future<({Map<String, dynamic> saved, Map<String, dynamic> course})?>
+  savedCourseDetail(String courseId) async {
+    final data = await MockDataSource.courses();
+    final saved = (data['savedCourses'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .where((s) => s['id'] == courseId)
+        .firstOrNull;
+    if (saved == null) return null;
+    final course = (data['courses'] as List)
+        .cast<Map<String, dynamic>>()
+        .where((c) => c['id'] == saved['courseId'])
+        .firstOrNull;
+    if (course == null) return null;
+    return (saved: saved, course: course);
+  }
+
+  @override
+  Future<void> delete(String courseId) async {}
 }
 
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
@@ -1000,6 +1035,6 @@ void main() {
     expect(find.byType(MyCoursesScreen), findsOneWidget);
     expect(find.text('내 코스에 담기'), findsNothing);
     // 아직 실제로 담기지는 않으므로 담긴 것으로 오해하지 않도록 안내가 보인다
-    expect(find.textContaining('코스 담기는 준비 중'), findsOneWidget);
+    expect(find.textContaining('내 코스에 담았어요'), findsOneWidget);
   });
 }
