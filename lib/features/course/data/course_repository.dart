@@ -58,6 +58,56 @@ class CourseRepository {
     }
   }
 
+  /// 같은 지역에서 코스를 다시 뽑는다 (`POST /courses/regenerate`).
+  ///
+  /// [previousSeed]는 직전 재생성이 돌려준 씨앗 — 넘겨야 그 코스와 다른 조합이
+  /// 나온다. 첫 재생성은 생략한다(서버가 첫 생성 코스로 간주).
+  /// `differentFromPrevious`가 거짓이면 후보가 모자란 지역이다.
+  Future<({Map<String, dynamic> course, int seed, bool differentFromPrevious})>
+  regenerate({
+    required String regionId,
+    required int travelDays,
+    required String density,
+    required String transport,
+    required Origin origin,
+    required DateTime travelDate,
+    DateTime? confirmedDate,
+    int? previousSeed,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/v1/courses/regenerate',
+        data: {
+          'regionId': int.parse(regionId),
+          'travelDays': travelDays,
+          'density': density,
+          'transport': transport,
+          'originLat': origin.lat,
+          'originLng': origin.lng,
+          'travelDate': _isoDate(travelDate),
+          'previousSeed': ?previousSeed,
+        },
+      );
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      final course = data['course'] as Map<String, dynamic>;
+      return (
+        course: _toCourseMap(
+          course,
+          savePayload: _toSavePayload(
+            course,
+            density: density,
+            transport: transport,
+            confirmedDate: confirmedDate,
+          ),
+        ),
+        seed: (data['seed'] as num).toInt(),
+        differentFromPrevious: data['differentFromPrevious'] as bool? ?? true,
+      );
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`). 저장된 courseId를 준다.
   Future<int> save(Map<String, dynamic> savePayload) async {
     try {

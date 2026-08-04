@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/trip_constants.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
@@ -17,9 +16,11 @@ class RegionRecommendRepository {
   final Dio _dio;
 
   /// [transport]는 서버 enum 문자열(CAR·TRANSIT).
+  /// [maxReachMinutes]는 가용시간 계산이 준 도달 한계 — 일정이 짧을수록 줄어든다.
   Future<List<Map<String, dynamic>>> recommend({
     required Origin origin,
     required String transport,
+    required int maxReachMinutes,
   }) async {
     try {
       final response = await _dio.post<dynamic>(
@@ -28,7 +29,7 @@ class RegionRecommendRepository {
           'originLat': origin.lat,
           'originLng': origin.lng,
           'transport': transport,
-          'maxReachMinutes': kMaxReachMinutes,
+          'maxReachMinutes': maxReachMinutes,
         },
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;

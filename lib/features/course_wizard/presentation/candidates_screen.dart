@@ -3,15 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
 
-/// 위저드 조건(이동수단)과 현재 위치로 후보지역을 추천받는다.
+/// 위저드 조건(이동수단·기간)과 현재 위치로 후보지역을 추천받는다.
+///
+/// 도달 한계는 가용시간 계산이 정한다 — 당일치기는 반나절 거리만, 2박3일은
+/// 멀리까지. 계산에 실패하면 기본값(420분)으로 폴백해 추천은 계속된다.
 ///
 /// 위치 권한은 이 시점에 처음 묻는다 — "여행지를 찾는 중"이라는 맥락이 있어야
 /// 왜 위치가 필요한지 납득된다. 거부하면 서울 출발로 가정하고 계속 간다.
@@ -20,6 +25,7 @@ final wizardCandidatesProvider =
       final transport = ref.watch(
         courseWizardProvider.select((draft) => draft.transportMode),
       );
+      final availableTime = await ref.watch(availableTimeProvider.future);
       final origin = await ref.read(originLocatorProvider).resolve();
       return ref
           .read(regionRecommendRepositoryProvider)
@@ -28,6 +34,7 @@ final wizardCandidatesProvider =
             transport: transport == TransportMode.publicTransit
                 ? 'TRANSIT'
                 : 'CAR',
+            maxReachMinutes: availableTime?.maxReachMinutes ?? kMaxReachMinutes,
           );
     });
 

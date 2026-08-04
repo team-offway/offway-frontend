@@ -10,13 +10,20 @@ final homeRepositoryProvider = Provider<HomeRepository>(
 
 /// 홈 API(`GET /api/v1/home`) 한 번으로 받는 화면 데이터.
 class HomeSnapshot {
-  const HomeSnapshot({required this.user, required this.regions});
+  const HomeSnapshot({
+    required this.user,
+    required this.regions,
+    this.filters = const [],
+  });
 
   /// `{nickname, remainingLeaveDays(double?)}`
   final Map<String, dynamic> user;
 
   /// RegionCard가 읽는 형태 (name·sido·benefitBadge·categoryCounts…)
   final List<Map<String, dynamic>> regions;
+
+  /// 카테고리 칩 `[{key, label}]` — 구성·순서를 서버가 정한다
+  final List<Map<String, dynamic>> filters;
 }
 
 /// 홈 API. 게스트 식별은 인터셉터의 X-Guest-Id가 맡는다.
@@ -38,6 +45,8 @@ class HomeRepository {
           'remainingLeaveDays': user['remainingLeaveDays'],
         },
         regions: regions.map(_toRegionCardMap).toList(),
+        filters: ((data['filters'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>(),
       );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);

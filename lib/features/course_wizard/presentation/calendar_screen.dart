@@ -5,9 +5,32 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/network/api_envelope.dart';
+import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
+import '../../onboarding/data/leave_repository.dart';
 import '../application/course_wizard_provider.dart';
+
+/// 고른 기간이 연차를 며칠 깎는지 — 서버가 평일−공휴일로 계산한다.
+///
+/// 이 시점엔 이동수단을 아직 안 골랐지만 연차 소모는 이동수단과 무관하므로
+/// CAR로 임시 지정해 묻는다. 서버가 안 되면 주말만 빼는 로컬 근사로 폴백한다.
+final tripConsumedLeaveProvider = FutureProvider.autoDispose
+    .family<double, ({DateTime start, DateTime end})>((ref, range) async {
+      try {
+        final result = await ref
+            .read(leaveRepositoryProvider)
+            .availableTime(
+              transport: 'CAR',
+              startDate: range.start,
+              endDate: range.end,
+            );
+        return result.consumedLeaveDays;
+      } on ApiException {
+        return leaveDaysBetween(range.start, range.end).toDouble();
+      }
+    });
 
 /// O-04-0 · 여행 날짜 선택 캘린더 (A 경로)
 /// 가는날~오는날 범위 선택, 최대 2박3일. X 닫기 시 위저드를 종료하고 홈으로.
@@ -73,7 +96,7 @@ class CalendarScreen extends ConsumerWidget {
                     ref.read(courseWizardProvider.notifier).selectDate(day),
               ),
             ),
-            _buildActionArea(context, draft),
+            _buildActionArea(context, ref, draft),
           ],
         ),
       ),
@@ -81,12 +104,16 @@ class CalendarScreen extends ConsumerWidget {
   }
 
   /// 하단 액션 영역 — 고른 범위가 연차를 며칠 쓰는지 먼저 알리고 CTA를 둔다
-  Widget _buildActionArea(BuildContext context, CourseWizardDraft draft) {
+  Widget _buildActionArea(
+    BuildContext context,
+    WidgetRef ref,
+    CourseWizardDraft draft,
+  ) {
     final start = draft.startDate;
     final end = draft.endDate;
-    // 주말은 연차가 깎이지 않으므로 평일만 센다
-    final leaveDays = start != null && end != null
-        ? leaveDaysBetween(start, end)
+    // 서버가 평일−공휴일로 계산한다 (계산 중이거나 미완성 범위면 자리만 지킨다)
+    final consumed = start != null && end != null
+        ? ref.watch(tripConsumedLeaveProvider((start: start, end: end))).value
         : null;
 
     return Padding(
@@ -96,10 +123,10 @@ class CalendarScreen extends ConsumerWidget {
           // 자리를 늘 차지해 날짜를 고를 때 버튼이 아래위로 움직이지 않게 한다
           SizedBox(
             height: 22,
-            child: leaveDays == null
+            child: consumed == null
                 ? null
                 : Text(
-                    '차감 연차 일수 $leaveDays일',
+                    '차감 연차 일수 ${formatLeaveDays(consumed)}일',
                     style: AppTypography.body2NormalMedium.copyWith(
                       color: AppColors.labelAlternative,
                     ),

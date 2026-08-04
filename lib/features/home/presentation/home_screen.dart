@@ -25,19 +25,23 @@ final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) async => (await ref.watch(homeSnapshotProvider.future)).regions,
 );
 
-/// 홈 카테고리 칩 정의 ('전체'는 필터 없음)
-enum _Category {
-  all('전체', 'assets/icons/ic_cat_all.svg'),
-  sight('관광지', 'assets/icons/ic_cat_sight.svg'),
-  stay('숙박', 'assets/icons/ic_cat_stay.svg'),
-  experience('체험', 'assets/icons/ic_cat_experience.svg'),
-  food('맛집', 'assets/icons/ic_cat_food.svg');
+/// 카테고리 키별 아이콘 — 구성·순서·라벨은 서버(filters)가 정하고 그림만 앱이 가진다
+const _categoryIcons = <String, String>{
+  'ALL': 'assets/icons/ic_cat_all.svg',
+  'SIGHT': 'assets/icons/ic_cat_sight.svg',
+  'STAY': 'assets/icons/ic_cat_stay.svg',
+  'EXPERIENCE': 'assets/icons/ic_cat_experience.svg',
+  'FOOD': 'assets/icons/ic_cat_food.svg',
+};
 
-  const _Category(this.label, this.iconAsset);
-
-  final String label;
-  final String iconAsset;
-}
+/// 서버 응답이 오기 전에도 칩 자리가 비지 않도록 쓰는 기본 구성
+const _defaultFilters = [
+  {'key': 'ALL', 'label': '전체'},
+  {'key': 'SIGHT', 'label': '관광지'},
+  {'key': 'STAY', 'label': '숙박'},
+  {'key': 'EXPERIENCE', 'label': '체험'},
+  {'key': 'FOOD', 'label': '맛집'},
+];
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
@@ -54,14 +58,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
 
-  _Category _selected = _Category.all;
+  /// 고른 칩 `{key, label}` — null이면 '전체'
+  Map<String, dynamic>? _selected;
 
   /// 선택된 카테고리의 콘텐츠가 있는 지역만 남긴다 (목록 화면과 같은 규칙)
   List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) {
-    if (_selected == _Category.all) return all;
+    final selected = _selected;
+    if (selected == null || selected['key'] == 'ALL') return all;
     return all.where((r) {
       final counts = r['categoryCounts'] as Map<String, dynamic>?;
-      return (counts?[_selected.label] as int? ?? 0) > 0;
+      return (counts?[selected['label']] as int? ?? 0) > 0;
     }).toList();
   }
 
@@ -295,16 +301,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCategoryRow() {
+    // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
+    final filters =
+        ref.watch(homeSnapshotProvider).value?.filters ?? _defaultFilters;
+    final chips = filters.isEmpty ? _defaultFilters : filters;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          for (final category in _Category.values)
+          for (final filter in chips)
             _CategoryChip(
-              category: category,
-              selected: _selected == category,
-              onTap: () => setState(() => _selected = category),
+              label: filter['label'] as String,
+              iconAsset:
+                  _categoryIcons[filter['key']] ?? _categoryIcons['ALL']!,
+              selected: filter['key'] == 'ALL'
+                  ? _selected == null || _selected!['key'] == 'ALL'
+                  : _selected?['key'] == filter['key'],
+              onTap: () =>
+                  setState(() => _selected = Map<String, dynamic>.from(filter)),
             ),
         ],
       ),
@@ -362,12 +377,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 /// 카테고리 칩 — 선택되면 Primary 테두리와 진한 라벨
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
-    required this.category,
+    required this.label,
+    required this.iconAsset,
     required this.selected,
     required this.onTap,
   });
 
-  final _Category category;
+  final String label;
+  final String iconAsset;
   final bool selected;
   final VoidCallback onTap;
 
@@ -389,11 +406,11 @@ class _CategoryChip extends StatelessWidget {
                   : null,
             ),
             alignment: Alignment.center,
-            child: SvgPicture.asset(category.iconAsset, width: 29, height: 29),
+            child: SvgPicture.asset(iconAsset, width: 29, height: 29),
           ),
           const SizedBox(height: 6),
           Text(
-            category.label,
+            label,
             style:
                 (selected
                         ? AppTypography.caption2Bold

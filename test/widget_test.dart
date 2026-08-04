@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
+import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
@@ -36,6 +37,13 @@ class _FakeHomeRepository extends HomeRepository {
   Future<HomeSnapshot> fetch() async => HomeSnapshot(
     user: await MockDataSource.user(),
     regions: await MockDataSource.allRegions(),
+    filters: const [
+      {'key': 'ALL', 'label': '전체'},
+      {'key': 'SIGHT', 'label': '관광지'},
+      {'key': 'STAY', 'label': '숙박'},
+      {'key': 'EXPERIENCE', 'label': '체험'},
+      {'key': 'FOOD', 'label': '맛집'},
+    ],
   );
 }
 
@@ -45,6 +53,22 @@ class _FakeLeaveRepository extends LeaveRepository {
 
   @override
   Future<double> updateTotalDays(double totalDays) async => totalDays;
+
+  /// 가용시간 계산은 실패로 친다 — 위저드가 로컬 추정 폴백으로 흐른다
+  @override
+  Future<AvailableTime> availableTime({
+    required String transport,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodStyle,
+    DateTime? baseDate,
+    String? weekendBridge,
+    int? leaveDays,
+  }) async => throw const ApiException(
+    status: 0,
+    code: 'TEST',
+    detail: '테스트에는 서버가 없어요',
+  );
 }
 
 /// 후보지역 추천 — mock 후보를 새 카드 형태로 돌려준다.
@@ -56,6 +80,7 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
   Future<List<Map<String, dynamic>>> recommend({
     required Origin origin,
     required String transport,
+    required int maxReachMinutes,
   }) async {
     final data = await MockDataSource.regions();
     final list = (data['candidates'] as List).cast<Map<String, dynamic>>();

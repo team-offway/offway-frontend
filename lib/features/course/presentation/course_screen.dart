@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
@@ -17,20 +18,26 @@ import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_sheet.dart';
 
-/// 위저드 조건(밀도·이동수단·날짜)과 현재 위치로 코스를 생성한다.
-/// '새로운 추천 받기'로 다시 들어오면 autoDispose가 새 코스를 뽑는다.
+/// 위저드 조건(밀도·이동수단·기간)과 현재 위치로 코스를 생성한다.
+///
+/// 여행 날짜·일수는 가용시간 계산(서버, 공휴일 반영)이 확정한 값을 쓰고,
+/// 계산에 실패했을 때만 로컬 추정으로 폴백한다.
 final courseProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, ({String regionId, int desiredDays})>((
       ref,
       query,
     ) async {
       final draft = ref.read(courseWizardProvider);
+      final availableTime = await ref.watch(availableTimeProvider.future);
       final origin = await ref.read(originLocatorProvider).resolve();
       return ref
           .read(courseRepositoryProvider)
           .generate(
             regionId: query.regionId,
-            travelDays: query.desiredDays.clamp(1, kMaxTripSpanDays + 1),
+            travelDays: (availableTime?.travelDays ?? query.desiredDays).clamp(
+              1,
+              kMaxTripSpanDays + 1,
+            ),
             density: draft.scheduleDensity == ScheduleDensity.relaxed
                 ? 'RELAXED'
                 : 'PACKED',
@@ -38,9 +45,9 @@ final courseProvider = FutureProvider.autoDispose
                 ? 'TRANSIT'
                 : 'CAR',
             origin: origin,
-            travelDate: draft.travelStartDate(
-              DateUtils.dateOnly(DateTime.now()),
-            ),
+            travelDate:
+                availableTime?.startDate ??
+                draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
             // 캘린더에서 직접 고른 날짜만 확정으로 저장한다 — 추정 날짜를 실으면
             // 일정이 확정된 것처럼 보인다
             confirmedDate: draft.startDate,
@@ -72,6 +79,59 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   /// 저장 요청 중 — 중복 탭과 이중 저장을 막는다
   bool _saving = false;
+
+  /// '새로운 추천 받기'로 다시 뽑은 코스. provider 결과보다 우선한다
+  Map<String, dynamic>? _regenerated;
+
+  /// 직전 재생성의 씨앗 — 다음 재생성에 넘겨야 다른 조합이 나온다
+  int? _lastSeed;
+
+  bool _regenerating = false;
+
+  /// 같은 지역에서 코스를 다시 뽑는다. 화면을 떠나지 않고 그 자리에서 바뀐다.
+  Future<void> _regenerate() async {
+    if (_regenerating) return;
+    setState(() => _regenerating = true);
+    try {
+      final draft = ref.read(courseWizardProvider);
+      final availableTime = await ref.read(availableTimeProvider.future);
+      final origin = await ref.read(originLocatorProvider).resolve();
+      final result = await ref
+          .read(courseRepositoryProvider)
+          .regenerate(
+            regionId: widget.regionId,
+            travelDays: (availableTime?.travelDays ?? widget.desiredDays).clamp(
+              1,
+              kMaxTripSpanDays + 1,
+            ),
+            density: draft.scheduleDensity == ScheduleDensity.relaxed
+                ? 'RELAXED'
+                : 'PACKED',
+            transport: draft.transportMode == TransportMode.publicTransit
+                ? 'TRANSIT'
+                : 'CAR',
+            origin: origin,
+            travelDate:
+                availableTime?.startDate ??
+                draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
+            confirmedDate: draft.startDate,
+            previousSeed: _lastSeed,
+          );
+      if (!mounted) return;
+      setState(() {
+        _regenerated = result.course;
+        _lastSeed = result.seed;
+        _selectedDay = 1; // 새 코스는 첫날부터 보여준다
+      });
+      if (!result.differentFromPrevious) {
+        showAppToast(context, '이 지역은 장소가 많지 않아 비슷한 코스가 나올 수 있어요');
+      }
+    } on ApiException catch (e) {
+      if (mounted) showAppToast(context, e.detail);
+    } finally {
+      if (mounted) setState(() => _regenerating = false);
+    }
+  }
 
   /// 코스를 서버에 저장하고 내 코스 탭으로 이동한다.
   /// 위저드는 여기서 끝나므로 조건을 초기화한다.
@@ -129,7 +189,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
             if (data == null) {
               return const Center(child: Text('해당 지역의 코스가 아직 없어요'));
             }
-            return _buildBody(data);
+            // 재생성한 코스가 있으면 그걸 보여준다 (조건이 바뀌면 provider가 새로 만든다)
+            return _buildBody(_regenerated ?? data);
           },
         ),
       ),
@@ -275,7 +336,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => context.pushReplacement(AppRoutes.wizardLoading),
+              onPressed: _regenerating ? null : _regenerate,
               icon: const Icon(Icons.refresh, size: 20),
               label: Text('새로운 추천 받기', style: AppTypography.body1NormalBold),
               style: OutlinedButton.styleFrom(
