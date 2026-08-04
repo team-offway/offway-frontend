@@ -3,34 +3,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
+import '../../../core/location/origin_locator.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
-import '../../../mock/mock_data_source.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_sheet.dart';
 
-/// 지역·희망일수에 맞는 mock 코스 선택 (서버 연동 시 추천 API 응답으로 교체)
+/// 위저드 조건(밀도·이동수단·날짜)과 현재 위치로 코스를 생성한다.
+/// '새로운 추천 받기'로 다시 들어오면 autoDispose가 새 코스를 뽑는다.
 final courseProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, ({String regionId, int desiredDays})>((
       ref,
       query,
     ) async {
-      final data = await MockDataSource.courses();
-      final courses = (data['courses'] as List)
-          .cast<Map<String, dynamic>>()
-          .where((c) => c['regionId'] == query.regionId)
-          .toList();
-      if (courses.isEmpty) return null;
-      courses.sort(
-        (a, b) => ((a['durationDays'] as int) - query.desiredDays)
-            .abs()
-            .compareTo(((b['durationDays'] as int) - query.desiredDays).abs()),
-      );
-      return courses.first;
+      final draft = ref.read(courseWizardProvider);
+      final origin = await ref.read(originLocatorProvider).resolve();
+      return ref
+          .read(courseRepositoryProvider)
+          .generate(
+            regionId: query.regionId,
+            travelDays: query.desiredDays.clamp(1, kMaxTripSpanDays + 1),
+            density: draft.scheduleDensity == ScheduleDensity.relaxed
+                ? 'RELAXED'
+                : 'PACKED',
+            transport: draft.transportMode == TransportMode.publicTransit
+                ? 'TRANSIT'
+                : 'CAR',
+            origin: origin,
+            travelDate: draft.travelStartDate(
+              DateUtils.dateOnly(DateTime.now()),
+            ),
+          );
     });
 
 /// O-09 · 코스확정 (당일치기 / 1박 이상)
@@ -87,8 +97,18 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: course.when(
+          // 실제 코스 생성이라 몇 초 걸릴 수 있다 — 로딩 화면과 같은 표시를 쓴다
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('코스를 불러오지 못했어요\n$e')),
+          // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+          error: (e, _) => Center(
+            child: Text(
+              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+              textAlign: TextAlign.center,
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
+            ),
+          ),
           data: (data) {
             if (data == null) {
               return const Center(child: Text('해당 지역의 코스가 아직 없어요'));
@@ -145,7 +165,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildHeadline(durationDays),
+              _buildHeadline(course, durationDays),
               const SizedBox(height: 8),
               Text(
                 '맞춤코스로 연차 여행을 떠나보세요.',
@@ -171,7 +191,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              CoursePlaceList(places: places, regionName: widget.regionId),
+              CoursePlaceList(
+                places: places,
+                regionName: course['regionName'] as String? ?? widget.regionId,
+              ),
             ],
           ),
         ),
@@ -180,8 +203,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  /// "정선, 2박3일 추천코스입니다." — 지역·기간만 브랜드색으로 짚는다
-  Widget _buildHeadline(int durationDays) {
+  /// "정선군, 2박3일 추천코스입니다." — 지역·기간만 브랜드색으로 짚는다
+  Widget _buildHeadline(Map<String, dynamic> course, int durationDays) {
+    // 라우트의 regionId는 숫자 문자열이라 표시용 이름은 응답에서 받는다
+    final regionName = course['regionName'] as String? ?? widget.regionId;
     final base = AppTypography.title3Bold.copyWith(
       color: AppColors.labelNormal,
     );
@@ -190,7 +215,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       TextSpan(
         style: base,
         children: [
-          TextSpan(text: '${widget.regionId}, '),
+          TextSpan(text: '$regionName, '),
           TextSpan(
             text: _durationLabel(durationDays),
             style: base.copyWith(color: AppColors.primaryNormal),

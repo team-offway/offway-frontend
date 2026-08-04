@@ -84,6 +84,32 @@ class CourseWizardDraft {
     };
   }
 
+  /// 코스 생성 API에 보낼 여행 시작일.
+  ///
+  /// A 경로(캘린더)는 고른 가는날 그대로. B 경로(기간스타일)는 구체 날짜가
+  /// 없어 스타일에서 가장 가까운 시작일을 추정한다 — 주말포함은 연휴 첫날,
+  /// 연차만은 다음 월요일, 당일치기는 다음 토요일(주말 나들이 가정).
+  /// 오늘이 그 요일이면 일주일 뒤로 미룬다(당일 출발 코스는 준비가 안 된다).
+  ///
+  /// TODO(정책): B 경로의 날짜 추정 규칙은 임시다. 팀 확정 후 조정할 것.
+  DateTime travelStartDate(DateTime today) {
+    if (startDate != null) return startDate!;
+    final targetWeekday = switch (periodStyle) {
+      PeriodStyle.weekendCombo
+          when weekendPattern == WeekendPattern.friSatSun =>
+        DateTime.friday,
+      PeriodStyle.weekendCombo => DateTime.saturday,
+      PeriodStyle.leaveOnly => DateTime.monday,
+      _ => DateTime.saturday,
+    };
+    final delta = (targetWeekday - today.weekday + 7) % 7;
+    return DateTime(
+      today.year,
+      today.month,
+      today.day + (delta == 0 ? 7 : delta),
+    );
+  }
+
   /// 기간스타일 스텝 완료 여부 (하위 선택까지 포함)
   bool get isPeriodStyleComplete => switch (periodStyle) {
     PeriodStyle.dayTrip => true,

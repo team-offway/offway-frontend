@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
@@ -74,6 +75,33 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
   }
 }
 
+/// 코스 생성 — 옛 mock 선택 규칙(지역 일치 + 희망일수에 가장 가까운 코스)을 재현한다
+class _FakeCourseRepository extends CourseRepository {
+  _FakeCourseRepository() : super(Dio());
+
+  @override
+  Future<Map<String, dynamic>> generate({
+    required String regionId,
+    required int travelDays,
+    required String density,
+    required String transport,
+    required Origin origin,
+    required DateTime travelDate,
+  }) async {
+    final data = await MockDataSource.courses();
+    final courses = (data['courses'] as List)
+        .cast<Map<String, dynamic>>()
+        .where((c) => c['regionId'] == regionId)
+        .toList();
+    courses.sort(
+      (a, b) => ((a['durationDays'] as int) - travelDays).abs().compareTo(
+        ((b['durationDays'] as int) - travelDays).abs(),
+      ),
+    );
+    return {...courses.first, 'regionName': regionId};
+  }
+}
+
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
 /// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
 final _serverOverrides = [
@@ -82,6 +110,7 @@ final _serverOverrides = [
   regionRecommendRepositoryProvider.overrideWithValue(
     _FakeRegionRecommendRepository(),
   ),
+  courseRepositoryProvider.overrideWithValue(_FakeCourseRepository()),
 ];
 
 void main() {
