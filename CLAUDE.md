@@ -24,6 +24,9 @@
 ```bash
 flutter run                                          # 실행 (기기 선택: -d <device-id>)
 flutter run --dart-define=API_BASE_URL=<url>         # 백엔드 주소 지정
+# 배포 서버는 임시 Basic 게이트(#122) 뒤에 있다 — 계정은 백엔드 개발자에게 받아 주입 (커밋 금지)
+flutter run --dart-define=API_BASE_URL=http://18.181.168.227:8080 \
+  --dart-define=BASIC_AUTH_USER=... --dart-define=BASIC_AUTH_PASS=...
 flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar  # 특정 화면부터 시작 (개발용)
 flutter analyze                                      # 정적 분석
 flutter test                                         # 테스트

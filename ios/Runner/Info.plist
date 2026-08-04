@@ -58,8 +58,13 @@
 		<string>kakaokompassauth</string>
 		<string>kakaolink</string>
 	</array>
+	<!-- 개발 서버(18.181.168.227)가 도메인 없는 HTTP라 전면 허용이 불가피하다.
+	     도메인이면 NSExceptionDomains로 좁힐 수 있지만 IP에는 적용되지 않는다.
+	     서버에 HTTPS가 붙으면 이 예외를 제거할 것 — 심사 시 사유 소명 대상. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
