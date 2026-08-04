@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../home/presentation/home_screen.dart';
+import '../data/leave_repository.dart';
 
 /// O-02 · 잔여연차 입력 (온보딩)
-/// 입력값 저장은 사용자 상태 확정 후 연결한다. 시작하기를 누르면 홈으로 이동.
-class LeaveInputScreen extends StatefulWidget {
+/// 시작하기를 누르면 서버에 총 연차를 저장하고 홈으로 이동한다.
+class LeaveInputScreen extends ConsumerStatefulWidget {
   const LeaveInputScreen({super.key});
 
   @override
-  State<LeaveInputScreen> createState() => _LeaveInputScreenState();
+  ConsumerState<LeaveInputScreen> createState() => _LeaveInputScreenState();
 }
 
-class _LeaveInputScreenState extends State<LeaveInputScreen> {
+class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
   static const _minDays = 0.0;
   static const _maxDays = 99.0;
 
@@ -94,10 +98,25 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
     });
   }
 
-  void _complete() {
+  /// 서버 저장 중 — 중복 탭과 이중 요청을 막는다
+  bool _saving = false;
+
+  Future<void> _complete() async {
     if (_editing) _commitInput();
-    // TODO(user): 잔여연차 저장(서버/로컬) 연결
-    context.go(AppRoutes.home);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      // 게스트(X-Guest-Id) 앞으로 총 연차를 저장한다 — 홈이 이 값을 읽는다
+      await ref.read(leaveRepositoryProvider).updateTotalDays(_days);
+      // 홈이 이미 캐시를 갖고 있으면 옛 연차가 보이므로 다시 불러오게 한다
+      ref.invalidate(homeSnapshotProvider);
+      if (mounted) context.go(AppRoutes.home);
+    } on ApiException catch (e) {
+      // 저장 없이 홈으로 보내면 연차가 0으로 보여 더 혼란스럽다 — 머물러 알린다
+      if (mounted) showAppToast(context, e.detail);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -142,7 +161,7 @@ class _LeaveInputScreenState extends State<LeaveInputScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: FilledButton(
-                  onPressed: _complete,
+                  onPressed: _saving ? null : _complete,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryNormal,
                     foregroundColor: AppColors.staticWhite,

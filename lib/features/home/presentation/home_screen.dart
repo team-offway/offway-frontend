@@ -3,18 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../../mock/mock_data_source.dart';
 import '../../region/presentation/widgets/region_card.dart';
+import '../data/home_repository.dart';
 
-/// 홈 mock 데이터 (서버 연동 시 repository 프로바이더로 교체)
+/// 홈 API 한 번으로 사용자·추천지역을 함께 받는다.
+/// 온보딩에서 연차를 저장한 뒤에는 invalidate로 다시 불러온다.
+final homeSnapshotProvider = FutureProvider<HomeSnapshot>(
+  (ref) => ref.watch(homeRepositoryProvider).fetch(),
+);
+
+/// 다른 화면(마이·기간스타일)도 읽는 사용자 정보 — 이름을 유지해 결합을 끊지 않는다
 final homeUserProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) => MockDataSource.user(),
+  (ref) async => (await ref.watch(homeSnapshotProvider.future)).user,
 );
 final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => MockDataSource.allRegions(),
+  (ref) async => (await ref.watch(homeSnapshotProvider.future)).regions,
 );
 
 /// 홈 카테고리 칩 정의 ('전체'는 필터 없음)
@@ -191,7 +199,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              days == null ? '-' : '$days일',
+              // 서버가 double로 주므로(반차 0.5 단위) 15.0일로 보이지 않게 다듬는다
+              days == null ? '-' : '${formatLeaveDays(days as num)}일',
               style: AppTypography.body1NormalBold.copyWith(
                 color: AppColors.labelNormal,
               ),
@@ -315,7 +324,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           separatorBuilder: (_, _) => const SizedBox(width: 20),
           itemBuilder: (_, _) => const RegionCardSkeleton(),
         ),
-        error: (e, _) => Center(child: Text('추천 여행지를 불러오지 못했어요\n$e')),
+        // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+        error: (e, _) => Center(
+          child: Text(
+            e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
+            textAlign: TextAlign.center,
+            style: AppTypography.label1NormalMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+        ),
         data: (all) {
           final list = _filter(all);
           if (list.isEmpty) {
