@@ -123,3 +123,6 @@ app.*.symbols
 
 # macOS
 .DS_Store
+
+# 서버 접속 정보 (Basic 계정 포함) — 절대 커밋 금지. env.json.example을 복사해 만든다
+/env.json
