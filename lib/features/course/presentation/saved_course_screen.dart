@@ -442,7 +442,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 22),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_calendar.svg',
               label: '여행날짜 수정',
@@ -557,7 +557,11 @@ class _EditSheetRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                // 디자인은 아이콘을 61% 투명도로 옅게 얹는다
+                child: Opacity(
+                  opacity: AppOpacity.o61,
+                  child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                ),
               ),
             ),
             const SizedBox(width: 20),
