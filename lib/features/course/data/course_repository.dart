@@ -123,13 +123,19 @@ class CourseRepository {
     }
   }
 
-  /// 내 코스 목록 카드 (`GET /courses`).
+  /// 내 코스 목록 카드 (`GET /courses?scope=`).
   ///
+  /// [scope]는 ALL·UPCOMING(예정)·PAST(다녀온) — 정렬까지 서버가 해준다.
   /// 요약에는 지역 이름이 없어 코스 상세를 병렬로 더 읽어 채운다.
   /// TODO(server): 요약 응답에 regionName이 실리면 상세 조회를 걷어낼 것.
-  Future<List<Map<String, dynamic>>> savedCourseCards() async {
+  Future<List<Map<String, dynamic>>> savedCourseCards({
+    String scope = 'ALL',
+  }) async {
     try {
-      final response = await _dio.get<dynamic>('/api/v1/courses');
+      final response = await _dio.get<dynamic>(
+        '/api/v1/courses',
+        queryParameters: {'scope': scope},
+      );
       final summaries = (ApiEnvelope.unwrap(response) as List)
           .cast<Map<String, dynamic>>();
       final details = await Future.wait(

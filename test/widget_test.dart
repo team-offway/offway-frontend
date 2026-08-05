@@ -135,10 +135,15 @@ class _FakeCourseRepository extends CourseRepository {
   Future<int> save(Map<String, dynamic> savePayload) async => 1;
 
   @override
-  Future<List<Map<String, dynamic>>> savedCourseCards() async {
+  Future<List<Map<String, dynamic>>> savedCourseCards({
+    String scope = 'ALL',
+  }) async {
     final data = await MockDataSource.courses();
+    // 서버는 최신순으로 정렬해 준다 — mock은 오래된 것부터라 뒤집는다
     return (data['savedCourses'] as List? ?? const [])
-        .cast<Map<String, dynamic>>();
+        .cast<Map<String, dynamic>>()
+        .reversed
+        .toList();
   }
 
   @override
@@ -435,17 +440,16 @@ void main() {
       matching: find.text(text),
     );
 
-    // 최신순이 기본이라 나중에 저장한 영월(미확정)이 위에 온다
+    // 서브탭 3종이 있고, 최신순(영월 미확정)이 위에 온다
+    expect(inCourses('전체'), findsOneWidget);
+    expect(inCourses('예정된 여행'), findsOneWidget);
+    expect(inCourses('다녀온 여행'), findsOneWidget);
     expect(inCourses('영월 · 당일치기'), findsOneWidget);
-    expect(inCourses('날짜 미정 · 8월경'), findsOneWidget);
-    expect(inCourses('정선 · 2박 3일'), findsOneWidget);
-    expect(inCourses('7/20(월) – 7/22(수)'), findsOneWidget);
-
-    // 정렬을 바꿔도 두 코스가 그대로 보인다
-    await tester.tap(inCourses('최신순'));
-    await tester.pump();
-    expect(inCourses('오래된순'), findsOneWidget);
-    expect(inCourses('정선 · 2박 3일'), findsOneWidget);
+    expect(inCourses('날짜 미정'), findsOneWidget);
+    expect(inCourses('정선 · 2박3일'), findsOneWidget);
+    expect(inCourses('2026.7.20 - 7.22'), findsOneWidget);
+    // 끝난 여행에는 완료 뱃지가 붙는다 (mock 정선은 과거 날짜)
+    expect(inCourses('여행완료'), findsOneWidget);
   });
 
   testWidgets('내 코스에서 확정 코스를 열면 날짜와 사용 연차가 보인다', (tester) async {
@@ -472,15 +476,19 @@ void main() {
     await tester.pump();
 
     // 확정 코스(정선)는 목록 아래쪽이라 스크롤해서 누른다
-    await tester.scrollUntilVisible(
-      find.text('정선 · 2박 3일'),
-      200,
-      scrollable: find.descendant(
-        of: find.byType(MyCoursesScreen),
-        matching: find.byType(Scrollable),
-      ),
+    final coursesList = find.descendant(
+      of: find.byType(MyCoursesScreen),
+      matching: find.byType(Scrollable),
     );
-    await tester.tap(find.text('정선 · 2박 3일'));
+    await tester.scrollUntilVisible(
+      find.text('정선 · 2박3일'),
+      200,
+      scrollable: coursesList,
+    );
+    // 떠 있는 하단 탭바가 카드를 덮지 않도록 한 번 더 올린다
+    await tester.drag(coursesList, const Offset(0, -150));
+    await tester.pump();
+    await tester.tap(find.text('정선 · 2박3일'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.runAsync(
@@ -489,7 +497,8 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('정선 여행'), findsOneWidget);
-    expect(find.text('2026.7.20 - 7.22'), findsOneWidget);
+    // 목록 카드(뒤에 남아 있음)와 상세가 같은 날짜 표기를 쓴다
+    expect(find.text('2026.7.20 - 7.22'), findsWidgets);
     // 서버 계산이 stub에서 실패하므로 평일 수(월~수=3일) 폴백이 보인다
     expect(find.text('사용 연차 일수 3일'), findsOneWidget);
     expect(find.text('Day 3'), findsOneWidget);
