@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
-import '../../../mock/mock_data_source.dart';
+import '../../../core/widgets/app_toast.dart';
+import '../data/course_repository.dart';
+import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -17,25 +20,15 @@ const _badgeText = Color(0xFF2272EB);
 const _deleteBg = Color(0xFFF7F7F7);
 const _deleteText = Color(0xFF3A3A3A);
 
-/// 저장한 코스 하나 + 그 코스의 일정 정보를 함께 읽는다
+/// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
 final savedCourseDetailProvider = FutureProvider.autoDispose
     .family<
       ({Map<String, dynamic> saved, Map<String, dynamic> course})?,
       String
-    >((ref, savedId) async {
-      final data = await MockDataSource.courses();
-      final saved = (data['savedCourses'] as List? ?? const [])
-          .cast<Map<String, dynamic>>()
-          .where((s) => s['id'] == savedId)
-          .firstOrNull;
-      if (saved == null) return null;
-      final course = (data['courses'] as List)
-          .cast<Map<String, dynamic>>()
-          .where((c) => c['id'] == saved['courseId'])
-          .firstOrNull;
-      if (course == null) return null;
-      return (saved: saved, course: course);
-    });
+    >(
+      (ref, savedId) =>
+          ref.watch(courseRepositoryProvider).savedCourseDetail(savedId),
+    );
 
 /// 내 코스에서 선택해 들어온 코스 상세 — 확정/미확정 상태에 따라 날짜 줄이 달라진다
 class SavedCourseScreen extends ConsumerStatefulWidget {
@@ -279,9 +272,17 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    // TODO(course): 서버 삭제 API 연동. mock JSON은 쓰기가 불가해 실제로 지울 수 없으므로
-    // 삭제된 것처럼 화면을 닫지 않고 준비 중임을 알린다
-    _showPreparing('코스 삭제');
+    try {
+      await ref.read(courseRepositoryProvider).delete(widget.savedId);
+      // 목록이 지워진 코스를 계속 보여주지 않도록 다시 불러오게 한다
+      ref.invalidate(savedCoursesProvider);
+      if (!mounted) return;
+      showAppToast(context, '코스를 삭제했어요', kind: AppToastKind.success);
+      context.pop();
+    } on ApiException catch (e) {
+      // 지워지지 않았는데 화면을 닫으면 지워진 줄 안다 — 머물러 알린다
+      if (mounted) showAppToast(context, e.detail);
+    }
   }
 
   void _showPreparing(String feature) {

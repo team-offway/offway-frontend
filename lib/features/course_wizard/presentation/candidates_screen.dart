@@ -3,19 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
+import '../../../core/location/origin_locator.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
-import '../../../mock/mock_data_source.dart';
+import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
+import '../data/region_recommend_repository.dart';
 
-/// 후보지역 mock (서버 연동 시 추천 API 응답으로 교체)
-final wizardCandidatesProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  final data = await MockDataSource.regions();
-  return (data['candidates'] as List).cast<Map<String, dynamic>>();
-});
+/// 위저드 조건(이동수단·기간)과 현재 위치로 후보지역을 추천받는다.
+///
+/// 도달 한계는 가용시간 계산이 정한다 — 당일치기는 반나절 거리만, 2박3일은
+/// 멀리까지. 계산에 실패하면 기본값(420분)으로 폴백해 추천은 계속된다.
+///
+/// 위치 권한은 이 시점에 처음 묻는다 — "여행지를 찾는 중"이라는 맥락이 있어야
+/// 왜 위치가 필요한지 납득된다. 거부하면 서울 출발로 가정하고 계속 간다.
+final wizardCandidatesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+      final transport = ref.watch(
+        courseWizardProvider.select((draft) => draft.transportMode),
+      );
+      final availableTime = await ref.watch(availableTimeProvider.future);
+      final origin = await ref.read(originLocatorProvider).resolve();
+      return ref
+          .read(regionRecommendRepositoryProvider)
+          .recommend(
+            origin: origin,
+            transport: transport == TransportMode.publicTransit
+                ? 'TRANSIT'
+                : 'CAR',
+            maxReachMinutes: availableTime?.maxReachMinutes ?? kMaxReachMinutes,
+          );
+    });
 
 /// 후보지역 정렬 기준
 enum CandidateSort {
@@ -43,8 +64,8 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
     if (_sort == CandidateSort.recommended) return list;
     final sorted = [...list];
     sorted.sort((a, b) {
-      final x = a['travelMinutesByCar'] as int? ?? 1 << 30;
-      final y = b['travelMinutesByCar'] as int? ?? 1 << 30;
+      final x = a['reachMinutes'] as int? ?? 1 << 30;
+      final y = b['reachMinutes'] as int? ?? 1 << 30;
       return x.compareTo(y);
     });
     return sorted;
@@ -115,7 +136,16 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             Expanded(
               child: candidates.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('후보지역을 불러오지 못했어요\n$e')),
+                // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+                error: (e, _) => Center(
+                  child: Text(
+                    e is ApiException ? e.detail : '후보지역을 불러오지 못했어요',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.label1NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                ),
                 data: (all) {
                   if (all.isEmpty) return _buildEmpty();
                   final list = _sorted(all);

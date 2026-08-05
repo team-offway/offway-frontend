@@ -2,13 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Offway (debug)",
+      "name": "Offway (배포 서버)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart"
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=env.json"]
     },
     {
-      "name": "Offway (debug, 로컬 백엔드)",
+      "name": "Offway (로컬 백엔드)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -19,7 +20,8 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
-      "flutterMode": "release"
+      "flutterMode": "release",
+      "toolArgs": ["--dart-define-from-file=env.json"]
     }
   ]
 }

@@ -4,16 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../../mock/mock_data_source.dart';
+import '../data/course_repository.dart';
 
-/// 저장한 코스 목록 mock (서버 연동 시 내 코스 목록 API로 교체)
-final savedCoursesProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  final data = await MockDataSource.courses();
-  return (data['savedCourses'] as List? ?? const [])
-      .cast<Map<String, dynamic>>();
-});
+/// 내 코스 목록 (`GET /courses`).
+/// 담기·삭제 후에는 invalidate로 다시 불러온다.
+final savedCoursesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+      (ref) => ref.watch(courseRepositoryProvider).savedCourseCards(),
+    );
 
 // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
 const _labelNormal = Color(0xFF171719);

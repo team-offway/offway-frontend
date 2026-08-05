@@ -84,6 +84,30 @@ class CourseWizardDraft {
     };
   }
 
+  /// 여행 시작일의 로컬 추정 — **가용시간 계산(서버)이 실패했을 때의 폴백**.
+  ///
+  /// 평소에는 서버(available-time)가 공휴일까지 반영해 날짜를 확정한다.
+  /// 여기는 그 호출이 안 될 때 추천이 멈추지 않게 하는 근사다:
+  /// A 경로(캘린더)는 고른 가는날 그대로, B 경로는 주말포함 → 연휴 첫날,
+  /// 연차만 → 다음 월요일, 당일치기 → 다음 토요일로 어림한다.
+  DateTime travelStartDate(DateTime today) {
+    if (startDate != null) return startDate!;
+    final targetWeekday = switch (periodStyle) {
+      PeriodStyle.weekendCombo
+          when weekendPattern == WeekendPattern.friSatSun =>
+        DateTime.friday,
+      PeriodStyle.weekendCombo => DateTime.saturday,
+      PeriodStyle.leaveOnly => DateTime.monday,
+      _ => DateTime.saturday,
+    };
+    final delta = (targetWeekday - today.weekday + 7) % 7;
+    return DateTime(
+      today.year,
+      today.month,
+      today.day + (delta == 0 ? 7 : delta),
+    );
+  }
+
   /// 기간스타일 스텝 완료 여부 (하위 선택까지 포함)
   bool get isPeriodStyleComplete => switch (periodStyle) {
     PeriodStyle.dayTrip => true,

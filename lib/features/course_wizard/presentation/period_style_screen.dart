@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_inline_notice.dart';
 import '../../home/presentation/home_screen.dart';
@@ -110,7 +111,7 @@ class PeriodStyleScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   Text(
-                    '남은 연차일수 ${leaveDays ?? '-'}일',
+                    '남은 연차일수 ${leaveDays is num ? formatLeaveDays(leaveDays) : '-'}일',
                     style: AppTypography.label1ReadingMedium.copyWith(
                       color: AppColors.labelAlternative,
                     ),
@@ -234,8 +235,10 @@ class PeriodStyleScreen extends ConsumerWidget {
         // 정책: 연차만은 최소 2일 ~ 최대 3일 (연차소모 = 총 여행일수)
         // 상한은 잔여 연차일수를 넘지 않는다
         const minDays = 2;
+        // 서버가 double로 주고 반차(0.5)가 섞일 수 있다 — 온전한 하루만 센다
         final remaining =
-            ref.read(homeUserProvider).value?['remainingLeaveDays'] as int? ??
+            (ref.read(homeUserProvider).value?['remainingLeaveDays'] as num?)
+                ?.floor() ??
             kMaxTripSpanDays + 1;
         final maxDays = remaining.clamp(minDays, kMaxTripSpanDays + 1);
         var days = (ref.read(courseWizardProvider).leaveDaysToUse ?? maxDays)

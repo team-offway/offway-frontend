@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/test/test_flutter_secure_storage_platform.dart';
@@ -5,10 +6,17 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
+import 'package:offway/core/location/origin_locator.dart';
+import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
+import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
+import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
+import 'package:offway/features/onboarding/data/leave_repository.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
+import 'package:offway/mock/mock_data_source.dart';
 
 /// Keychain 삭제가 실패하는 상황을 재현하는 저장소
 class _FailingSecureStoragePlatform extends TestFlutterSecureStoragePlatform {
@@ -21,6 +29,150 @@ class _FailingSecureStoragePlatform extends TestFlutterSecureStoragePlatform {
   }) async => throw Exception('keychain unavailable');
 }
 
+/// 테스트는 서버를 부르지 않는다 — 홈은 mock JSON을 그대로 돌려준다
+class _FakeHomeRepository extends HomeRepository {
+  _FakeHomeRepository() : super(Dio());
+
+  @override
+  Future<HomeSnapshot> fetch() async => HomeSnapshot(
+    user: await MockDataSource.user(),
+    regions: await MockDataSource.allRegions(),
+    filters: const [
+      {'key': 'ALL', 'label': '전체'},
+      {'key': 'SIGHT', 'label': '관광지'},
+      {'key': 'STAY', 'label': '숙박'},
+      {'key': 'EXPERIENCE', 'label': '체험'},
+      {'key': 'FOOD', 'label': '맛집'},
+    ],
+  );
+}
+
+/// 온보딩 연차 저장 — 네트워크 없이 항상 성공한 것으로 친다
+class _FakeLeaveRepository extends LeaveRepository {
+  _FakeLeaveRepository() : super(Dio());
+
+  @override
+  Future<double> updateTotalDays(double totalDays) async => totalDays;
+
+  /// 가용시간 계산은 실패로 친다 — 위저드가 로컬 추정 폴백으로 흐른다
+  @override
+  Future<AvailableTime> availableTime({
+    required String transport,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodStyle,
+    DateTime? baseDate,
+    String? weekendBridge,
+    int? leaveDays,
+  }) async => throw const ApiException(
+    status: 0,
+    code: 'TEST',
+    detail: '테스트에는 서버가 없어요',
+  );
+}
+
+/// 후보지역 추천 — mock 후보를 새 카드 형태로 돌려준다.
+/// id가 mock 코스의 키('정선')와 같아 코스 화면까지 이어지는 플로우가 유지된다.
+class _FakeRegionRecommendRepository extends RegionRecommendRepository {
+  _FakeRegionRecommendRepository() : super(Dio());
+
+  @override
+  Future<List<Map<String, dynamic>>> recommend({
+    required Origin origin,
+    required String transport,
+    required int maxReachMinutes,
+  }) async {
+    final data = await MockDataSource.regions();
+    final list = (data['candidates'] as List).cast<Map<String, dynamic>>();
+    return [
+      for (final r in list)
+        {
+          'id': r['id'],
+          'name': r['name'],
+          'sido': r['sido'],
+          'imageUrl': r['imageUrl'],
+          'badge': r['badge'],
+          'description': r['description'],
+          'reachMinutes': r['travelMinutesByCar'],
+          if (r['benefitBadge'] != null) 'benefitBadge': r['benefitBadge'],
+        },
+    ];
+  }
+}
+
+/// 코스 생성 — 옛 mock 선택 규칙(지역 일치 + 희망일수에 가장 가까운 코스)을 재현한다
+class _FakeCourseRepository extends CourseRepository {
+  _FakeCourseRepository() : super(Dio());
+
+  @override
+  Future<Map<String, dynamic>> generate({
+    required String regionId,
+    required int travelDays,
+    required String density,
+    required String transport,
+    required Origin origin,
+    required DateTime travelDate,
+    DateTime? confirmedDate,
+  }) async {
+    final data = await MockDataSource.courses();
+    final courses = (data['courses'] as List)
+        .cast<Map<String, dynamic>>()
+        .where((c) => c['regionId'] == regionId)
+        .toList();
+    courses.sort(
+      (a, b) => ((a['durationDays'] as int) - travelDays).abs().compareTo(
+        ((b['durationDays'] as int) - travelDays).abs(),
+      ),
+    );
+    return {
+      ...courses.first,
+      'regionName': regionId,
+      '_save': <String, dynamic>{},
+    };
+  }
+
+  @override
+  Future<int> save(Map<String, dynamic> savePayload) async => 1;
+
+  @override
+  Future<List<Map<String, dynamic>>> savedCourseCards() async {
+    final data = await MockDataSource.courses();
+    return (data['savedCourses'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
+  }
+
+  @override
+  Future<({Map<String, dynamic> saved, Map<String, dynamic> course})?>
+  savedCourseDetail(String courseId) async {
+    final data = await MockDataSource.courses();
+    final saved = (data['savedCourses'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .where((s) => s['id'] == courseId)
+        .firstOrNull;
+    if (saved == null) return null;
+    final course = (data['courses'] as List)
+        .cast<Map<String, dynamic>>()
+        .where((c) => c['id'] == saved['courseId'])
+        .firstOrNull;
+    if (course == null) return null;
+    return (saved: saved, course: course);
+  }
+
+  @override
+  Future<void> delete(String courseId) async {}
+}
+
+/// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
+/// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
+final _serverOverrides = [
+  homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
+  leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
+  regionRecommendRepositoryProvider.overrideWithValue(
+    _FakeRegionRecommendRepository(),
+  ),
+  courseRepositoryProvider.overrideWithValue(_FakeCourseRepository()),
+];
+
 void main() {
   setUp(() {
     // Keychain 플러그인은 테스트 환경에 없으므로 인메모리 구현으로 대체
@@ -29,7 +181,9 @@ void main() {
     );
   });
   testWidgets('앱 실행 시 로그인 화면이 보인다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('OffWay'), findsOneWidget); // 워드마크 로고
@@ -40,7 +194,9 @@ void main() {
   });
 
   testWidgets('소셜 로그인 버튼을 누르면 잔여연차 온보딩으로 이동한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -52,7 +208,9 @@ void main() {
   });
 
   testWidgets('온보딩 연차가 한계에 닿으면 왜 못 바꾸는지 토스트로 알린다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -85,7 +243,9 @@ void main() {
   });
 
   testWidgets('온보딩에서 연차를 조절하고 시작하면 홈으로 이동한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -130,7 +290,9 @@ void main() {
   });
 
   testWidgets('홈에 mock 사용자·추천 여행지가 표시된다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -163,7 +325,9 @@ void main() {
   });
 
   testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -207,7 +371,9 @@ void main() {
     // 토큰이 남은 채 로그인 화면으로 보내면 로그아웃된 줄 알게 되므로
     FlutterSecureStoragePlatform.instance = _FailingSecureStoragePlatform();
 
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -242,7 +408,9 @@ void main() {
   });
 
   testWidgets('하단 탭에서 내 코스로 이동하면 저장한 코스가 확정 여부와 함께 보인다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -281,7 +449,9 @@ void main() {
   });
 
   testWidgets('내 코스에서 확정 코스를 열면 날짜와 사용 연차가 보인다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -327,7 +497,9 @@ void main() {
   });
 
   testWidgets('미확정 코스는 날짜 대신 일정 정하기 링크가 보인다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -364,7 +536,9 @@ void main() {
   });
 
   testWidgets('미확정 코스에서 여행 일정 정하기를 누르면 캘린더로 이동한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -426,7 +600,9 @@ void main() {
   });
 
   testWidgets('하단 탭 전환은 좌우 슬라이드 없이 한 프레임에 끝난다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -456,7 +632,9 @@ void main() {
   });
 
   testWidgets('홈 더보기 → 추천 여행지 목록에서 카테고리로 필터한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -514,7 +692,9 @@ void main() {
   });
 
   testWidgets('홈에서 지역 카드를 누르면 지역 상세로 이동한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -555,7 +735,9 @@ void main() {
   });
 
   testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -586,7 +768,9 @@ void main() {
   });
 
   testWidgets('캘린더에서 2박3일 범위를 선택하면 선택 완료가 활성화된다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -641,7 +825,9 @@ void main() {
   });
 
   testWidgets('기간스타일: 당일치기는 바로, 연차만은 스테퍼 완료 후 다음이 활성화된다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -705,7 +891,9 @@ void main() {
   });
 
   testWidgets('이동수단 → 일정밀도 → 로딩 → 후보지역까지 위저드가 이어진다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.text('Google로 시작하기'),
@@ -803,7 +991,9 @@ void main() {
   });
 
   testWidgets('2박3일 코스는 Day 탭으로 일자별 장소를 전환한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     // 코스 화면 직접 진입 (3일 희망 → 정선 2박3일 코스 매칭)
     final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
@@ -846,7 +1036,9 @@ void main() {
   });
 
   testWidgets('코스 화면에서 내 코스에 담기를 누르면 내 코스 탭으로 이동한다', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: OffwayApp()));
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
     await tester.pumpAndSettle();
     final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
     router.push('/course/정선?days=3');
@@ -868,6 +1060,6 @@ void main() {
     expect(find.byType(MyCoursesScreen), findsOneWidget);
     expect(find.text('내 코스에 담기'), findsNothing);
     // 아직 실제로 담기지는 않으므로 담긴 것으로 오해하지 않도록 안내가 보인다
-    expect(find.textContaining('코스 담기는 준비 중'), findsOneWidget);
+    expect(find.textContaining('내 코스에 담았어요'), findsOneWidget);
   });
 }

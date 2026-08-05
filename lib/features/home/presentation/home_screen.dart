@@ -3,33 +3,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../../mock/mock_data_source.dart';
 import '../../region/presentation/widgets/region_card.dart';
+import '../data/home_repository.dart';
 
-/// 홈 mock 데이터 (서버 연동 시 repository 프로바이더로 교체)
+/// 홈 API 한 번으로 사용자·추천지역을 함께 받는다.
+/// 온보딩에서 연차를 저장한 뒤에는 invalidate로 다시 불러온다.
+final homeSnapshotProvider = FutureProvider<HomeSnapshot>(
+  (ref) => ref.watch(homeRepositoryProvider).fetch(),
+);
+
+/// 다른 화면(마이·기간스타일)도 읽는 사용자 정보 — 이름을 유지해 결합을 끊지 않는다
 final homeUserProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) => MockDataSource.user(),
+  (ref) async => (await ref.watch(homeSnapshotProvider.future)).user,
 );
 final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => MockDataSource.allRegions(),
+  (ref) async => (await ref.watch(homeSnapshotProvider.future)).regions,
 );
 
-/// 홈 카테고리 칩 정의 ('전체'는 필터 없음)
-enum _Category {
-  all('전체', 'assets/icons/ic_cat_all.svg'),
-  sight('관광지', 'assets/icons/ic_cat_sight.svg'),
-  stay('숙박', 'assets/icons/ic_cat_stay.svg'),
-  experience('체험', 'assets/icons/ic_cat_experience.svg'),
-  food('맛집', 'assets/icons/ic_cat_food.svg');
+/// 카테고리 키별 아이콘 — 구성·순서·라벨은 서버(filters)가 정하고 그림만 앱이 가진다
+const _categoryIcons = <String, String>{
+  'ALL': 'assets/icons/ic_cat_all.svg',
+  'SIGHT': 'assets/icons/ic_cat_sight.svg',
+  'STAY': 'assets/icons/ic_cat_stay.svg',
+  'EXPERIENCE': 'assets/icons/ic_cat_experience.svg',
+  'FOOD': 'assets/icons/ic_cat_food.svg',
+};
 
-  const _Category(this.label, this.iconAsset);
-
-  final String label;
-  final String iconAsset;
-}
+/// 서버 응답이 오기 전에도 칩 자리가 비지 않도록 쓰는 기본 구성
+const _defaultFilters = [
+  {'key': 'ALL', 'label': '전체'},
+  {'key': 'SIGHT', 'label': '관광지'},
+  {'key': 'STAY', 'label': '숙박'},
+  {'key': 'EXPERIENCE', 'label': '체험'},
+  {'key': 'FOOD', 'label': '맛집'},
+];
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
@@ -46,14 +58,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
 
-  _Category _selected = _Category.all;
+  /// 고른 칩 `{key, label}` — null이면 '전체'
+  Map<String, dynamic>? _selected;
 
   /// 선택된 카테고리의 콘텐츠가 있는 지역만 남긴다 (목록 화면과 같은 규칙)
   List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) {
-    if (_selected == _Category.all) return all;
+    final selected = _selected;
+    if (selected == null || selected['key'] == 'ALL') return all;
     return all.where((r) {
       final counts = r['categoryCounts'] as Map<String, dynamic>?;
-      return (counts?[_selected.label] as int? ?? 0) > 0;
+      return (counts?[selected['label']] as int? ?? 0) > 0;
     }).toList();
   }
 
@@ -191,7 +205,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              days == null ? '-' : '$days일',
+              // 서버가 double로 주므로(반차 0.5 단위) 15.0일로 보이지 않게 다듬는다
+              days == null ? '-' : '${formatLeaveDays(days as num)}일',
               style: AppTypography.body1NormalBold.copyWith(
                 color: AppColors.labelNormal,
               ),
@@ -286,16 +301,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCategoryRow() {
+    // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
+    final filters =
+        ref.watch(homeSnapshotProvider).value?.filters ?? _defaultFilters;
+    final chips = filters.isEmpty ? _defaultFilters : filters;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          for (final category in _Category.values)
+          for (final filter in chips)
             _CategoryChip(
-              category: category,
-              selected: _selected == category,
-              onTap: () => setState(() => _selected = category),
+              label: filter['label'] as String,
+              iconAsset:
+                  _categoryIcons[filter['key']] ?? _categoryIcons['ALL']!,
+              selected: filter['key'] == 'ALL'
+                  ? _selected == null || _selected!['key'] == 'ALL'
+                  : _selected?['key'] == filter['key'],
+              onTap: () =>
+                  setState(() => _selected = Map<String, dynamic>.from(filter)),
             ),
         ],
       ),
@@ -315,7 +339,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           separatorBuilder: (_, _) => const SizedBox(width: 20),
           itemBuilder: (_, _) => const RegionCardSkeleton(),
         ),
-        error: (e, _) => Center(child: Text('추천 여행지를 불러오지 못했어요\n$e')),
+        // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+        error: (e, _) => Center(
+          child: Text(
+            e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
+            textAlign: TextAlign.center,
+            style: AppTypography.label1NormalMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+        ),
         data: (all) {
           final list = _filter(all);
           if (list.isEmpty) {
@@ -344,12 +377,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 /// 카테고리 칩 — 선택되면 Primary 테두리와 진한 라벨
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
-    required this.category,
+    required this.label,
+    required this.iconAsset,
     required this.selected,
     required this.onTap,
   });
 
-  final _Category category;
+  final String label;
+  final String iconAsset;
   final bool selected;
   final VoidCallback onTap;
 
@@ -371,11 +406,11 @@ class _CategoryChip extends StatelessWidget {
                   : null,
             ),
             alignment: Alignment.center,
-            child: SvgPicture.asset(category.iconAsset, width: 29, height: 29),
+            child: SvgPicture.asset(iconAsset, width: 29, height: 29),
           ),
           const SizedBox(height: 6),
           Text(
-            category.label,
+            label,
             style:
                 (selected
                         ? AppTypography.caption2Bold

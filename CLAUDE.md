@@ -23,7 +23,10 @@
 
 ```bash
 flutter run                                          # 실행 (기기 선택: -d <device-id>)
-flutter run --dart-define=API_BASE_URL=<url>         # 백엔드 주소 지정
+flutter run --dart-define-from-file=env.json         # 배포 서버 접속 (권장)
+# env.json은 env.json.example을 복사해 만든다 (Basic 계정 포함, gitignore 대상 — 커밋 금지)
+# 서버는 임시 Basic 게이트(#122) 뒤에 있어 계정 없이 부르면 전부 401이 뜬다
+flutter run --dart-define=API_BASE_URL=<url>         # 주소만 따로 지정할 때 (로컬 백엔드 등)
 flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar  # 특정 화면부터 시작 (개발용)
 flutter analyze                                      # 정적 분석
 flutter test                                         # 테스트

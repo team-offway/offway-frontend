@@ -3,34 +3,55 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
+import '../../../core/location/origin_locator.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
-import '../../../mock/mock_data_source.dart';
+import '../../../core/widgets/app_toast.dart';
+import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_sheet.dart';
 
-/// 지역·희망일수에 맞는 mock 코스 선택 (서버 연동 시 추천 API 응답으로 교체)
+/// 위저드 조건(밀도·이동수단·기간)과 현재 위치로 코스를 생성한다.
+///
+/// 여행 날짜·일수는 가용시간 계산(서버, 공휴일 반영)이 확정한 값을 쓰고,
+/// 계산에 실패했을 때만 로컬 추정으로 폴백한다.
 final courseProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, ({String regionId, int desiredDays})>((
       ref,
       query,
     ) async {
-      final data = await MockDataSource.courses();
-      final courses = (data['courses'] as List)
-          .cast<Map<String, dynamic>>()
-          .where((c) => c['regionId'] == query.regionId)
-          .toList();
-      if (courses.isEmpty) return null;
-      courses.sort(
-        (a, b) => ((a['durationDays'] as int) - query.desiredDays)
-            .abs()
-            .compareTo(((b['durationDays'] as int) - query.desiredDays).abs()),
-      );
-      return courses.first;
+      final draft = ref.read(courseWizardProvider);
+      final availableTime = await ref.watch(availableTimeProvider.future);
+      final origin = await ref.read(originLocatorProvider).resolve();
+      return ref
+          .read(courseRepositoryProvider)
+          .generate(
+            regionId: query.regionId,
+            travelDays: (availableTime?.travelDays ?? query.desiredDays).clamp(
+              1,
+              kMaxTripSpanDays + 1,
+            ),
+            density: draft.scheduleDensity == ScheduleDensity.relaxed
+                ? 'RELAXED'
+                : 'PACKED',
+            transport: draft.transportMode == TransportMode.publicTransit
+                ? 'TRANSIT'
+                : 'CAR',
+            origin: origin,
+            travelDate:
+                availableTime?.startDate ??
+                draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
+            // 캘린더에서 직접 고른 날짜만 확정으로 저장한다 — 추정 날짜를 실으면
+            // 일정이 확정된 것처럼 보인다
+            confirmedDate: draft.startDate,
+          );
     });
 
 /// O-09 · 코스확정 (당일치기 / 1박 이상)
@@ -56,16 +77,87 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     context.go(AppRoutes.home);
   }
 
-  /// 코스를 담고 내 코스 탭으로 이동한다. 위저드는 여기서 끝나므로 조건을 초기화한다.
-  ///
-  /// TODO(course): 서버 저장 API 연동. 지금은 mock JSON에 쓸 수 없어 실제로 담기지
-  /// 않으므로, 담긴 것으로 오해하지 않도록 이동 전에 안내를 띄운다.
-  void _saveToMyCourses() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('코스 담기는 준비 중이에요. 내 코스 화면으로 이동할게요')),
-    );
-    ref.read(courseWizardProvider.notifier).reset();
-    context.go(AppRoutes.myCourses);
+  /// 저장 요청 중 — 중복 탭과 이중 저장을 막는다
+  bool _saving = false;
+
+  /// '새로운 추천 받기'로 다시 뽑은 코스. provider 결과보다 우선한다
+  Map<String, dynamic>? _regenerated;
+
+  /// 직전 재생성의 씨앗 — 다음 재생성에 넘겨야 다른 조합이 나온다
+  int? _lastSeed;
+
+  bool _regenerating = false;
+
+  /// 같은 지역에서 코스를 다시 뽑는다. 화면을 떠나지 않고 그 자리에서 바뀐다.
+  Future<void> _regenerate() async {
+    if (_regenerating) return;
+    setState(() => _regenerating = true);
+    try {
+      final draft = ref.read(courseWizardProvider);
+      final availableTime = await ref.read(availableTimeProvider.future);
+      final origin = await ref.read(originLocatorProvider).resolve();
+      final result = await ref
+          .read(courseRepositoryProvider)
+          .regenerate(
+            regionId: widget.regionId,
+            travelDays: (availableTime?.travelDays ?? widget.desiredDays).clamp(
+              1,
+              kMaxTripSpanDays + 1,
+            ),
+            density: draft.scheduleDensity == ScheduleDensity.relaxed
+                ? 'RELAXED'
+                : 'PACKED',
+            transport: draft.transportMode == TransportMode.publicTransit
+                ? 'TRANSIT'
+                : 'CAR',
+            origin: origin,
+            travelDate:
+                availableTime?.startDate ??
+                draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
+            confirmedDate: draft.startDate,
+            previousSeed: _lastSeed,
+          );
+      if (!mounted) return;
+      setState(() {
+        _regenerated = result.course;
+        _lastSeed = result.seed;
+        _selectedDay = 1; // 새 코스는 첫날부터 보여준다
+      });
+      if (!result.differentFromPrevious) {
+        showAppToast(context, '이 지역은 장소가 많지 않아 비슷한 코스가 나올 수 있어요');
+      }
+    } on ApiException catch (e) {
+      if (mounted) showAppToast(context, e.detail);
+    } catch (_) {
+      // 응답 형태가 어긋나는 등 예상 밖 실패 — 조용히 끝나면 고장으로 오해한다
+      if (mounted) showAppToast(context, '코스를 다시 만들지 못했어요');
+    } finally {
+      if (mounted) setState(() => _regenerating = false);
+    }
+  }
+
+  /// 코스를 서버에 저장하고 내 코스 탭으로 이동한다.
+  /// 위저드는 여기서 끝나므로 조건을 초기화한다.
+  Future<void> _saveToMyCourses(Map<String, dynamic> course) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(courseRepositoryProvider)
+          .save(course['_save'] as Map<String, dynamic>);
+      if (!mounted) return;
+      showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
+      ref.read(courseWizardProvider.notifier).reset();
+      context.go(AppRoutes.myCourses);
+    } on ApiException catch (e) {
+      // 담기지 않았는데 이동하면 담긴 줄 안다 — 머물러 알린다
+      if (mounted) showAppToast(context, e.detail);
+    } catch (_) {
+      // '_save' 누락 등 예상 밖 실패도 사용자에게는 알려야 한다
+      if (mounted) showAppToast(context, '코스를 담지 못했어요');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   String _durationLabel(int days) => switch (days) {
@@ -76,24 +168,45 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final course = ref.watch(
-      courseProvider((
-        regionId: widget.regionId,
-        desiredDays: widget.desiredDays,
-      )),
+    final providerKey = (
+      regionId: widget.regionId,
+      desiredDays: widget.desiredDays,
     );
+    // 조건이 바뀌어 provider가 새 코스를 만들면 이전 재추첨 결과는 버린다 —
+    // 계속 들고 있으면 갱신된 조건의 코스가 화면에 나타나지 않는다
+    ref.listen(courseProvider(providerKey), (previous, next) {
+      final fresh = next.value;
+      if (fresh != null && !identical(previous?.value, fresh)) {
+        setState(() {
+          _regenerated = null;
+          _lastSeed = null;
+        });
+      }
+    });
+    final course = ref.watch(courseProvider(providerKey));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: course.when(
+          // 실제 코스 생성이라 몇 초 걸릴 수 있다 — 로딩 화면과 같은 표시를 쓴다
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('코스를 불러오지 못했어요\n$e')),
+          // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+          error: (e, _) => Center(
+            child: Text(
+              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+              textAlign: TextAlign.center,
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
+            ),
+          ),
           data: (data) {
             if (data == null) {
               return const Center(child: Text('해당 지역의 코스가 아직 없어요'));
             }
-            return _buildBody(data);
+            // 재생성한 코스가 있으면 그걸 보여준다 (조건이 바뀌면 provider가 새로 만든다)
+            return _buildBody(_regenerated ?? data);
           },
         ),
       ),
@@ -145,7 +258,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildHeadline(durationDays),
+              _buildHeadline(course, durationDays),
               const SizedBox(height: 8),
               Text(
                 '맞춤코스로 연차 여행을 떠나보세요.',
@@ -171,17 +284,22 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              CoursePlaceList(places: places, regionName: widget.regionId),
+              CoursePlaceList(
+                places: places,
+                regionName: course['regionName'] as String? ?? widget.regionId,
+              ),
             ],
           ),
         ),
-        _buildActionArea(),
+        _buildActionArea(course),
       ],
     );
   }
 
-  /// "정선, 2박3일 추천코스입니다." — 지역·기간만 브랜드색으로 짚는다
-  Widget _buildHeadline(int durationDays) {
+  /// "정선군, 2박3일 추천코스입니다." — 지역·기간만 브랜드색으로 짚는다
+  Widget _buildHeadline(Map<String, dynamic> course, int durationDays) {
+    // 라우트의 regionId는 숫자 문자열이라 표시용 이름은 응답에서 받는다
+    final regionName = course['regionName'] as String? ?? widget.regionId;
     final base = AppTypography.title3Bold.copyWith(
       color: AppColors.labelNormal,
     );
@@ -190,7 +308,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       TextSpan(
         style: base,
         children: [
-          TextSpan(text: '${widget.regionId}, '),
+          TextSpan(text: '$regionName, '),
           TextSpan(
             text: _durationLabel(durationDays),
             style: base.copyWith(color: AppColors.primaryNormal),
@@ -201,7 +319,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  Widget _buildActionArea() {
+  Widget _buildActionArea(Map<String, dynamic> course) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
@@ -217,7 +335,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _saveToMyCourses,
+              onPressed: _saving ? null : () => _saveToMyCourses(course),
               icon: const Icon(Icons.download, size: 20),
               label: Text('내 코스에 담기', style: AppTypography.body1NormalBold),
               style: FilledButton.styleFrom(
@@ -234,7 +352,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => context.pushReplacement(AppRoutes.wizardLoading),
+              onPressed: _regenerating ? null : _regenerate,
               icon: const Icon(Icons.refresh, size: 20),
               label: Text('새로운 추천 받기', style: AppTypography.body1NormalBold),
               style: OutlinedButton.styleFrom(

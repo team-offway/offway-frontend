@@ -4,6 +4,10 @@
 /// 모든 코스는 최대 2박3일로 제한한다 (= 가는날~오는날 간격 최대 2일).
 const int kMaxTripSpanDays = 2;
 
+/// 후보지역 추천의 편도 도달 한계(분).
+/// "약 7시간 안에 갈 수 있는 여행지" 컨셉 — 서버 추천 API의 maxReachMinutes로 보낸다.
+const int kMaxReachMinutes = 420;
+
 /// 두 날짜의 달력상 일수 차이.
 ///
 /// `DateTime.difference().inDays`는 경과 시간을 24로 나누므로, 서머타임이 있는

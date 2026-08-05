@@ -13,6 +13,16 @@ abstract final class AppConfig {
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
+  /// 임시 Basic 인증 계정 (백엔드 #122 게이트).
+  ///
+  /// 서버가 외부 API 쿼터(TMAP 일 50건)를 지키려고 전체 요청을 Basic 인증으로
+  /// 막아뒀다. 소셜 로그인(#93)이 붙으면 서버와 함께 걷어낸다.
+  ///
+  /// 레포가 public이므로 실제 값은 절대 커밋하지 말고 --dart-define으로만 주입:
+  /// flutter run --dart-define=BASIC_AUTH_USER=... --dart-define=BASIC_AUTH_PASS=...
+  static const String basicAuthUser = String.fromEnvironment('BASIC_AUTH_USER');
+  static const String basicAuthPass = String.fromEnvironment('BASIC_AUTH_PASS');
+
   /// 네이버 지도 Client ID.
   /// 번들 ID(com.nth.offway)로 사용이 제한되는 공개 식별자라 기본값 커밋 가능.
   /// Client Secret은 서버 전용이므로 앱/레포에 절대 넣지 말 것.
