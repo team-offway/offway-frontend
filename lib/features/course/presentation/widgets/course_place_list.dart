@@ -47,35 +47,48 @@ class _PlaceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = place['imageUrl'] as String?;
+    final isFirst = index == 1;
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 순번과 이어지는 선 — 어디부터 어디까지 도는지 한 줄로 읽힌다
+          // 순번과 이어지는 점선 — 선은 행 경계를 넘어 다음 번호까지 통으로
+          // 이어지고, 번호가 흰 배경으로 선을 가려 위아래 같은 틈이 생긴다
           SizedBox(
             width: 24,
-            child: Column(
+            child: Stack(
               children: [
-                const SizedBox(height: 15),
-                SizedBox(
-                  height: 24,
-                  child: Center(
-                    child: Text(
-                      '$index',
-                      style: AppTypography.body1NormalBold.copyWith(
-                        color: AppColors.primaryNormal,
+                if (!(isFirst && isLast))
+                  Positioned(
+                    left: 11.4,
+                    // 첫 번호 위·마지막 번호 아래로는 선이 나가지 않는다
+                    top: isFirst ? 27 : 0,
+                    bottom: isLast ? null : 0,
+                    height: isLast ? 27 : null,
+                    child: const DottedVerticalLine(),
+                  ),
+                Column(
+                  children: [
+                    const SizedBox(height: 9),
+                    Container(
+                      width: 24,
+                      color: AppColors.backgroundNormal,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: SizedBox(
+                        height: 24,
+                        child: Center(
+                          child: Text(
+                            '$index',
+                            style: AppTypography.body1NormalBold.copyWith(
+                              color: AppColors.primaryNormal,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                if (!isLast)
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: DottedVerticalLine(),
-                    ),
-                  ),
               ],
             ),
           ),
