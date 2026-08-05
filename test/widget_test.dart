@@ -1051,15 +1051,30 @@ void main() {
 
     await tester.tap(find.text('내 코스에 담기'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 프리셋 경로(날짜 미지정)라 담기 전에 여행 날짜부터 확정한다
+    expect(find.text('여행 날짜 선택'), findsOneWidget);
+    expect(find.textContaining('날씨예보, 휴무일'), findsOneWidget);
+    final done = find.widgetWithText(FilledButton, '선택 완료');
+    expect(tester.widget<FilledButton>(done).onPressed, isNull); // 날짜 전엔 비활성
+
+    // 오늘을 시작일로 고르면 코스 길이(3일)만큼 범위가 완성된다
+    await tester.tap(find.text('${DateTime.now().day}').first);
+    await tester.pump();
+    expect(tester.widget<FilledButton>(done).onPressed, isNotNull);
+    await tester.tap(done);
+    await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     // 내 코스 목록에 도착 (담기 화면으로 되돌아가지 않는다)
     expect(find.byType(MyCoursesScreen), findsOneWidget);
     expect(find.text('내 코스에 담기'), findsNothing);
-    // 아직 실제로 담기지는 않으므로 담긴 것으로 오해하지 않도록 안내가 보인다
-    expect(find.textContaining('내 코스에 담았어요'), findsOneWidget);
+    // 전환 중에는 이전·새 Scaffold 양쪽에 토스트가 그려질 수 있어 개수는 세지 않는다
+    expect(find.textContaining('내 코스에 담았어요'), findsWidgets);
   });
 }

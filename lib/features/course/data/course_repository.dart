@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/date_format.dart';
 
 final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
@@ -40,7 +41,7 @@ class CourseRepository {
           'transport': transport,
           'originLat': origin.lat,
           'originLng': origin.lng,
-          'travelDate': _isoDate(travelDate),
+          'travelDate': isoDate(travelDate),
         },
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
@@ -84,7 +85,7 @@ class CourseRepository {
           'transport': transport,
           'originLat': origin.lat,
           'originLng': origin.lng,
-          'travelDate': _isoDate(travelDate),
+          'travelDate': isoDate(travelDate),
           'previousSeed': ?previousSeed,
         },
       );
@@ -228,7 +229,7 @@ class CourseRepository {
       'regionId': course['regionId'],
       'density': density,
       'transport': transport,
-      if (confirmedDate != null) 'travelDate': _isoDate(confirmedDate),
+      if (confirmedDate != null) 'travelDate': isoDate(confirmedDate),
       'days': [
         for (final day in days)
           {
@@ -282,7 +283,7 @@ class CourseRepository {
       'confirmed': travelDate != null,
       'startDate': ?travelDate,
       if (start != null)
-        'endDate': _isoDate(
+        'endDate': isoDate(
           DateTime(start.year, start.month, start.day + travelDays - 1),
         ),
       'thumbnailUrl': firstItems.isEmpty
@@ -307,7 +308,4 @@ class CourseRepository {
     if (items.isEmpty) return '';
     return (items.first as Map<String, dynamic>)['regionName'] as String? ?? '';
   }
-
-  static String _isoDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

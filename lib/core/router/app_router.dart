@@ -6,6 +6,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
+import '../../features/course/presentation/course_save_date_screen.dart';
 import '../../features/course/presentation/course_schedule_screen.dart';
 import '../../features/course/presentation/my_courses_screen.dart';
 import '../../features/course/presentation/saved_course_screen.dart';
@@ -61,6 +62,12 @@ abstract final class AppRoutes {
   /// 한글 지역 ID의 플랫폼별 URL 인코딩 불일치를 피하기 위해 명시적으로 인코딩한다
   static String coursePath(String regionId, {required int desiredDays}) =>
       '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays';
+
+  /// 담기 직전 여행 날짜 지정 (프리셋 경로 전용). 시작일을 pop 결과로 돌려준다
+  static const courseSaveDate = '/course-save-date';
+
+  static String courseSaveDatePath({required int travelDays}) =>
+      '$courseSaveDate?days=$travelDays';
 }
 
 /// 하단 탭 목적지용 페이지. 탭끼리는 형제 화면이라 좌우 슬라이드 없이 바로 전환된다.
@@ -187,6 +194,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
           );
         },
+      ),
+      GoRoute(
+        path: AppRoutes.courseSaveDate,
+        name: 'courseSaveDate',
+        builder: (context, state) => CourseSaveDateScreen(
+          travelDays:
+              int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+        ),
       ),
     ],
   );

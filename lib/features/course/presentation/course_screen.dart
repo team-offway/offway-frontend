@@ -8,6 +8,7 @@ import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
@@ -135,13 +136,28 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   /// 코스를 서버에 저장하고 내 코스 탭으로 이동한다.
   /// 위저드는 여기서 끝나므로 조건을 초기화한다.
+  ///
+  /// 프리셋 경로(당일치기·주말포함·연차만)로 만든 코스는 날짜가 없어서 먼저
+  /// 날짜 지정 화면을 거친다 — 날짜 없이 저장하면 날씨·휴무일 안내도 연차
+  /// 차감도 못 한다. 캘린더에서 미리 날짜를 고른 코스는 바로 저장한다.
   Future<void> _saveToMyCourses(Map<String, dynamic> course) async {
     if (_saving) return;
+
+    final savePayload = Map<String, dynamic>.from(
+      course['_save'] as Map<String, dynamic>,
+    );
+    if (savePayload['travelDate'] == null) {
+      final durationDays = course['durationDays'] as int? ?? 1;
+      final picked = await context.push<DateTime>(
+        AppRoutes.courseSaveDatePath(travelDays: durationDays),
+      );
+      if (picked == null) return; // 뒤로 가면 담기 취소 — 코스 화면에 그대로 머문다
+      savePayload['travelDate'] = isoDate(picked);
+    }
+
     setState(() => _saving = true);
     try {
-      await ref
-          .read(courseRepositoryProvider)
-          .save(course['_save'] as Map<String, dynamic>);
+      await ref.read(courseRepositoryProvider).save(savePayload);
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
