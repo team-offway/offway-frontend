@@ -168,23 +168,28 @@ class CourseRepository {
     }
   }
 
-  /// 장소의 운영 정보 (`GET /pois/{contentId}`).
+  /// 장소 상세 (`GET /pois/{contentId}`) — 주소·운영시간·휴무일·소개·좌표.
   ///
-  /// 여행 당일 화면이 휴무일·운영시간 안내에 쓴다. 값은 TourAPI 자유 텍스트
-  /// ("매주 월요일", "상시 개방" 등)라 해석은 화면 몫이다.
-  Future<({String? useTime, String? restDate})> poiSchedule(
-    String contentId,
-  ) async {
+  /// useTime·restDate는 TourAPI 자유 텍스트("매주 월요일", "상시 개방" 등)라
+  /// 해석은 화면 몫이다.
+  Future<Map<String, dynamic>> poiDetail(String contentId) async {
     try {
       final response = await _dio.get<dynamic>('/api/v1/pois/$contentId');
-      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
-      return (
-        useTime: data['useTime'] as String?,
-        restDate: data['restDate'] as String?,
-      );
+      return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }
+  }
+
+  /// 장소의 운영 정보만 — 여행 당일 휴무일·운영시간 안내에 쓴다.
+  Future<({String? useTime, String? restDate})> poiSchedule(
+    String contentId,
+  ) async {
+    final data = await poiDetail(contentId);
+    return (
+      useTime: data['useTime'] as String?,
+      restDate: data['restDate'] as String?,
+    );
   }
 
   Future<Map<String, dynamic>> _fetchCourse(int courseId) async {

@@ -187,6 +187,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   places: places,
                   // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
                   showOpeningWarnings: dDay == 0,
+                  onTapPlace: (place) =>
+                      _showPlaceSheet(place, isToday: dDay == 0),
                 ),
               ),
             ],
@@ -368,6 +370,31 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  /// 장소를 누르면 운영 정보 시트를 띄운다
+  void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.backgroundElevated,
+      barrierColor: AppColors.materialDimmer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => _PlaceSheet(
+        place: place,
+        isToday: isToday,
+        onOpenDetail: () {
+          Navigator.of(sheetContext).pop();
+          final contentId = place['poiContentId'] as String?;
+          if (contentId != null) {
+            context.push(
+              AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -667,12 +694,15 @@ class _SavedPlaceList extends StatelessWidget {
   const _SavedPlaceList({
     required this.places,
     required this.showOpeningWarnings,
+    required this.onTapPlace,
   });
 
   final List<Map<String, dynamic>> places;
 
   /// 여행 당일에만 참 — 장소별 휴무일·운영시간 확인 문구가 붙는다
   final bool showOpeningWarnings;
+
+  final ValueChanged<Map<String, dynamic>> onTapPlace;
 
   @override
   Widget build(BuildContext context) {
@@ -694,6 +724,7 @@ class _SavedPlaceList extends StatelessWidget {
                 index: i + 1,
                 place: places[i],
                 showOpeningWarning: showOpeningWarnings,
+                onTap: () => onTapPlace(places[i]),
               ),
             ],
           ],
@@ -731,11 +762,13 @@ class _PlaceRow extends ConsumerWidget {
     required this.index,
     required this.place,
     required this.showOpeningWarning,
+    required this.onTap,
   });
 
   final int index;
   final Map<String, dynamic> place;
   final bool showOpeningWarning;
+  final VoidCallback onTap;
 
   /// 운영 정보(자유 텍스트)에서 당일 안내 문구를 고른다.
   ///
@@ -768,6 +801,19 @@ class _PlaceRow extends ConsumerWidget {
             restDate: schedule.restDate,
           );
 
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: _buildRow(imageUrl, catchphrase, isStay, warning),
+    );
+  }
+
+  Widget _buildRow(
+    String? imageUrl,
+    String? catchphrase,
+    bool isStay,
+    String? warning,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -872,6 +918,158 @@ class _PlaceRow extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const SizedBox.expand(),
                     ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 장소 운영 정보 시트 — 이름·추천 문구와 운영시간·휴무일.
+///
+/// 여행 당일에는 값 대신 경고 문구가 빨간색으로 나온다
+/// ("오늘은 휴무일이에요" / "오늘 운영이 끝났어요").
+class _PlaceSheet extends ConsumerWidget {
+  const _PlaceSheet({
+    required this.place,
+    required this.isToday,
+    required this.onOpenDetail,
+  });
+
+  final Map<String, dynamic> place;
+  final bool isToday;
+  final VoidCallback onOpenDetail;
+
+  /// 운영시간 문자열 끝의 마감 시각(HH:MM)이 이미 지났는지
+  static bool closingPassed(String useTime, DateTime now) {
+    final matches = RegExp(r'(\d{1,2}):(\d{2})').allMatches(useTime).toList();
+    if (matches.isEmpty) return false;
+    final last = matches.last;
+    final closing = int.parse(last.group(1)!) * 60 + int.parse(last.group(2)!);
+    return now.hour * 60 + now.minute >= closing;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contentId = place['poiContentId'] as String?;
+    final schedule = contentId == null
+        ? null
+        : ref.watch(poiScheduleProvider(contentId));
+    final loading = schedule?.isLoading ?? false;
+    final useTime = schedule?.value?.useTime;
+    final restDate = schedule?.value?.restDate;
+    final now = DateTime.now();
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+    // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
+    var useValue = loading ? '—' : (useTime ?? '정보 없음');
+    var useDanger = false;
+    if (isToday && useTime != null && closingPassed(useTime, now)) {
+      useValue = '오늘 운영이 끝났어요';
+      useDanger = true;
+    }
+    var restValue = loading ? '—' : (restDate ?? '정보 없음');
+    var restDanger = false;
+    if (isToday &&
+        restDate != null &&
+        restDate.contains('${weekdays[now.weekday - 1]}요일')) {
+      restValue = '오늘은 휴무일이에요';
+      restDanger = true;
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: onOpenDetail,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place['name'] as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.headline1Bold.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
+                        ),
+                        if (place['catchphrase'] case final String phrase) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            phrase,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.label2Medium.copyWith(
+                              color: AppColors.labelAlternative,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: AppColors.labelNormal,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            _buildInfoRow(
+              iconAsset: 'assets/icons/ic_clock.svg',
+              label: '운영시간',
+              value: useValue,
+              danger: useDanger,
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow(
+              iconAsset: 'assets/icons/ic_calendar.svg',
+              label: '휴무일',
+              value: restValue,
+              danger: restDanger,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required String iconAsset,
+    required String label,
+    required String value,
+    required bool danger,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SvgPicture.asset(iconAsset, width: 24, height: 24),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 64,
+          child: Text(
+            label,
+            style: AppTypography.body2NormalMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTypography.body2NormalMedium.copyWith(
+              color: danger ? AppColors.statusNegative : AppColors.labelNeutral,
             ),
           ),
         ),

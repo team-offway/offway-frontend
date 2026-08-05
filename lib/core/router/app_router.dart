@@ -8,6 +8,7 @@ import '../../features/course_wizard/presentation/date_gate_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
 import '../../features/course/presentation/course_save_date_screen.dart';
 import '../../features/course/presentation/course_schedule_screen.dart';
+import '../../features/course/presentation/poi_detail_screen.dart';
 import '../../features/course/presentation/my_courses_screen.dart';
 import '../../features/course/presentation/saved_course_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
@@ -45,6 +46,13 @@ abstract final class AppRoutes {
 
   static String courseSchedulePath(String savedId) =>
       '/my-courses/$savedId/schedule';
+
+  /// 장소(POI) 상세. `:contentId` 경로 파라미터 + `name` 쿼리(헤더 제목)
+  static const poiDetail = '/pois/:contentId';
+
+  static String poiDetailPath(String contentId, {required String name}) =>
+      '/pois/${Uri.encodeComponent(contentId)}'
+      '?name=${Uri.encodeComponent(name)}';
 
   static const my = '/my';
 
@@ -160,6 +168,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'savedCourse',
         builder: (context, state) =>
             SavedCourseScreen(savedId: state.pathParameters['savedId']!),
+      ),
+      GoRoute(
+        path: AppRoutes.poiDetail,
+        name: 'poiDetail',
+        builder: (context, state) => PoiDetailScreen(
+          contentId: state.pathParameters['contentId']!,
+          // 헤더 제목은 코스 리스트에서 넘어온 이름을 그대로 쓴다
+          name: state.uri.queryParameters['name'] ?? '',
+        ),
       ),
       GoRoute(
         path: AppRoutes.my,
