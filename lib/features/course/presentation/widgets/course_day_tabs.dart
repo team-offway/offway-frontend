@@ -46,19 +46,21 @@ class _DayTab extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        // DS Category 칩 (Large) — 고른 날은 반전, 나머지는 테두리만
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          // 고른 날은 반전, 나머지는 테두리만 둘러 눌러볼 수 있음을 남긴다
-          color: selected ? AppColors.inverseBackground : null,
-          borderRadius: BorderRadius.circular(999),
+          color: selected ? AppColors.labelNeutral : null,
+          borderRadius: BorderRadius.circular(10),
           border: selected
               ? null
               : Border.all(color: AppColors.lineNormalNeutral),
         ),
         child: Text(
           'Day $day',
-          style: AppTypography.label1NormalBold.copyWith(
-            color: selected ? AppColors.inverseLabel : AppColors.labelNormal,
+          style: AppTypography.body2NormalMedium.copyWith(
+            color: selected
+                ? AppColors.inverseLabel
+                : AppColors.labelAlternative,
           ),
         ),
       ),

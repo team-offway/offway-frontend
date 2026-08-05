@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/date_format.dart';
 
 final leaveRepositoryProvider = Provider<LeaveRepository>(
   (ref) => LeaveRepository(ref.watch(dioProvider)),
@@ -81,7 +82,5 @@ class LeaveRepository {
     }
   }
 
-  static String? _isoDate(DateTime? d) => d == null
-      ? null
-      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static String? _isoDate(DateTime? d) => d == null ? null : isoDate(d);
 }

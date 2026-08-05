@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
+import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
-import '../../../core/constants/trip_constants.dart';
+import '../../course_wizard/presentation/calendar_screen.dart'
+    show tripConsumedLeaveProvider;
+import 'saved_course_screen.dart' show savedCourseDetailProvider;
 
-// TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-const _labelNormal = Color(0xFF171719);
-const _ctaDisabled = Color(0xFFC5C8CE);
-const _ctaEnabled = Color(0xFF191B1F);
-
-/// 저장한 코스의 여행 일정 지정 — 미확정 코스에서 '여행 일정 정하기'로 진입한다.
-/// 캘린더는 위저드와 같은 컴포넌트를 쓰고, 고른 날짜를 그 코스에 저장한다.
+/// 저장한 코스의 여행 날짜 수정 (미확정 코스의 날짜 지정도 겸한다).
+///
+/// 코스 길이는 이미 정해져 있으므로 시작일만 고르면 범위가 그 길이로 움직인다.
+/// 날짜가 있는 코스는 기존 범위를 미리 칠해두고, 다른 날을 골라야 수정하기가
+/// 살아난다.
 class CourseScheduleScreen extends ConsumerStatefulWidget {
   const CourseScheduleScreen({super.key, required this.savedId});
 
@@ -23,100 +28,146 @@ class CourseScheduleScreen extends ConsumerStatefulWidget {
 }
 
 class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
-  DateTime? _startDate;
-  DateTime? _endDate;
-
-  bool get _hasRange => _startDate != null && _endDate != null;
-
-  void _onSelectDate(DateTime day) {
-    final range = resolveTripDateTap(
-      day: day,
-      start: _startDate,
-      end: _endDate,
-    );
-    setState(() {
-      _startDate = range.start;
-      _endDate = range.end;
-    });
-  }
+  DateTime? _picked;
 
   @override
   Widget build(BuildContext context) {
-    final today = DateUtils.dateOnly(DateTime.now());
+    final detail = ref.watch(savedCourseDetailProvider(widget.savedId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: GestureDetector(
-                onTap: () => context.pop(),
-                child: const Icon(Icons.close, size: 26, color: _labelNormal),
+        child: detail.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child: Text(
+              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+              textAlign: TextAlign.center,
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(23, 20, 23, 0),
-              child: Text(
-                '여행 날짜 선택',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: _labelNormal,
-                  letterSpacing: -0.6,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            const TripDateLimitBanner(),
-            Expanded(
-              child: TripDateRangePicker(
-                today: today,
-                startDate: _startDate,
-                endDate: _endDate,
-                onSelect: _onSelectDate,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  onPressed: _hasRange ? _saveSchedule : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _ctaEnabled,
-                    disabledBackgroundColor: _ctaDisabled,
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    '선택 완료',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
+          data: (data) => data == null
+              ? const Center(child: Text('저장한 코스를 찾을 수 없어요'))
+              : _buildBody(data.saved, data.course),
         ),
       ),
     );
   }
 
-  void _saveSchedule() {
-    // TODO(course): 서버 일정 확정 API 연동. mock JSON은 쓰기가 불가해 고른 날짜를
-    // 저장할 수 없으므로 확정된 것처럼 닫지 않고 준비 중임을 알린다
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('일정 저장 기능은 준비 중이에요')));
+  Widget _buildBody(Map<String, dynamic> saved, Map<String, dynamic> course) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final travelDays = course['durationDays'] as int;
+    final original = DateTime.tryParse(saved['startDate'] as String? ?? '');
+    // 지나간 날짜는 어차피 고를 수 없으니 미리 칠하지 않는다
+    final presetStart = original != null && !original.isBefore(today)
+        ? original
+        : null;
+    final start = _picked ?? presetStart;
+    final end = start == null
+        ? null
+        : DateTime(start.year, start.month, start.day + travelDays - 1);
+    final consumed = start != null && end != null
+        ? ref.watch(tripConsumedLeaveProvider((start: start, end: end))).value
+        : null;
+    final hasOriginal = original != null;
+    // 날짜 수정은 다른 날을 골라야 의미가 있다 — 그대로면 버튼을 재운다
+    final canSubmit = _picked != null && (_picked != original);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
+          padding: const EdgeInsets.fromLTRB(6, 0, 20, 0),
+          child: AppIconButton(
+            icon: Icons.arrow_back_ios_new,
+            size: 20,
+            onTap: () => context.pop(),
+            semanticLabel: '뒤로 가기',
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hasOriginal ? '여행 날짜 수정' : '여행 날짜 선택',
+                style: AppTypography.title3Bold.copyWith(
+                  color: AppColors.labelNormal,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '일정에 따른 날씨예보, 휴무일 정보를 알려드려요.',
+                style: AppTypography.body1NormalMedium.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const TripDateLimitBanner(),
+        Expanded(
+          child: TripDateRangePicker(
+            today: today,
+            startDate: start,
+            endDate: end,
+            // 길이가 정해진 코스라 시작일만 고르면 범위가 통째로 옮겨진다
+            onSelect: (day) => setState(() => _picked = day),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          child: Column(
+            children: [
+              // 자리를 늘 차지해 날짜를 고를 때 버튼이 움직이지 않게 한다
+              SizedBox(
+                height: 22,
+                child: consumed == null
+                    ? null
+                    : Text(
+                        '차감 연차 일수 ${formatLeaveDays(consumed)}일',
+                        style: AppTypography.body2NormalMedium.copyWith(
+                          color: AppColors.labelAlternative,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: canSubmit ? _submit : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryNormal,
+                    disabledBackgroundColor: AppColors.interactionDisable,
+                    foregroundColor: AppColors.staticWhite,
+                    disabledForegroundColor: AppColors.labelAssistive,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    hasOriginal ? '수정하기' : '선택 완료',
+                    style: AppTypography.body1NormalBold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    // TODO(server): 저장 코스 날짜 수정 API가 없다 (PATCH/PUT 405 확인,
+    // 재저장 우회도 상세 응답에 transport가 없어 불가). API가 생기면 여기서
+    // 저장하고 '날짜가 변경됐어요.' 토스트와 함께 상세로 돌아간다.
+    showAppToast(context, '날짜 수정은 서버 준비 중이에요');
   }
 }

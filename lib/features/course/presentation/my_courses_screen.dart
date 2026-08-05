@@ -1,37 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/trip_constants.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../data/course_repository.dart';
 
-/// 내 코스 목록 (`GET /courses`).
+/// 내 코스 목록 (`GET /courses?scope=`) — 정렬·범위는 서버가 맡는다.
 /// 담기·삭제 후에는 invalidate로 다시 불러온다.
-final savedCoursesProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
-      (ref) => ref.watch(courseRepositoryProvider).savedCourseCards(),
+final savedCoursesProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String>(
+      (ref, scope) =>
+          ref.watch(courseRepositoryProvider).savedCourseCards(scope: scope),
     );
 
-// TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-const _labelNormal = Color(0xFF171719);
-const _textMuted = Color(0xFF6F767E);
-const _chipBg = Color(0xFFE9E9ED);
-const _thumbPlaceholder = Color(0xFFC5C8CE);
-const _confirmedDot = Color(0xFF2272EB);
-const _pendingDot = Color(0xFF9EA4AA);
+/// 서브탭 — 서버 scope 값과 짝을 이룬다
+enum _Scope {
+  all('전체', 'ALL'),
+  upcoming('예정된 여행', 'UPCOMING'),
+  past('다녀온 여행', 'PAST');
 
-/// 정렬 기준. 지금은 mock이라 저장 순서를 그대로 쓰고, 서버 연동 시 쿼리로 넘긴다
-enum _SortOrder {
-  latest('최신순'),
-  oldest('오래된순');
-
-  const _SortOrder(this.label);
+  const _Scope(this.label, this.serverValue);
 
   final String label;
+  final String serverValue;
 }
 
-/// 내 코스 — 저장한 코스를 확정/미확정 상태와 함께 보여준다
+/// 내 코스 — 담아둔 코스를 예정/다녀온 여행으로 나눠 보여준다
 class MyCoursesScreen extends ConsumerStatefulWidget {
   const MyCoursesScreen({super.key});
 
@@ -40,26 +39,50 @@ class MyCoursesScreen extends ConsumerStatefulWidget {
 }
 
 class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
-  _SortOrder _sort = _SortOrder.latest;
-
-  /// 최신순은 저장 순서의 역순(mock은 오래된 것부터 담겨 있다)
-  List<Map<String, dynamic>> _sorted(List<Map<String, dynamic>> all) {
-    return _sort == _SortOrder.latest ? all.reversed.toList() : all;
-  }
+  _Scope _scope = _Scope.all;
 
   @override
   Widget build(BuildContext context) {
-    final courses = ref.watch(savedCoursesProvider);
+    final courses = ref.watch(savedCoursesProvider(_scope.serverValue));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundNormal,
       extendBody: true,
       body: SafeArea(
         bottom: false,
-        child: courses.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('코스를 불러오지 못했어요\n$e')),
-          data: (all) => _buildBody(_sorted(all)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Text(
+                '내 코스',
+                style: AppTypography.title3Bold.copyWith(
+                  color: AppColors.labelStrong,
+                ),
+              ),
+            ),
+            _ScopeTabs(
+              scope: _scope,
+              onSelect: (s) => setState(() => _scope = s),
+            ),
+            Expanded(
+              child: courses.when(
+                loading: () => _buildSkeleton(),
+                error: (e, _) => Center(
+                  child: Text(
+                    e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.label1NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                ),
+                data: (cards) =>
+                    cards.isEmpty ? _buildEmpty() : _buildList(cards),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: AppTabPills(
@@ -73,132 +96,184 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
     );
   }
 
-  Widget _buildBody(List<Map<String, dynamic>> courses) {
+  Widget _buildList(List<Map<String, dynamic>> cards) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
       children: [
-        const Text(
-          '내 코스',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: _labelNormal,
-            letterSpacing: -0.6,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildSortChip(),
-        const SizedBox(height: 24),
-        if (courses.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 80),
-            child: Center(
-              child: Text(
-                '저장한 코스가 아직 없어요',
-                style: TextStyle(fontSize: 14, color: _textMuted),
-              ),
-            ),
-          )
-        else
-          for (final course in courses) ...[
-            _CourseCard(course: course),
-            const SizedBox(height: 24),
-          ],
-        if (courses.isNotEmpty) _buildLegend(),
-      ],
-    );
-  }
-
-  Widget _buildSortChip() {
-    // Row로 감싸 칩이 목록 폭 전체로 늘어나지 않게 한다
-    return Row(
-      children: [
-        GestureDetector(
-          // 정렬 기준이 둘뿐이라 탭할 때마다 번갈아 바꾼다
-          onTap: () => setState(() {
-            _sort = _sort == _SortOrder.latest
-                ? _SortOrder.oldest
-                : _SortOrder.latest;
-          }),
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _chipBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _sort.label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: _textMuted,
-                letterSpacing: -0.6,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 카드의 점 색이 무엇을 뜻하는지 알려주는 범례
-  Widget _buildLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (final (color, label) in const [
-          (_confirmedDot, '일정 확정'),
-          (_pendingDot, '일정 미확정'),
-        ]) ...[
-          if (label != '일정 확정') const SizedBox(width: 16),
-          _Dot(color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _textMuted,
-              letterSpacing: -0.6,
-            ),
-          ),
+        for (final card in cards) ...[
+          _CourseCard(course: card),
+          const SizedBox(height: 28),
         ],
       ],
     );
   }
+
+  /// 불러오는 동안 카드 두 장 자리를 미리 그려둔다
+  Widget _buildSkeleton() {
+    Widget block(double width, double height, [double radius = 6]) => Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.fillNormal,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (var i = 0; i < 2; i++) ...[
+          block(double.infinity, 198, 12),
+          const SizedBox(height: 12),
+          block(44, 22),
+          const SizedBox(height: 10),
+          block(double.infinity, 16),
+          const SizedBox(height: 8),
+          block(240, 16),
+          const SizedBox(height: 28),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 120),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 말풍선이 지도책 위에 살짝 겹쳐 얹힌다
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/ic_empty_course_bubble.svg',
+                  width: 29,
+                  height: 29,
+                ),
+                Transform.translate(
+                  offset: const Offset(0, -3),
+                  child: SvgPicture.asset(
+                    'assets/icons/ic_empty_course_map.svg',
+                    width: 48,
+                    height: 48,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '아직 담은 코스가 없어요',
+              style: AppTypography.heading2Bold.copyWith(
+                color: AppColors.labelStrong,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '새로운 코스를 담아보세요',
+              style: AppTypography.body1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
+            ),
+            const SizedBox(height: 28),
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.wizardDateGate),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: AppPalette.coolNeutral20,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '코스 추천받기',
+                  style: AppTypography.body2NormalMedium.copyWith(
+                    color: AppColors.inverseLabel,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-/// 코스 카드 — 지도 썸네일 + 지역·기간 + 날짜 상태
+/// 전체 · 예정된 여행 · 다녀온 여행 — 고른 탭에 검정 밑줄이 붙는다
+class _ScopeTabs extends StatelessWidget {
+  const _ScopeTabs({required this.scope, required this.onSelect});
+
+  final _Scope scope;
+  final ValueChanged<_Scope> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.lineNormalAlternative),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          for (final s in _Scope.values) ...[
+            if (s != _Scope.values.first) const SizedBox(width: 24),
+            GestureDetector(
+              onTap: () => onSelect(s),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: double.infinity,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: scope == s
+                          ? AppColors.labelStrong
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  s.label,
+                  style: AppTypography.headline2Bold.copyWith(
+                    color: scope == s
+                        ? AppColors.labelStrong
+                        : AppColors.labelAssistive,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 코스 카드 — 썸네일 + 상태 뱃지 + 지역·기간 + 날짜
 class _CourseCard extends StatelessWidget {
   const _CourseCard({required this.course});
 
   final Map<String, dynamic> course;
 
-  /// 확정된 코스는 `7/20(금) – 7/22(일)`, 미확정은 `날짜 미정 · 8월경`
-  String _dateLabel() {
-    final start = DateTime.tryParse(course['startDate'] as String? ?? '');
-    if (start == null) {
-      final note = course['plannedNote'] as String?;
-      return note == null ? '날짜 미정' : '날짜 미정 · $note';
-    }
-    final end = DateTime.tryParse(course['endDate'] as String? ?? '');
-    if (end == null || end == start) return _formatDate(start);
-    return '${_formatDate(start)} – ${_formatDate(end)}';
-  }
-
-  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-
-  String _formatDate(DateTime d) =>
-      '${d.month}/${d.day}(${_weekdays[d.weekday - 1]})';
-
   @override
   Widget build(BuildContext context) {
-    final confirmed = course['confirmed'] as bool? ?? false;
     final regionName = course['regionName'] as String? ?? '';
-    final duration = course['durationLabel'] as String? ?? '';
+    final duration = ((course['durationLabel'] as String?) ?? '').replaceAll(
+      ' ',
+      '',
+    );
+    final imageUrl = course['thumbnailUrl'] as String?;
+    final start = DateTime.tryParse(course['startDate'] as String? ?? '');
+    final end = DateTime.tryParse(course['endDate'] as String? ?? '');
 
     return GestureDetector(
       onTap: () =>
@@ -207,58 +282,66 @@ class _CourseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TODO(course): 서버에서 코스 지도 썸네일 내려주면 이미지로 교체
           ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
-              height: 173,
+              height: 198,
               width: double.infinity,
-              color: _thumbPlaceholder,
+              color: AppColors.fillNormal,
+              child: imageUrl == null
+                  ? Icon(
+                      Icons.image_outlined,
+                      size: 48,
+                      color: AppColors.labelAssistive,
+                    )
+                  : Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox.expand(),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
+          if (_badge(start, end) case final (String, Color) badge) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: badge.$2.withValues(alpha: AppOpacity.o8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                badge.$1,
+                style: AppTypography.label2Bold.copyWith(color: badge.$2),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           Text(
             '$regionName · $duration',
-            style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: _labelNormal,
-              letterSpacing: -0.76,
+            style: AppTypography.headline2Bold.copyWith(
+              color: AppColors.labelNormal,
             ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              _Dot(color: confirmed ? _confirmedDot : _pendingDot),
-              const SizedBox(width: 6),
-              Text(
-                _dateLabel(),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: confirmed ? _confirmedDot : _textMuted,
-                  letterSpacing: -0.6,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            start == null || end == null
+                ? '날짜 미정'
+                : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}',
+            style: AppTypography.body2NormalMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _Dot extends StatelessWidget {
-  const _Dot({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
+  /// 끝난 여행은 초록 '여행완료', 다가오는 여행은 파란 D-day. 날짜 없으면 없음
+  (String, Color)? _badge(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return null;
+    final today = DateUtils.dateOnly(DateTime.now());
+    if (end.isBefore(today)) return ('여행완료', AppColors.statusPositive);
+    final n = calendarDaysBetween(today, start);
+    return (n > 0 ? 'D-$n' : 'D-DAY', AppColors.primaryNormal);
   }
 }

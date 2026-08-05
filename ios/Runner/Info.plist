@@ -57,6 +57,8 @@
 	<array>
 		<string>kakaokompassauth</string>
 		<string>kakaolink</string>
+		<!-- 길 찾기 딥링크 — 네이버지도 설치 여부 확인용 -->
+		<string>nmap</string>
 	</array>
 	<!-- 개발 서버(18.181.168.227)가 도메인 없는 HTTP라 전면 허용이 불가피하다.
 	     도메인이면 NSExceptionDomains로 좁힐 수 있지만 IP에는 적용되지 않는다.
@@ -79,5 +81,7 @@
 	     실제 위치 사용은 서버 추천 API(출발 좌표) 연동 시 시작된다 -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>코스 일정 이미지를 사진 앨범에 저장하기 위해 사용합니다.</string>
 </dict>
 </plist>
