@@ -41,32 +41,9 @@ class _WizardLoadingScreenState extends State<WizardLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: AppColors.backgroundNormal,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AppLoadingIndicator(),
-            const SizedBox(height: 24),
-            Text(
-              '조건에 맞는\n여행지를 찾고 있어요..',
-              textAlign: TextAlign.center,
-              style: AppTypography.headline1Bold.copyWith(
-                color: AppColors.labelNormal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '잠시만 기다려주세요.',
-              textAlign: TextAlign.center,
-              style: AppTypography.body2NormalMedium.copyWith(
-                color: AppColors.labelAssistive,
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: AppLoadingView(title: '조건에 맞는\n여행지를 찾고 있어요..'),
     );
   }
 }

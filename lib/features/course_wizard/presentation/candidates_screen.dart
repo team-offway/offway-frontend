@@ -9,6 +9,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -135,7 +136,9 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             ),
             Expanded(
               child: candidates.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                // O-07 로딩 화면에서 넘어온 직후라 같은 표시로 이어지게 한다
+                loading: () =>
+                    const AppLoadingView(title: '조건에 맞는\n여행지를 찾고 있어요..'),
                 // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
                 error: (e, _) => Center(
                   child: Text(
