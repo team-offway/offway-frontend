@@ -53,6 +53,11 @@ class OriginLocator {
           timeLimit: _fixTimeout,
         ),
       );
+      // 국내 전용 서비스라 한국 밖 좌표(해외 사용자·시뮬레이터 기본 위치)로는
+      // 도달 가능한 지역이 0곳이 된다 — 서울 출발로 가정한다
+      if (!_inKorea(position.latitude, position.longitude)) {
+        return _seoulFallback;
+      }
       return Origin(
         lat: position.latitude,
         lng: position.longitude,
@@ -63,4 +68,8 @@ class OriginLocator {
       return _seoulFallback;
     }
   }
+
+  /// 한반도 남부(제주~접경지) 대략의 경계 상자
+  static bool _inKorea(double lat, double lng) =>
+      lat >= 33.0 && lat <= 38.7 && lng >= 124.5 && lng <= 132.0;
 }
