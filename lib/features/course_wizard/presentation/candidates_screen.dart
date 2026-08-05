@@ -215,9 +215,15 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             SizedBox(
               width: 150,
               child: FilledButton(
-                // TODO(wizard): 어느 단계로 되돌릴지 정해지면 연결한다.
-                // 그때까지는 비활성 — 눌리는데 아무 일도 없으면 고장으로 보인다
-                onPressed: null,
+                // 기간·날짜는 유지하고 이동수단(O-05)부터 다시 고른다.
+                // 스택은 이동수단 → 밀도 → 후보지역이라 두 번 걷어낸다
+                onPressed: () {
+                  ref
+                      .read(courseWizardProvider.notifier)
+                      .restartFromTransport();
+                  if (context.canPop()) context.pop();
+                  if (context.canPop()) context.pop();
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.fillNormal,
                   foregroundColor: AppColors.labelNormal,

@@ -190,6 +190,19 @@ class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
     state = state.copyWith(leaveDaysToUse: days);
   }
 
+  /// 후보 0곳에서 '다시 설정하기' — 기간·날짜는 그대로 두고
+  /// 이동수단부터 다시 고르도록 이후 단계 선택만 비운다
+  void restartFromTransport() {
+    state = CourseWizardDraft(
+      datePath: state.datePath,
+      startDate: state.startDate,
+      endDate: state.endDate,
+      periodStyle: state.periodStyle,
+      weekendPattern: state.weekendPattern,
+      leaveDaysToUse: state.leaveDaysToUse,
+    );
+  }
+
   void selectTransport(TransportMode mode) {
     state = state.copyWith(transportMode: mode);
   }
