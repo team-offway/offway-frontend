@@ -135,6 +135,9 @@ class _FakeCourseRepository extends CourseRepository {
   Future<int> save(Map<String, dynamic> savePayload) async => 1;
 
   @override
+  Future<void> deductLeave(int courseId) async {}
+
+  @override
   Future<List<Map<String, dynamic>>> savedCourseCards({
     String scope = 'ALL',
   }) async {

@@ -13,6 +13,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
@@ -160,7 +161,17 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
     setState(() => _saving = true);
     try {
-      await ref.read(courseRepositoryProvider).save(savePayload);
+      final repository = ref.read(courseRepositoryProvider);
+      final courseId = await repository.save(savePayload);
+      // 날짜를 확정해 담은 코스는 연차를 차감한다 (서버 멱등).
+      // 차감이 실패해도 담기 자체는 성공이므로 흐름을 막지 않는다
+      try {
+        await repository.deductLeave(courseId);
+      } on ApiException {
+        // 잔여 연차 표시만 어긋난다 — 다음 차감 시도에서 맞춰진다
+      }
+      // 홈의 잔여 연차가 줄었으니 다시 불러오게 한다
+      ref.invalidate(homeSnapshotProvider);
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
