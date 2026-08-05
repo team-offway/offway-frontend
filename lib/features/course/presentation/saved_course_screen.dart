@@ -15,6 +15,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
@@ -514,6 +515,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       await ref.read(courseRepositoryProvider).delete(widget.savedId);
       // 목록이 지워진 코스를 계속 보여주지 않도록 다시 불러오게 한다
       ref.invalidate(savedCoursesProvider);
+      // 삭제하면 서버가 차감한 연차를 되돌린다 — 홈의 잔여 연차도 갱신
+      ref.invalidate(homeSnapshotProvider);
       if (!mounted) return;
       showAppToast(context, '코스가 삭제됐어요.', kind: AppToastKind.success);
       context.pop();
