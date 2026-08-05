@@ -29,7 +29,9 @@ class DensityScreen extends ConsumerWidget {
           ref.read(courseWizardProvider.notifier).selectDensity(_densities[i]),
       onNext: density == null
           ? null
-          : () => context.push(AppRoutes.wizardLoading),
+          // 후보지역 화면이 로딩(O-07 디자인)을 직접 보여준다 — 검색이 실제로
+          // 끝나는 순간 결과로 바뀌므로 로딩이 두 번 이어지지 않는다
+          : () => context.push(AppRoutes.wizardCandidates),
     );
   }
 }
