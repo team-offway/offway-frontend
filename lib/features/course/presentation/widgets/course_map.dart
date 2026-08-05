@@ -35,7 +35,14 @@ class CourseMap extends StatelessWidget {
       points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length,
     );
     return NaverMap(
-      key: ValueKey('map-day-$dayKey'),
+      // Day 전환뿐 아니라 재추첨으로 장소가 통째로 바뀌어도 지도를 새로 만든다
+      // — 마커는 onMapReady에서만 찍히므로 내용이 바뀌면 키도 바뀌어야 한다
+      key: ValueKey(
+        Object.hashAll([
+          dayKey,
+          for (final p in places) '${p['name']}@${p['mapx']},${p['mapy']}',
+        ]),
+      ),
       // 리스트 스크롤보다 지도 제스처(이동/확대)가 우선하도록 설정
       forceGesture: true,
       options: NaverMapViewOptions(
