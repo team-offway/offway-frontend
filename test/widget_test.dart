@@ -490,10 +490,16 @@ void main() {
 
     expect(find.textContaining('정선 여행'), findsOneWidget);
     expect(find.text('2026.7.20 - 7.22'), findsOneWidget);
-    expect(find.text('사용 연차 일수 2일'), findsOneWidget);
-    // 2박3일이라 Day 탭이 3개, 코스 삭제 버튼이 하단에 있다
+    // 서버 계산이 stub에서 실패하므로 평일 수(월~수=3일) 폴백이 보인다
+    expect(find.text('사용 연차 일수 3일'), findsOneWidget);
     expect(find.text('Day 3'), findsOneWidget);
-    expect(find.text('코스 삭제하기'), findsOneWidget);
+
+    // 편집 시트에 날짜 수정과 삭제가 들어 있다
+    await tester.tap(find.bySemanticsLabel('코스 편집'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('여행날짜 수정'), findsOneWidget);
+    expect(find.text('코스 삭제'), findsOneWidget);
   });
 
   testWidgets('미확정 코스는 날짜 대신 일정 정하기 링크가 보인다', (tester) async {
