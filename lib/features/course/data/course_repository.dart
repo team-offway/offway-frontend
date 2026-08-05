@@ -5,6 +5,7 @@ import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../core/utils/tour_text.dart';
 
 final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
@@ -196,7 +197,21 @@ class CourseRepository {
   Future<Map<String, dynamic>> poiDetail(String contentId) async {
     try {
       final response = await _dio.get<dynamic>('/api/v1/pois/$contentId');
-      return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      // TourAPI 원문에는 <br> 같은 HTML이 섞여 온다 — 화면에 내보내기 전에 걷어낸다
+      for (final key in const [
+        'title',
+        'address',
+        'useTime',
+        'restDate',
+        'overview',
+        'catchphrase',
+      ]) {
+        if (data[key] is String) {
+          data[key] = cleanTourApiText(data[key] as String);
+        }
+      }
+      return data;
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }

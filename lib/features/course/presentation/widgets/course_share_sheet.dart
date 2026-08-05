@@ -131,7 +131,8 @@ abstract final class CourseShareSheets {
             _SheetTitleBar(title: title),
             const SizedBox(height: 23),
             ...itemsBuilder(sheetContext),
-            const SizedBox(height: 20),
+            // 마지막 항목의 자체 여백(14)과 합쳐 디자인의 하단 간격(40)을 만든다
+            const SizedBox(height: 26),
           ],
         ),
       ),

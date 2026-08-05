@@ -15,7 +15,6 @@ import '../../features/course/presentation/my_courses_screen.dart';
 import '../../features/course/presentation/saved_course_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
 import '../../features/course_wizard/presentation/density_screen.dart';
-import '../../features/course_wizard/presentation/loading_screen.dart';
 import '../../features/course_wizard/presentation/period_style_screen.dart';
 import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -33,7 +32,6 @@ abstract final class AppRoutes {
   static const wizardPeriodStyle = '/wizard/period-style';
   static const wizardTransport = '/wizard/transport';
   static const wizardDensity = '/wizard/density';
-  static const wizardLoading = '/wizard/loading';
   static const wizardCandidates = '/wizard/candidates';
 
   static const myCourses = '/my-courses';
@@ -144,11 +142,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardDensity,
         name: 'wizardDensity',
         builder: (context, state) => const DensityScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.wizardLoading,
-        name: 'wizardLoading',
-        builder: (context, state) => const WizardLoadingScreen(),
       ),
       GoRoute(
         path: AppRoutes.wizardCandidates,

@@ -9,6 +9,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -99,7 +100,8 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                     : null,
                 onTap: () => Navigator.of(sheetContext).pop(option),
               ),
-            const SizedBox(height: 8),
+            // 시트 공통 규칙 — 아래 여백을 넉넉히 둔다
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -135,7 +137,9 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             ),
             Expanded(
               child: candidates.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                // O-07 로딩 화면에서 넘어온 직후라 같은 표시로 이어지게 한다
+                loading: () =>
+                    const AppLoadingView(title: '조건에 맞는\n여행지를 찾고 있어요..'),
                 // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
                 error: (e, _) => Center(
                   child: Text(
@@ -215,9 +219,15 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
             SizedBox(
               width: 150,
               child: FilledButton(
-                // TODO(wizard): 어느 단계로 되돌릴지 정해지면 연결한다.
-                // 그때까지는 비활성 — 눌리는데 아무 일도 없으면 고장으로 보인다
-                onPressed: null,
+                // 기간·날짜는 유지하고 이동수단(O-05)부터 다시 고른다.
+                // 스택은 이동수단 → 밀도 → 후보지역이라 두 번 걷어낸다
+                onPressed: () {
+                  ref
+                      .read(courseWizardProvider.notifier)
+                      .restartFromTransport();
+                  if (context.canPop()) context.pop();
+                  if (context.canPop()) context.pop();
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.fillNormal,
                   foregroundColor: AppColors.labelNormal,

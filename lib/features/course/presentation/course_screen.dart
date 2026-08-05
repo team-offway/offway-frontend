@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
@@ -216,8 +217,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: course.when(
-          // 실제 코스 생성이라 몇 초 걸릴 수 있다 — 로딩 화면과 같은 표시를 쓴다
-          loading: () => const Center(child: CircularProgressIndicator()),
+          // 실제 코스 생성이라 몇 초 걸릴 수 있다 — O-07 로딩 디자인을 쓴다
+          loading: () => const AppLoadingView(title: '나만의 여행 코스를\n만들고 있어요..'),
           // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
           error: (e, _) => Center(
             child: Text(

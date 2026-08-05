@@ -22,6 +22,7 @@ import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
+import 'widgets/dotted_line.dart';
 
 /// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
 final savedCourseDetailProvider = FutureProvider.autoDispose
@@ -418,6 +419,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
               height: 56,
@@ -441,7 +444,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 22),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_calendar.svg',
               label: '여행날짜 수정',
@@ -556,7 +559,11 @@ class _EditSheetRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                // 디자인은 아이콘을 61% 투명도로 옅게 얹는다
+                child: Opacity(
+                  opacity: AppOpacity.o61,
+                  child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                ),
               ),
             ),
             const SizedBox(width: 20),
@@ -720,12 +727,12 @@ class _SavedPlaceList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 번호들을 관통하는 세로 선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
-        Positioned(
-          left: 11.5,
+        // 번호들을 관통하는 세로 점선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
+        const Positioned(
+          left: 11.4,
           top: 12,
           bottom: 12,
-          child: Container(width: 1, color: AppColors.lineNormalNeutral),
+          child: DottedVerticalLine(),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

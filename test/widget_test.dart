@@ -953,11 +953,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // O-07 로딩
+    // O-07 로딩 — 후보지역 화면이 검색 동안 직접 보여준다
     expect(find.textContaining('여행지를 찾고 있어요'), findsOneWidget);
 
-    // 2초 후 후보지역 자동 이동 (mock 로드는 실제 비동기로 대기)
-    await tester.pump(const Duration(seconds: 2));
+    // 검색(mock 로드)이 끝나면 같은 화면이 결과로 바뀐다
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
