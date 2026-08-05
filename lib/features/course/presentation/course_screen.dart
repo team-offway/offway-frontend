@@ -128,6 +128,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       }
     } on ApiException catch (e) {
       if (mounted) showAppToast(context, e.detail);
+    } catch (_) {
+      // 응답 형태가 어긋나는 등 예상 밖 실패 — 조용히 끝나면 고장으로 오해한다
+      if (mounted) showAppToast(context, '코스를 다시 만들지 못했어요');
     } finally {
       if (mounted) setState(() => _regenerating = false);
     }
@@ -149,6 +152,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     } on ApiException catch (e) {
       // 담기지 않았는데 이동하면 담긴 줄 안다 — 머물러 알린다
       if (mounted) showAppToast(context, e.detail);
+    } catch (_) {
+      // '_save' 누락 등 예상 밖 실패도 사용자에게는 알려야 한다
+      if (mounted) showAppToast(context, '코스를 담지 못했어요');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -162,12 +168,22 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final course = ref.watch(
-      courseProvider((
-        regionId: widget.regionId,
-        desiredDays: widget.desiredDays,
-      )),
+    final providerKey = (
+      regionId: widget.regionId,
+      desiredDays: widget.desiredDays,
     );
+    // 조건이 바뀌어 provider가 새 코스를 만들면 이전 재추첨 결과는 버린다 —
+    // 계속 들고 있으면 갱신된 조건의 코스가 화면에 나타나지 않는다
+    ref.listen(courseProvider(providerKey), (previous, next) {
+      final fresh = next.value;
+      if (fresh != null && !identical(previous?.value, fresh)) {
+        setState(() {
+          _regenerated = null;
+          _lastSeed = null;
+        });
+      }
+    });
+    final course = ref.watch(courseProvider(providerKey));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,

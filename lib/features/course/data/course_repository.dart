@@ -190,7 +190,8 @@ class CourseRepository {
     final benefits = (course['benefits'] as List?) ?? const [];
     return {
       'regionName': _regionNameOf(course),
-      'durationDays': course['travelDays'],
+      // 서버 JSON이 2.0처럼 실수로 보내도 깨지지 않게 num으로 받아 정규화한다
+      'durationDays': (course['travelDays'] as num).toInt(),
       'travelDate': course['travelDate'],
       'days': [
         for (final day in days)
@@ -261,7 +262,7 @@ class CourseRepository {
     Map<String, dynamic> detail,
   ) {
     final id = (summary['courseId'] as num).toString();
-    final travelDays = summary['travelDays'] as int;
+    final travelDays = (summary['travelDays'] as num).toInt();
     final travelDate = summary['travelDate'] as String?;
     final start = travelDate == null ? null : DateTime.parse(travelDate);
     final firstItems = (detail['days'] as List).isEmpty

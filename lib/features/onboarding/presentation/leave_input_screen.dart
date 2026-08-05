@@ -58,6 +58,7 @@ class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
   }
 
   void _startEditing() {
+    if (_saving) return; // 저장 중 값이 바뀌면 서버와 화면이 어긋난다
     setState(() {
       _editing = true;
       _controller.text = _days == _days.roundToDouble()
@@ -93,6 +94,7 @@ class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
   }
 
   void _changeBy(double delta) {
+    if (_saving) return; // 저장 중 값이 바뀌면 서버와 화면이 어긋난다
     setState(() {
       _days = (_days + delta).clamp(_minDays, _maxDays);
     });
@@ -105,9 +107,11 @@ class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
     if (_editing) _commitInput();
     if (_saving) return;
     setState(() => _saving = true);
+    // 요청 시작 시점 값을 고정한다 — 도중에 화면 값이 바뀌어도 저장값과 어긋나지 않게
+    final days = _days;
     try {
       // 게스트(X-Guest-Id) 앞으로 총 연차를 저장한다 — 홈이 이 값을 읽는다
-      await ref.read(leaveRepositoryProvider).updateTotalDays(_days);
+      await ref.read(leaveRepositoryProvider).updateTotalDays(days);
       // 홈이 이미 캐시를 갖고 있으면 옛 연차가 보이므로 다시 불러오게 한다
       ref.invalidate(homeSnapshotProvider);
       if (mounted) context.go(AppRoutes.home);
