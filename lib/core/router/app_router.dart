@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../constants/trip_constants.dart';
+
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
@@ -75,7 +77,10 @@ abstract final class AppRoutes {
   static const courseSaveDate = '/course-save-date';
 
   static String courseSaveDatePath({required int travelDays}) =>
-      '$courseSaveDate?days=$travelDays';
+      '$courseSaveDate?days=${clampTripDays(travelDays)}';
+
+  /// 코스 길이를 정책 범위(1일~2박3일)로 강제한다 — 딥링크 등 비정상 값 방어
+  static int clampTripDays(int days) => days.clamp(1, kMaxTripSpanDays + 1);
 }
 
 /// 하단 탭 목적지용 페이지. 탭끼리는 형제 화면이라 좌우 슬라이드 없이 바로 전환된다.
@@ -216,8 +221,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.courseSaveDate,
         name: 'courseSaveDate',
         builder: (context, state) => CourseSaveDateScreen(
-          travelDays:
-              int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+          travelDays: AppRoutes.clampTripDays(
+            int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+          ),
         ),
       ),
     ],

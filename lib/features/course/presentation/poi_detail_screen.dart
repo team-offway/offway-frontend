@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_envelope.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -67,12 +68,16 @@ class PoiDetailScreen extends ConsumerWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.headline2Bold.copyWith(
-              color: AppColors.labelNormal,
+          Padding(
+            // 긴 장소명이 뒤로 가기 버튼을 침범하지 않게 좌우를 비워둔다
+            padding: const EdgeInsets.symmetric(horizontal: 52),
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.headline2Bold.copyWith(
+                color: AppColors.labelNormal,
+              ),
             ),
           ),
           Positioned(
@@ -80,7 +85,9 @@ class PoiDetailScreen extends ConsumerWidget {
             child: AppIconButton(
               icon: Icons.arrow_back_ios_new,
               size: 20,
-              onTap: () => context.pop(),
+              // 딥링크로 바로 들어오면 스택이 비어 pop이 안 된다 — 홈으로 보낸다
+              onTap: () =>
+                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
               semanticLabel: '뒤로 가기',
             ),
           ),
@@ -255,7 +262,8 @@ class _Body extends StatelessWidget {
   }
 
   /// 외부 지도 앱으로 길 찾기 — 목적지 좌표만 넘기고 출발지는 지도 앱이
-  /// 현재 위치로 잡는다. 네이버지도가 없으면 애플 지도로 넘어간다.
+  /// 현재 위치로 잡는다. 네이버지도가 없으면 OS 기본 지도로 넘어간다
+  /// (iOS 애플 지도 · Android 지도 인텐트).
   Future<void> _openDirections(
     BuildContext context,
     double lat,
@@ -265,13 +273,19 @@ class _Body extends StatelessWidget {
       'nmap://route/car?dlat=$lat&dlng=$lng'
       '&dname=${Uri.encodeComponent(name)}&appname=com.nth.offway',
     );
-    final apple = Uri.parse('https://maps.apple.com/?daddr=$lat,$lng');
+    final fallback = Theme.of(context).platform == TargetPlatform.android
+        ? Uri.parse('geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(name)})')
+        : Uri.parse('https://maps.apple.com/?daddr=$lat,$lng');
     try {
-      if (await canLaunchUrl(naver)) {
-        await launchUrl(naver);
-        return;
+      // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
+      if (await canLaunchUrl(naver) && await launchUrl(naver)) return;
+      final opened = await launchUrl(
+        fallback,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        showAppToast(context, '지도 앱을 열지 못했어요');
       }
-      await launchUrl(apple, mode: LaunchMode.externalApplication);
     } catch (_) {
       if (context.mounted) showAppToast(context, '지도 앱을 열지 못했어요');
     }

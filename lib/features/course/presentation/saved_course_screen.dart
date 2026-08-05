@@ -119,9 +119,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     if (start == null || end == null)
                       // 날짜가 없으면 정하러 가는 링크가 날짜 자리를 대신한다
                       GestureDetector(
-                        onTap: () => context.push(
-                          AppRoutes.courseSchedulePath(widget.savedId),
-                        ),
+                        onTap: () async {
+                          await context.push(
+                            AppRoutes.courseSchedulePath(widget.savedId),
+                          );
+                          // 일정 화면에서 날짜가 바뀌었을 수 있으니 다시 불러온다
+                          ref.invalidate(
+                            savedCourseDetailProvider(widget.savedId),
+                          );
+                        },
                         behavior: HitTestBehavior.opaque,
                         child: Text(
                           '여행 일정 정하기',
@@ -361,7 +367,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             ),
           ),
         ],
-        if (weather != null && dDay != null && dDay <= 15) ...[
+        // 다녀온 여행(dDay 음수)에는 날씨를 붙이지 않는다
+        if (weather != null && dDay != null && dDay >= 0 && dDay <= 15) ...[
           const SizedBox(width: 8),
           _WeatherChip(
             weather: weather,
@@ -455,6 +462,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       case 'reschedule':
         // TODO(server): 저장 코스 날짜 수정 API가 생기면 결과를 반영한다
         await context.push(AppRoutes.courseSchedulePath(widget.savedId));
+        // 일정 화면에서 날짜가 바뀌었을 수 있으니 상세를 다시 불러온다
+        ref.invalidate(savedCourseDetailProvider(widget.savedId));
       case 'delete':
         await _confirmDelete();
     }
@@ -941,12 +950,17 @@ class _PlaceSheet extends ConsumerWidget {
   final bool isToday;
   final VoidCallback onOpenDetail;
 
-  /// 운영시간 문자열 끝의 마감 시각(HH:MM)이 이미 지났는지
+  /// 운영시간 문자열 끝의 마감 시각(HH:MM)이 이미 지났는지.
+  /// 18:00~02:00처럼 자정을 넘기는 표기는 확신할 수 없어 판정하지 않는다.
   static bool closingPassed(String useTime, DateTime now) {
     final matches = RegExp(r'(\d{1,2}):(\d{2})').allMatches(useTime).toList();
     if (matches.isEmpty) return false;
-    final last = matches.last;
-    final closing = int.parse(last.group(1)!) * 60 + int.parse(last.group(2)!);
+    int minutesOf(RegExpMatch m) =>
+        int.parse(m.group(1)!) * 60 + int.parse(m.group(2)!);
+    final closing = minutesOf(matches.last);
+    if (matches.length >= 2 && closing < minutesOf(matches.first)) {
+      return false;
+    }
     return now.hour * 60 + now.minute >= closing;
   }
 
