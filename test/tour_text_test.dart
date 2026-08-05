@@ -10,10 +10,7 @@ void main() {
   });
 
   test('나머지 태그는 사라지고 엔티티는 원래 문자로 돌아온다', () {
-    expect(
-      cleanTourApiText('<b>산책로</b> A &amp; B&nbsp;코스'),
-      '산책로 A & B 코스',
-    );
+    expect(cleanTourApiText('<b>산책로</b> A &amp; B&nbsp;코스'), '산책로 A & B 코스');
   });
 
   test('태그가 없는 문장은 그대로 둔다', () {
