@@ -4,13 +4,19 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/app_icon_button.dart';
 
-/// 코스 공유 바텀시트 묶음 (O-09 공유).
+/// 코스 공유 바텀시트 묶음 (O-09·내 코스 상세 공유).
 ///
 /// 첫 시트에서 링크 공유 / 이미지 저장을 고르고, 각각 다음 시트로 이어진다.
-/// TODO(share): 실제 공유·저장 동작은 정책 확정 후 연결한다. 지금은 화면만 있다.
+/// 동작은 호출한 화면이 핸들러로 넘긴다 — 없는 항목은 닫기만 한다.
 abstract final class CourseShareSheets {
   /// 1단계 — 무엇으로 공유할지 고른다
-  static Future<void> showEntry(BuildContext context, {required int dayCount}) {
+  static Future<void> showEntry(
+    BuildContext context, {
+    required int dayCount,
+    VoidCallback? onKakaoShare,
+    VoidCallback? onCopyLink,
+    void Function(int? day)? onSaveImage,
+  }) {
     return _show(
       context,
       title: '공유하기',
@@ -21,7 +27,11 @@ abstract final class CourseShareSheets {
           // 앞 시트를 먼저 닫아야 다음 시트가 그 위에 겹쳐 쌓이지 않는다
           onTap: () {
             Navigator.of(sheetContext).pop();
-            showLinkShare(context);
+            showLinkShare(
+              context,
+              onKakaoShare: onKakaoShare,
+              onCopyLink: onCopyLink,
+            );
           },
         ),
         _SheetItem(
@@ -29,7 +39,11 @@ abstract final class CourseShareSheets {
           label: '코스 이미지로 저장하기',
           onTap: () {
             Navigator.of(sheetContext).pop();
-            showImageSave(context, dayCount: dayCount);
+            showImageSave(
+              context,
+              dayCount: dayCount,
+              onSaveImage: onSaveImage,
+            );
           },
         ),
       ],
@@ -37,7 +51,11 @@ abstract final class CourseShareSheets {
   }
 
   /// 2단계 — 링크를 어디로 보낼지 고른다
-  static Future<void> showLinkShare(BuildContext context) {
+  static Future<void> showLinkShare(
+    BuildContext context, {
+    VoidCallback? onKakaoShare,
+    VoidCallback? onCopyLink,
+  }) {
     return _show(
       context,
       title: '공유하기 (보기전용)',
@@ -45,12 +63,18 @@ abstract final class CourseShareSheets {
         _SheetItem(
           iconAsset: 'assets/icons/kakao_logo.svg',
           label: '카카오톡으로 링크 공유하기',
-          onTap: () => Navigator.of(sheetContext).pop(),
+          onTap: () {
+            Navigator.of(sheetContext).pop();
+            onKakaoShare?.call();
+          },
         ),
         _SheetItem(
           iconAsset: 'assets/icons/ic_link.svg',
           label: '링크 복사하기',
-          onTap: () => Navigator.of(sheetContext).pop(),
+          onTap: () {
+            Navigator.of(sheetContext).pop();
+            onCopyLink?.call();
+          },
         ),
       ],
     );
@@ -60,6 +84,7 @@ abstract final class CourseShareSheets {
   static Future<void> showImageSave(
     BuildContext context, {
     required int dayCount,
+    void Function(int? day)? onSaveImage,
   }) {
     return _show(
       context,
@@ -67,14 +92,20 @@ abstract final class CourseShareSheets {
       itemsBuilder: (sheetContext) => [
         _SheetItem(
           label: '전체 일정 저장하기',
-          onTap: () => Navigator.of(sheetContext).pop(),
+          onTap: () {
+            Navigator.of(sheetContext).pop();
+            onSaveImage?.call(null);
+          },
         ),
         // 하루짜리 코스는 '전체'와 'Day 1'이 같아 날짜별 항목을 두지 않는다
         if (dayCount > 1)
           for (var day = 1; day <= dayCount; day++)
             _SheetItem(
               label: 'Day $day 저장',
-              onTap: () => Navigator.of(sheetContext).pop(),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                onSaveImage?.call(day);
+              },
             ),
       ],
     );

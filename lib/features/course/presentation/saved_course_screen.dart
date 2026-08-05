@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/trip_constants.dart';
@@ -8,6 +10,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
+import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
@@ -16,6 +19,7 @@ import '../data/course_repository.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
+import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
 
 /// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
@@ -100,7 +104,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTopBar(durationDays),
+        _buildTopBar(saved, course),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.only(top: 12, bottom: 32),
@@ -192,7 +196,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     );
   }
 
-  Widget _buildTopBar(int durationDays) {
+  Widget _buildTopBar(Map<String, dynamic> saved, Map<String, dynamic> course) {
     return Padding(
       // 버튼이 아이콘보다 넓으므로 좌우 여백을 줄여 아이콘 위치를 맞춘다
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -213,12 +217,62 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           _SvgIconButton(
             asset: 'assets/icons/ic_share_ios.svg',
             semanticLabel: '공유하기',
-            onTap: () =>
-                CourseShareSheets.showEntry(context, dayCount: durationDays),
+            onTap: () => CourseShareSheets.showEntry(
+              context,
+              dayCount: course['durationDays'] as int,
+              // TODO(share): 카카오 공유는 share SDK·콘솔 등록과 보기전용 웹이
+              // 필요하다 — 링크 체계가 정해지면 연결한다
+              onKakaoShare: () => showAppToast(context, '카카오톡 공유는 준비 중이에요'),
+              onCopyLink: _copyLink,
+              onSaveImage: (day) => _saveImage(saved, course, day),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// 링크 복사 — 주소 체계는 보기전용 웹이 생기면 확정된다
+  Future<void> _copyLink() async {
+    // TODO(server): 보기전용 웹 링크가 생기면 실제 주소로 교체
+    await Clipboard.setData(
+      ClipboardData(text: 'https://offway.app/courses/${widget.savedId}'),
+    );
+    if (mounted) {
+      showAppToast(context, '링크를 복사했어요.', kind: AppToastKind.success);
+    }
+  }
+
+  /// 일정 이미지를 만들어 사진첩에 저장한다. [day]가 null이면 전체 일정
+  Future<void> _saveImage(
+    Map<String, dynamic> saved,
+    Map<String, dynamic> course,
+    int? day,
+  ) async {
+    try {
+      final png = await captureWidgetPng(
+        context,
+        widget: CourseShareImage(saved: saved, course: course, day: day),
+        width: 402,
+      );
+      await Gal.putImageBytes(
+        png,
+        name: 'offway_course_${widget.savedId}${day == null ? '' : '_day$day'}',
+      );
+      if (mounted) {
+        showAppToast(context, '이미지를 저장했어요.', kind: AppToastKind.success);
+      }
+    } on GalException catch (e) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        e.type == GalExceptionType.accessDenied
+            ? '설정에서 사진 접근 권한을 허용해 주세요'
+            : '이미지를 저장하지 못했어요',
+      );
+    } catch (_) {
+      if (mounted) showAppToast(context, '이미지를 저장하지 못했어요');
+    }
   }
 
   /// `정선 여행, 2박3일` — 기간만 파란색으로 강조한다
@@ -459,9 +513,7 @@ class _EditSheetRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: AppColors.staticBlack.withValues(
-                  alpha: AppOpacity.o5,
-                ),
+                color: AppColors.staticBlack.withValues(alpha: AppOpacity.o5),
                 shape: BoxShape.circle,
               ),
               child: Center(
