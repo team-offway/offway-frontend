@@ -100,7 +100,8 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                     : null,
                 onTap: () => Navigator.of(sheetContext).pop(option),
               ),
-            const SizedBox(height: 8),
+            // 시트 공통 규칙 — 아래 여백을 넉넉히 둔다
+            const SizedBox(height: 24),
           ],
         ),
       ),
