@@ -41,5 +41,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- 길 찾기 딥링크 — Android 11+에서 네이버지도 설치 확인용 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="nmap"/>
+        </intent>
     </queries>
 </manifest>

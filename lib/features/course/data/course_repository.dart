@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/date_format.dart';
 
 final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
@@ -40,7 +41,7 @@ class CourseRepository {
           'transport': transport,
           'originLat': origin.lat,
           'originLng': origin.lng,
-          'travelDate': _isoDate(travelDate),
+          'travelDate': isoDate(travelDate),
         },
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
@@ -84,7 +85,7 @@ class CourseRepository {
           'transport': transport,
           'originLat': origin.lat,
           'originLng': origin.lng,
-          'travelDate': _isoDate(travelDate),
+          'travelDate': isoDate(travelDate),
           'previousSeed': ?previousSeed,
         },
       );
@@ -122,13 +123,19 @@ class CourseRepository {
     }
   }
 
-  /// 내 코스 목록 카드 (`GET /courses`).
+  /// 내 코스 목록 카드 (`GET /courses?scope=`).
   ///
+  /// [scope]는 ALL·UPCOMING(예정)·PAST(다녀온) — 정렬까지 서버가 해준다.
   /// 요약에는 지역 이름이 없어 코스 상세를 병렬로 더 읽어 채운다.
   /// TODO(server): 요약 응답에 regionName이 실리면 상세 조회를 걷어낼 것.
-  Future<List<Map<String, dynamic>>> savedCourseCards() async {
+  Future<List<Map<String, dynamic>>> savedCourseCards({
+    String scope = 'ALL',
+  }) async {
     try {
-      final response = await _dio.get<dynamic>('/api/v1/courses');
+      final response = await _dio.get<dynamic>(
+        '/api/v1/courses',
+        queryParameters: {'scope': scope},
+      );
       final summaries = (ApiEnvelope.unwrap(response) as List)
           .cast<Map<String, dynamic>>();
       final details = await Future.wait(
@@ -167,6 +174,30 @@ class CourseRepository {
     }
   }
 
+  /// 장소 상세 (`GET /pois/{contentId}`) — 주소·운영시간·휴무일·소개·좌표.
+  ///
+  /// useTime·restDate는 TourAPI 자유 텍스트("매주 월요일", "상시 개방" 등)라
+  /// 해석은 화면 몫이다.
+  Future<Map<String, dynamic>> poiDetail(String contentId) async {
+    try {
+      final response = await _dio.get<dynamic>('/api/v1/pois/$contentId');
+      return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
+  /// 장소의 운영 정보만 — 여행 당일 휴무일·운영시간 안내에 쓴다.
+  Future<({String? useTime, String? restDate})> poiSchedule(
+    String contentId,
+  ) async {
+    final data = await poiDetail(contentId);
+    return (
+      useTime: data['useTime'] as String?,
+      restDate: data['restDate'] as String?,
+    );
+  }
+
   Future<Map<String, dynamic>> _fetchCourse(int courseId) async {
     try {
       final response = await _dio.get<dynamic>('/api/v1/courses/$courseId');
@@ -197,16 +228,23 @@ class CourseRepository {
         for (final day in days)
           {
             'day': day['day'],
+            'date': day['date'],
+            'weather': day['weather'],
             'places': [
               for (final item
                   in (day['items'] as List).cast<Map<String, dynamic>>())
                 {
                   'name': item['title'],
                   'category': item['categoryLabel'],
+                  'catchphrase': item['catchphrase'],
+                  // 색 구분(숙박 등)은 라벨이 아니라 종류 코드로 한다
+                  'kind': item['kind'],
+                  'poiContentId': item['poiContentId'],
                   'imageUrl': item['imageUrl'],
                   'address': item['address'],
                   'mapx': item['lng'],
                   'mapy': item['lat'],
+                  'distanceFromPrevMeters': item['distanceFromPrevMeters'],
                 },
             ],
           },
@@ -229,7 +267,7 @@ class CourseRepository {
       'regionId': course['regionId'],
       'density': density,
       'transport': transport,
-      if (confirmedDate != null) 'travelDate': _isoDate(confirmedDate),
+      if (confirmedDate != null) 'travelDate': isoDate(confirmedDate),
       'days': [
         for (final day in days)
           {
@@ -283,7 +321,7 @@ class CourseRepository {
       'confirmed': travelDate != null,
       'startDate': ?travelDate,
       if (start != null)
-        'endDate': _isoDate(
+        'endDate': isoDate(
           DateTime(start.year, start.month, start.day + travelDays - 1),
         ),
       'thumbnailUrl': firstItems.isEmpty
@@ -308,7 +346,4 @@ class CourseRepository {
     if (items.isEmpty) return '';
     return (items.first as Map<String, dynamic>)['regionName'] as String? ?? '';
   }
-
-  static String _isoDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
