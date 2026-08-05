@@ -22,6 +22,7 @@ import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
+import 'widgets/dotted_line.dart';
 
 /// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
 final savedCourseDetailProvider = FutureProvider.autoDispose
@@ -720,12 +721,12 @@ class _SavedPlaceList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 번호들을 관통하는 세로 선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
-        Positioned(
-          left: 11.5,
+        // 번호들을 관통하는 세로 점선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
+        const Positioned(
+          left: 11.4,
           top: 12,
           bottom: 12,
-          child: Container(width: 1, color: AppColors.lineNormalNeutral),
+          child: DottedVerticalLine(),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

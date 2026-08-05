@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
+import 'dotted_line.dart';
 
 /// 하루치 장소를 번호·연결선과 함께 세로로 늘어놓는 목록.
 /// 코스 추천 결과·저장한 코스 화면이 공유한다.
@@ -69,11 +70,10 @@ class _PlaceRow extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      color: AppColors.lineNormalNeutral,
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: DottedVerticalLine(),
                     ),
                   ),
               ],
