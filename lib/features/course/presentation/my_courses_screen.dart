@@ -109,13 +109,18 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
     );
   }
 
-  /// 불러오는 동안 카드 두 장 자리를 미리 그려둔다
+  /// 불러오는 동안 카드 두 장 자리를 미리 그려둔다 (DS Skeleton 스펙)
   Widget _buildSkeleton() {
-    Widget block(double width, double height, [double radius = 6]) => Container(
+    Widget block(
+      double? width,
+      double height, {
+      double radius = 3,
+      Color color = AppColors.fillNormal,
+    }) => Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.fillNormal,
+        color: color,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -124,14 +129,28 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
       physics: const NeverScrollableScrollPhysics(),
       children: [
         for (var i = 0; i < 2; i++) ...[
-          block(double.infinity, 198, 12),
-          const SizedBox(height: 12),
-          block(44, 22),
-          const SizedBox(height: 10),
-          block(double.infinity, 16),
+          // 썸네일 자리는 더 옅게, 글줄 자리는 살짝 진하게 — 디자인 그대로
+          block(
+            double.infinity,
+            198,
+            radius: 12,
+            color: AppColors.fillAlternative,
+          ),
           const SizedBox(height: 8),
-          block(240, 16),
-          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                block(48, 20, color: AppColors.fillAlternative),
+                const SizedBox(height: 6),
+                block(double.infinity, 20),
+                const SizedBox(height: 4),
+                FractionallySizedBox(widthFactor: 0.75, child: block(null, 14)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ],
     );
