@@ -107,27 +107,34 @@ class _Body extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // 대표 이미지 — TourAPI 이미지가 없으면 옅은 자리로 대체
-        Container(
-          height: 250,
-          color: AppColors.backgroundNormalAlternative,
-          child: imageUrl == null
-              ? Icon(
-                  Icons.image_outlined,
-                  size: 48,
-                  color: AppColors.labelAssistive,
-                )
-              : Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.expand(),
-                ),
-        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 대표 이미지 — TourAPI 이미지가 없으면 옅은 자리로 대체
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 220,
+                  width: double.infinity,
+                  color: AppColors.backgroundNormalAlternative,
+                  child: imageUrl == null
+                      ? Icon(
+                          Icons.image_outlined,
+                          size: 48,
+                          color: AppColors.labelAssistive,
+                        )
+                      : Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const SizedBox.expand(),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // TODO(server): 디자인의 혜택 뱃지('입장료 50% 할인')는 장소 단위
+              // 혜택 데이터가 아직 없다 — 응답에 실리면 여기서 보여준다
               // 한줄 설명 — 별도 카피가 생기기 전까지 캐치프레이즈를 쓴다
               Text(
                 catchphrase ?? name,
