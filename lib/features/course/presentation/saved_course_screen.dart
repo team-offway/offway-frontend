@@ -171,6 +171,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 Center(
                   child: AppIconButton(
                     icon: Icons.keyboard_arrow_up,
+                    // 가이드 아이콘 32
+                    size: 32,
                     onTap: () => setState(() => _mapExpanded = false),
                     semanticLabel: '지도 접기',
                     color: AppColors.labelAlternative,
@@ -337,7 +339,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final map = ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        height: _mapExpanded ? 520 : 198,
+        // 가이드: 접힘 198 · 펼침 452
+        height: _mapExpanded ? 452 : 198,
         child: CourseMap(places: places, dayKey: _selectedDay),
       ),
     );
