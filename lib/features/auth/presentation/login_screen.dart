@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
 import '../data/kakao_auth_service.dart';
@@ -61,11 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지
       debugPrint('${provider.name} 로그인 실패: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.'),
-        ),
-      );
+      showAppToast(context, '${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

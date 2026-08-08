@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../home/presentation/home_screen.dart';
 
@@ -133,9 +134,7 @@ class MyScreen extends ConsumerWidget {
   }
 
   void _showPreparing(BuildContext context, String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature 기능은 준비 중이에요')));
+    showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
@@ -162,9 +161,7 @@ class MyScreen extends ConsumerWidget {
       await ref.read(authRepositoryProvider).logout();
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요')),
-      );
+      showAppToast(context, '로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     if (!context.mounted) return;

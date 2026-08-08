@@ -8,6 +8,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -72,9 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showPreparing(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature 기능은 준비 중이에요')));
+    showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
   @override
