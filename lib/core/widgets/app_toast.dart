@@ -63,10 +63,7 @@ class AppToast extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 11,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
               // 문구가 짧아도 폭을 채운다 — 가이드는 화면 폭에 맞춘 막대다
               constraints: const BoxConstraints(minHeight: 54),
               child: Row(
