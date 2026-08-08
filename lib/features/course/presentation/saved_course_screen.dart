@@ -13,6 +13,7 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/place_thumbnail.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -217,6 +218,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             size: 20,
             onTap: () => context.pop(),
             semanticLabel: '뒤로 가기',
+            // 편집·공유 아이콘과 같은 위계 — 기본 검정은 혼자 진하다
+            color: AppColors.labelAlternative,
           ),
           const Spacer(),
           _SvgIconButton(
@@ -762,7 +765,8 @@ class _SavedPlaceList extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        // 가이드보다 넓어 칩이 커 보였다 — 글자에 맞춰 좁힌다
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: AppColors.backgroundNormal,
           border: Border.all(color: AppColors.lineNormalNeutral),
@@ -927,21 +931,7 @@ class _PlaceRow extends ConsumerWidget {
         const SizedBox(width: 17),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 70,
-              height: 70,
-              color: AppColors.backgroundNormalAlternative,
-              child: imageUrl == null
-                  ? null
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.expand(),
-                    ),
-            ),
-          ),
+          child: PlaceThumbnail(imageUrl: imageUrl),
         ),
       ],
     );
