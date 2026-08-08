@@ -439,6 +439,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       icon: Icons.close,
                       onTap: () => Navigator.of(sheetContext).pop(),
                       semanticLabel: '닫기',
+                      // 가이드는 제목과 같은 옅은 색 — 기본 검정은 너무 진하다
+                      color: AppColors.labelAlternative,
                     ),
                   ),
                 ],
