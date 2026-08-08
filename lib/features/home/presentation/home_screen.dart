@@ -107,7 +107,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Text(
                     '이번달 추천 여행지',
-                    style: AppTypography.heading2Bold.copyWith(
+                    style: AppTypography.heading1Bold.copyWith(
                       color: AppColors.labelNormal,
                     ),
                   ),
