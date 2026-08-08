@@ -562,7 +562,8 @@ class _EditSheetRow extends StatelessWidget {
                 // 디자인은 아이콘을 61% 투명도로 옅게 얹는다
                 child: Opacity(
                   opacity: AppOpacity.o61,
-                  child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                  // 시안: 배경 32 안에 아이콘 20
+                  child: SvgPicture.asset(iconAsset, width: 20, height: 20),
                 ),
               ),
             ),
