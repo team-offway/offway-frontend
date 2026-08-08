@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/widgets/place_thumbnail.dart';
 import 'dotted_line.dart';
 
 /// 하루치 장소를 번호·연결선과 함께 세로로 늘어놓는 목록.
@@ -140,22 +141,7 @@ class _PlaceRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: 70,
-                      height: 70,
-                      color: AppColors.backgroundNormalAlternative,
-                      child: imageUrl == null
-                          ? null
-                          : Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const SizedBox.expand(),
-                            ),
-                    ),
-                  ),
+                  PlaceThumbnail(imageUrl: imageUrl),
                 ],
               ),
             ),

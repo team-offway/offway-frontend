@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
 import '../data/kakao_auth_service.dart';
@@ -61,11 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지
       debugPrint('${provider.name} 로그인 실패: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.'),
-        ),
-      );
+      showAppToast(context, '${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -122,7 +119,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: IntrinsicHeight(
                 child: Column(
                   children: [
-                    const Spacer(flex: 3),
+                    // 가이드는 부제~첫 버튼 사이가 192로 고정이다. 비율로 나누면
+                    // 화면이 길수록 로고가 위로 떠 위치가 어긋난다
+                    const Spacer(),
                     SvgPicture.asset(
                       'assets/icons/logo_wordmark_blue.svg',
                       height: 38,
@@ -135,7 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.labelNeutral,
                       ),
                     ),
-                    const Spacer(flex: 4),
+                    const SizedBox(height: 192),
                     _SocialLoginButton(
                       label: '카카오로 시작하기',
                       iconAsset: 'assets/icons/kakao_logo.svg',
@@ -165,15 +164,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 20),
                     Text.rich(
                       TextSpan(
+                        // 가이드는 이 줄만 body/2(자간 -0.6) 규격을 쓴다
                         style: AppTypography.label1NormalMedium.copyWith(
                           color: AppColors.labelNeutral,
+                          height: 20 / 14,
+                          letterSpacing: -0.6,
                         ),
                         children: [
                           const TextSpan(text: '이미 계정이 있으신가요? '),
-                          TextSpan(
+                          const TextSpan(
                             text: '로그인',
-                            style: const TextStyle(
+                            style: TextStyle(
                               decoration: TextDecoration.underline,
+                              // 지정하지 않으면 밑줄이 글자와 다른 색으로 그려진다
+                              decorationColor: AppColors.labelNeutral,
                             ),
                             // TODO(auth): 로그인/회원가입 분기 정책 확정 시 연결
                           ),
@@ -192,6 +196,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             text: '개인정보 처리방침',
                             style: TextStyle(
                               decoration: TextDecoration.underline,
+                              // 지정하지 않으면 밑줄이 글자와 다른 색으로 그려진다
+                              decorationColor: AppColors.labelAssistive,
                             ),
                           ),
                           TextSpan(text: '에 동의하게 됩니다.'),
