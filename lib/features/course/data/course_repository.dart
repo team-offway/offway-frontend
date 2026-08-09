@@ -127,11 +127,7 @@ class CourseRepository {
   /// 내 코스 목록 카드 (`GET /courses?scope=`).
   ///
   /// [scope]는 ALL·UPCOMING(예정)·PAST(다녀온) — 정렬까지 서버가 해준다.
-  ///
-  /// 요약에 지역 이름이 실려 오므로 목록은 요청 한 번으로 끝난다. 다만 대표
-  /// 이미지(coverImageUrl)는 아직 서버가 비워 보내므로, 비어 있는 코스만
-  /// 상세를 읽어 첫 장소 사진으로 채운다.
-  /// TODO(server): coverImageUrl이 채워지면 이 보충 조회를 걷어낼 것.
+  /// 요약이 지역 이름·대표 이미지까지 주므로 요청 한 번으로 끝난다.
   Future<List<Map<String, dynamic>>> savedCourseCards({
     String scope = 'ALL',
   }) async {
@@ -140,17 +136,11 @@ class CourseRepository {
         '/api/v1/courses',
         queryParameters: {'scope': scope},
       );
-      final summaries = (ApiEnvelope.unwrap(response) as List)
-          .cast<Map<String, dynamic>>();
-      final details = await Future.wait([
-        for (final s in summaries)
-          s['coverImageUrl'] == null
-              ? _fetchCourse((s['courseId'] as num).toInt())
-              : Future<Map<String, dynamic>?>.value(),
-      ]);
       return [
-        for (var i = 0; i < summaries.length; i++)
-          _toSavedCardMap(summaries[i], details[i]),
+        for (final summary
+            in (ApiEnvelope.unwrap(response) as List)
+                .cast<Map<String, dynamic>>())
+          _toSavedCardMap(summary),
       ];
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
