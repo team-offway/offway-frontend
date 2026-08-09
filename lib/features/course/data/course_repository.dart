@@ -127,8 +127,11 @@ class CourseRepository {
   /// 내 코스 목록 카드 (`GET /courses?scope=`).
   ///
   /// [scope]는 ALL·UPCOMING(예정)·PAST(다녀온) — 정렬까지 서버가 해준다.
-  /// 요약에는 지역 이름이 없어 코스 상세를 병렬로 더 읽어 채운다.
-  /// TODO(server): 요약 응답에 regionName이 실리면 상세 조회를 걷어낼 것.
+  ///
+  /// 요약에 지역 이름이 실려 오므로 목록은 요청 한 번으로 끝난다. 다만 대표
+  /// 이미지(coverImageUrl)는 아직 서버가 비워 보내므로, 비어 있는 코스만
+  /// 상세를 읽어 첫 장소 사진으로 채운다.
+  /// TODO(server): coverImageUrl이 채워지면 이 보충 조회를 걷어낼 것.
   Future<List<Map<String, dynamic>>> savedCourseCards({
     String scope = 'ALL',
   }) async {
@@ -139,9 +142,12 @@ class CourseRepository {
       );
       final summaries = (ApiEnvelope.unwrap(response) as List)
           .cast<Map<String, dynamic>>();
-      final details = await Future.wait(
-        summaries.map((s) => _fetchCourse((s['courseId'] as num).toInt())),
-      );
+      final details = await Future.wait([
+        for (final s in summaries)
+          s['coverImageUrl'] == null
+              ? _fetchCourse((s['courseId'] as num).toInt())
+              : Future<Map<String, dynamic>?>.value(),
+      ]);
       return [
         for (var i = 0; i < summaries.length; i++)
           _toSavedCardMap(summaries[i], details[i]),
@@ -325,23 +331,23 @@ class CourseRepository {
   }
 
   /// 요약 + 상세 → 내 코스 목록 카드가 읽는 형태
+  /// [detail]은 단건 조회 경로에서만 넘어온다. 목록은 요약만으로 카드를
+  /// 만든다 — 서버가 regionName·coverImageUrl을 요약에 실어주기 때문이다.
   Map<String, dynamic> _toSavedCardMap(
-    Map<String, dynamic> summary,
-    Map<String, dynamic> detail,
-  ) {
+    Map<String, dynamic> summary, [
+    Map<String, dynamic>? detail,
+  ]) {
     final id = (summary['courseId'] as num).toString();
     final travelDays = (summary['travelDays'] as num).toInt();
     final travelDate = summary['travelDate'] as String?;
     final start = travelDate == null ? null : DateTime.parse(travelDate);
-    final firstItems = (detail['days'] as List).isEmpty
-        ? const []
-        : ((detail['days'] as List).first as Map<String, dynamic>)['items']
-              as List;
     return {
       'id': id,
       'courseId': id,
       'regionId': (summary['regionId'] as num).toString(),
-      'regionName': _regionNameOf(detail),
+      'regionName':
+          summary['regionName'] as String? ??
+          (detail == null ? '' : _regionNameOf(detail)),
       'durationLabel': switch (travelDays) {
         1 => '당일치기',
         2 => '1박 2일',
@@ -354,9 +360,10 @@ class CourseRepository {
         'endDate': isoDate(
           DateTime(start.year, start.month, start.day + travelDays - 1),
         ),
-      'thumbnailUrl': firstItems.isEmpty
-          ? null
-          : (firstItems.first as Map<String, dynamic>)['imageUrl'],
+      // coverImageUrl은 아직 서버가 비워 보낼 때가 있어 첫 장소로 폴백한다
+      'thumbnailUrl':
+          summary['coverImageUrl'] as String? ??
+          (detail == null ? null : _firstImageOf(detail)),
     };
   }
 
@@ -367,6 +374,15 @@ class CourseRepository {
     'travelDate': detail['travelDate'],
     'travelDays': detail['travelDays'],
   };
+
+  /// 첫날 첫 장소 이미지 — 요약에 대표 이미지가 없을 때의 폴백
+  String? _firstImageOf(Map<String, dynamic> course) {
+    final days = (course['days'] as List?) ?? const [];
+    if (days.isEmpty) return null;
+    final items = (days.first as Map<String, dynamic>)['items'] as List;
+    if (items.isEmpty) return null;
+    return (items.first as Map<String, dynamic>)['imageUrl'] as String?;
+  }
 
   /// 지역 이름은 응답 본문이 아니라 슬롯에 실려 온다
   String _regionNameOf(Map<String, dynamic> course) {
