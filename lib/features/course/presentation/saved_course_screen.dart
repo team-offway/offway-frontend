@@ -397,7 +397,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다
+      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다.
+      // isScrollControlled가 없으면 이 상한 대신 화면의 9/16이 적용된다
+      isScrollControlled: true,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.75,
       ),

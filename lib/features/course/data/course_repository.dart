@@ -179,6 +179,9 @@ class CourseRepository {
           .firstOrNull;
     } on DioException {
       return null; // 보조 정보라 실패해도 상세는 그대로 보여준다
+    } on ApiException {
+      // 공통 래퍼가 실패로 와도 마찬가지 — 상세를 막지 않는다
+      return null;
     }
   }
 
