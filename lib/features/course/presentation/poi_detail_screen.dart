@@ -67,20 +67,26 @@ class PoiDetailScreen extends ConsumerWidget {
       height: 44,
       child: Stack(
         alignment: Alignment.center,
+        // 없으면 Stack이 자식 크기로 줄어 Positioned의 left가 화면이 아니라
+        // 제목 기준이 된다 — 뒤로가기가 제목 옆에 붙어버린다
+        fit: StackFit.expand,
         children: [
           Padding(
             // 긴 장소명이 뒤로 가기 버튼을 침범하지 않게 좌우를 비워둔다
             padding: const EdgeInsets.symmetric(horizontal: 52),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelNormal,
+            child: Center(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.headline2Bold.copyWith(
+                  color: AppColors.labelNormal,
+                ),
               ),
             ),
           ),
           Positioned(
+            // 다른 화면과 같은 위치 — 버튼이 아이콘보다 넓어 여백을 줄여 맞춘다
             left: 6,
             child: AppIconButton(
               icon: Icons.arrow_back_ios_new,
@@ -89,6 +95,8 @@ class PoiDetailScreen extends ConsumerWidget {
               onTap: () =>
                   context.canPop() ? context.pop() : context.go(AppRoutes.home),
               semanticLabel: '뒤로 가기',
+              // 지정하지 않으면 기본 검정이라 제목보다 진해 보인다
+              color: AppColors.labelAlternative,
             ),
           ),
         ],
