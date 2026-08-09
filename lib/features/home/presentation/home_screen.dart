@@ -8,6 +8,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -72,9 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showPreparing(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature 기능은 준비 중이에요')));
+    showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
   @override
@@ -91,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.only(top: 10, bottom: 120),
           children: [
             _buildTopBar(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildLeaveCard(user),
@@ -108,7 +107,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Text(
                     '이번달 추천 여행지',
-                    style: AppTypography.heading2Bold.copyWith(
+                    style: AppTypography.heading1Bold.copyWith(
                       color: AppColors.labelNormal,
                     ),
                   ),
@@ -125,9 +124,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            // 가이드: 섹션 제목~칩 34, 칩~카드 20
+            const SizedBox(height: 34),
             _buildCategoryRow(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildRegionCards(regions),
           ],
         ),
@@ -274,8 +274,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           Positioned(
-            right: 0,
-            bottom: 0,
+            // 시안 좌표 기준 버튼은 카드 오른쪽·아래에서 각각 18 (카드 패딩 24 보정)
+            right: -6,
+            bottom: -6,
             child: FilledButton(
               onPressed: () => context.push(AppRoutes.wizardDateGate),
               style: FilledButton.styleFrom(
@@ -283,11 +284,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // 이 검정을 가리키는 Semantic 토큰이 생기면 그걸로 교체할 것.
                 backgroundColor: _heroCtaBackground,
                 foregroundColor: AppColors.staticWhite,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 9,
-                ),
-                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                // 가이드 버튼 크기 123×40 — 글자 높이에 맡기면 38로 줄어든다
+                minimumSize: const Size(0, 40),
+                fixedSize: const Size.fromHeight(40),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -306,7 +306,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref.watch(homeSnapshotProvider).value?.filters ?? _defaultFilters;
     final chips = filters.isEmpty ? _defaultFilters : filters;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      // 가이드는 칩 줄만 21에서 시작해 화면 폭에 균등 배치된다
+      padding: const EdgeInsets.symmetric(horizontal: 21),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

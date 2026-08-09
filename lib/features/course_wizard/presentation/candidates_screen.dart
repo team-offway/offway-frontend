@@ -298,25 +298,26 @@ class _SortChip extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        // DS Chip 규격 — 알약이 아니라 radius 10, 세로 패딩 7
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
-          color: AppColors.fillAlternative,
-          borderRadius: BorderRadius.circular(999),
+          // 5%(fill/alternative)는 흰 배경에서 배경이 없는 것처럼 보인다
+          color: AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
-              style: AppTypography.label2Medium.copyWith(
-                color: AppColors.labelNormal,
+              style: AppTypography.body2NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
+              Icons.arrow_drop_down,
+              size: 14,
               color: AppColors.labelAlternative,
             ),
           ],
@@ -405,9 +406,10 @@ class _AccentBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.fillAlternative,
+        // DS 뱃지 규칙 — Accent/Background 토큰을 8%로 깐다 (무채색은 안 보인다)
+        color: AppAccentColors.backgroundCyan.withValues(alpha: AppOpacity.o8),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

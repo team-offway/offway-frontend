@@ -263,13 +263,29 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 semanticLabel: '닫기',
               ),
               const Spacer(),
-              AppIconButton(
-                icon: Icons.ios_share,
-                onTap: () => CourseShareSheets.showEntry(
-                  context,
-                  dayCount: durationDays,
+              // 내 코스 상세와 같은 DS 에셋을 쓴다 — Material 기본 아이콘은
+              // 모양·굵기가 달라 두 화면의 공유 버튼이 서로 다르게 보였다
+              Semantics(
+                button: true,
+                label: '공유하기',
+                child: GestureDetector(
+                  onTap: () => CourseShareSheets.showEntry(
+                    context,
+                    dayCount: durationDays,
+                  ),
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/ic_share_ios.svg',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
+                  ),
                 ),
-                semanticLabel: '공유하기',
               ),
             ],
           ),
@@ -316,10 +332,21 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 places: places,
                 regionName: course['regionName'] as String? ?? widget.regionId,
               ),
+              // 안내 문구·버튼은 화면에 고정하지 않고 목록 끝에 따라온다 —
+              // 고정하면 늘 떠 있어 코스를 보는 화면을 좁힌다
+              const SizedBox(height: 24),
+              Text(
+                '추천 코스를 내 코스에 담으면\n언제든 확인이 가능해요!',
+                textAlign: TextAlign.center,
+                style: AppTypography.label1ReadingMedium.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildActionArea(course),
             ],
           ),
         ),
-        _buildActionArea(course),
       ],
     );
   }
@@ -347,68 +374,58 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
+  /// 목록 끝에 따라오는 액션 묶음 — 좌우 여백은 리스트가 이미 준다
   Widget _buildActionArea(Map<String, dynamic> course) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: Column(
-        children: [
-          Text(
-            '추천 코스를 내 코스에 담으면\n언제든 확인이 가능해요!',
-            textAlign: TextAlign.center,
-            style: AppTypography.label1ReadingMedium.copyWith(
-              color: AppColors.labelAlternative,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _saving ? null : () => _saveToMyCourses(course),
-              icon: const Icon(Icons.download, size: 20),
-              label: Text('내 코스에 담기', style: AppTypography.body1NormalBold),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryNormal,
-                foregroundColor: AppColors.staticWhite,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _saving ? null : () => _saveToMyCourses(course),
+            icon: const Icon(Icons.download, size: 20),
+            label: Text('내 코스에 담기', style: AppTypography.body1NormalBold),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryNormal,
+              foregroundColor: AppColors.staticWhite,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _regenerating ? null : _regenerate,
-              icon: const Icon(Icons.refresh, size: 20),
-              label: Text('새로운 추천 받기', style: AppTypography.body1NormalBold),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryNormal,
-                side: const BorderSide(color: AppColors.primaryNormal),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _regenerating ? null : _regenerate,
+            icon: const Icon(Icons.refresh, size: 20),
+            label: Text('새로운 추천 받기', style: AppTypography.body1NormalBold),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primaryNormal,
+              side: const BorderSide(color: AppColors.primaryNormal),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _exitToHome,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                '홈으로 가기',
-                style: AppTypography.label1ReadingMedium.copyWith(
-                  color: AppColors.labelAlternative,
-                ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _exitToHome,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              '홈으로 가기',
+              style: AppTypography.label1ReadingMedium.copyWith(
+                color: AppColors.labelAlternative,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

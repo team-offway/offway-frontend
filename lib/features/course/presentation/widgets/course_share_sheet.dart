@@ -154,9 +154,10 @@ class _SheetTitleBar extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Text(
+            // 가이드: 시트 제목은 헤드라인 17에 옅은 색 (본문보다 낮은 위계)
             title,
-            style: AppTypography.body1NormalBold.copyWith(
-              color: AppColors.labelNormal,
+            style: AppTypography.headline2Bold.copyWith(
+              color: AppColors.labelAlternative,
             ),
           ),
           Positioned(
@@ -166,6 +167,8 @@ class _SheetTitleBar extends StatelessWidget {
               icon: Icons.close,
               onTap: () => Navigator.of(context).pop(),
               semanticLabel: '닫기',
+              // 가이드는 제목과 같은 옅은 색 — 기본 검정은 너무 진하다
+              color: AppColors.labelAlternative,
             ),
           ),
         ],
@@ -199,7 +202,7 @@ class _SheetItem extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTypography.body1NormalMedium.copyWith(
-                  color: AppColors.labelNormal,
+                  color: AppColors.labelNeutral,
                 ),
               ),
             ),
@@ -219,14 +222,20 @@ class _RoundIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 24,
-      height: 24,
-      decoration: const BoxDecoration(
-        color: AppColors.fillNormal,
+      // 가이드: 아이콘 24 + 배경이 사방 4씩 넓다 (편집 시트와 같은 32)
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppColors.staticBlack.withValues(alpha: AppOpacity.o5),
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: SvgPicture.asset(asset, width: 14, height: 14),
+      // 가이드는 아이콘을 61% 투명도로 옅게 얹는다 (편집 시트와 같은 규칙)
+      child: Opacity(
+        opacity: AppOpacity.o61,
+        // 시안: 배경 32 안에 아이콘 20 (프레임 24 - 안쪽 패딩 2씩)
+        child: SvgPicture.asset(asset, width: 20, height: 20),
+      ),
     );
   }
 }

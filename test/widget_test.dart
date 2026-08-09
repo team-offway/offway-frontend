@@ -993,6 +993,12 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('정선, 당일치기'), findsOneWidget);
+    // 담기 버튼은 고정이 아니라 목록 끝에 따라오므로 스크롤해야 보인다
+    await tester.scrollUntilVisible(
+      find.text('내 코스에 담기'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('내 코스에 담기'), findsOneWidget);
     // 장소 리스트는 뷰포트 아래라 스크롤 후 확인
     await tester.scrollUntilVisible(
@@ -1063,6 +1069,12 @@ void main() {
     );
     await tester.pump();
 
+    // 담기 버튼은 목록 끝에 따라오므로 스크롤해서 누른다
+    await tester.scrollUntilVisible(
+      find.text('내 코스에 담기'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('내 코스에 담기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
