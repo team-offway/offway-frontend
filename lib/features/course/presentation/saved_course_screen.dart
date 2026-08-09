@@ -397,6 +397,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
       builder: (sheetContext) => _PlaceSheet(
         place: place,
         isToday: isToday,
@@ -999,7 +1003,9 @@ class _PlaceSheet extends ConsumerWidget {
     }
 
     return SafeArea(
-      child: Padding(
+      // 운영시간이 여러 줄인 장소(도서관 등)는 시트를 넘긴다 — 넘칠 때만
+      // 스크롤되고, 짧으면 내용만큼만 차지한다
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
