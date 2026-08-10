@@ -692,17 +692,18 @@ void main() {
     expect(inList('영양 · 경북'), findsOneWidget);
 
     // 카테고리 필터는 지역별 콘텐츠 분포(실데이터) 기준으로 동작.
-    // 위에서 스크롤을 내렸으니 카테고리 줄이 다시 보이도록 올린다
+    // 칩 줄은 그리드 밖에 고정돼 있어 스크롤과 무관하게 늘 보인다
+    await tester.tap(inList('체험'));
+    await tester.pump();
+    // 위에서 영양까지 내려둔 스크롤이 남아 있으므로 정선을 화면 안으로 올린다
     await tester.scrollUntilVisible(
-      inList('체험'),
+      inList('정선 · 강원'),
       -200,
       scrollable: find.descendant(
         of: find.byType(RegionListScreen),
         matching: find.byType(Scrollable),
       ),
     );
-    await tester.tap(inList('체험'));
-    await tester.pump();
     expect(inList('정선 · 강원'), findsOneWidget); // 체험 11건
   });
 

@@ -69,20 +69,7 @@ class PoiDetailScreen extends ConsumerWidget {
         // 제목 기준이 된다 — 뒤로가기가 제목 옆에 붙어버린다
         fit: StackFit.expand,
         children: [
-          Padding(
-            // 긴 장소명이 뒤로 가기 버튼을 침범하지 않게 좌우를 비워둔다
-            padding: const EdgeInsets.symmetric(horizontal: 52),
-            child: Center(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.headline2Bold.copyWith(
-                  color: AppColors.labelNormal,
-                ),
-              ),
-            ),
-          ),
+          // 시안에는 상단바 제목이 없다 — 장소명은 이미지 아래 본문에서 크게 보여준다
           Positioned(
             // 다른 화면과 같은 위치 — 버튼이 아이콘보다 넓어 여백을 줄여 맞춘다
             left: 6,
@@ -125,7 +112,8 @@ class _Body extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  height: 220,
+                  // 시안 썸네일 높이
+                  height: 226,
                   width: double.infinity,
                   color: AppColors.backgroundNormalAlternative,
                   child: imageUrl == null
@@ -142,22 +130,30 @@ class _Body extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // TODO(server): 디자인의 혜택 뱃지('입장료 50% 할인')는 장소 단위
+              // TODO(server): 시안의 혜택 뱃지('입장료 50% 할인')는 장소 단위
               // 혜택 데이터가 아직 없다 — 응답에 실리면 여기서 보여준다
-              // 한줄 설명 — 별도 카피가 생기기 전까지 캐치프레이즈를 쓴다
               Text(
-                catchphrase ?? name,
-                style: AppTypography.heading2Bold.copyWith(
-                  color: AppColors.labelNormal,
+                name,
+                style: AppTypography.heading1Bold.copyWith(
+                  color: AppColors.labelStrong,
                 ),
               ),
+              if (catchphrase != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  catchphrase,
+                  style: AppTypography.headline2Bold.copyWith(
+                    color: AppColors.labelNeutral,
+                  ),
+                ),
+              ],
               if (overview != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
                   // 소개글은 자르지 않고 전부 보여준다 — 3줄에서 끊으면
                   // 문장이 중간에 잘려 무슨 곳인지 알 수 없다
                   overview,
-                  style: AppTypography.label1ReadingMedium.copyWith(
+                  style: AppTypography.label1NormalRegular.copyWith(
                     color: AppColors.labelNeutral,
                   ),
                 ),
