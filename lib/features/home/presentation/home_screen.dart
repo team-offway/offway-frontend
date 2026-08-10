@@ -8,7 +8,9 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../../core/widgets/app_toast.dart';
+import '../../notification/presentation/notification_screen.dart'
+    show hasUnreadNotificationsProvider;
+import '../../region/presentation/widgets/category_chip.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -25,24 +27,6 @@ final homeUserProvider = FutureProvider<Map<String, dynamic>>(
 final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) async => (await ref.watch(homeSnapshotProvider.future)).regions,
 );
-
-/// 카테고리 키별 아이콘 — 구성·순서·라벨은 서버(filters)가 정하고 그림만 앱이 가진다
-const _categoryIcons = <String, String>{
-  'ALL': 'assets/icons/ic_cat_all.svg',
-  'SIGHT': 'assets/icons/ic_cat_sight.svg',
-  'STAY': 'assets/icons/ic_cat_stay.svg',
-  'EXPERIENCE': 'assets/icons/ic_cat_experience.svg',
-  'FOOD': 'assets/icons/ic_cat_food.svg',
-};
-
-/// 서버 응답이 오기 전에도 칩 자리가 비지 않도록 쓰는 기본 구성
-const _defaultFilters = [
-  {'key': 'ALL', 'label': '전체'},
-  {'key': 'SIGHT', 'label': '관광지'},
-  {'key': 'STAY', 'label': '숙박'},
-  {'key': 'EXPERIENCE', 'label': '체험'},
-  {'key': 'FOOD', 'label': '맛집'},
-];
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
@@ -70,10 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final counts = r['categoryCounts'] as Map<String, dynamic>?;
       return (counts?[selected['label']] as int? ?? 0) > 0;
     }).toList();
-  }
-
-  void _showPreparing(String feature) {
-    showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
   @override
@@ -155,12 +135,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const Spacer(),
           GestureDetector(
-            // TODO(notification): 알림 기능 정책 확정 시 연결
-            onTap: () => _showPreparing('알림'),
-            child: SvgPicture.asset(
-              'assets/icons/ic_bell.svg',
-              width: 24,
-              height: 24,
+            onTap: () => context.push(AppRoutes.notifications),
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/ic_bell.svg',
+                  width: 24,
+                  height: 24,
+                ),
+                // 안 읽은 알림이 있으면 종 오른쪽 위에 점을 찍는다
+                if (ref.watch(hasUnreadNotificationsProvider))
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryNormal,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -303,8 +302,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildCategoryRow() {
     // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
     final filters =
-        ref.watch(homeSnapshotProvider).value?.filters ?? _defaultFilters;
-    final chips = filters.isEmpty ? _defaultFilters : filters;
+        ref.watch(homeSnapshotProvider).value?.filters ??
+        defaultCategoryFilters;
+    final chips = filters.isEmpty ? defaultCategoryFilters : filters;
     return Padding(
       // 가이드는 칩 줄만 21에서 시작해 화면 폭에 균등 배치된다
       padding: const EdgeInsets.symmetric(horizontal: 21),
@@ -312,10 +312,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           for (final filter in chips)
-            _CategoryChip(
+            CategoryChip(
               label: filter['label'] as String,
-              iconAsset:
-                  _categoryIcons[filter['key']] ?? _categoryIcons['ALL']!,
+              iconAsset: categoryIcons[filter['key']] ?? categoryIcons['ALL']!,
               selected: filter['key'] == 'ALL'
                   ? _selected == null || _selected!['key'] == 'ALL'
                   : _selected?['key'] == filter['key'],
@@ -370,60 +369,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             itemBuilder: (context, i) => RegionCard(region: list[i]),
           );
         },
-      ),
-    );
-  }
-}
-
-/// 카테고리 칩 — 선택되면 Primary 테두리와 진한 라벨
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.iconAsset,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String iconAsset;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          Container(
-            width: 55,
-            height: 55,
-            decoration: BoxDecoration(
-              color: AppColors.backgroundNormalAlternative,
-              borderRadius: BorderRadius.circular(14),
-              border: selected
-                  ? Border.all(color: AppColors.primaryNormal, width: 1.5)
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: SvgPicture.asset(iconAsset, width: 29, height: 29),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style:
-                (selected
-                        ? AppTypography.caption2Bold
-                        : AppTypography.caption2Regular)
-                    .copyWith(
-                      // 고른 칩은 테두리와 같은 브랜드색으로 묶어 보여준다
-                      color: selected
-                          ? AppColors.primaryNormal
-                          : AppColors.labelAlternative,
-                    ),
-          ),
-        ],
       ),
     );
   }
