@@ -136,4 +136,37 @@ void main() {
     expect(find.text('연차 사용 내역이 없어요'), findsOneWidget);
     expect(find.text('사용한 연차를 등록해보세요'), findsOneWidget);
   });
+
+  testWidgets('삭제 모드: 고른 것이 있어야 삭제할 수 있다', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LeaveUsagesScreen())),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사용 내역 삭제'));
+    await tester.pumpAndSettle();
+
+    // 아무것도 안 골랐으면 삭제가 잠겨 있다
+    final delete = find.widgetWithText(FilledButton, '삭제하기');
+    expect(tester.widget<FilledButton>(delete).onPressed, isNull);
+
+    await tester.tap(find.text('개인 사유').first);
+    await tester.pump();
+    expect(tester.widget<FilledButton>(delete).onPressed, isNotNull);
+
+    // 확인 모달을 거쳐야 지워진다
+    await tester.tap(delete);
+    await tester.pumpAndSettle();
+    expect(find.text('사용 내역을 삭제할까요?'), findsOneWidget);
+    expect(find.text('삭제하면 차감된 연차가 복구돼요.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '삭제하기'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('연차 사용 내역이 삭제됐어요.'), findsOneWidget);
+    // 삭제 모드는 빠져나온다
+    expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
+  });
 }

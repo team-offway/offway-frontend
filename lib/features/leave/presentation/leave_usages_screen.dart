@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import 'my_leave_screen.dart' show LeaveUsage, leaveUsagesProvider;
 import 'widgets/leave_empty_view.dart';
@@ -25,6 +26,34 @@ class LeaveUsagesScreen extends ConsumerStatefulWidget {
 class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   /// 펼쳐 둔 카드의 인덱스 — 한 번에 하나만 펼친다
   int? _expanded;
+
+  /// 체크박스를 띄운 삭제 모드인지
+  bool _selecting = false;
+
+  /// 삭제 모드에서 고른 카드들
+  final _selected = <int>{};
+
+  void _enterSelecting() {
+    setState(() {
+      _selecting = true;
+      _selected.clear();
+      // 펼친 카드는 접어 체크박스가 잘 보이게 한다
+      _expanded = null;
+    });
+  }
+
+  void _exitSelecting() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggle(int i) {
+    setState(() {
+      if (!_selected.remove(i)) _selected.add(i);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +75,13 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                       itemBuilder: (context, i) => _UsageCard(
                         usage: usages[i],
                         expanded: _expanded == i,
-                        // 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
-                        onTap: usages[i].courseName == null
+                        selecting: _selecting,
+                        checked: _selected.contains(i),
+                        // 삭제 모드에서는 어느 카드든 골라진다.
+                        // 평소에는 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
+                        onTap: _selecting
+                            ? () => _toggle(i)
+                            : usages[i].courseName == null
                             ? null
                             : () => setState(
                                 () => _expanded = _expanded == i ? null : i,
@@ -55,10 +89,188 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                       ),
                     ),
             ),
+            if (_selecting) _buildDeleteActions(),
           ],
         ),
       ),
     );
+  }
+
+  /// '...' 메뉴 — 지금은 삭제만 있다
+  Future<void> _showMenu() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.backgroundElevated,
+      barrierColor: AppColors.materialDimmer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 56,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    '삭제',
+                    style: AppTypography.headline2Bold.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    child: AppIconButton(
+                      icon: Icons.close,
+                      onTap: () => Navigator.of(sheetContext).pop(),
+                      semanticLabel: '닫기',
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            GestureDetector(
+              onTap: () => Navigator.of(sheetContext).pop('delete'),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.staticBlack.withValues(
+                          alpha: AppOpacity.o5,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Opacity(
+                          opacity: AppOpacity.o61,
+                          child: SvgPicture.asset(
+                            'assets/icons/ic_trash.svg',
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Text(
+                      '사용 내역 삭제',
+                      style: AppTypography.body1NormalMedium.copyWith(
+                        color: AppColors.labelNeutral,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action != 'delete') return;
+    _enterSelecting();
+  }
+
+  /// 삭제 모드 하단 — 취소와 삭제하기
+  Widget _buildDeleteActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton(
+              onPressed: _exitSelecting,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.backgroundElevatedAlternative,
+                foregroundColor: AppColors.labelNeutral,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('취소', style: AppTypography.body1NormalBold),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              // 하나도 안 골랐으면 지울 게 없다
+              onPressed: _selected.isEmpty ? null : _confirmDelete,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryNormal,
+                disabledBackgroundColor: AppColors.interactionDisable,
+                foregroundColor: AppColors.staticWhite,
+                disabledForegroundColor: AppColors.labelAssistive,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('삭제하기', style: AppTypography.body1NormalBold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.backgroundElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '사용 내역을 삭제할까요?',
+          style: AppTypography.headline1Bold.copyWith(
+            color: AppColors.labelNormal,
+          ),
+        ),
+        content: Text(
+          '삭제하면 차감된 연차가 복구돼요.',
+          style: AppTypography.body2NormalMedium.copyWith(
+            color: AppColors.labelAlternative,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              '취소',
+              style: AppTypography.body1NormalBold.copyWith(
+                color: AppColors.labelNeutral,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              '삭제하기',
+              style: AppTypography.body1NormalBold.copyWith(
+                color: AppColors.primaryNormal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    // TODO(server): 사용 내역 삭제 API가 없다.
+    // `POST /leaves/me/usages`에 음수 days로 되돌리는 방식인지 백엔드와 정할 것
+    _exitSelecting();
+    showAppToast(context, '연차 사용 내역이 삭제됐어요.', kind: AppToastKind.success);
   }
 
   Widget _buildTopBar(BuildContext context) {
@@ -84,16 +296,43 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                   : context.go(AppRoutes.myLeave),
             ),
           ),
-          Positioned(
-            right: 6,
-            child: IconButton(
-              // TODO(design): 선택·삭제 모드(18305:124971)는 다음 작업
-              onPressed: () => showAppToast(context, '내역 편집은 준비 중이에요'),
-              tooltip: '더 보기',
-              icon: Icon(Icons.more_horiz, color: AppColors.labelNormal),
+          if (!_selecting)
+            Positioned(
+              right: 6,
+              child: IconButton(
+                onPressed: _showMenu,
+                tooltip: '더 보기',
+                icon: Icon(Icons.more_horiz, color: AppColors.labelNormal),
+              ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스
+class _SelectBox extends StatelessWidget {
+  const _SelectBox({required this.checked});
+
+  final bool checked;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: checked ? AppColors.primaryNormal : AppColors.backgroundNormal,
+          borderRadius: BorderRadius.circular(6),
+          border: checked
+              ? null
+              : Border.all(color: AppColors.lineNormalNeutral),
+        ),
+        child: checked
+            ? Icon(Icons.check, size: 16, color: AppColors.staticWhite)
+            : null,
       ),
     );
   }
@@ -105,11 +344,17 @@ class _UsageCard extends StatelessWidget {
     required this.usage,
     required this.expanded,
     required this.onTap,
+    this.selecting = false,
+    this.checked = false,
   });
 
   final LeaveUsage usage;
   final bool expanded;
   final VoidCallback? onTap;
+
+  /// 삭제 모드라 체크박스를 띄우는지
+  final bool selecting;
+  final bool checked;
 
   static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -136,6 +381,10 @@ class _UsageCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (selecting) ...[
+              _SelectBox(checked: checked),
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
                 Expanded(
