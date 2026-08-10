@@ -446,7 +446,8 @@ class _StyleCard extends StatelessWidget {
       child: Container(
         // 고정 높이 대신 최소 높이 — 글자 배율을 키워도 넘치지 않는다
         constraints: const BoxConstraints(minHeight: 78),
-        width: double.infinity,
+        // 시안 카드 폭 258 — 화면 가득 늘리면 날짜갈림길 카드와 어긋난다
+        width: 258,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
           // 선택되면 채움을 걷어내고 테두리로만 표시한다
