@@ -13,10 +13,6 @@ import '../application/course_wizard_provider.dart';
 class DateGateScreen extends ConsumerWidget {
   const DateGateScreen({super.key});
 
-  // 시안이 DS 토큰 대신 지정한 보조 텍스트 색 (구 체계 값)
-  // TODO(디자인시스템): 디자이너가 토큰으로 정리하면 교체
-  static const _subtitleColor = Color(0xFFADB1BB);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final choice = ref.watch(
@@ -35,7 +31,8 @@ class DateGateScreen extends ConsumerWidget {
               width: 48,
               height: 48,
             ),
-            const SizedBox(height: 28),
+            // 시안 측정값 — 아이콘과 질문 사이 20
+            const SizedBox(height: 20),
             Text(
               '여행 날짜가 있나요?',
               textAlign: TextAlign.center,
@@ -48,10 +45,11 @@ class DateGateScreen extends ConsumerWidget {
               '날짜를 직접 선택하거나,\n추천부터 받아볼 수 있어요.',
               textAlign: TextAlign.center,
               style: AppTypography.body1NormalMedium.copyWith(
-                color: _subtitleColor,
+                color: AppColors.labelAlternative,
               ),
             ),
-            const SizedBox(height: 40),
+            // 시안 측정값 — 부제와 첫 카드 사이 48
+            const SizedBox(height: 48),
             _OptionButton(
               label: '가고싶은 날짜가 있어요',
               selected: choice == DatePathChoice.haveDates,
@@ -138,13 +136,13 @@ class _OptionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 213,
+        width: 200,
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.fillNormal,
+          // 고른 카드는 배경을 비우고 테두리·글자를 브랜드색으로 세운다
+          color: selected ? AppColors.backgroundNormal : AppColors.fillNormal,
           borderRadius: BorderRadius.circular(12),
-          // 시안에 선택 상태 표기가 없어 홈 카테고리 칩과 같은 규칙을 쓴다
           border: selected
               ? Border.all(color: AppColors.primaryNormal, width: 1.5)
               : null,
@@ -152,7 +150,7 @@ class _OptionButton extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.body1NormalMedium.copyWith(
-            color: AppColors.labelNeutral,
+            color: selected ? AppColors.primaryNormal : AppColors.labelNeutral,
           ),
         ),
       ),
