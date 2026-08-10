@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../../onboarding/data/leave_repository.dart';
 import 'leave_date_picker_screen.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
@@ -39,6 +41,9 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
 
   /// '직접 입력하기'를 골라 입력 칸이 열려 있는지
   bool _customDays = false;
+
+  /// 등록 중이면 버튼을 잠가 같은 요청이 두 번 가지 않게 한다
+  bool _submitting = false;
   final _daysInput = TextEditingController();
 
   @override
@@ -122,10 +127,35 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     });
   }
 
-  void _submit() {
-    // TODO(server): `POST /api/v1/leaves/me/usages`에 붙인다.
-    // 기간을 고르면 날짜별로 나눠 보내야 하는지 백엔드와 정할 것
-    showAppToast(context, '연차 등록은 서버 연동 후 동작해요');
+  Future<void> _submit() async {
+    final range = _range;
+    final days = _days;
+    if (range == null || days == null || _submitting) return;
+
+    setState(() => _submitting = true);
+    try {
+      // TODO(server): 여러 날을 고르면 날짜별로 나눠 보내야 하는지 확인 필요.
+      // 지금은 시작일에 전체 차감 일수를 한 번에 기록한다
+      await ref
+          .read(leaveRepositoryProvider)
+          .addUsage(usedOn: range.start, days: days, reason: _reason);
+      if (!mounted) return;
+      // 잔여 연차가 줄었으니 홈·내 연차가 새 값을 읽게 한다
+      ref.invalidate(homeSnapshotProvider);
+      // 이 화면이 사라진 뒤에도 토스트가 남도록 부모 화면 context로 띄운다
+      final parent = Navigator.of(context).context;
+      Navigator.of(context).pop();
+      showAppToast(parent, '등록 완료! 남은 연차를 확인해보세요.', kind: AppToastKind.success);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      // 서버 문구가 사용자용이면 그대로, 아니면 시안 문구로 알린다
+      showAppToast(
+        context,
+        e.detail.isEmpty ? '등록에 실패했어요. 다시 시도해 주세요' : e.detail,
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -180,7 +210,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
               ),
             ),
             _SubmitBar(
-              enabled: _canSubmit && daysError == null,
+              enabled: _canSubmit && daysError == null && !_submitting,
               onTap: _submit,
             ),
           ],

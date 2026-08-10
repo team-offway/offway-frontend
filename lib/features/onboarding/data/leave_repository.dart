@@ -38,6 +38,31 @@ class LeaveRepository {
     }
   }
 
+  /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
+  ///
+  /// [days]는 0.5 단위이고, 사용이면 양수·취소면 음수다.
+  /// [courseId]는 코스에서 차감할 때만 넣는다.
+  Future<void> addUsage({
+    required DateTime usedOn,
+    required double days,
+    String? reason,
+    int? courseId,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/v1/leaves/me/usages',
+        data: {
+          'usedOn': _isoDate(usedOn),
+          'days': days,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+          if (courseId != null) 'courseId': courseId,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 가용시간 계산 (`POST /leaves/available-time`).
   ///
   /// 두 모드 중 하나로 부른다 — 날짜 모드([startDate]+[endDate])는 고른 기간의
