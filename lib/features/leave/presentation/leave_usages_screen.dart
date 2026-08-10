@@ -386,6 +386,8 @@ class _UsageCard extends StatelessWidget {
               const SizedBox(height: 10),
             ],
             Row(
+              // 펼쳐도 -N일이 아래로 내려가지 않게 위쪽 줄에 맞춘다
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
