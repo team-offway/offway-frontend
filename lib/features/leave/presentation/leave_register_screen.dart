@@ -136,9 +136,17 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     try {
       // TODO(server): 여러 날을 고르면 날짜별로 나눠 보내야 하는지 확인 필요.
       // 지금은 시작일에 전체 차감 일수를 한 번에 기록한다
+      //
+      // TODO(server): 서버 요청에 memo 필드가 없다(usedOn·days·reason·courseId만).
+      // 상세 사유를 버리지 않도록 reason 뒤에 붙여 보낸다 — 필드가 생기면 분리한다
+      final memo = _memo.text.trim();
       await ref
           .read(leaveRepositoryProvider)
-          .addUsage(usedOn: range.start, days: days, reason: _reason);
+          .addUsage(
+            usedOn: range.start,
+            days: days,
+            reason: memo.isEmpty ? _reason : '$_reason · $memo',
+          );
       if (!mounted) return;
       // 잔여 연차가 줄었으니 홈·내 연차가 새 값을 읽게 한다
       ref.invalidate(homeSnapshotProvider);

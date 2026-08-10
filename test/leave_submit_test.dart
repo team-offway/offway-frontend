@@ -27,6 +27,22 @@ class _FakeLeaveRepository implements LeaveRepository {
     if (fail) throw ApiException(status: 400, code: 'X', detail: '');
   }
 
+  /// 차감 일수 계산은 실패로 친다 — 화면이 로컬 근사로 폴백해 바로 확정할 수 있다
+  @override
+  Future<AvailableTime> availableTime({
+    required String transport,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodStyle,
+    DateTime? baseDate,
+    String? weekendBridge,
+    int? leaveDays,
+  }) async => throw const ApiException(
+    status: 0,
+    code: 'TEST',
+    detail: '테스트에는 서버가 없어요',
+  );
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -60,6 +76,8 @@ Future<void> _pickOneDay(WidgetTester tester) async {
   await tester.pump();
   await tester.tap(day);
   await tester.pump();
+  // 차감 일수 계산이 끝나야 '선택 완료'가 열린다
+  await tester.pumpAndSettle();
   await tester.tap(find.text('선택 완료'));
   await tester.pumpAndSettle();
 }

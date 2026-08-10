@@ -75,9 +75,12 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
-    final consumed = _hasRange
-        ? ref.watch(_consumedLeaveProvider((start: _start!, end: _end!))).value
+    final consumedAsync = _hasRange
+        ? ref.watch(_consumedLeaveProvider((start: _start!, end: _end!)))
         : null;
+    final consumed = consumedAsync?.value;
+    // 계산이 끝나기 전에 확정하면 등록 화면이 채우는 기본값과 어긋난다
+    final calculating = consumedAsync?.isLoading ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -128,7 +131,7 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
                 maxSpanDays: null,
               ),
             ),
-            _buildActionArea(consumed),
+            _buildActionArea(consumed, calculating),
           ],
         ),
       ),
@@ -136,7 +139,7 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
   }
 
   /// 하단 — 고른 범위가 연차를 며칠 쓰는지 먼저 알리고 CTA를 둔다
-  Widget _buildActionArea(double? consumed) {
+  Widget _buildActionArea(double? consumed, bool calculating) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -144,20 +147,22 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
           // 자리를 늘 차지해 날짜를 고를 때 버튼이 아래위로 움직이지 않게 한다
           SizedBox(
             height: 22,
-            child: consumed == null
-                ? null
-                : Text(
-                    '차감 연차 일수 ${formatLeaveDays(consumed)}일',
+            child: (calculating || consumed != null)
+                ? Text(
+                    calculating
+                        ? '차감 연차 일수 계산 중이에요'
+                        : '차감 연차 일수 ${formatLeaveDays(consumed!)}일',
                     style: AppTypography.body2NormalMedium.copyWith(
                       color: AppColors.labelAlternative,
                     ),
-                  ),
+                  )
+                : null,
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _hasRange
+              onPressed: _hasRange && !calculating
                   ? () => Navigator.of(context).pop((
                       range: DateTimeRange(start: _start!, end: _end!),
                       consumed: consumed,

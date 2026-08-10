@@ -270,7 +270,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     // TODO(server): 사용 내역 삭제 API가 없다.
     // `POST /leaves/me/usages`에 음수 days로 되돌리는 방식인지 백엔드와 정할 것
     _exitSelecting();
-    showAppToast(context, '연차 사용 내역이 삭제됐어요.', kind: AppToastKind.success);
+    // 실제로 지워지지 않았는데 완료라고 알리면 잔여 연차가 그대로인 걸 보고 혼란스럽다
+    showAppToast(context, '내역 삭제는 서버 연동 후 동작해요');
   }
 
   Widget _buildTopBar(BuildContext context) {

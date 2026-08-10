@@ -165,7 +165,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, '삭제하기'));
     await tester.pump();
     await tester.pump();
-    expect(find.text('연차 사용 내역이 삭제됐어요.'), findsOneWidget);
+    expect(find.text('내역 삭제는 서버 연동 후 동작해요'), findsOneWidget);
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });

@@ -49,7 +49,7 @@ class LeaveRepository {
     int? courseId,
   }) async {
     try {
-      await _dio.post<dynamic>(
+      final response = await _dio.post<dynamic>(
         '/api/v1/leaves/me/usages',
         data: {
           'usedOn': _isoDate(usedOn),
@@ -58,6 +58,8 @@ class LeaveRepository {
           if (courseId != null) 'courseId': courseId,
         },
       );
+      // HTTP 200이어도 실패 래퍼일 수 있다 — 여기서 걸러야 등록 실패가 성공으로 보이지 않는다
+      ApiEnvelope.unwrap(response);
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }
