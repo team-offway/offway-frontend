@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../mock/mock_data_source.dart';
 import 'widgets/region_card.dart';
+import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_back_button.dart';
 
 /// 추천 여행지 전체 목록 mock (서버 연동 시 목록 API로 교체)
@@ -52,7 +53,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
             _buildTopBar(context),
             Expanded(
               child: regions.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const AppCircularLoadingView(),
                 error: (e, _) => Center(child: Text('여행지를 불러오지 못했어요\n$e')),
                 data: (all) {
                   final list = _filter(all);

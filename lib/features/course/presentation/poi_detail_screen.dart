@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
@@ -43,15 +45,11 @@ class PoiDetailScreen extends ConsumerWidget {
             _buildHeader(context),
             Expanded(
               child: detail.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text(
-                    e is ApiException ? e.detail : '장소 정보를 불러오지 못했어요',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
+                loading: () => const AppCircularLoadingView(),
+                // 서버 detail이 사용자 문구면 그대로, 그 외에는 기본 안내로
+                error: (e, _) => AppErrorView(
+                  description: e is ApiException ? e.detail : '잠시 후 다시 시도해 주세요',
+                  onRetry: () => ref.invalidate(poiDetailProvider(contentId)),
                 ),
                 data: (poi) => _Body(name: name, poi: poi),
               ),

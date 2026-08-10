@@ -5,6 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
@@ -71,15 +73,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: detail.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Text(
-              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
-              textAlign: TextAlign.center,
-              style: AppTypography.label1NormalMedium.copyWith(
-                color: AppColors.labelAlternative,
-              ),
-            ),
+          loading: () => const AppCircularLoadingView(),
+          error: (e, _) => AppErrorView(
+            description: e is ApiException ? e.detail : '잠시 후 다시 시도해 주세요',
+            onRetry: () =>
+                ref.invalidate(savedCourseDetailProvider(widget.savedId)),
           ),
           data: (data) => data == null
               ? const Center(child: Text('저장한 코스를 찾을 수 없어요'))

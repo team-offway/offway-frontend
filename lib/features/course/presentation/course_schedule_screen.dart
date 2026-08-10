@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
@@ -38,7 +39,7 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: detail.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppCircularLoadingView(),
           error: (e, _) => Center(
             child: Text(
               e is ApiException ? e.detail : '코스를 불러오지 못했어요',
