@@ -7,6 +7,7 @@ import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
+import 'package:offway/features/leave/presentation/my_leave_screen.dart';
 
 void main() {
   testWidgets('연차 등록 화면: 여행·0.5일이 기본으로 골라져 있다', (tester) async {
@@ -119,5 +120,20 @@ void main() {
 
     final done = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(done.onPressed, isNull, reason: '날짜를 안 골랐으면 잠겨 있어야 한다');
+  });
+
+  testWidgets('내역이 없으면 빈 상태 안내가 뜬다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith((ref) => const <LeaveUsage>[]),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('연차 사용 내역이 없어요'), findsOneWidget);
+    expect(find.text('사용한 연차를 등록해보세요'), findsOneWidget);
   });
 }

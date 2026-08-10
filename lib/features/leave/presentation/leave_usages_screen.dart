@@ -9,6 +9,7 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import 'my_leave_screen.dart' show LeaveUsage, leaveUsagesProvider;
+import 'widgets/leave_empty_view.dart';
 
 /// O-13 · 연차 사용 내역 전체.
 ///
@@ -37,7 +38,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
             _buildTopBar(context),
             Expanded(
               child: usages.isEmpty
-                  ? const _Empty()
+                  ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                       itemCount: usages.length,
@@ -234,23 +235,6 @@ class _UsageCard extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 내역이 하나도 없을 때
-class _Empty extends StatelessWidget {
-  const _Empty();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        '아직 등록한 연차 사용 내역이 없어요',
-        style: AppTypography.label1NormalMedium.copyWith(
-          color: AppColors.labelAlternative,
         ),
       ),
     );

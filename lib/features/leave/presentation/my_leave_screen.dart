@@ -8,6 +8,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import 'widgets/leave_empty_view.dart';
 
 /// 연차 사용 내역 한 건.
 ///
@@ -111,7 +112,10 @@ class MyLeaveScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   if (usages.isEmpty)
-                    const _EmptyUsages()
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: LeaveEmptyView(),
+                    )
                   else
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -387,26 +391,6 @@ class LeaveUsageCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 사용 내역이 하나도 없을 때
-class _EmptyUsages extends StatelessWidget {
-  const _EmptyUsages();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Center(
-        child: Text(
-          '아직 등록한 연차 사용 내역이 없어요',
-          style: AppTypography.label1NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
         ),
       ),
     );
