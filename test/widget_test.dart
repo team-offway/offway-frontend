@@ -318,7 +318,8 @@ void main() {
     expect(find.text('11일'), findsOneWidget); // mock 잔여연차
     expect(find.textContaining('어디로 떠나볼까요?'), findsOneWidget);
     expect(find.text('이번달 추천 여행지'), findsOneWidget);
-    expect(find.text('정선 · 강원'), findsOneWidget);
+    // 카드 제목과 썸네일 위 오버레이 두 곳에 지역명이 나온다
+    expect(find.text('정선 · 강원'), findsNWidgets(2));
     expect(find.text('숙박비 30% 지원'), findsOneWidget);
 
     // 히어로 CTA는 브랜드 하늘색이 아니라 검정(Neutral/22)이다.
@@ -676,20 +677,27 @@ void main() {
       of: find.byType(RegionListScreen),
       matching: find.text(text),
     );
+    // 지역명은 카드 제목과 썸네일 오버레이 두 곳에 나온다 — 제목만 겨냥한다
+    Finder titleInList(String text) => find.descendant(
+      of: find.byType(RegionListScreen),
+      matching: find.byWidgetPredicate(
+        (w) => w is Text && w.data == text && w.style?.fontSize == 15,
+      ),
+    );
 
     // 목록 화면: 헤더 + mock 5개 지역
     expect(inList('이번달 추천 여행지'), findsOneWidget);
-    expect(inList('정선 · 강원'), findsOneWidget);
+    expect(titleInList('정선 · 강원'), findsOneWidget);
     // 마지막 지역은 뷰포트 아래라 스크롤해서 확인
     await tester.scrollUntilVisible(
-      inList('영양 · 경북'),
+      titleInList('영양 · 경북'),
       200,
       scrollable: find.descendant(
         of: find.byType(RegionListScreen),
         matching: find.byType(Scrollable),
       ),
     );
-    expect(inList('영양 · 경북'), findsOneWidget);
+    expect(titleInList('영양 · 경북'), findsOneWidget);
 
     // 카테고리 필터는 지역별 콘텐츠 분포(실데이터) 기준으로 동작.
     // 위에서 스크롤을 내렸으니 카테고리 줄이 다시 보이도록 올린다
@@ -703,7 +711,7 @@ void main() {
     );
     await tester.tap(inList('체험'));
     await tester.pump();
-    expect(inList('정선 · 강원'), findsOneWidget); // 체험 11건
+    expect(titleInList('정선 · 강원'), findsOneWidget); // 체험 11건
   });
 
   testWidgets('홈에서 지역 카드를 누르면 지역 상세로 이동한다', (tester) async {
@@ -724,12 +732,12 @@ void main() {
 
     // 지역 카드는 뷰포트 아래라 스크롤해서 올린 뒤 탭
     await tester.scrollUntilVisible(
-      find.text('정선 · 강원'),
+      find.text('정선 · 강원').first,
       200,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pump();
-    await tester.tap(find.text('정선 · 강원'));
+    await tester.tap(find.text('정선 · 강원').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.runAsync(

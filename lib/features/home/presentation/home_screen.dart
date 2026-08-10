@@ -418,8 +418,9 @@ class _CategoryChip extends StatelessWidget {
                         ? AppTypography.caption2Bold
                         : AppTypography.caption2Regular)
                     .copyWith(
+                      // 고른 칩은 테두리와 같은 브랜드색으로 묶어 보여준다
                       color: selected
-                          ? AppColors.labelNeutral
+                          ? AppColors.primaryNormal
                           : AppColors.labelAlternative,
                     ),
           ),
