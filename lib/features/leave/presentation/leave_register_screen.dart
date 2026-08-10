@@ -9,6 +9,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import 'leave_date_picker_screen.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
@@ -96,6 +97,20 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     });
   }
 
+  /// 직접 입력한 값이 왜 못 쓰는지 — 없으면 정상
+  String? _customDaysError(num? remaining) {
+    final text = _daysInput.text;
+    if (!_customDays || text.isEmpty) return null;
+    final parsed = double.tryParse(text);
+    if (parsed == null || parsed <= 0) return '지원하지 않는 단위입니다.';
+    // 서버가 0.5 단위만 받는다
+    if ((parsed * 2) % 1 != 0) return '지원하지 않는 단위입니다.';
+    if (remaining != null && parsed > remaining) {
+      return '남은 연차보다 많이 입력했어요.';
+    }
+    return null;
+  }
+
   /// 입력값은 0.5 단위만 받는다 (서버 제약과 같다).
   /// 어긋나면 값을 비워 등록을 막되, 입력 자체는 막지 않는다
   void _onCustomDaysChanged(String text) {
@@ -115,6 +130,12 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 남은 연차보다 많이 쓸 수 없으므로 상한으로 쓴다
+    final remaining =
+        ref.watch(homeSnapshotProvider).value?.user['remainingLeaveDays']
+            as num?;
+    final daysError = _customDaysError(remaining);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
@@ -152,12 +173,16 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
                     _CustomDaysField(
                       controller: _daysInput,
                       onChanged: _onCustomDaysChanged,
+                      error: daysError,
                     ),
                   ],
                 ],
               ),
             ),
-            _SubmitBar(enabled: _canSubmit, onTap: _submit),
+            _SubmitBar(
+              enabled: _canSubmit && daysError == null,
+              onTap: _submit,
+            ),
           ],
         ),
       ),
@@ -347,42 +372,112 @@ class _DaysChips extends StatelessWidget {
   }
 }
 
-/// 차감 일수 직접 입력 칸 — 칩 아래에 펼쳐진다
+/// 차감 일수 직접 입력 칸 — 칩 아래에 펼쳐진다.
+///
+/// 숫자만 받되 '일'을 값에 붙여 보여준다. Flutter의 `suffixText`는 칸 오른쪽
+/// 끝에 붙어 시안과 다르므로, 입력 글자를 감추고 그 자리에 값+단위를 겹쳐 그린다.
 class _CustomDaysField extends StatelessWidget {
-  const _CustomDaysField({required this.controller, required this.onChanged});
+  const _CustomDaysField({
+    required this.controller,
+    required this.onChanged,
+    required this.error,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
+  /// 왜 못 쓰는 값인지 — null이면 정상
+  final String? error;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lineNormalNeutral),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: TextField(
-          controller: controller,
-          autofocus: true,
-          onChanged: onChanged,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          style: AppTypography.body1NormalRegular.copyWith(
-            color: AppColors.labelNormal,
-          ),
-          decoration: InputDecoration.collapsed(
-            hintText: '차감 일수를 입력해주세요.',
-            hintStyle: AppTypography.body1NormalRegular.copyWith(
-              color: AppColors.labelAssistive,
+    final text = controller.text;
+    final hasError = error != null;
+    final filled = text.isNotEmpty;
+    final style = AppTypography.body1NormalRegular.copyWith(
+      color: AppColors.labelNormal,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasError
+                  ? AppColors.statusNegative
+                  : AppColors.lineNormalNeutral,
             ),
           ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      // 값과 단위를 한 덩어리로 그려 '일'이 숫자에 붙게 한다
+                      if (filled) Text('$text일', style: style),
+                      TextField(
+                        controller: controller,
+                        autofocus: true,
+                        onChanged: onChanged,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                        ],
+                        // 겹쳐 그린 글자와 이중으로 보이지 않게 원본은 감춘다.
+                        // 커서와 선택 영역은 그대로 살아 있다
+                        style: style.copyWith(
+                          color: filled ? Colors.transparent : null,
+                        ),
+                        decoration: InputDecoration.collapsed(
+                          hintText: '차감 일수를 입력해주세요.',
+                          hintStyle: AppTypography.body1NormalRegular.copyWith(
+                            color: AppColors.labelAssistive,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (filled) ...[
+                const SizedBox(width: 8),
+                SvgPicture.asset(
+                  // 기본 에셋은 28% 투명도가 박혀 있어 색을 입혀도 옅다 —
+                  // 채워진 원으로 보여야 하므로 불투명 사본을 쓴다
+                  hasError
+                      ? 'assets/icons/ic_circle_exclamation_solid.svg'
+                      : 'assets/icons/ic_check_circle.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(
+                    hasError
+                        ? AppColors.statusNegative
+                        : AppColors.primaryNormal,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
+        if (error case final String message) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: AppTypography.label1NormalMedium.copyWith(
+              color: AppColors.statusNegative,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

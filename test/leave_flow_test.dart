@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
+import 'package:offway/features/home/data/home_repository.dart';
+import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
@@ -9,7 +11,17 @@ import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
 void main() {
   testWidgets('연차 등록 화면: 여행·0.5일이 기본으로 골라져 있다', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LeaveRegisterScreen())),
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveRegisterScreen()),
+      ),
     );
     await tester.pump();
 
@@ -31,7 +43,17 @@ void main() {
 
   testWidgets('직접 입력하기를 누르면 입력 칸이 열린다', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LeaveRegisterScreen())),
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveRegisterScreen()),
+      ),
     );
     await tester.pump();
 
@@ -41,13 +63,20 @@ void main() {
     await tester.pump();
     expect(find.text('차감 일수를 입력해주세요.'), findsOneWidget);
 
-    // 0.5 단위가 아니면 값으로 인정하지 않는다
-    await tester.enterText(find.byType(TextField).last, '0.3');
+    // 0.5 단위가 아니면 오류를 알리고 등록을 막는다
+    await tester.enterText(find.byType(TextField).last, '9.1');
     await tester.pump();
+    expect(find.text('지원하지 않는 단위입니다.'), findsOneWidget);
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
+
+    // 맞는 값이면 오류가 사라진다 ('일'이 붙어 보인다)
+    await tester.enterText(find.byType(TextField).last, '4');
+    await tester.pump();
+    expect(find.text('지원하지 않는 단위입니다.'), findsNothing);
+    expect(find.text('4일'), findsOneWidget);
 
     // 프리셋을 다시 고르면 입력 칸이 닫힌다.
     // 입력 칸이 열려 화면이 좁아졌으니 칩을 화면 안으로 올린 뒤 누른다
