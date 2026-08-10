@@ -21,7 +21,7 @@ class CourseDayTabs extends StatelessWidget {
     return Row(
       children: [
         for (var d = 1; d <= durationDays; d++) ...[
-          if (d > 1) const SizedBox(width: 8),
+          if (d > 1) const SizedBox(width: 10),
           _DayTab(day: d, selected: selectedDay == d, onTap: () => onSelect(d)),
         ],
       ],
@@ -47,7 +47,7 @@ class _DayTab extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         // DS Category 칩 (Large) — 고른 날은 반전, 나머지는 테두리만
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.labelNeutral : null,
           borderRadius: BorderRadius.circular(10),

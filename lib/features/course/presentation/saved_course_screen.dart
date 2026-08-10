@@ -158,7 +158,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              // 시안: 썸네일과 Day 칩 사이 12
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CourseDayTabs(
@@ -688,9 +689,11 @@ class _WeatherChip extends StatelessWidget {
     final icon = _skyIcons[weather['sky'] as String?] ?? 'ic_weather_sunny';
     final withTemp = showTemp && maxTemp != null;
     return Container(
+      // 시안 버튼: 좌우 14 · 상하 7 (아이콘 16 기준 높이 38).
+      // 기온 없이 아이콘만 있을 때도 같은 높이를 지킨다
       padding: withTemp
           ? const EdgeInsets.symmetric(horizontal: 14, vertical: 7)
-          : const EdgeInsets.all(7),
+          : const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.lineNormalNeutral),
         borderRadius: BorderRadius.circular(8),
@@ -700,8 +703,9 @@ class _WeatherChip extends StatelessWidget {
         children: [
           SvgPicture.asset(
             'assets/icons/$icon.svg',
-            width: withTemp ? 24 : 18,
-            height: withTemp ? 24 : 18,
+            // 시안 Leading Icon 16 — 기온이 붙어도 같은 크기다
+            width: 16,
+            height: 16,
           ),
           if (withTemp) ...[
             const SizedBox(width: 4),
