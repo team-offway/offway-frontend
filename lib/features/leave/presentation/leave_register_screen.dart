@@ -150,9 +150,11 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
       if (!mounted) return;
       // 잔여 연차가 줄었으니 홈·내 연차가 새 값을 읽게 한다
       ref.invalidate(homeSnapshotProvider);
-      // 이 화면이 사라진 뒤에도 토스트가 남도록 부모 화면 context로 띄운다
+      // 이 화면이 사라진 뒤에도 토스트가 남도록 부모 화면에 띄운다.
+      // pop 뒤에는 이 위젯의 context가 죽으므로 부모를 미리 잡아둔다
       final parent = Navigator.of(context).context;
       Navigator.of(context).pop();
+      if (!parent.mounted) return;
       showAppToast(parent, '등록 완료! 남은 연차를 확인해보세요.', kind: AppToastKind.success);
     } on ApiException catch (e) {
       if (!mounted) return;

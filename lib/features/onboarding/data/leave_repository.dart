@@ -55,7 +55,7 @@ class LeaveRepository {
           'usedOn': _isoDate(usedOn),
           'days': days,
           if (reason != null && reason.isNotEmpty) 'reason': reason,
-          if (courseId != null) 'courseId': courseId,
+          'courseId': ?courseId,
         },
       );
       // HTTP 200이어도 실패 래퍼일 수 있다 — 여기서 걸러야 등록 실패가 성공으로 보이지 않는다
