@@ -31,9 +31,14 @@ class LeaveRegisterScreen extends ConsumerStatefulWidget {
 
 class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
   DateTimeRange? _range;
-  String? _reason;
-  double? _days;
+  // 가장 흔한 조합을 미리 골라둔다 — 날짜만 정하면 바로 등록할 수 있게
+  String? _reason = _reasons.first;
+  double? _days = 0.5;
   final _memo = TextEditingController();
+
+  /// '직접 입력하기'를 골라 입력 칸이 열려 있는지
+  bool _customDays = false;
+  final _daysInput = TextEditingController();
 
   @override
   void initState() {
@@ -45,6 +50,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
   @override
   void dispose() {
     _memo.dispose();
+    _daysInput.dispose();
     super.dispose();
   }
 
@@ -68,6 +74,36 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
       // 서버가 센 차감 일수(평일−공휴일)를 기본값으로 채운다.
       // 못 받았으면 고른 날 수를 그대로 쓴다
       _days = picked.consumed ?? _rangeDayCount.toDouble();
+    });
+  }
+
+  /// 칩에서 고른 값 — 직접 입력 칸은 닫는다
+  void _selectPreset(double value) {
+    setState(() {
+      _days = value;
+      _customDays = false;
+      _daysInput.clear();
+    });
+  }
+
+  /// '직접 입력하기' — 칩 아래에 입력 칸을 연다
+  void _openCustomDays() {
+    setState(() {
+      _customDays = true;
+      // 입력 전에는 값이 없는 상태로 둬 등록 버튼이 열리지 않게 한다
+      _days = null;
+      _daysInput.clear();
+    });
+  }
+
+  /// 입력값은 0.5 단위만 받는다 (서버 제약과 같다).
+  /// 어긋나면 값을 비워 등록을 막되, 입력 자체는 막지 않는다
+  void _onCustomDaysChanged(String text) {
+    final parsed = double.tryParse(text);
+    setState(() {
+      _days = (parsed != null && parsed > 0 && (parsed * 2) % 1 == 0)
+          ? parsed
+          : null;
     });
   }
 
@@ -107,9 +143,17 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
                   const SizedBox(height: 8),
                   _DaysChips(
                     selected: _days,
-                    onSelect: (v) => setState(() => _days = v),
-                    onCustom: _pickCustomDays,
+                    custom: _customDays,
+                    onSelect: _selectPreset,
+                    onCustom: _openCustomDays,
                   ),
+                  if (_customDays) ...[
+                    const SizedBox(height: 8),
+                    _CustomDaysField(
+                      controller: _daysInput,
+                      onChanged: _onCustomDaysChanged,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -118,54 +162,6 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
         ),
       ),
     );
-  }
-
-  /// '직접 입력하기' — 0.5 단위로만 받는다 (서버 제약과 같다)
-  Future<void> _pickCustomDays() async {
-    final controller = TextEditingController(
-      text: _days == null ? '' : formatLeaveDays(_days!),
-    );
-    final value = await showDialog<double>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.backgroundNormal,
-        title: Text(
-          '차감 일수 입력',
-          style: AppTypography.headline2Bold.copyWith(
-            color: AppColors.labelNormal,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          decoration: const InputDecoration(hintText: '0.5 단위로 입력해 주세요'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              final parsed = double.tryParse(controller.text);
-              Navigator.of(dialogContext).pop(parsed);
-            },
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || value == null) return;
-    // 0.5로 나눠떨어지지 않으면 서버가 거절하므로 여기서 막는다
-    if (value <= 0 || (value * 2) % 1 != 0) {
-      showAppToast(context, '차감 일수는 0.5일 단위로 입력해 주세요');
-      return;
-    }
-    setState(() => _days = value);
   }
 
   Widget _buildTopBar(BuildContext context) {
@@ -309,11 +305,15 @@ class _ChipRow extends StatelessWidget {
 class _DaysChips extends StatelessWidget {
   const _DaysChips({
     required this.selected,
+    required this.custom,
     required this.onSelect,
     required this.onCustom,
   });
 
   final double? selected;
+
+  /// '직접 입력하기'가 골라져 입력 칸이 열려 있는지
+  final bool custom;
   final ValueChanged<double> onSelect;
   final VoidCallback onCustom;
 
@@ -322,8 +322,6 @@ class _DaysChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 프리셋에 없는 값을 직접 넣었으면 그 칩이 골라진 것으로 본다
-    final isCustom = selected != null && !_presets.contains(selected);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -331,19 +329,59 @@ class _DaysChips extends StatelessWidget {
           for (final preset in _presets) ...[
             LeaveChip(
               label: '${formatLeaveDays(preset)}일',
-              selected: selected == preset,
+              selected: !custom && selected == preset,
               onTap: () => onSelect(preset),
               large: true,
             ),
             const SizedBox(width: 10),
           ],
           LeaveChip(
-            label: isCustom ? '${formatLeaveDays(selected!)}일' : '직접 입력하기',
-            selected: isCustom,
+            label: '직접 입력하기',
+            selected: custom,
             onTap: onCustom,
             large: true,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 차감 일수 직접 입력 칸 — 칩 아래에 펼쳐진다
+class _CustomDaysField extends StatelessWidget {
+  const _CustomDaysField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.lineNormalNeutral),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: TextField(
+          controller: controller,
+          autofocus: true,
+          onChanged: onChanged,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          style: AppTypography.body1NormalRegular.copyWith(
+            color: AppColors.labelNormal,
+          ),
+          decoration: InputDecoration.collapsed(
+            hintText: '차감 일수를 입력해주세요.',
+            hintStyle: AppTypography.body1NormalRegular.copyWith(
+              color: AppColors.labelAssistive,
+            ),
+          ),
+        ),
       ),
     );
   }
