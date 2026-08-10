@@ -7,7 +7,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../../core/widgets/app_toast.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
 /// 연차 사용 내역 한 건.
@@ -79,9 +78,7 @@ class MyLeaveScreen extends ConsumerWidget {
                         _LeaveHeroCard(remaining: remaining),
                         const SizedBox(height: 8),
                         _RegisterRow(
-                          // TODO(design): 등록 화면(18305:117380)은 다음 작업
-                          onTap: () =>
-                              showAppToast(context, '연차 등록 기능은 준비 중이에요'),
+                          onTap: () => context.push(AppRoutes.leaveRegister),
                         ),
                       ],
                     ),
@@ -100,9 +97,7 @@ class MyLeaveScreen extends ConsumerWidget {
                           ),
                         ),
                         GestureDetector(
-                          // TODO(design): 내역 전체 화면(18305:117591)은 다음 작업
-                          onTap: () =>
-                              showAppToast(context, '연차 사용 내역은 준비 중이에요'),
+                          onTap: () => context.push(AppRoutes.leaveUsages),
                           behavior: HitTestBehavior.opaque,
                           child: Text(
                             '더보기',
