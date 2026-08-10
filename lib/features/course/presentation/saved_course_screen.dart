@@ -572,11 +572,20 @@ class _EditSheetRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                // 디자인은 아이콘을 61% 투명도로 옅게 얹는다
+                // 시안: 배경 32 안에 아이콘 20, 61% 투명도로 옅게.
+                // 에셋에 이미 투명도가 박혀 있어 불투명하게 덮은 뒤
+                // 여기서 한 번만 옅게 만든다 — 안 그러면 61%가 두 번 곱해진다
                 child: Opacity(
                   opacity: AppOpacity.o61,
-                  // 시안: 배경 32 안에 아이콘 20
-                  child: SvgPicture.asset(iconAsset, width: 20, height: 20),
+                  child: SvgPicture.asset(
+                    iconAsset,
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.staticBlack,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -1046,17 +1055,23 @@ class _PlaceSheet extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: AppColors.labelNormal,
+                  SvgPicture.asset(
+                    'assets/icons/ic_chevron_right.svg',
+                    width: 12,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.labelAlternative,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 22),
             _buildInfoRow(
-              iconAsset: 'assets/icons/ic_clock.svg',
+              // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
+              // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘
+              iconAsset: 'assets/icons/ic_clock_outline.svg',
               label: '운영시간',
               value: useValue,
               danger: useDanger,
@@ -1083,6 +1098,8 @@ class _PlaceSheet extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 시안 에셋이 Label/Alternative(61%)를 이미 품고 있다 —
+        // 여기서 또 칠하면 투명도가 겹쳐 흐려진다
         SvgPicture.asset(iconAsset, width: 24, height: 24),
         const SizedBox(width: 10),
         SizedBox(
