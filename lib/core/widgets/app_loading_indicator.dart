@@ -70,9 +70,11 @@ class AppLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      // 시안은 블록이 화면 중앙보다 92 위에 있다 — 아래 여백으로 끌어올린다
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 184),
+      // 시안은 블록이 화면 중앙보다 92 위에 있다. 아래 여백으로 밀면
+      // 블록이 차지하는 높이까지 같이 늘어 좁은 화면에서 넘친다 —
+      // 자리만 옮긴다
+      child: Transform.translate(
+        offset: const Offset(0, -92),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -25,24 +25,26 @@ class AppBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          width: _minTapTarget,
-          height: _minTapTarget,
-          child: Center(
-            child: SvgPicture.asset(
-              'assets/icons/ic_chevron_left.svg',
-              width: 12,
-              height: 24,
-              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-            ),
-          ),
-        ),
+    // GestureDetector만 쓰면 키보드·D-pad로는 이 버튼에 닿을 수 없다 —
+    // IconButton이 포커스와 눌림 표시를 함께 맡는다
+    return IconButton(
+      onPressed: onTap,
+      tooltip: semanticLabel,
+      // 기본값은 Material 최소 크기(48)를 강제해 화면마다 위치가 4씩 밀린다
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size.square(_minTapTarget),
+      ),
+      constraints: const BoxConstraints.tightFor(
+        width: _minTapTarget,
+        height: _minTapTarget,
+      ),
+      icon: SvgPicture.asset(
+        'assets/icons/ic_chevron_left.svg',
+        width: 12,
+        height: 24,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       ),
     );
   }
