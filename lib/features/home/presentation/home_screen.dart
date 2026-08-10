@@ -9,6 +9,8 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../notification/presentation/notification_screen.dart'
+    show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -155,12 +157,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const Spacer(),
           GestureDetector(
-            // TODO(notification): 알림 기능 정책 확정 시 연결
-            onTap: () => _showPreparing('알림'),
-            child: SvgPicture.asset(
-              'assets/icons/ic_bell.svg',
-              width: 24,
-              height: 24,
+            onTap: () => context.push(AppRoutes.notifications),
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/ic_bell.svg',
+                  width: 24,
+                  height: 24,
+                ),
+                // 안 읽은 알림이 있으면 종 오른쪽 위에 점을 찍는다
+                if (ref.watch(hasUnreadNotificationsProvider))
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryNormal,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
