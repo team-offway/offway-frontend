@@ -8,7 +8,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../../core/widgets/app_toast.dart';
 import '../../notification/presentation/notification_screen.dart'
     show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/category_chip.dart';
@@ -55,10 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final counts = r['categoryCounts'] as Map<String, dynamic>?;
       return (counts?[selected['label']] as int? ?? 0) > 0;
     }).toList();
-  }
-
-  void _showPreparing(String feature) {
-    showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
   @override
@@ -175,8 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildLeaveCard(AsyncValue<Map<String, dynamic>> user) {
     final days = user.value?['remainingLeaveDays'];
     return GestureDetector(
-      // TODO(my-leave): 내 연차 화면 디자인 확정 후 연결
-      onTap: () => _showPreparing('내 연차'),
+      onTap: () => context.push(AppRoutes.myLeave),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(16),

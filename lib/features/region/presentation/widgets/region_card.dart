@@ -54,8 +54,12 @@ class RegionCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
+        // TODO(server): 시안의 제목은 장소명('삼탄아트마인')인데 홈 API는
+        // 지역만 내려준다 — placeName이 실리면 지역명 대신 그걸 쓴다.
+        // 그때까지는 오버레이와 같은 지역명이 두 번 보인다
         Text(
-          '${region['name']} · ${region['sido']}',
+          (region['placeName'] as String?) ??
+              '${region['name']} · ${region['sido']}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.body2NormalBold.copyWith(
@@ -101,15 +105,51 @@ class RegionCard extends StatelessWidget {
 
   Widget _buildImage() {
     final imageUrl = region['imageUrl'] as String?;
-    return Container(
-      color: AppColors.backgroundNormalAlternative,
-      child: imageUrl == null
-          ? null
-          : Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.expand(),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          color: AppColors.backgroundNormalAlternative,
+          child: imageUrl == null
+              ? null
+              : Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox.expand(),
+                ),
+        ),
+        // DS Thumbnail Overlay — 밝은 사진 위에서도 글자가 읽히도록
+        // 위쪽에만 검정을 35%까지 깔고 아래로 사라지게 한다
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.staticBlack.withValues(alpha: 0.35),
+                  AppColors.staticBlack.withValues(alpha: 0),
+                ],
+              ),
             ),
+            child: Text(
+              '${region['name']} · ${region['sido']}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.caption1Regular.copyWith(
+                color: AppColors.staticWhite,
+                shadows: const [
+                  Shadow(blurRadius: 12, color: Color(0x29000000)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

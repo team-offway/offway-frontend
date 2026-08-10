@@ -1,0 +1,499 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_toast.dart';
+import 'my_leave_screen.dart' show LeaveUsage, leaveUsagesProvider;
+import 'widgets/leave_empty_view.dart';
+
+/// O-13 · 연차 사용 내역 전체.
+///
+/// 코스에서 차감된 건은 눌러 펼치면 '코스 자세히 보기'가 나온다 —
+/// 어떤 여행 때문에 줄었는지 되짚어볼 수 있게.
+class LeaveUsagesScreen extends ConsumerStatefulWidget {
+  const LeaveUsagesScreen({super.key});
+
+  @override
+  ConsumerState<LeaveUsagesScreen> createState() => _LeaveUsagesScreenState();
+}
+
+class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
+  /// 펼쳐 둔 카드의 인덱스 — 한 번에 하나만 펼친다
+  int? _expanded;
+
+  /// 체크박스를 띄운 삭제 모드인지
+  bool _selecting = false;
+
+  /// 삭제 모드에서 고른 카드들
+  final _selected = <int>{};
+
+  void _enterSelecting() {
+    setState(() {
+      _selecting = true;
+      _selected.clear();
+      // 펼친 카드는 접어 체크박스가 잘 보이게 한다
+      _expanded = null;
+    });
+  }
+
+  void _exitSelecting() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggle(int i) {
+    setState(() {
+      if (!_selected.remove(i)) _selected.add(i);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final usages = ref.watch(leaveUsagesProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundNormal,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopBar(context),
+            Expanded(
+              child: usages.isEmpty
+                  ? const Center(child: LeaveEmptyView())
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                      itemCount: usages.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) => _UsageCard(
+                        usage: usages[i],
+                        expanded: _expanded == i,
+                        selecting: _selecting,
+                        checked: _selected.contains(i),
+                        // 삭제 모드에서는 어느 카드든 골라진다.
+                        // 평소에는 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
+                        onTap: _selecting
+                            ? () => _toggle(i)
+                            : usages[i].courseName == null
+                            ? null
+                            : () => setState(
+                                () => _expanded = _expanded == i ? null : i,
+                              ),
+                      ),
+                    ),
+            ),
+            if (_selecting) _buildDeleteActions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// '...' 메뉴 — 지금은 삭제만 있다
+  Future<void> _showMenu() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.backgroundElevated,
+      barrierColor: AppColors.materialDimmer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 56,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    '삭제',
+                    style: AppTypography.headline2Bold.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    child: AppIconButton(
+                      icon: Icons.close,
+                      onTap: () => Navigator.of(sheetContext).pop(),
+                      semanticLabel: '닫기',
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            GestureDetector(
+              onTap: () => Navigator.of(sheetContext).pop('delete'),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.staticBlack.withValues(
+                          alpha: AppOpacity.o5,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Opacity(
+                          opacity: AppOpacity.o61,
+                          child: SvgPicture.asset(
+                            'assets/icons/ic_trash.svg',
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Text(
+                      '사용 내역 삭제',
+                      style: AppTypography.body1NormalMedium.copyWith(
+                        color: AppColors.labelNeutral,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action != 'delete') return;
+    _enterSelecting();
+  }
+
+  /// 삭제 모드 하단 — 취소와 삭제하기
+  Widget _buildDeleteActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton(
+              onPressed: _exitSelecting,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.backgroundElevatedAlternative,
+                foregroundColor: AppColors.labelNeutral,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('취소', style: AppTypography.body1NormalBold),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              // 하나도 안 골랐으면 지울 게 없다
+              onPressed: _selected.isEmpty ? null : _confirmDelete,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryNormal,
+                disabledBackgroundColor: AppColors.interactionDisable,
+                foregroundColor: AppColors.staticWhite,
+                disabledForegroundColor: AppColors.labelAssistive,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('삭제하기', style: AppTypography.body1NormalBold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.backgroundElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '사용 내역을 삭제할까요?',
+          style: AppTypography.headline1Bold.copyWith(
+            color: AppColors.labelNormal,
+          ),
+        ),
+        content: Text(
+          '삭제하면 차감된 연차가 복구돼요.',
+          style: AppTypography.body2NormalMedium.copyWith(
+            color: AppColors.labelAlternative,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              '취소',
+              style: AppTypography.body1NormalBold.copyWith(
+                color: AppColors.labelNeutral,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              '삭제하기',
+              style: AppTypography.body1NormalBold.copyWith(
+                color: AppColors.primaryNormal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    // TODO(server): 사용 내역 삭제 API가 없다.
+    // `POST /leaves/me/usages`에 음수 days로 되돌리는 방식인지 백엔드와 정할 것
+    _exitSelecting();
+    // 실제로 지워지지 않았는데 완료라고 알리면 잔여 연차가 그대로인 걸 보고 혼란스럽다
+    showAppToast(context, '내역 삭제는 서버 연동 후 동작해요');
+  }
+
+  Widget _buildTopBar(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: Stack(
+        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Text(
+              '연차 사용 내역',
+              style: AppTypography.headline2Bold.copyWith(
+                color: AppColors.labelStrong,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 6,
+            child: AppBackButton(
+              onTap: () => context.canPop()
+                  ? context.pop()
+                  : context.go(AppRoutes.myLeave),
+            ),
+          ),
+          if (!_selecting)
+            Positioned(
+              right: 6,
+              child: IconButton(
+                onPressed: _showMenu,
+                tooltip: '더 보기',
+                // 에셋이 Label/Alternative(61%)를 이미 품고 있어 색을 덧입히지 않는다
+                icon: SvgPicture.asset(
+                  'assets/icons/ic_more_horizontal.svg',
+                  width: 24,
+                  height: 24,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스
+class _SelectBox extends StatelessWidget {
+  const _SelectBox({required this.checked});
+
+  final bool checked;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: checked ? AppColors.primaryNormal : AppColors.backgroundNormal,
+          borderRadius: BorderRadius.circular(6),
+          border: checked
+              ? null
+              : Border.all(color: AppColors.lineNormalNeutral),
+        ),
+        child: checked
+            ? Icon(Icons.check, size: 16, color: AppColors.staticWhite)
+            : null,
+      ),
+    );
+  }
+}
+
+/// 내역 카드 한 장 — 코스 건은 펼치면 상세로 가는 버튼이 붙는다
+class _UsageCard extends StatelessWidget {
+  const _UsageCard({
+    required this.usage,
+    required this.expanded,
+    required this.onTap,
+    this.selecting = false,
+    this.checked = false,
+  });
+
+  final LeaveUsage usage;
+  final bool expanded;
+  final VoidCallback? onTap;
+
+  /// 삭제 모드라 체크박스를 띄우는지
+  final bool selecting;
+  final bool checked;
+
+  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+  @override
+  Widget build(BuildContext context) {
+    final fromCourse = usage.courseName != null;
+    final d = usage.usedOn;
+    final dateLabel =
+        '${d.year}.${d.month.toString().padLeft(2, '0')}'
+        '.${d.day.toString().padLeft(2, '0')}(${_weekdays[d.weekday - 1]})';
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: fromCourse
+              ? AppPalette.lightBlue95
+              : AppColors.backgroundElevatedAlternative,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (selecting) ...[
+              _SelectBox(checked: checked),
+              const SizedBox(height: 10),
+            ],
+            Row(
+              // 펼쳐도 -N일이 아래로 내려가지 않게 위쪽 줄에 맞춘다
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateLabel,
+                        style: AppTypography.body1NormalBold.copyWith(
+                          color: AppColors.labelNeutral,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      if (fromCourse)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 펼침 상태를 쉐브론 방향으로 알린다
+                            RotatedBox(
+                              quarterTurns: expanded ? 2 : 0,
+                              child: SvgPicture.asset(
+                                'assets/icons/ic_chevron_down.svg',
+                                width: 16,
+                                height: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                usage.courseName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.label1NormalMedium
+                                    .copyWith(color: AppColors.primaryNormal),
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        if (usage.reason case final String reason)
+                          Text(
+                            reason,
+                            style: AppTypography.label1NormalMedium.copyWith(
+                              color: AppColors.labelNeutral,
+                            ),
+                          ),
+                        if (usage.memo case final String memo) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            memo,
+                            style: AppTypography.label1ReadingRegular.copyWith(
+                              color: AppColors.labelAlternative,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    '-${formatLeaveDays(usage.days)}일',
+                    style: AppTypography.body1NormalBold.copyWith(
+                      color: AppColors.primaryNormal,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (expanded) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  // TODO(server): 내역에 courseId가 실리면 그 코스 상세로 보낸다
+                  onTap: () => showAppToast(context, '코스 연결은 서버 연동 후 동작해요'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundNormal,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '코스 자세히 보기',
+                      style: AppTypography.label2Medium.copyWith(
+                        color: AppColors.labelNeutral,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
