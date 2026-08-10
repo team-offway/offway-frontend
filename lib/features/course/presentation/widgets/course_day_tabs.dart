@@ -55,12 +55,19 @@ class _DayTab extends StatelessWidget {
               ? null
               : Border.all(color: AppColors.lineNormalNeutral),
         ),
-        child: Text(
-          'Day $day',
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: selected
-                ? AppColors.inverseLabel
-                : AppColors.labelAlternative,
+        // 시안 칩 높이 40 = 텍스트 박스 24 + 상하 패딩 16.
+        // Body 2의 line-height는 22로 떨어져 그대로 두면 38이 된다
+        child: SizedBox(
+          height: 24,
+          child: Center(
+            child: Text(
+              'Day $day',
+              style: AppTypography.body2NormalMedium.copyWith(
+                color: selected
+                    ? AppColors.inverseLabel
+                    : AppColors.labelAlternative,
+              ),
+            ),
           ),
         ),
       ),
