@@ -1000,13 +1000,16 @@ class _PlaceSheet extends ConsumerWidget {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
     // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
-    var useValue = loading ? '—' : (useTime ?? '정보 없음');
+    var useValue = loading ? '—' : (useTime ?? '정보없음');
+    var useEmpty = !loading && useTime == null;
     var useDanger = false;
     if (isToday && useTime != null && closingPassed(useTime, now)) {
       useValue = '오늘 운영이 끝났어요';
+      useEmpty = false;
       useDanger = true;
     }
-    var restValue = loading ? '—' : (restDate ?? '정보 없음');
+    var restValue = loading ? '—' : (restDate ?? '정보없음');
+    final restEmpty = !loading && restDate == null;
     var restDanger = false;
     if (isToday &&
         restDate != null &&
@@ -1075,6 +1078,7 @@ class _PlaceSheet extends ConsumerWidget {
               label: '운영시간',
               value: useValue,
               danger: useDanger,
+              empty: useEmpty,
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
@@ -1082,6 +1086,7 @@ class _PlaceSheet extends ConsumerWidget {
               label: '휴무일',
               value: restValue,
               danger: restDanger,
+              empty: restEmpty,
             ),
           ],
         ),
@@ -1094,6 +1099,7 @@ class _PlaceSheet extends ConsumerWidget {
     required String label,
     required String value,
     required bool danger,
+    bool empty = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1116,7 +1122,12 @@ class _PlaceSheet extends ConsumerWidget {
           child: Text(
             value,
             style: AppTypography.body2NormalMedium.copyWith(
-              color: danger ? AppColors.statusNegative : AppColors.labelNeutral,
+              // 값이 없을 때는 실제 정보와 구분되게 한 단계 옅힌다
+              color: danger
+                  ? AppColors.statusNegative
+                  : empty
+                  ? AppColors.labelAssistive
+                  : AppColors.labelNeutral,
             ),
           ),
         ),

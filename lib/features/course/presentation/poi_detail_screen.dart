@@ -255,9 +255,12 @@ class _Body extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            value ?? '정보 없음',
+            value ?? '정보없음',
             style: AppTypography.body2NormalMedium.copyWith(
-              color: AppColors.labelNeutral,
+              // 값이 없을 때는 실제 정보와 구분되게 한 단계 옅힌다
+              color: value == null
+                  ? AppColors.labelAssistive
+                  : AppColors.labelNeutral,
             ),
           ),
         ),
