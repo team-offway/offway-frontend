@@ -181,6 +181,7 @@ class _LeaveHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       height: 187,
       decoration: BoxDecoration(
         color: AppColors.primaryNormal,
@@ -188,15 +189,20 @@ class _LeaveHeroCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
+        // 없으면 Stack이 가장 큰 자식 크기로 줄어 카드가 화면 폭을 못 채운다
+        fit: StackFit.expand,
         children: [
-          // 캐리어 일러스트는 카드 오른쪽에 붙어 아래로 잘린다
+          // 캐리어 일러스트는 카드 오른쪽 절반만 차지한다 —
+          // 시안 기준 카드 362 중 182. 왼쪽 글자를 덮지 않아야 한다
           Positioned(
             right: 0,
             top: 0,
             bottom: 0,
+            width: 182,
             child: Image.asset(
               'assets/images/leave_hero_luggage.png',
-              fit: BoxFit.fitHeight,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
             ),
           ),
           Padding(
