@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
@@ -42,7 +43,7 @@ class RegionDetailScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: region.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppCircularLoadingView(),
           error: (e, _) => Center(child: Text('지역 정보를 불러오지 못했어요\n$e')),
           data: (data) => data == null
               ? const Center(child: Text('지역 정보를 찾을 수 없어요'))
