@@ -19,6 +19,7 @@ import '../../features/course_wizard/presentation/period_style_screen.dart';
 import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my/presentation/my_screen.dart';
+import '../../features/leave/presentation/my_leave_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 import '../../features/region/presentation/region_detail_screen.dart';
 import '../../features/region/presentation/region_list_screen.dart';
@@ -26,6 +27,7 @@ import '../../features/region/presentation/region_list_screen.dart';
 abstract final class AppRoutes {
   static const login = '/login';
   static const onboardingLeave = '/onboarding/leave';
+  static const myLeave = '/leave';
   static const home = '/';
   static const wizardDateGate = '/wizard/date-gate';
   static const wizardCalendar = '/wizard/calendar';
@@ -112,6 +114,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboardingLeave,
         name: 'onboardingLeave',
         builder: (context, state) => const LeaveInputScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.myLeave,
+        name: 'myLeave',
+        builder: (context, state) => const MyLeaveScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,

@@ -171,8 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildLeaveCard(AsyncValue<Map<String, dynamic>> user) {
     final days = user.value?['remainingLeaveDays'];
     return GestureDetector(
-      // TODO(my-leave): 내 연차 화면 디자인 확정 후 연결
-      onTap: () => _showPreparing('내 연차'),
+      onTap: () => context.push(AppRoutes.myLeave),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(16),
