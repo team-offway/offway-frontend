@@ -9,6 +9,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import 'leave_date_picker_screen.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
 const _reasons = ['여행', '개인 사유', '가족 행사', '병가', '기타'];
@@ -54,20 +55,19 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
       _range == null ? 0 : _range!.end.difference(_range!.start).inDays + 1;
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-      initialDateRange: _range,
-      helpText: '연차 사용일 선택',
-      saveText: '선택 완료',
-    );
+    final picked = await Navigator.of(context)
+        .push<({DateTimeRange range, double? consumed})>(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => LeaveDatePickerScreen(initialRange: _range),
+          ),
+        );
     if (picked == null) return;
     setState(() {
-      _range = picked;
-      // 하루짜리면 1일, 여러 날이면 그만큼을 기본 차감으로 채워준다
-      _days = _rangeDayCount.toDouble();
+      _range = picked.range;
+      // 서버가 센 차감 일수(평일−공휴일)를 기본값으로 채운다.
+      // 못 받았으면 고른 날 수를 그대로 쓴다
+      _days = picked.consumed ?? _rangeDayCount.toDouble();
     });
   }
 

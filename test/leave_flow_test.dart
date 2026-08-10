@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
+import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
 
 void main() {
@@ -45,5 +46,20 @@ void main() {
     await tester.tap(find.text('정선 여행'));
     await tester.pumpAndSettle();
     expect(find.text('코스 자세히 보기'), findsNothing);
+  });
+
+  testWidgets('연차 사용일 선택: 2박3일 상한 없이 고를 수 있다', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LeaveDatePickerScreen())),
+    );
+    await tester.pump();
+
+    expect(find.text('연차 사용일 선택'), findsOneWidget);
+    expect(find.text('사용한 연차 날짜를 선택해 주세요.'), findsOneWidget);
+    // 여행 캘린더의 2박3일 안내 배너는 없어야 한다
+    expect(find.textContaining('까지 선택할 수 있어요'), findsNothing);
+
+    final done = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(done.onPressed, isNull, reason: '날짜를 안 골랐으면 잠겨 있어야 한다');
   });
 }

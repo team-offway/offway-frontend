@@ -10,8 +10,10 @@ const _rangeBand = Color(0x1F3DC2FF);
 /// 가는날~오는날을 고르는 월별 스크롤 캘린더.
 /// 코스 위저드와 저장한 코스 일정 지정 화면이 공유한다.
 ///
-/// 최대 [kMaxTripSpanDays]박까지만 고를 수 있고, 범위를 고르는 중에만
+/// 기본은 최대 [kMaxTripSpanDays]박까지만 고를 수 있고, 범위를 고르는 중에만
 /// 상한을 넘는 날짜를 비활성화한다(완성 후에는 다른 시점으로 재선택 가능).
+/// [maxSpanDays]에 null을 주면 상한 없이 고를 수 있다 — 연차 사용일처럼
+/// 여행 정책과 무관한 날짜를 고를 때 쓴다.
 class TripDateRangePicker extends StatelessWidget {
   const TripDateRangePicker({
     super.key,
@@ -21,6 +23,7 @@ class TripDateRangePicker extends StatelessWidget {
     required this.onSelect,
     this.monthCount = 12,
     this.padding = const EdgeInsets.fromLTRB(22, 28, 22, 24),
+    this.maxSpanDays = kMaxTripSpanDays,
   });
 
   final DateTime today;
@@ -33,6 +36,9 @@ class TripDateRangePicker extends StatelessWidget {
 
   final EdgeInsets padding;
 
+  /// 시작일로부터 고를 수 있는 최대 박 수. null이면 상한이 없다
+  final int? maxSpanDays;
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -44,6 +50,7 @@ class TripDateRangePicker extends StatelessWidget {
         startDate: startDate,
         endDate: endDate,
         onSelect: onSelect,
+        maxSpanDays: maxSpanDays,
       ),
     );
   }
@@ -56,6 +63,7 @@ class _MonthCalendar extends StatelessWidget {
     required this.startDate,
     required this.endDate,
     required this.onSelect,
+    required this.maxSpanDays,
   });
 
   final DateTime month;
@@ -63,6 +71,7 @@ class _MonthCalendar extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
   final ValueChanged<DateTime> onSelect;
+  final int? maxSpanDays;
 
   static const _weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -123,10 +132,12 @@ class _MonthCalendar extends StatelessWidget {
   /// 단, 범위가 완성된 뒤에는 다시 열어 다른 시점으로 재선택할 수 있게 한다.
   bool _isDisabled(DateTime date) {
     if (date.isBefore(today)) return true;
+    final limit = maxSpanDays;
+    if (limit == null) return false;
     final start = startDate;
     final isSelecting = start != null && endDate == null;
     // Duration 더하기 대신 달력 일수로 비교한다 (서머타임 지역에서 어긋남 방지)
-    return isSelecting && calendarDaysBetween(start, date) > kMaxTripSpanDays;
+    return isSelecting && calendarDaysBetween(start, date) > limit;
   }
 
   Widget _buildCell(int dayNumber) {
