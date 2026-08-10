@@ -6,8 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
 
@@ -88,14 +88,10 @@ class PoiDetailScreen extends ConsumerWidget {
           Positioned(
             // 다른 화면과 같은 위치 — 버튼이 아이콘보다 넓어 여백을 줄여 맞춘다
             left: 6,
-            child: AppIconButton(
-              icon: Icons.arrow_back_ios_new,
-              size: 20,
+            child: AppBackButton(
               // 딥링크로 바로 들어오면 스택이 비어 pop이 안 된다 — 홈으로 보낸다
               onTap: () =>
                   context.canPop() ? context.pop() : context.go(AppRoutes.home),
-              semanticLabel: '뒤로 가기',
-              // 지정하지 않으면 기본 검정이라 제목보다 진해 보인다
               color: AppColors.labelAlternative,
             ),
           ),

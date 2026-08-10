@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../mock/mock_data_source.dart';
 import 'widgets/region_card.dart';
+import '../../../core/widgets/app_back_button.dart';
 
 /// 추천 여행지 전체 목록 mock (서버 연동 시 목록 API로 교체)
 final regionListProvider = FutureProvider<List<Map<String, dynamic>>>(
@@ -116,14 +117,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
       padding: const EdgeInsets.fromLTRB(13, 8, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 22,
-              color: _labelNormal,
-            ),
-          ),
+          AppBackButton(onTap: () => context.pop()),
           const SizedBox(width: 12),
           const Text(
             '이번달 추천 여행지',

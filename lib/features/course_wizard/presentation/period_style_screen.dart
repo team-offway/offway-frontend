@@ -7,8 +7,8 @@ import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_inline_notice.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 
@@ -152,12 +152,7 @@ class PeriodStyleScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         children: [
-          AppIconButton(
-            icon: Icons.arrow_back_ios_new,
-            size: 20,
-            onTap: () => context.pop(),
-            semanticLabel: '뒤로 가기',
-          ),
+          AppBackButton(onTap: () => context.pop()),
           const Spacer(),
           Text(
             '2/4',

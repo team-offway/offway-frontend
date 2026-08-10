@@ -14,6 +14,7 @@ import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -215,11 +216,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Row(
         children: [
-          AppIconButton(
-            icon: Icons.arrow_back_ios_new,
-            size: 20,
+          AppBackButton(
             onTap: () => context.pop(),
-            semanticLabel: '뒤로 가기',
             // 편집·공유 아이콘과 같은 위계 — 기본 검정은 혼자 진하다
             color: AppColors.labelAlternative,
           ),

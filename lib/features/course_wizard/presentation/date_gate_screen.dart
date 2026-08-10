@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../application/course_wizard_provider.dart';
 
 /// O-04-0 · 날짜 갈림길 (STEP 0)
@@ -106,15 +107,7 @@ class DateGateScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 22,
-              color: AppColors.labelNormal,
-            ),
-          ),
+          AppBackButton(onTap: () => context.pop()),
           const Spacer(),
           Text(
             '1/4',
