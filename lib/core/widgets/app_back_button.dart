@@ -11,7 +11,8 @@ class AppBackButton extends StatelessWidget {
   const AppBackButton({
     super.key,
     required this.onTap,
-    this.color = AppColors.labelNormal,
+    // DS 상단 내비게이션 기준 — 진한 검정은 제목보다 튄다
+    this.color = AppColors.labelAlternative,
     this.semanticLabel = '뒤로 가기',
   });
 
