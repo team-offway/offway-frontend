@@ -14,6 +14,7 @@ import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -157,7 +158,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              // 시안: 썸네일과 Day 칩 사이 12
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CourseDayTabs(
@@ -215,11 +217,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Row(
         children: [
-          AppIconButton(
-            icon: Icons.arrow_back_ios_new,
-            size: 20,
+          AppBackButton(
             onTap: () => context.pop(),
-            semanticLabel: '뒤로 가기',
             // 편집·공유 아이콘과 같은 위계 — 기본 검정은 혼자 진하다
             color: AppColors.labelAlternative,
           ),
@@ -573,11 +572,20 @@ class _EditSheetRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                // 디자인은 아이콘을 61% 투명도로 옅게 얹는다
+                // 시안: 배경 32 안에 아이콘 20, 61% 투명도로 옅게.
+                // 에셋에 이미 투명도가 박혀 있어 불투명하게 덮은 뒤
+                // 여기서 한 번만 옅게 만든다 — 안 그러면 61%가 두 번 곱해진다
                 child: Opacity(
                   opacity: AppOpacity.o61,
-                  // 시안: 배경 32 안에 아이콘 20
-                  child: SvgPicture.asset(iconAsset, width: 20, height: 20),
+                  child: SvgPicture.asset(
+                    iconAsset,
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.staticBlack,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -690,9 +698,11 @@ class _WeatherChip extends StatelessWidget {
     final icon = _skyIcons[weather['sky'] as String?] ?? 'ic_weather_sunny';
     final withTemp = showTemp && maxTemp != null;
     return Container(
+      // 시안 버튼: 좌우 14 · 상하 7 (아이콘 16 기준 높이 38).
+      // 기온 없이 아이콘만 있을 때도 같은 높이를 지킨다
       padding: withTemp
           ? const EdgeInsets.symmetric(horizontal: 14, vertical: 7)
-          : const EdgeInsets.all(7),
+          : const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.lineNormalNeutral),
         borderRadius: BorderRadius.circular(8),
@@ -702,8 +712,9 @@ class _WeatherChip extends StatelessWidget {
         children: [
           SvgPicture.asset(
             'assets/icons/$icon.svg',
-            width: withTemp ? 24 : 18,
-            height: withTemp ? 24 : 18,
+            // 시안 Leading Icon 16 — 기온이 붙어도 같은 크기다
+            width: 16,
+            height: 16,
           ),
           if (withTemp) ...[
             const SizedBox(width: 4),
@@ -989,13 +1000,16 @@ class _PlaceSheet extends ConsumerWidget {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
     // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
-    var useValue = loading ? '—' : (useTime ?? '정보 없음');
+    var useValue = loading ? '—' : (useTime ?? '정보없음');
+    var useEmpty = !loading && useTime == null;
     var useDanger = false;
     if (isToday && useTime != null && closingPassed(useTime, now)) {
       useValue = '오늘 운영이 끝났어요';
+      useEmpty = false;
       useDanger = true;
     }
-    var restValue = loading ? '—' : (restDate ?? '정보 없음');
+    var restValue = loading ? '—' : (restDate ?? '정보없음');
+    final restEmpty = !loading && restDate == null;
     var restDanger = false;
     if (isToday &&
         restDate != null &&
@@ -1044,20 +1058,27 @@ class _PlaceSheet extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: AppColors.labelNormal,
+                  SvgPicture.asset(
+                    'assets/icons/ic_chevron_right.svg',
+                    width: 12,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.labelAlternative,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 22),
             _buildInfoRow(
-              iconAsset: 'assets/icons/ic_clock.svg',
+              // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
+              // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘
+              iconAsset: 'assets/icons/ic_clock_outline.svg',
               label: '운영시간',
               value: useValue,
               danger: useDanger,
+              empty: useEmpty,
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
@@ -1065,6 +1086,7 @@ class _PlaceSheet extends ConsumerWidget {
               label: '휴무일',
               value: restValue,
               danger: restDanger,
+              empty: restEmpty,
             ),
           ],
         ),
@@ -1077,10 +1099,13 @@ class _PlaceSheet extends ConsumerWidget {
     required String label,
     required String value,
     required bool danger,
+    bool empty = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 시안 에셋이 Label/Alternative(61%)를 이미 품고 있다 —
+        // 여기서 또 칠하면 투명도가 겹쳐 흐려진다
         SvgPicture.asset(iconAsset, width: 24, height: 24),
         const SizedBox(width: 10),
         SizedBox(
@@ -1097,7 +1122,12 @@ class _PlaceSheet extends ConsumerWidget {
           child: Text(
             value,
             style: AppTypography.body2NormalMedium.copyWith(
-              color: danger ? AppColors.statusNegative : AppColors.labelNeutral,
+              // 값이 없을 때는 실제 정보와 구분되게 한 단계 옅힌다
+              color: danger
+                  ? AppColors.statusNegative
+                  : empty
+                  ? AppColors.labelAssistive
+                  : AppColors.labelNeutral,
             ),
           ),
         ),

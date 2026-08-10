@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 
@@ -57,12 +57,7 @@ class _CourseSaveDateScreenState extends ConsumerState<CourseSaveDateScreen> {
             Padding(
               // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
               padding: const EdgeInsets.fromLTRB(6, 0, 20, 0),
-              child: AppIconButton(
-                icon: Icons.arrow_back_ios_new,
-                size: 20,
-                onTap: () => context.pop(),
-                semanticLabel: '뒤로 가기',
-              ),
+              child: AppBackButton(onTap: () => context.pop()),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),

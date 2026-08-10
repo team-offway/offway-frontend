@@ -214,7 +214,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Spacer(),
             SvgPicture.asset(
               'assets/icons/ic_chevron_right.svg',
-              width: 24,
+              // DS 쉐브론(Tight)은 12×24 비율이다
+              width: 12,
               height: 24,
               colorFilter: const ColorFilter.mode(
                 AppColors.labelAlternative,

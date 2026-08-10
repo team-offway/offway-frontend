@@ -6,8 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
 
@@ -88,14 +88,10 @@ class PoiDetailScreen extends ConsumerWidget {
           Positioned(
             // 다른 화면과 같은 위치 — 버튼이 아이콘보다 넓어 여백을 줄여 맞춘다
             left: 6,
-            child: AppIconButton(
-              icon: Icons.arrow_back_ios_new,
-              size: 20,
+            child: AppBackButton(
               // 딥링크로 바로 들어오면 스택이 비어 pop이 안 된다 — 홈으로 보낸다
               onTap: () =>
                   context.canPop() ? context.pop() : context.go(AppRoutes.home),
-              semanticLabel: '뒤로 가기',
-              // 지정하지 않으면 기본 검정이라 제목보다 진해 보인다
               color: AppColors.labelAlternative,
             ),
           ),
@@ -160,18 +156,18 @@ class _Body extends StatelessWidget {
               if (overview != null) ...[
                 const SizedBox(height: 8),
                 Text(
+                  // 소개글은 자르지 않고 전부 보여준다 — 3줄에서 끊으면
+                  // 문장이 중간에 잘려 무슨 곳인지 알 수 없다
                   overview,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body2NormalRegular.copyWith(
-                    color: AppColors.labelAlternative,
+                  style: AppTypography.label1ReadingMedium.copyWith(
+                    color: AppColors.labelNeutral,
                   ),
                 ),
               ],
               const SizedBox(height: 28),
               Text(
                 '기본정보',
-                style: AppTypography.headline2Bold.copyWith(
+                style: AppTypography.headline1Bold.copyWith(
                   color: AppColors.labelNormal,
                 ),
               ),
@@ -228,7 +224,7 @@ class _Body extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.backgroundNormalAlternative,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,21 +243,22 @@ class _Body extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 68,
-          child: Text(
-            label,
-            style: AppTypography.body2NormalMedium.copyWith(
-              color: AppColors.labelAlternative,
-            ),
+        // 시안은 라벨 폭을 고정하지 않고 글자만큼만 차지한다
+        Text(
+          label,
+          style: AppTypography.label1NormalBold.copyWith(
+            color: AppColors.labelAlternative,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
-            value ?? '정보 없음',
-            style: AppTypography.body2NormalMedium.copyWith(
-              color: AppColors.labelNeutral,
+            value ?? '정보없음',
+            style: AppTypography.label1NormalMedium.copyWith(
+              // 값이 없을 때는 실제 정보와 구분되게 한 단계 옅힌다
+              color: value == null
+                  ? AppColors.labelAssistive
+                  : AppColors.labelNeutral,
             ),
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../../core/widgets/app_back_button.dart';
 import '../../../mock/mock_data_source.dart';
 
 /// 지역 상세 mock (서버 연동 시 지역 상세 API로 교체)
@@ -228,14 +229,7 @@ class RegionDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 22,
-              color: _labelNormal,
-            ),
-          ),
+          AppBackButton(onTap: () => context.pop()),
           const Spacer(),
           GestureDetector(
             // TODO(share): 지역 공유 기능 정책 확정 시 연결
