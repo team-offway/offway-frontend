@@ -302,7 +302,12 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
               child: IconButton(
                 onPressed: _showMenu,
                 tooltip: '더 보기',
-                icon: Icon(Icons.more_horiz, color: AppColors.labelNormal),
+                // 에셋이 Label/Alternative(61%)를 이미 품고 있어 색을 덧입히지 않는다
+                icon: SvgPicture.asset(
+                  'assets/icons/ic_more_horizontal.svg',
+                  width: 24,
+                  height: 24,
+                ),
               ),
             ),
         ],
