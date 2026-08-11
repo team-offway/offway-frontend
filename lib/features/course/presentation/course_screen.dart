@@ -15,6 +15,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
+import '../data/share_token_store.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -164,7 +165,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // 담기만으로는 연차를 깎지 않는다 — 여행이 끝난 뒤 홈에서 다녀왔는지
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
-      await ref.read(courseRepositoryProvider).save(savePayload);
+      final saved = await ref.read(courseRepositoryProvider).save(savePayload);
+      // 토큰은 이 응답에만 실린다 — 목록·상세를 다시 불러도 없다.
+      // 나중에 공유할 수 있게 지금 적어둔다
+      if (saved.shareToken case final String token) {
+        await ref
+            .read(shareTokenStoreProvider)
+            .save('${saved.courseId}', token);
+      }
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();

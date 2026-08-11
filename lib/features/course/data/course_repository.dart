@@ -440,8 +440,6 @@ class CourseRepository {
       'confirmed': travelDate != null,
       // 연차를 이미 깎았는지 — 차감 액션 노출 여부를 이 값이 정한다
       'leaveDeducted': summary['leaveDeducted'] as bool? ?? false,
-      // 공유 링크에 쓴다 — 상세 응답에만 실린다(목록에는 없다)
-      'shareToken': ?(detail?['shareToken'] as String?),
       'startDate': ?travelDate,
       if (start != null)
         'endDate': isoDate(
