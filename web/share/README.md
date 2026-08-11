@@ -39,7 +39,8 @@ CORS 는 브라우저가 직접 부를 때만 걸리는데 지금은 서버리�
 1. [vercel.com](https://vercel.com) → **Add New Project** → `offway-frontend` 선택
 2. **Root Directory**: `web/share`
 3. **Framework Preset**: Other (빌드 명령 없음)
-4. **Project Name**: 원하는 이름 (현재 `offway-frontend` 로 배포돼 있다)
+4. **Project Name**: 원하는 이름 (현재 `offway-frontend`)
+5. 도메인은 Settings → Domains 에서 붙인다 — 현재 `offway.cloud`
 5. Deploy
 
 Flutter 코드만 바꿔도 재배포가 도는 게 신경 쓰이면,
@@ -54,11 +55,11 @@ git diff --quiet HEAD^ HEAD -- .
 앱이 만드는 링크 주소를 실제 도메인으로 바꾼다.
 
 ```bash
-flutter run --dart-define=SHARE_BASE_URL=https://offway-frontend.vercel.app
+flutter run --dart-define=SHARE_BASE_URL=https://offway.cloud
 ```
 
 늘 쓰는 값이면 `lib/core/config/app_config.dart` 의 `shareBaseUrl` 기본값을 바꾼다.
-현재 기본값은 `https://offway-frontend.vercel.app` 이다. 도메인을 사면 그때 바꾼다.
+현재 기본값은 `https://offway.cloud` 다 (Gabia 등록 · Vercel 연결).
 
 ## 알아둘 점
 
