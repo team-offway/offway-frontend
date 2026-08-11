@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_empty_view.dart';
-import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../data/region_places_repository.dart';
 import '../../../core/router/app_router.dart';
@@ -13,13 +12,12 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../mock/mock_data_source.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
-/// 지역 상세 mock.
+/// 지역 상세.
 ///
-/// TODO(server): 지역 상세 API가 없다. 서버 홈 응답에는 소개글·매력 포인트가
-/// 실리지 않아 화면을 채울 수 없어 mock을 유지한다.
-///
-/// 다만 홈·목록은 서버 데이터를 쓰므로 넘어오는 id가 숫자("1")다.
-/// mock은 지역 이름("정선")을 키로 쓰므로, 서버 목록에서 이름을 찾아 이어준다.
+/// 지역 상세 전용 API는 아직 없다. 두 갈래로 채운다.
+/// - mock에 있는 지역(정선·영월 등): 소개글·사진까지 갖춘 mock을 그대로 쓴다
+/// - 서버 89개 지역: 홈 카드 정보 + 장소 목록(`/regions/{id}/places`)으로
+///   같은 형태를 만들어 준다. 소개글·사진은 없어 그 칸은 비워둔다
 final regionDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, regionId) async {
       final all = await MockDataSource.allRegions();
@@ -34,18 +32,41 @@ final regionDetailProvider = FutureProvider.autoDispose
       final direct = findBy(regionId);
       if (direct != null) return direct;
 
-      // 서버 id로 들어왔으면 그 지역의 이름으로 다시 찾는다
+      // 서버 지역 — 홈 카드에서 이름·이미지를 얻고 장소로 매력 포인트를 채운다
+      Map<String, dynamic>? card;
       try {
         final snapshot = await ref.watch(homeSnapshotProvider.future);
         for (final r in snapshot.regions) {
           if (r['id'] == regionId) {
-            return findBy(r['name'] as String? ?? '');
+            card = r;
+            break;
           }
         }
       } on Exception {
-        // 서버를 못 부르면 못 찾은 것으로 둔다
+        return null;
       }
-      return null;
+      if (card == null) return null;
+
+      // mock에 같은 이름이 있으면 소개글까지 갖춘 그쪽이 낫다
+      final byName = findBy(card['name'] as String? ?? '');
+      if (byName != null) return byName;
+
+      final sights = await ref.watch(regionSightsProvider(regionId).future);
+      return {
+        'id': regionId,
+        'name': card['name'],
+        'sido': card['sido'],
+        if (card['benefitBadge'] != null) 'benefitBadge': card['benefitBadge'],
+        if (card['benefitPolicyId'] != null)
+          'benefitPolicyId': card['benefitPolicyId'],
+        // 대표 사진은 홈 카드 이미지 한 장뿐이다
+        'photos': [if (card['imageUrl'] case final String url) url],
+        // 인허가 데이터에는 사진·소개가 없어 이름과 분류만 채운다
+        'highlightSpots': [
+          for (final p in sights.take(2))
+            {'name': p['name'], 'caption': p['categoryLabel'] ?? ''},
+        ],
+      };
     });
 
 /// 지역 상세 정보 — 대표 이미지·소개·매력 포인트 장소·기본 정보
@@ -80,7 +101,13 @@ class RegionDetailScreen extends ConsumerWidget {
           // mock에 없는 지역(서버 89곳)은 소개글이 없다 —
           // 대신 서버가 주는 관광명소 목록으로 화면을 채운다
           data: (data) => data == null
-              ? _ServerRegionBody(regionId: regionId)
+              ? const Center(
+                  child: AppEmptyView(
+                    illustrationAsset: 'assets/icons/ic_empty_map.svg',
+                    title: '지역 소개를 준비하고 있어요',
+                    description: '조금만 기다려 주세요',
+                  ),
+                )
               : _buildBody(context, data),
         ),
       ),
@@ -409,115 +436,6 @@ class _SpotCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// mock에 없는 서버 지역(89곳)의 상세.
-///
-/// 소개글·매력 포인트는 서버에 없지만 관광명소 목록은 받을 수 있다.
-/// 빈 화면 대신 그 목록으로 채운다.
-class _ServerRegionBody extends ConsumerWidget {
-  const _ServerRegionBody({required this.regionId});
-
-  final String regionId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sights = ref.watch(regionSightsProvider(regionId));
-
-    // 뒤로가기는 어떤 상태에서도 있어야 한다 — 목록이 비거나 실패해도
-    // 이전 화면으로 돌아갈 수 있어야 갇히지 않는다
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 8, 20, 0),
-          child: Row(
-            children: [
-              AppBackButton(onTap: () => context.pop()),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  '가볼 만한 곳',
-                  style: AppTypography.headline1Bold.copyWith(
-                    color: AppColors.labelNormal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: sights.when(
-            loading: () => const AppCircularLoadingView(),
-            error: (e, _) => AppErrorView(
-              onRetry: () => ref.invalidate(regionSightsProvider(regionId)),
-            ),
-            data: (places) => places.isEmpty
-                ? const Center(
-                    child: AppEmptyView(
-                      illustrationAsset: 'assets/icons/ic_empty_map.svg',
-                      title: '지역 소개를 준비하고 있어요',
-                      description: '조금만 기다려 주세요',
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-                    children: [
-                      for (final place in places) _ServerPlaceRow(place: place),
-                    ],
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 서버 장소 한 줄 — 인허가 데이터라 사진이 없다. 이름·분류·주소만 보여준다
-class _ServerPlaceRow extends StatelessWidget {
-  const _ServerPlaceRow({required this.place});
-
-  final Map<String, dynamic> place;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            (place['name'] as String?) ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.body1NormalBold.copyWith(
-              color: AppColors.labelNormal,
-            ),
-          ),
-          if (place['categoryLabel'] case final String label) ...[
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTypography.label2Medium.copyWith(
-                color: AppColors.primaryNormal,
-              ),
-            ),
-          ],
-          if (place['address'] case final String address) ...[
-            const SizedBox(height: 2),
-            Text(
-              address,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.label2Regular.copyWith(
-                color: AppColors.labelAlternative,
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
