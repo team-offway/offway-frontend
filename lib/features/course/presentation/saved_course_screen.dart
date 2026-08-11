@@ -21,6 +21,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import '../domain/share_link.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
@@ -235,7 +236,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
               // TODO(share): 카카오 공유는 share SDK·콘솔 등록과 보기전용 웹이
               // 필요하다 — 링크 체계가 정해지면 연결한다
               onKakaoShare: () => showAppToast(context, '카카오톡 공유는 준비 중이에요'),
-              onCopyLink: _copyLink,
+              onCopyLink: () => _copyLink(saved['shareToken'] as String?),
               onSaveImage: (day) => _saveImage(saved, course, day),
             ),
           ),
@@ -244,12 +245,18 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     );
   }
 
-  /// 링크 복사 — 주소 체계는 보기전용 웹이 생기면 확정된다
-  Future<void> _copyLink() async {
-    // TODO(server): 보기전용 웹 링크가 생기면 실제 주소로 교체
-    await Clipboard.setData(
-      ClipboardData(text: 'https://offway.app/courses/${widget.savedId}'),
-    );
+  /// 공유 링크 복사.
+  ///
+  /// 서버가 준 토큰으로 만든 주소를 넣는다 — 받은 사람은 계정이 없어도
+  /// 이 링크로 코스를 볼 수 있다.
+  /// TODO(web): 보기 전용 웹페이지는 배포 전이다. 도메인이 확정되면
+  /// `--dart-define=SHARE_BASE_URL=...`로 주입한다
+  Future<void> _copyLink(String? shareToken) async {
+    if (shareToken == null || shareToken.isEmpty) {
+      showAppToast(context, '공유 링크를 만들지 못했어요');
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: ShareLink.of(shareToken)));
     if (mounted) {
       showAppToast(context, '링크를 복사했어요.', kind: AppToastKind.success);
     }

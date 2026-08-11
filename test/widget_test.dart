@@ -132,7 +132,9 @@ class _FakeCourseRepository extends CourseRepository {
   }
 
   @override
-  Future<int> save(Map<String, dynamic> savePayload) async => 1;
+  Future<({int courseId, String? shareToken})> save(
+    Map<String, dynamic> savePayload,
+  ) async => (courseId: 1, shareToken: 'test-token');
 
   @override
   Future<void> deductLeave(int courseId) async {}
