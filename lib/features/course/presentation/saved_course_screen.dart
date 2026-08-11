@@ -262,6 +262,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       title: '$regionName 여행${duration.isEmpty ? '' : ', $duration'}',
       description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
       linkUrl: ShareLink.of(shareToken),
+      shareToken: shareToken,
       imageUrl: saved['thumbnailUrl'] as String?,
     );
     if (!mounted || sent) return;

@@ -11,6 +11,7 @@ abstract final class KakaoShare {
     required String title,
     required String description,
     required String linkUrl,
+    required String shareToken,
     String? imageUrl,
   }) async {
     final template = FeedTemplate(
