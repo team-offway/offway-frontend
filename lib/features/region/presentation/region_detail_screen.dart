@@ -3,17 +3,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_empty_view.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../mock/mock_data_source.dart';
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
-/// 지역 상세 mock (서버 연동 시 지역 상세 API로 교체)
+/// 지역 상세 mock.
+///
+/// TODO(server): 지역 상세 API가 없다. 서버 홈 응답에는 소개글·매력 포인트가
+/// 실리지 않아 화면을 채울 수 없어 mock을 유지한다.
+///
+/// 다만 홈·목록은 서버 데이터를 쓰므로 넘어오는 id가 숫자("1")다.
+/// mock은 지역 이름("정선")을 키로 쓰므로, 서버 목록에서 이름을 찾아 이어준다.
 final regionDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, regionId) async {
       final all = await MockDataSource.allRegions();
-      for (final r in all) {
-        if (r['id'] == regionId || r['name'] == regionId) return r;
+
+      Map<String, dynamic>? findBy(String key) {
+        for (final r in all) {
+          if (r['id'] == key || r['name'] == key) return r;
+        }
+        return null;
+      }
+
+      final direct = findBy(regionId);
+      if (direct != null) return direct;
+
+      // 서버 id로 들어왔으면 그 지역의 이름으로 다시 찾는다
+      try {
+        final snapshot = await ref.watch(homeSnapshotProvider.future);
+        for (final r in snapshot.regions) {
+          if (r['id'] == regionId) {
+            return findBy(r['name'] as String? ?? '');
+          }
+        }
+      } on Exception {
+        // 서버를 못 부르면 못 찾은 것으로 둔다
       }
       return null;
     });
@@ -44,9 +72,19 @@ class RegionDetailScreen extends ConsumerWidget {
         bottom: false,
         child: region.when(
           loading: () => const AppCircularLoadingView(),
-          error: (e, _) => Center(child: Text('지역 정보를 불러오지 못했어요\n$e')),
+          error: (e, _) => AppErrorView(
+            onRetry: () => ref.invalidate(regionDetailProvider(regionId)),
+          ),
+          // 서버가 주는 89개 지역에는 아직 소개글·매력 포인트가 없다.
+          // 빈 화면 대신 준비 중임을 알린다
           data: (data) => data == null
-              ? const Center(child: Text('지역 정보를 찾을 수 없어요'))
+              ? const Center(
+                  child: AppEmptyView(
+                    illustrationAsset: 'assets/icons/ic_empty_map.svg',
+                    title: '지역 소개를 준비하고 있어요',
+                    description: '조금만 기다려 주세요',
+                  ),
+                )
               : _buildBody(context, data),
         ),
       ),
