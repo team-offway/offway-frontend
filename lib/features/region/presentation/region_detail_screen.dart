@@ -427,40 +427,51 @@ class _ServerRegionBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sights = ref.watch(regionSightsProvider(regionId));
 
-    return sights.when(
-      loading: () => const AppCircularLoadingView(),
-      error: (e, _) => AppErrorView(
-        onRetry: () => ref.invalidate(regionSightsProvider(regionId)),
-      ),
-      data: (places) => places.isEmpty
-          ? const Center(
-              child: AppEmptyView(
-                illustrationAsset: 'assets/icons/ic_empty_map.svg',
-                title: '지역 소개를 준비하고 있어요',
-                description: '조금만 기다려 주세요',
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-              children: [
-                Row(
-                  children: [
-                    AppBackButton(onTap: () => context.pop()),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '가볼 만한 곳',
-                        style: AppTypography.headline1Bold.copyWith(
-                          color: AppColors.labelNormal,
-                        ),
-                      ),
-                    ),
-                  ],
+    // 뒤로가기는 어떤 상태에서도 있어야 한다 — 목록이 비거나 실패해도
+    // 이전 화면으로 돌아갈 수 있어야 갇히지 않는다
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 20, 0),
+          child: Row(
+            children: [
+              AppBackButton(onTap: () => context.pop()),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '가볼 만한 곳',
+                  style: AppTypography.headline1Bold.copyWith(
+                    color: AppColors.labelNormal,
+                  ),
                 ),
-                const SizedBox(height: 20),
-                for (final place in places) _ServerPlaceRow(place: place),
-              ],
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: sights.when(
+            loading: () => const AppCircularLoadingView(),
+            error: (e, _) => AppErrorView(
+              onRetry: () => ref.invalidate(regionSightsProvider(regionId)),
             ),
+            data: (places) => places.isEmpty
+                ? const Center(
+                    child: AppEmptyView(
+                      illustrationAsset: 'assets/icons/ic_empty_map.svg',
+                      title: '지역 소개를 준비하고 있어요',
+                      description: '조금만 기다려 주세요',
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+                    children: [
+                      for (final place in places) _ServerPlaceRow(place: place),
+                    ],
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

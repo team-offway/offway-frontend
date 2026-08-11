@@ -143,8 +143,10 @@ class _PolicyDetailSheet extends ConsumerWidget {
 
   Future<void> _openApplyUrl(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    // 주소가 깨져 있어도 버튼이 먹통이 되면 안 된다 — 왜 안 되는지 알린다
+    final opened =
+        uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       showAppToast(context, '신청 페이지를 열지 못했어요');
     }

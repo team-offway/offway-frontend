@@ -38,6 +38,3 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
     return usages;
   }
 });
-
-/// 되돌릴 수 있는 내역인지 — 이미 취소된 건(음수)은 다시 되돌리지 않는다
-bool canRevert(LeaveUsage usage) => usage.days > 0;

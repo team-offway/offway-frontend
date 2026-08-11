@@ -7,6 +7,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
@@ -20,7 +22,8 @@ class MyLeaveScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
-    final usages = ref.watch(leaveUsagesProvider).value ?? const <LeaveUsage>[];
+    final usagesAsync = ref.watch(leaveUsagesProvider);
+    final usages = usagesAsync.value ?? const <LeaveUsage>[];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -72,7 +75,20 @@ class MyLeaveScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  if (usages.isEmpty)
+                  // 로딩·오류를 '내역 없음'으로 보여주면 재시도할 길이 사라진다
+                  if (usagesAsync.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: AppCircularLoadingView(),
+                    )
+                  else if (usagesAsync.hasError)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: AppErrorView(
+                        onRetry: () => ref.invalidate(myLeaveProvider),
+                      ),
+                    )
+                  else if (usages.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
                       child: LeaveEmptyView(),
@@ -266,7 +282,7 @@ class LeaveUsageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromCourse = usage.courseName != null;
+    final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
     final dateLabel =
         '${d.year}.${d.month.toString().padLeft(2, '0')}'
@@ -310,7 +326,7 @@ class LeaveUsageCard extends StatelessWidget {
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
-                            usage.courseName!,
+                            usage.courseName ?? '코스 차감',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.label1NormalMedium.copyWith(

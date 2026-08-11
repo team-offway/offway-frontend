@@ -7,6 +7,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -59,9 +61,17 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     });
   }
 
+  /// 되돌릴 수 있는 내역인지.
+  ///
+  /// TODO(server): 취소 요청에 원본 id를 실을 수 없어(요청 필드가
+  /// usedOn·days·reason·courseId뿐) 같은 건을 두 번 되돌리는 걸 서버가 막지
+  /// 못한다. 지금은 이미 취소된 음수 내역만 걸러 최소한의 오작동을 막는다.
+  bool _canRevert(LeaveUsage usage) => usage.days > 0;
+
   @override
   Widget build(BuildContext context) {
-    final usages = ref.watch(leaveUsagesProvider).value ?? const <LeaveUsage>[];
+    final async = ref.watch(leaveUsagesProvider);
+    final usages = async.value ?? const <LeaveUsage>[];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -70,7 +80,12 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
           children: [
             _buildTopBar(context),
             Expanded(
-              child: usages.isEmpty
+              // 로딩·오류를 '내역 없음'으로 보여주면 재시도할 길이 사라진다
+              child: async.isLoading
+                  ? const AppCircularLoadingView()
+                  : async.hasError
+                  ? AppErrorView(onRetry: () => ref.invalidate(myLeaveProvider))
+                  : usages.isEmpty
                   ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -84,7 +99,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                         // 삭제 모드에서는 어느 카드든 골라진다.
                         // 평소에는 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
                         onTap: _selecting
-                            ? () => _toggle(i)
+                            ? (_canRevert(usages[i]) ? () => _toggle(i) : null)
                             : usages[i].courseName == null
                             ? null
                             : () => setState(
@@ -385,7 +400,7 @@ class _UsageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromCourse = usage.courseName != null;
+    final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
     final dateLabel =
         '${d.year}.${d.month.toString().padLeft(2, '0')}'
@@ -441,7 +456,7 @@ class _UsageCard extends StatelessWidget {
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                usage.courseName!,
+                                usage.courseName ?? '코스 차감',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.label1NormalMedium
