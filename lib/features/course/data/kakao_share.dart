@@ -14,25 +14,32 @@ abstract final class KakaoShare {
     required String shareToken,
     String? imageUrl,
   }) async {
+    final url = Uri.parse(linkUrl);
+
+    // 앱 실행 파라미터가 없으면 카카오가 브라우저로 연다
+    final webLink = Link(webUrl: url, mobileWebUrl: url);
+
+    // 파라미터가 있으면 앱을 열고, 안 깔린 기기에서는
+    // 카카오 콘솔에 등록한 마켓(App Store·Play)으로 보낸다
+    final appLink = Link(
+      webUrl: url,
+      mobileWebUrl: url,
+      androidExecutionParams: {'shareToken': shareToken},
+      iosExecutionParams: {'shareToken': shareToken},
+    );
+
     final template = FeedTemplate(
       content: Content(
         title: title,
         description: description,
         // 이미지가 없으면 카카오가 회색 자리를 그린다 — 대표 이미지가 있으면 넣는다
         imageUrl: Uri.parse(imageUrl ?? ''),
-        link: Link(
-          webUrl: Uri.parse(linkUrl),
-          mobileWebUrl: Uri.parse(linkUrl),
-        ),
+        // 카드 본문은 웹으로 — 링크를 받는 사람 대부분은 앱이 없다
+        link: webLink,
       ),
       buttons: [
-        Button(
-          title: '코스 보기',
-          link: Link(
-            webUrl: Uri.parse(linkUrl),
-            mobileWebUrl: Uri.parse(linkUrl),
-          ),
-        ),
+        Button(title: '웹으로 보기', link: webLink),
+        Button(title: '앱으로 보기', link: appLink),
       ],
     );
 
