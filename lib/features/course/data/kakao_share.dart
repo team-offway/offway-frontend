@@ -16,7 +16,9 @@ abstract final class KakaoShare {
   }) async {
     final url = Uri.parse(linkUrl);
 
-    // 앱 실행 파라미터가 없으면 카카오가 브라우저로 연다
+    // 실행 파라미터가 없으면 앱을 열지 않는다.
+    // 단, 이 주소의 도메인이 카카오 콘솔 [플랫폼 › Web]에 등록돼 있어야
+    // 버튼이 동작한다 — 미등록 도메인은 눌러도 아무 반응이 없다
     final webLink = Link(webUrl: url, mobileWebUrl: url);
 
     // 파라미터가 있으면 앱을 열고, 안 깔린 기기에서는

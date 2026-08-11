@@ -281,10 +281,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                     dayCount: durationDays,
                     // 아직 저장 전이라 공유 토큰이 없다 — 서버는 저장 응답에만
                     // 토큰을 준다. 담아야 링크가 생긴다는 걸 알린다
-                    onCopyLink: () =>
-                        showAppToast(context, '내 코스에 담으면 링크를 공유할 수 있어요'),
-                    onKakaoShare: () =>
-                        showAppToast(context, '내 코스에 담으면 링크를 공유할 수 있어요'),
+                    onCopyLink: () => showAppToast(context, '먼저 내 코스에 담아주세요'),
+                    onKakaoShare: () => showAppToast(context, '먼저 내 코스에 담아주세요'),
                   ),
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(

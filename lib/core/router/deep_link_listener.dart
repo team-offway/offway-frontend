@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_router.dart';
 
@@ -12,16 +12,16 @@ import 'app_router.dart';
 /// (`kakao{앱키}://kakaolink?shareToken=...`). 이 값이 없으면 그냥 홈에 머문다.
 ///
 /// 앱이 꺼져 있다 열린 경우(첫 링크)와 떠 있는 상태에서 열린 경우를 모두 받는다.
-class DeepLinkListener extends StatefulWidget {
+class DeepLinkListener extends ConsumerStatefulWidget {
   const DeepLinkListener({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<DeepLinkListener> createState() => _DeepLinkListenerState();
+  ConsumerState<DeepLinkListener> createState() => _DeepLinkListenerState();
 }
 
-class _DeepLinkListenerState extends State<DeepLinkListener> {
+class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _subscription;
 
@@ -45,10 +45,13 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   void _handle(Uri uri) {
     final token = uri.queryParameters['shareToken'];
     if (token == null || token.isEmpty) return;
+    // context로는 못 찾는다 — MaterialApp.router의 builder는 라우터 바깥이라
+    // 그 안에서 GoRouter.of(context)를 부르면 예외가 난다. 라우터를 직접 잡는다
+    final router = ref.read(appRouterProvider);
     // 라우터가 준비된 뒤 옮겨야 첫 프레임과 부딪히지 않는다
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      GoRouter.of(context).push(AppRoutes.sharedCoursePath(token));
+      router.push(AppRoutes.sharedCoursePath(token));
     });
   }
 

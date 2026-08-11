@@ -18,8 +18,8 @@ class OffwayApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       routerConfig: router,
-      // 공유 링크로 열린 경우를 받으려면 라우터 안쪽이어야 한다 —
-      // 바깥에 두면 GoRouter.of(context)가 라우터를 찾지 못한다
+      // 여기는 라우터 바깥이라 GoRouter.of(context)를 쓸 수 없다 —
+      // 리스너는 appRouterProvider로 라우터를 직접 잡는다
       builder: (context, child) =>
           DeepLinkListener(child: child ?? const SizedBox.shrink()),
     );
