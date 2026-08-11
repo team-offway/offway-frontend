@@ -15,6 +15,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
+import '../data/share_token_store.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -164,7 +165,21 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // 담기만으로는 연차를 깎지 않는다 — 여행이 끝난 뒤 홈에서 다녀왔는지
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
-      await ref.read(courseRepositoryProvider).save(savePayload);
+      final saved = await ref.read(courseRepositoryProvider).save(savePayload);
+
+      // 여기부터는 서버에 이미 담긴 뒤다 — 실패해도 담기를 되돌리면 안 된다.
+      // 토큰 보관이 어긋났다고 실패로 알리면 사용자가 다시 눌러 코스가
+      // 두 번 담긴다. 토큰은 이 응답에만 실리므로 지금 적어두되, 못 적어도
+      // 담기 자체는 성공으로 마무리한다 (공유만 나중에 못 한다)
+      if (saved.shareToken case final String token) {
+        try {
+          await ref
+              .read(shareTokenStoreProvider)
+              .save('${saved.courseId}', token);
+        } on Exception {
+          // 공유 링크만 못 만들 뿐이라 사용자를 붙잡지 않는다
+        }
+      }
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
@@ -264,6 +279,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                   onTap: () => CourseShareSheets.showEntry(
                     context,
                     dayCount: durationDays,
+                    // 아직 저장 전이라 공유 토큰이 없다 — 서버는 저장 응답에만
+                    // 토큰을 준다. 담아야 링크가 생긴다는 걸 알린다
+                    onCopyLink: () =>
+                        showAppToast(context, '내 코스에 담으면 링크를 공유할 수 있어요'),
+                    onKakaoShare: () =>
+                        showAppToast(context, '내 코스에 담으면 링크를 공유할 수 있어요'),
                   ),
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(

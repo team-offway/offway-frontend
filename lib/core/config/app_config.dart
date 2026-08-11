@@ -10,6 +10,16 @@ abstract final class AppConfig {
     defaultValue: 'http://localhost:8080',
   );
 
+  /// 코스 공유 링크가 열리는 보기 전용 웹 주소.
+  ///
+  /// 서버가 정한 경로는 `/c/{shareToken}`. 웹페이지는 아직 배포 전이라
+  /// 도메인이 확정되면 `--dart-define=SHARE_BASE_URL=...`로 주입하거나
+  /// 아래 기본값을 바꾼다.
+  static const String shareBaseUrl = String.fromEnvironment(
+    'SHARE_BASE_URL',
+    defaultValue: 'https://offway.app',
+  );
+
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 

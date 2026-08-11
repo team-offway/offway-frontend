@@ -110,15 +110,23 @@ class CourseRepository {
     }
   }
 
-  /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`). 저장된 courseId를 준다.
-  Future<int> save(Map<String, dynamic> savePayload) async {
+  /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`).
+  ///
+  /// 공유 토큰은 **이 응답에만 실린다** — 저장해야 비로소 남에게 보낼 링크가
+  /// 생긴다. 토큰이 있다고 공개된 것은 아니고, 링크를 넘겨야 남이 볼 수 있다.
+  Future<({int courseId, String? shareToken})> save(
+    Map<String, dynamic> savePayload,
+  ) async {
     try {
       final response = await _dio.post<dynamic>(
         '/api/v1/courses',
         data: savePayload,
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
-      return (data['courseId'] as num).toInt();
+      return (
+        courseId: (data['courseId'] as num).toInt(),
+        shareToken: data['shareToken'] as String?,
+      );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }

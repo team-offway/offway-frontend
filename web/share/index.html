@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OffWay · 공유받은 여행 코스</title>
+
+<!-- 카카오톡·슬랙 미리보기. 코스별 문구는 불러온 뒤 JS가 갈아끼운다 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OffWay">
+<meta property="og:title" content="OffWay 여행 코스">
+<meta property="og:description" content="연차로 떠나는 로컬 여행 — 공유받은 코스를 확인해보세요">
+<meta name="twitter:card" content="summary">
+
+<style>
+  * { box-sizing: border-box; }
+
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f8;
+    --ink: #171719;
+    --ink-2: rgba(46,47,51,.88);
+    --ink-3: rgba(55,56,60,.61);
+    --ink-4: rgba(55,56,60,.28);
+    --line: rgba(112,115,124,.16);
+    --brand: #3dc2ff;
+    --brand-soft: #e5f6fe;
+    --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+            "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131417; --surface: #1b1d21; --ink: #f2f0ec; --ink-2: #c5c8cd;
+      --ink-3: #8d9299; --ink-4: #5e636b; --line: #2d3036; --brand-soft: #10323f;
+    }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 480px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  header { padding: 8px 0 24px; }
+  .brand {
+    font-size: 20px; font-weight: 800; letter-spacing: -.4px;
+    color: var(--brand);
+  }
+  h1 {
+    margin: 16px 0 6px;
+    font-size: 24px; font-weight: 700; letter-spacing: -.6px;
+    text-wrap: balance;
+  }
+  .sub { margin: 0; color: var(--ink-3); font-size: 15px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .chip {
+    padding: 5px 10px; border-radius: 8px;
+    background: var(--brand-soft); color: var(--brand);
+    font-size: 13px; font-weight: 600;
+  }
+
+  .day { margin-top: 32px; }
+  .day-head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .day-title { font-size: 17px; font-weight: 700; }
+  .day-date { font-size: 15px; color: var(--ink-3); }
+
+  ol { list-style: none; margin: 0; padding: 0; }
+  li {
+    display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  li:last-child { border-bottom: 0; }
+
+  .no {
+    width: 24px; height: 24px; border-radius: 999px;
+    background: var(--brand); color: #fff;
+    font-size: 13px; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  .name { font-size: 16px; font-weight: 600; color: var(--ink); }
+  .meta { margin-top: 2px; font-size: 13px; color: var(--ink-3); }
+  .addr { margin-top: 2px; font-size: 13px; color: var(--ink-4); }
+
+  .state { padding: 80px 20px; text-align: center; color: var(--ink-3); }
+  .state strong { display: block; margin-bottom: 6px; font-size: 18px; color: var(--ink); }
+
+  footer {
+    margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid var(--line);
+    text-align: center; font-size: 13px; color: var(--ink-4);
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="root">
+  <div class="state">불러오는 중이에요…</div>
+</div>
+
+<script>
+// 백엔드는 HTTP만 받는데 이 페이지는 HTTPS로 뜬다 — 브라우저가 그 요청을
+// 혼합 콘텐츠로 막으므로 같은 출처의 서버리스 함수를 거쳐 부른다 (api/course.js)
+const API = '/api/course';
+
+const DENSITY = { RELAXED: '여유롭게', PACKED: '알차게' };
+const TRANSPORT = { CAR: '자동차', TRANSIT: '대중교통' };
+const WEEKDAY = {
+  MONDAY: '월', TUESDAY: '화', WEDNESDAY: '수', THURSDAY: '목',
+  FRIDAY: '금', SATURDAY: '토', SUNDAY: '일',
+};
+
+const root = document.getElementById('root');
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[m]));
+}
+
+function showState(title, detail) {
+  root.innerHTML =
+    `<div class="state"><strong>${esc(title)}</strong>${esc(detail ?? '')}</div>`;
+}
+
+function durationLabel(days) {
+  if (days <= 1) return '당일치기';
+  return `${days - 1}박 ${days}일`;
+}
+
+function formatDate(iso, dayOfWeek) {
+  if (!iso) return '';
+  const [, m, d] = iso.split('-');
+  const w = WEEKDAY[dayOfWeek];
+  return `${Number(m)}.${Number(d)}${w ? ` ${w}` : ''}`;
+}
+
+function render(course) {
+  const days = course.days ?? [];
+  // 지역명은 첫 장소에 실려 온다 — 코스 자체에는 이름 필드가 없다
+  const regionName =
+    days.flatMap((d) => d.items ?? []).find((i) => i.regionName)?.regionName ?? '';
+
+  const title = regionName
+    ? `${regionName} 여행, ${durationLabel(course.travelDays)}`
+    : `여행 코스 ${durationLabel(course.travelDays)}`;
+  document.title = `${title} · OffWay`;
+
+  const chips = [
+    DENSITY[course.density],
+    TRANSPORT[course.transport],
+    ...(course.benefits ?? []).map((b) => b.text),
+  ].filter(Boolean);
+
+  const body = days.map((day) => {
+    const items = day.items ?? [];
+    const rows = items.map((it) => `
+      <li>
+        <span class="no">${esc(it.order)}</span>
+        <div>
+          <div class="name">${esc(it.title)}</div>
+          <div class="meta">${esc(it.categoryLabel ?? '')}${
+            it.travelMinutes ? ` · 이동 ${esc(it.travelMinutes)}분` : ''
+          }</div>
+          ${it.address ? `<div class="addr">${esc(it.address)}</div>` : ''}
+        </div>
+      </li>`).join('');
+
+    return `
+      <section class="day">
+        <div class="day-head">
+          <span class="day-title">여행 ${esc(day.day)}일차</span>
+          <span class="day-date">${esc(formatDate(day.date, day.dayOfWeek))}</span>
+        </div>
+        <ol>${rows || '<li><div class="meta">장소가 없어요</div></li>'}</ol>
+      </section>`;
+  }).join('');
+
+  root.innerHTML = `
+    <header>
+      <div class="brand">offway</div>
+      <h1>${esc(title)}</h1>
+      <p class="sub">${esc(formatDate(course.travelDate) || '날짜 미정')}부터</p>
+      ${chips.length ? `<div class="chips">${
+        chips.map((c) => `<span class="chip">${esc(c)}</span>`).join('')
+      }</div>` : ''}
+    </header>
+    ${body}
+    <footer>연차로 떠나는 로컬 여행 · OffWay</footer>`;
+}
+
+async function main() {
+  // 주소는 /c/{shareToken} — 마지막 조각이 토큰이다
+  const token = location.pathname.split('/').filter(Boolean).pop();
+  if (!token || token === 'c') {
+    showState('링크가 올바르지 않아요', '공유받은 주소를 다시 확인해 주세요');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}?token=${encodeURIComponent(token)}`);
+    if (res.status === 404) {
+      showState('코스를 찾을 수 없어요', '링크가 잘못되었거나 삭제된 코스예요');
+      return;
+    }
+    if (res.status === 410) {
+      showState('만료된 링크예요', '공유한 사람에게 새 링크를 받아보세요');
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const body = await res.json();
+    if (!body.data) throw new Error('empty');
+    render(body.data);
+  } catch (e) {
+    showState('코스를 불러오지 못했어요', '잠시 후 다시 시도해 주세요');
+  }
+}
+
+main();
+</script>
+</body>
+</html>
