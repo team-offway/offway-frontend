@@ -11,6 +11,8 @@ import '../../../core/widgets/trip_date_range_picker.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
+import '../../leave/data/leave_usages_provider.dart';
+import '../data/course_repository.dart';
 import 'saved_course_screen.dart' show savedCourseDetailProvider;
 
 /// 저장한 코스의 여행 날짜 수정 (미확정 코스의 날짜 지정도 겸한다).
@@ -30,6 +32,9 @@ class CourseScheduleScreen extends ConsumerStatefulWidget {
 
 class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
   DateTime? _picked;
+
+  /// 저장 중이면 버튼을 잠가 같은 요청이 두 번 가지 않게 한다
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +141,7 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: canSubmit ? _submit : null,
+                  onPressed: (canSubmit && !_saving) ? _submit : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryNormal,
                     disabledBackgroundColor: AppColors.interactionDisable,
@@ -160,10 +165,29 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
     );
   }
 
-  void _submit() {
-    // TODO(server): 저장 코스 날짜 수정 API가 없다 (PATCH/PUT 405 확인,
-    // 재저장 우회도 상세 응답에 transport가 없어 불가). API가 생기면 여기서
-    // 저장하고 '날짜가 변경됐어요.' 토스트와 함께 상세로 돌아간다.
-    showAppToast(context, '날짜 수정은 서버 준비 중이에요');
+  Future<void> _submit() async {
+    final picked = _picked;
+    if (picked == null || _saving) return;
+
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(courseRepositoryProvider)
+          .reschedule(courseId: widget.savedId, travelDate: picked);
+      if (!mounted) return;
+      // 날짜가 바뀌면 연차 차감량도 서버가 다시 계산하므로 둘 다 새로 읽는다
+      ref
+        ..invalidate(savedCourseDetailProvider(widget.savedId))
+        ..invalidate(myLeaveProvider);
+      final parent = Navigator.of(context).context;
+      Navigator.of(context).pop();
+      if (!parent.mounted) return;
+      showAppToast(parent, '날짜가 변경됐어요.', kind: AppToastKind.success);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showAppToast(context, e.detail.isEmpty ? '날짜를 바꾸지 못했어요' : e.detail);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }

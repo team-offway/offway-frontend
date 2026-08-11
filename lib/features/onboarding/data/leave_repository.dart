@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../leave/domain/leave_usage.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
@@ -37,6 +38,24 @@ class LeaveRepository {
       throw ApiEnvelope.toApiException(e);
     }
   }
+
+  /// 내 연차 — 잔여 일수와 사용 내역을 함께 받는다 (`GET /leaves/me`).
+  Future<MyLeave> fetchMyLeave() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/v1/leaves/me');
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      return MyLeave.fromJson(data);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
+  /// 사용 내역 되돌리기.
+  ///
+  /// 삭제 전용 API는 없다 — 서버 설계상 같은 날짜에 음수 [days]를 남겨
+  /// 상쇄한다("사용 양수 · 취소 음수"). 그래서 깎였던 연차가 되돌아온다.
+  Future<void> revertUsage(LeaveUsage usage) =>
+      addUsage(usedOn: usage.usedOn, days: -usage.days, reason: usage.reason);
 
   /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
   ///

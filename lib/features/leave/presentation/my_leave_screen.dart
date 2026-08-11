@@ -7,48 +7,11 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../data/leave_usages_provider.dart';
+import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
-
-/// 연차 사용 내역 한 건.
-///
-/// 코스에서 차감된 건([courseName])과 직접 등록한 건([reason])은 생김새가
-/// 다르다 — 코스 건은 파란 카드에 코스명을, 직접 등록은 사유와 메모를 보여준다.
-typedef LeaveUsage = ({
-  DateTime usedOn,
-  double days,
-  String? reason,
-  String? memo,
-  String? courseName,
-});
-
-/// TODO(server): `GET /api/v1/leaves/me/usages`가 아직 없다 (POST만 존재).
-/// 조회 API가 열리면 이 mock을 리포지토리 호출로 바꾼다.
-final leaveUsagesProvider = Provider.autoDispose<List<LeaveUsage>>((ref) {
-  return [
-    (
-      usedOn: DateTime(2026, 6, 12),
-      days: 1,
-      reason: '개인 사유',
-      memo: '코로나에 걸렸음 콜록콜ㄱ록 아이고',
-      courseName: null,
-    ),
-    (
-      usedOn: DateTime(2026, 6, 12),
-      days: 1,
-      reason: '개인 사유',
-      memo: '청춘! 이는 듣기만 하여도 가슴이 설레는 말이다. 청춘의 피는 끓는다.',
-      courseName: null,
-    ),
-    (
-      usedOn: DateTime(2026, 6, 12),
-      days: 1,
-      reason: null,
-      memo: null,
-      courseName: '정선 여행',
-    ),
-  ];
-});
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
@@ -57,9 +20,10 @@ class MyLeaveScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(homeSnapshotProvider).value?.user;
-    final remaining = user?['remainingLeaveDays'] as num?;
-    final usages = ref.watch(leaveUsagesProvider);
+    final leave = ref.watch(myLeaveProvider);
+    final remaining = leave.value?.remainingDays;
+    final usagesAsync = ref.watch(leaveUsagesProvider);
+    final usages = usagesAsync.value ?? const <LeaveUsage>[];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -111,7 +75,20 @@ class MyLeaveScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  if (usages.isEmpty)
+                  // 로딩·오류를 '내역 없음'으로 보여주면 재시도할 길이 사라진다
+                  if (usagesAsync.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: AppCircularLoadingView(),
+                    )
+                  else if (usagesAsync.hasError)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: AppErrorView(
+                        onRetry: () => ref.invalidate(myLeaveProvider),
+                      ),
+                    )
+                  else if (usages.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
                       child: LeaveEmptyView(),
@@ -305,7 +282,7 @@ class LeaveUsageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromCourse = usage.courseName != null;
+    final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
     final dateLabel =
         '${d.year}.${d.month.toString().padLeft(2, '0')}'
@@ -349,7 +326,7 @@ class LeaveUsageCard extends StatelessWidget {
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
-                            usage.courseName!,
+                            usage.courseName ?? '코스 차감',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.label1NormalMedium.copyWith(
@@ -360,14 +337,16 @@ class LeaveUsageCard extends StatelessWidget {
                       ],
                     )
                   else ...[
-                    if (usage.reason case final String reason)
+                    // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
+                    // (서버 요청에 memo 필드가 따로 없다)
+                    if (reasonOf(usage.reason) case final String reason)
                       Text(
                         reason,
                         style: AppTypography.label1NormalMedium.copyWith(
                           color: AppColors.labelNeutral,
                         ),
                       ),
-                    if (usage.memo case final String memo) ...[
+                    if (memoOf(usage.reason) case final String memo) ...[
                       const SizedBox(height: 2),
                       Text(
                         memo,
@@ -395,4 +374,14 @@ class LeaveUsageCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 서버는 사유 하나만 받으므로 등록 시 '사유 · 상세'로 합쳐 보낸다.
+/// 보여줄 때는 다시 갈라 시안대로 두 줄로 만든다.
+String? reasonOf(String? raw) => raw?.split(' · ').first;
+String? memoOf(String? raw) {
+  final parts = raw?.split(' · ');
+  return (parts != null && parts.length > 1)
+      ? parts.sublist(1).join(' · ')
+      : null;
 }

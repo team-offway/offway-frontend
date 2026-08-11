@@ -252,6 +252,25 @@ class CourseRepository {
     }
   }
 
+  /// 여행 날짜를 옮긴다 (`PATCH /courses/{id}`).
+  ///
+  /// 서버가 연차 차감량을 다시 계산한다 — 옮긴 구간의 평일·공휴일이 달라지기
+  /// 때문. 이미 차감한 코스면 기존 내역을 새 값으로 갱신한다.
+  Future<void> reschedule({
+    required String courseId,
+    required DateTime travelDate,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(
+        '/api/v1/courses/$courseId',
+        data: {'travelDate': isoDate(travelDate)},
+      );
+      ApiEnvelope.unwrap(response);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 장소 상세 (`GET /pois/{contentId}`) — 주소·운영시간·휴무일·소개·좌표.
   ///
   /// useTime·restDate는 TourAPI 자유 텍스트("매주 월요일", "상시 개방" 등)라

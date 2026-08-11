@@ -7,7 +7,46 @@ import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
-import 'package:offway/features/leave/presentation/my_leave_screen.dart';
+import 'package:offway/features/leave/data/leave_usages_provider.dart';
+import 'package:offway/features/leave/domain/leave_usage.dart';
+import 'package:offway/features/onboarding/data/leave_repository.dart';
+
+/// 화면 검증용 내역 — 직접 등록 2건 + 코스 차감 1건
+final _sampleUsages = [
+  LeaveUsage(
+    id: 1,
+    usedOn: DateTime(2026, 6, 12),
+    days: 1,
+    reason: '개인 사유 · 코로나에 걸렸음 콜록콜ㄱ록 아이고',
+  ),
+  LeaveUsage(
+    id: 2,
+    usedOn: DateTime(2026, 6, 12),
+    days: 1,
+    reason: '개인 사유 · 청춘! 이는 듣기만 하여도 가슴이 설레는 말이다.',
+  ),
+  LeaveUsage(
+    id: 3,
+    usedOn: DateTime(2026, 6, 12),
+    days: 1,
+    courseId: 7,
+    courseName: '정선 여행',
+  ),
+];
+
+/// 되돌리기 요청만 기록하는 대역 — 서버를 부르지 않는다
+class _RecordingLeaveRepository implements LeaveRepository {
+  _RecordingLeaveRepository(this.reverted);
+
+  final List<({DateTime usedOn, double days})> reverted;
+
+  @override
+  Future<void> revertUsage(LeaveUsage usage) async =>
+      reverted.add((usedOn: usage.usedOn, days: -usage.days));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   testWidgets('연차 등록 화면: 여행·0.5일이 기본으로 골라져 있다', (tester) async {
@@ -90,7 +129,12 @@ void main() {
 
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LeaveUsagesScreen())),
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
     );
     await tester.pump();
 
@@ -126,7 +170,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          leaveUsagesProvider.overrideWith((ref) => const <LeaveUsage>[]),
+          leaveUsagesProvider.overrideWith((ref) async => const <LeaveUsage>[]),
         ],
         child: const MaterialApp(home: LeaveUsagesScreen()),
       ),
@@ -138,8 +182,17 @@ void main() {
   });
 
   testWidgets('삭제 모드: 고른 것이 있어야 삭제할 수 있다', (tester) async {
+    final reverted = <({DateTime usedOn, double days})>[];
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LeaveUsagesScreen())),
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
+          leaveRepositoryProvider.overrideWithValue(
+            _RecordingLeaveRepository(reverted),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
     );
     await tester.pump();
 
@@ -165,7 +218,10 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, '삭제하기'));
     await tester.pump();
     await tester.pump();
-    expect(find.text('내역 삭제는 서버 연동 후 동작해요'), findsOneWidget);
+
+    // 되돌리기 요청이 실제로 나간다 (같은 날짜에 음수를 남겨 상쇄)
+    expect(reverted, hasLength(1));
+    expect(reverted.first.days, -1);
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });

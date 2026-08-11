@@ -7,9 +7,15 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
-import 'my_leave_screen.dart' show LeaveUsage, leaveUsagesProvider;
+import '../data/leave_usages_provider.dart';
+import '../domain/leave_usage.dart';
+import '../../onboarding/data/leave_repository.dart';
+import 'my_leave_screen.dart' show reasonOf, memoOf;
 import 'widgets/leave_empty_view.dart';
 
 /// O-13 · 연차 사용 내역 전체.
@@ -55,9 +61,17 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     });
   }
 
+  /// 되돌릴 수 있는 내역인지.
+  ///
+  /// TODO(server): 취소 요청에 원본 id를 실을 수 없어(요청 필드가
+  /// usedOn·days·reason·courseId뿐) 같은 건을 두 번 되돌리는 걸 서버가 막지
+  /// 못한다. 지금은 이미 취소된 음수 내역만 걸러 최소한의 오작동을 막는다.
+  bool _canRevert(LeaveUsage usage) => usage.days > 0;
+
   @override
   Widget build(BuildContext context) {
-    final usages = ref.watch(leaveUsagesProvider);
+    final async = ref.watch(leaveUsagesProvider);
+    final usages = async.value ?? const <LeaveUsage>[];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -66,7 +80,12 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
           children: [
             _buildTopBar(context),
             Expanded(
-              child: usages.isEmpty
+              // 로딩·오류를 '내역 없음'으로 보여주면 재시도할 길이 사라진다
+              child: async.isLoading
+                  ? const AppCircularLoadingView()
+                  : async.hasError
+                  ? AppErrorView(onRetry: () => ref.invalidate(myLeaveProvider))
+                  : usages.isEmpty
                   ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -80,7 +99,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                         // 삭제 모드에서는 어느 카드든 골라진다.
                         // 평소에는 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
                         onTap: _selecting
-                            ? () => _toggle(i)
+                            ? (_canRevert(usages[i]) ? () => _toggle(i) : null)
                             : usages[i].courseName == null
                             ? null
                             : () => setState(
@@ -89,7 +108,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                       ),
                     ),
             ),
-            if (_selecting) _buildDeleteActions(),
+            if (_selecting) _buildDeleteActions(usages),
           ],
         ),
       ),
@@ -183,7 +202,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 
   /// 삭제 모드 하단 — 취소와 삭제하기
-  Widget _buildDeleteActions() {
+  Widget _buildDeleteActions(List<LeaveUsage> usages) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Row(
@@ -206,7 +225,9 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
           Expanded(
             child: FilledButton(
               // 하나도 안 골랐으면 지울 게 없다
-              onPressed: _selected.isEmpty ? null : _confirmDelete,
+              onPressed: _selected.isEmpty
+                  ? null
+                  : () => _confirmDelete(usages),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryNormal,
                 disabledBackgroundColor: AppColors.interactionDisable,
@@ -225,7 +246,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     );
   }
 
-  Future<void> _confirmDelete() async {
+  Future<void> _confirmDelete(List<LeaveUsage> usages) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -267,11 +288,24 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     );
     if (!mounted || confirmed != true) return;
 
-    // TODO(server): 사용 내역 삭제 API가 없다.
-    // `POST /leaves/me/usages`에 음수 days로 되돌리는 방식인지 백엔드와 정할 것
+    // 삭제 전용 API는 없다 — 같은 날짜에 음수를 남겨 상쇄하면 연차가 되돌아온다
+    final picked = [
+      for (final i in _selected)
+        if (i < usages.length) usages[i],
+    ];
     _exitSelecting();
-    // 실제로 지워지지 않았는데 완료라고 알리면 잔여 연차가 그대로인 걸 보고 혼란스럽다
-    showAppToast(context, '내역 삭제는 서버 연동 후 동작해요');
+    try {
+      final repo = ref.read(leaveRepositoryProvider);
+      for (final usage in picked) {
+        await repo.revertUsage(usage);
+      }
+      if (!mounted) return;
+      ref.invalidate(myLeaveProvider);
+      showAppToast(context, '연차 사용 내역이 삭제됐어요.', kind: AppToastKind.success);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showAppToast(context, e.detail.isEmpty ? '삭제하지 못했어요' : e.detail);
+    }
   }
 
   Widget _buildTopBar(BuildContext context) {
@@ -366,7 +400,7 @@ class _UsageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromCourse = usage.courseName != null;
+    final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
     final dateLabel =
         '${d.year}.${d.month.toString().padLeft(2, '0')}'
@@ -422,7 +456,7 @@ class _UsageCard extends StatelessWidget {
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                usage.courseName!,
+                                usage.courseName ?? '코스 차감',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.label1NormalMedium
@@ -432,14 +466,15 @@ class _UsageCard extends StatelessWidget {
                           ],
                         )
                       else ...[
-                        if (usage.reason case final String reason)
+                        // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
+                        if (reasonOf(usage.reason) case final String reason)
                           Text(
                             reason,
                             style: AppTypography.label1NormalMedium.copyWith(
                               color: AppColors.labelNeutral,
                             ),
                           ),
-                        if (usage.memo case final String memo) ...[
+                        if (memoOf(usage.reason) case final String memo) ...[
                           const SizedBox(height: 2),
                           Text(
                             memo,
