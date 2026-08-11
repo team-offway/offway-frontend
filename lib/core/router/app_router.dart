@@ -22,6 +22,7 @@ import '../../features/my/presentation/my_screen.dart';
 import '../../features/leave/presentation/leave_register_screen.dart';
 import '../../features/leave/presentation/leave_usages_screen.dart';
 import '../../features/leave/presentation/my_leave_screen.dart';
+import '../../features/course/presentation/shared_course_screen.dart';
 import '../../features/notification/presentation/notification_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 import '../../features/region/presentation/region_detail_screen.dart';
@@ -35,6 +36,10 @@ abstract final class AppRoutes {
   static const leaveUsages = '/leave/usages';
   static const home = '/';
   static const notifications = '/notifications';
+
+  /// 공유 링크로 받은 코스 — 카카오톡 '앱으로 보기'가 여기로 온다
+  static const sharedCourse = '/shared/:shareToken';
+  static String sharedCoursePath(String shareToken) => '/shared/$shareToken';
   static const wizardDateGate = '/wizard/date-gate';
   static const wizardCalendar = '/wizard/calendar';
   static const wizardPeriodStyle = '/wizard/period-style';
@@ -135,6 +140,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.leaveUsages,
         name: 'leaveUsages',
         builder: (context, state) => const LeaveUsagesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.sharedCourse,
+        name: 'sharedCourse',
+        builder: (context, state) =>
+            SharedCourseScreen(shareToken: state.pathParameters['shareToken']!),
       ),
       GoRoute(
         path: AppRoutes.notifications,

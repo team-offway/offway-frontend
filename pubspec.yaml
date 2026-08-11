@@ -21,6 +21,10 @@ dependencies:
   intl: ^0.20.3
   json_annotation: ^4.9.0
   kakao_flutter_sdk_user: ^2.0.0+1
+  # 카카오톡으로 코스 링크 보내기 (share)
+  kakao_flutter_sdk_share: ^2.0.0+1
+  # 공유 링크로 앱이 열릴 때 토큰을 받는다
+  app_links: ^6.3.2
   sign_in_with_apple: ^7.0.1
   url_launcher: ^6.3.1
 

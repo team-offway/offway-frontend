@@ -46,5 +46,7 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="nmap"/>
         </intent>
+        <!-- 카카오톡 공유 — 없으면 설치돼 있어도 못 찾아 웹으로 빠진다 -->
+        <package android:name="com.kakao.talk"/>
     </queries>
 </manifest>

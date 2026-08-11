@@ -21,6 +21,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import '../data/kakao_share.dart';
 import '../data/share_token_store.dart';
 import '../domain/share_link.dart';
 import 'my_courses_screen.dart';
@@ -234,9 +235,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             onTap: () => CourseShareSheets.showEntry(
               context,
               dayCount: course['durationDays'] as int,
-              // TODO(share): 카카오 공유는 share SDK·콘솔 등록과 보기전용 웹이
-              // 필요하다 — 링크 체계가 정해지면 연결한다
-              onKakaoShare: () => showAppToast(context, '카카오톡 공유는 준비 중이에요'),
+              onKakaoShare: () => _shareToKakao(saved),
               onCopyLink: _copyLink,
               onSaveImage: (day) => _saveImage(saved, course, day),
             ),
@@ -244,6 +243,30 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         ],
       ),
     );
+  }
+
+  /// 카카오톡으로 코스 링크 보내기 — 링크 복사와 같은 토큰을 쓴다
+  Future<void> _shareToKakao(Map<String, dynamic> saved) async {
+    final shareToken = await ref
+        .read(shareTokenStoreProvider)
+        .tokenOf(widget.savedId);
+    if (!mounted) return;
+    if (shareToken == null || shareToken.isEmpty) {
+      showAppToast(context, '이 코스는 링크를 만들 수 없어요. 다시 담으면 공유할 수 있어요');
+      return;
+    }
+
+    final regionName = saved['regionName'] as String? ?? '여행';
+    final duration = saved['durationLabel'] as String? ?? '';
+    final sent = await KakaoShare.sendCourse(
+      title: '$regionName 여행${duration.isEmpty ? '' : ', $duration'}',
+      description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
+      linkUrl: ShareLink.of(shareToken),
+      shareToken: shareToken,
+      imageUrl: saved['thumbnailUrl'] as String?,
+    );
+    if (!mounted || sent) return;
+    showAppToast(context, '카카오톡을 열지 못했어요');
   }
 
   /// 공유 링크 복사.

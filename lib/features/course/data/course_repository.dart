@@ -260,6 +260,22 @@ class CourseRepository {
     }
   }
 
+  /// 공유 링크로 받은 코스 (`GET /public/courses/{shareToken}`).
+  ///
+  /// 인증이 필요 없다 — 링크를 받은 사람에게는 계정이 없다.
+  /// 소유자 정보와 내부 courseId는 실리지 않고, 보기 전용이다.
+  Future<Map<String, dynamic>> sharedCourse(String shareToken) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/v1/public/courses/$shareToken',
+      );
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      return _toCourseMap(data);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 여행 날짜를 옮긴다 (`PATCH /courses/{id}`).
   ///
   /// 서버가 연차 차감량을 다시 계산한다 — 옮긴 구간의 평일·공휴일이 달라지기

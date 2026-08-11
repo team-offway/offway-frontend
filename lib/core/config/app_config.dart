@@ -13,10 +13,10 @@ abstract final class AppConfig {
   /// 코스 공유 링크가 열리는 보기 전용 웹 주소 (`web/share`를 Vercel에 배포).
   ///
   /// 서버가 정한 경로는 `/c/{shareToken}`.
-  /// 나중에 도메인을 사면 `--dart-define=SHARE_BASE_URL=...`로 바꾼다.
+  /// 배포 환경을 옮기면 `--dart-define=SHARE_BASE_URL=...`로 바꾼다.
   static const String shareBaseUrl = String.fromEnvironment(
     'SHARE_BASE_URL',
-    defaultValue: 'https://offway-frontend.vercel.app',
+    defaultValue: 'https://offway.cloud',
   );
 
   static const Duration connectTimeout = Duration(seconds: 10);
