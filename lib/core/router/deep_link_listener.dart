@@ -35,9 +35,13 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
     // 앱이 꺼져 있다 링크로 열린 경우
     try {
       final initial = await _appLinks.getInitialLink();
+      // 기다리는 사이 화면이 사라졌으면 여기서 끝낸다 — dispose가 이미 지나가
+      // 아래에서 구독을 만들면 아무도 취소해 주지 않는다
+      if (!mounted) return;
       if (initial != null) _handle(initial);
     } on Exception {
       // 링크를 못 읽어도 앱은 홈에서 정상 동작한다
+      if (!mounted) return;
     }
     _subscription = _appLinks.uriLinkStream.listen(_handle, onError: (_) {});
   }
