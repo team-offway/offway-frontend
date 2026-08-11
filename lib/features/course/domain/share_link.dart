@@ -6,7 +6,10 @@ import '../../../core/config/app_config.dart';
 /// `GET /api/v1/public/courses/{shareToken}`으로 볼 수 있다.
 /// **토큰이 있다고 공개된 것은 아니다** — 링크를 넘겨야 비로소 남이 본다.
 abstract final class ShareLink {
-  /// 보기 전용 웹 주소 — 서버 스펙이 정한 경로는 `/c/{shareToken}`
-  static String of(String shareToken) =>
-      '${AppConfig.shareBaseUrl}/c/$shareToken';
+  /// 보기 전용 웹 주소 — 서버 스펙이 정한 경로는 `/c/{shareToken}`.
+  /// 주입한 주소 끝에 슬래시가 붙어 있어도 `//c/`가 되지 않게 다듬는다.
+  static String of(String shareToken) {
+    final base = AppConfig.shareBaseUrl.replaceAll(RegExp(r'/+$'), '');
+    return '$base/c/$shareToken';
+  }
 }

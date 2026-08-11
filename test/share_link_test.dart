@@ -9,4 +9,10 @@ void main() {
       '${AppConfig.shareBaseUrl}/c/2iQuIbj3FeUb1PAqLLd52g',
     );
   });
+
+  test('슬래시가 겹치지 않는다', () {
+    // 주입한 주소 끝에 슬래시가 붙어도 //c/ 가 되면 서버 계약과 어긋난다
+    expect(ShareLink.of('abc'), isNot(contains('//c/')));
+    expect(ShareLink.of('abc'), endsWith('/c/abc'));
+  });
 }

@@ -166,12 +166,19 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
       final saved = await ref.read(courseRepositoryProvider).save(savePayload);
-      // 토큰은 이 응답에만 실린다 — 목록·상세를 다시 불러도 없다.
-      // 나중에 공유할 수 있게 지금 적어둔다
+
+      // 여기부터는 서버에 이미 담긴 뒤다 — 실패해도 담기를 되돌리면 안 된다.
+      // 토큰 보관이 어긋났다고 실패로 알리면 사용자가 다시 눌러 코스가
+      // 두 번 담긴다. 토큰은 이 응답에만 실리므로 지금 적어두되, 못 적어도
+      // 담기 자체는 성공으로 마무리한다 (공유만 나중에 못 한다)
       if (saved.shareToken case final String token) {
-        await ref
-            .read(shareTokenStoreProvider)
-            .save('${saved.courseId}', token);
+        try {
+          await ref
+              .read(shareTokenStoreProvider)
+              .save('${saved.courseId}', token);
+        } on Exception {
+          // 공유 링크만 못 만들 뿐이라 사용자를 붙잡지 않는다
+        }
       }
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);

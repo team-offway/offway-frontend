@@ -24,12 +24,17 @@ class ShareTokenStore {
   Future<Map<String, String>> _all() async {
     final raw = await _storage.read(key: _key);
     if (raw == null || raw.isEmpty) return {};
+    // 저장된 값이 깨졌거나 형태가 다르면 없는 셈 친다 —
+    // 공유만 못 할 뿐 앱은 돌아가야 한다
     try {
-      return (jsonDecode(raw) as Map<String, dynamic>).map(
-        (k, v) => MapEntry(k, v as String),
-      );
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return {
+        for (final e in decoded.entries)
+          if (e.key is String && e.value is String)
+            e.key as String: e.value as String,
+      };
     } on FormatException {
-      // 저장된 값이 깨졌으면 없는 셈 친다 — 공유만 못 할 뿐 앱은 돌아간다
       return {};
     }
   }
