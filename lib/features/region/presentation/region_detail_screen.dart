@@ -32,18 +32,16 @@ final regionDetailProvider = FutureProvider.autoDispose
       final direct = findBy(regionId);
       if (direct != null) return direct;
 
-      // 서버 지역 — 홈 카드에서 이름·이미지를 얻고 장소로 매력 포인트를 채운다
+      // 서버 지역 — 홈 카드에서 이름·이미지를 얻고 장소로 매력 포인트를 채운다.
+      // 조회가 실패하면 그대로 던진다 — 화면이 재시도 가능한 에러로 받는다.
+      // null은 '그런 지역이 없다'는 뜻으로만 쓴다
+      final snapshot = await ref.watch(homeSnapshotProvider.future);
       Map<String, dynamic>? card;
-      try {
-        final snapshot = await ref.watch(homeSnapshotProvider.future);
-        for (final r in snapshot.regions) {
-          if (r['id'] == regionId) {
-            card = r;
-            break;
-          }
+      for (final r in snapshot.regions) {
+        if (r['id'] == regionId) {
+          card = r;
+          break;
         }
-      } on Exception {
-        return null;
       }
       if (card == null) return null;
 
