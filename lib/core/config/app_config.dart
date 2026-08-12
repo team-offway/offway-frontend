@@ -19,6 +19,11 @@ abstract final class AppConfig {
     defaultValue: 'https://offway.cloud',
   );
 
+  /// 개인정보처리방침 — 공유 웹페이지와 같은 배포에 함께 올라간다
+  /// (`web/share/privacy.html`). 앱 심사에서 요구하는 필수 링크다.
+  static String get privacyPolicyUrl =>
+      '${shareBaseUrl.replaceAll(RegExp(r'/+$'), '')}/privacy';
+
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인정보처리방침 · OffWay</title>
+<style>
+  /* 공유 페이지(index.html)와 같은 토큰을 쓴다 — 두 페이지가 한 서비스로 보이게 */
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f8;
+    --ink: #171719;
+    --ink-2: rgba(46,47,51,.88);
+    --ink-3: rgba(55,56,60,.61);
+    --line: rgba(112,115,124,.16);
+    --brand: #3dc2ff;
+    --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+            "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131417; --surface: #1b1d21; --ink: #f2f0ec;
+      --ink-2: #c5c8cd; --ink-3: #8d9299; --line: #2d3036;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 72px;
+    background: var(--bg);
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 한국어는 어절 단위로 끊어야 읽기 좋다 — 영문에는 적용하지 않는다 */
+  [lang="ko"] { word-break: keep-all; }
+  main { max-width: 720px; margin: 0 auto; }
+
+  header { padding-bottom: 20px; border-bottom: 2px solid var(--ink); }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .wordmark {
+    font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+    color: var(--brand); margin: 0 0 12px;
+  }
+  h1 { font-size: 24px; font-weight: 700; color: var(--ink); margin: 0 0 6px; letter-spacing: -.02em; }
+  .effective { margin: 0; font-size: 14px; color: var(--ink-3); }
+
+  /* 언어 전환 */
+  .lang { display: flex; gap: 2px; padding: 2px; background: var(--surface);
+          border-radius: 999px; flex-shrink: 0; }
+  .lang button {
+    border: 0; background: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-3); padding: 6px 14px; border-radius: 999px;
+    transition: color .15s, background .15s;
+  }
+  .lang button[aria-selected="true"] { background: var(--brand); color: #fff; }
+  .lang button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  h2 {
+    font-size: 17px; font-weight: 700; color: var(--ink);
+    margin: 40px 0 12px; letter-spacing: -.01em;
+  }
+  h3 { font-size: 15px; font-weight: 650; color: var(--ink); margin: 24px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--ink); font-weight: 650; }
+  a { color: var(--brand); }
+
+  /* 표는 좁은 화면에서 가로로만 스크롤 — 페이지 전체가 흔들리지 않게 */
+  .scroll { overflow-x: auto; margin: 0 0 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 400px; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface); color: var(--ink); font-weight: 650; white-space: nowrap; }
+
+  footer {
+    margin-top: 56px; padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-3);
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <div class="top">
+      <div>
+        <p class="wordmark">offway</p>
+        <h1 data-ko="개인정보처리방침" data-en="Privacy Policy">개인정보처리방침</h1>
+        <p class="effective" data-ko="시행일 2026년 8월 1일" data-en="Effective August 1, 2026">시행일 2026년 8월 1일</p>
+      </div>
+      <div class="lang" role="tablist" aria-label="Language">
+        <button type="button" role="tab" data-lang="ko" aria-selected="true">한국어</button>
+        <button type="button" role="tab" data-lang="en" aria-selected="false">English</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== 한국어 ===================== -->
+  <section id="doc-ko" lang="ko">
+
+  <p style="margin-top:24px">
+    OffWay(이하 "회사")는 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 등
+    관련 법령을 준수합니다. 본 방침은 회사가 제공하는 OffWay 앱(이하 "서비스")에서
+    개인정보를 어떻게 수집·이용·보관·파기하는지 안내합니다.
+  </p>
+
+  <h2>1. 수집하는 개인정보 항목과 수집 방법</h2>
+
+  <h3>1-1. 회원 가입 시 (소셜 로그인)</h3>
+  <p>서비스는 자체 회원가입 없이 아래 소셜 로그인만 제공합니다.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>로그인 수단</th><th>수집 항목</th><th>필수 여부</th></tr></thead>
+      <tbody>
+        <tr><td>카카오</td><td>이메일, 이름(닉네임), 카카오 회원번호</td><td>필수</td></tr>
+        <tr><td>Apple</td><td>이메일, 이름, Apple 사용자 식별자</td><td>필수</td></tr>
+        <tr><td>Google</td><td>이메일, 이름, Google 사용자 식별자</td><td>필수</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li>Apple 로그인 시 <strong>이메일 가리기</strong>를 선택하면 Apple이 제공하는 익명 중계 이메일만 전달받으며, 회사는 실제 이메일을 알 수 없습니다.</li>
+    <li>소셜 로그인 제공자로부터 받은 액세스 토큰은 본인 확인 목적으로만 사용하며 회사 서버에 저장하지 않습니다.</li>
+  </ul>
+
+  <h3>1-2. 서비스 이용 과정에서 수집되는 정보</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>항목</th><th>수집 시점</th><th>목적</th></tr></thead>
+      <tbody>
+        <tr><td>잔여 연차 일수</td><td>이용자가 직접 입력</td><td>여행 가능 기간 계산</td></tr>
+        <tr><td>연차 사용 내역<br>(사용일·일수·사유)</td><td>이용자가 직접 등록</td><td>잔여 연차 관리</td></tr>
+        <tr><td>저장한 여행 코스, 여행 날짜</td><td>이용자가 코스를 담을 때</td><td>코스 조회·일정 안내</td></tr>
+        <tr><td>위치 정보 (위도·경도)</td><td>코스 추천 시<br>(권한 허용한 경우)</td><td>현재 위치 기준<br>도달 가능 지역 추천</td></tr>
+        <tr><td>푸시 알림 토큰</td><td>알림 권한을 허용한 경우</td><td>여행 일정·혜택 알림 발송</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>1-3. 자동으로 생성·수집되는 정보</h3>
+  <ul>
+    <li><strong>기기 식별자(게스트 ID)</strong>: 로그인 전에도 서비스를 이용할 수 있도록 앱이 임의로 생성하는 값이며, 개인을 식별하지 않습니다.</li>
+  </ul>
+  <p>회사는 광고 식별자(IDFA), 이용자의 연락처·사진첩 내용, 통화 기록을 수집하지 않습니다.</p>
+
+  <h2>2. 개인정보의 이용 목적</h2>
+  <ul>
+    <li>회원 식별 및 로그인 유지</li>
+    <li>잔여 연차에 맞는 여행지·코스 추천</li>
+    <li>저장한 코스 및 연차 사용 내역 관리</li>
+    <li>여행 일정 및 혜택 안내 알림 발송</li>
+    <li>서비스 운영 및 오류 개선</li>
+  </ul>
+  <p>수집한 개인정보는 위 목적 외의 용도로 이용하지 않으며, 목적이 변경될 경우 사전에 동의를 받습니다.</p>
+
+  <h2>3. 위치정보의 이용</h2>
+  <ul>
+    <li>회사는 <strong>코스를 추천하는 시점에만</strong> 이용자의 현재 위치를 확인합니다.</li>
+    <li>위치 정보는 도달 가능한 지역을 계산하기 위해 일시적으로 사용하며, <strong>개인을 식별할 수 있는 형태로 저장하지 않습니다.</strong></li>
+    <li>위치 권한은 기기 설정에서 언제든 철회할 수 있습니다. 다만 권한을 허용하지 않으면 현재 위치 기반 추천은 이용할 수 없습니다.</li>
+  </ul>
+
+  <h2>4. 푸시 알림</h2>
+  <ul>
+    <li>알림 권한을 허용하면 여행 일정·혜택 안내를 위한 푸시 알림을 보냅니다.</li>
+    <li>이를 위해 기기별 알림 토큰을 저장하며, 이 값은 개인을 식별하지 않습니다.</li>
+    <li>알림 수신은 기기 설정 또는 앱 내에서 언제든 끌 수 있습니다.</li>
+  </ul>
+
+  <h2>5. 개인정보의 보유 및 이용 기간</h2>
+  <ul>
+    <li>회원 탈퇴 시 수집한 개인정보를 <strong>지체 없이 파기</strong>합니다.</li>
+    <li>다만 관련 법령에 따라 보존이 필요한 경우 아래 기간 동안 보관합니다.</li>
+  </ul>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>근거 법령</th><th>항목</th><th>보존 기간</th></tr></thead>
+      <tbody>
+        <tr><td>통신비밀보호법</td><td>서비스 이용 기록</td><td>3개월</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>서비스는 유료 결제 기능을 제공하지 않으므로 전자상거래법상 계약·결제 기록은 보관하지 않습니다.</p>
+
+  <h2>6. 개인정보의 제3자 제공</h2>
+  <p>회사는 이용자의 개인정보를 제3자에게 제공하지 않습니다. 다만 아래의 경우는 예외로 합니다.</p>
+  <ul>
+    <li>이용자가 사전에 동의한 경우</li>
+    <li>법령에 따라 수사기관이 적법한 절차로 요구하는 경우</li>
+  </ul>
+  <h3>코스 공유 기능에 관한 안내</h3>
+  <p>
+    이용자가 <strong>직접 공유 링크를 만들어 전달한 경우</strong>, 그 링크를 받은 사람은
+    로그인 없이 해당 코스(지역·일정·장소)를 볼 수 있습니다.
+    <strong>공유 코스에는 이용자의 이름·이메일·연차 정보가 포함되지 않습니다.</strong>
+  </p>
+
+  <h2>7. 개인정보의 처리 위탁 및 국외 이전</h2>
+
+  <h3>7-1. 처리 위탁</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>수탁자</th><th>위탁 업무</th></tr></thead>
+      <tbody>
+        <tr><td>Amazon Web Services, Inc.</td><td>서비스 서버 운영 및 데이터 보관</td></tr>
+        <tr><td>Vercel Inc.</td><td>공유 링크 웹페이지 제공</td></tr>
+        <tr><td>Google LLC</td><td>푸시 알림 발송 (Firebase Cloud Messaging)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7-2. 국외 이전</h3>
+  <p>서비스는 아래와 같이 개인정보를 국외로 이전합니다.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>이전받는 자</th><th>이전 국가</th><th>이전 항목</th><th>이전 일시 및 방법</th><th>보유 기간</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Amazon Web Services, Inc.</td><td>일본<br>(도쿄 리전)</td>
+          <td>1항의 수집 항목 전체</td><td>서비스 이용 시<br>네트워크를 통해 전송</td><td>회원 탈퇴 시까지</td>
+        </tr>
+        <tr>
+          <td>Vercel Inc.</td><td>미국</td>
+          <td>공유된 코스 정보<br>(개인 식별 정보 제외)</td><td>공유 링크 접속 시 전송</td><td>회원 탈퇴 시까지</td>
+        </tr>
+        <tr>
+          <td>Google LLC</td><td>미국</td>
+          <td>푸시 알림 토큰</td><td>알림 권한 허용 시 전송</td><td>회원 탈퇴 또는<br>알림 해제 시까지</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    이용자는 국외 이전을 거부할 수 있으며, 거부 시 서비스 이용이 제한될 수 있습니다.
+    거부를 원하시는 경우 12항의 연락처로 요청해 주십시오.
+  </p>
+
+  <h2>8. 제3자 서비스(SDK) 이용</h2>
+  <p>서비스는 아래 외부 서비스를 이용하며, 각 사업자의 개인정보처리방침이 함께 적용됩니다.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>서비스</th><th>이용 목적</th><th>처리방침</th></tr></thead>
+      <tbody>
+        <tr><td>카카오 로그인 ·<br>카카오톡 공유</td><td>로그인, 코스 공유</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>Apple 로그인</td><td>로그인</td><td><a href="https://www.apple.com/legal/privacy/ko/" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>Google 로그인 · Firebase</td><td>로그인, 푸시 알림</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>네이버 지도</td><td>코스 지도 표시</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>한국관광공사 TourAPI</td><td>여행지·장소 정보 제공</td><td>개인정보를 전송하지 않음</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>9. 이용자의 권리와 행사 방법</h2>
+  <p>이용자는 언제든지 아래 권리를 행사할 수 있습니다.</p>
+  <ul>
+    <li>개인정보 열람·정정 요청</li>
+    <li>개인정보 처리 정지 요청</li>
+    <li><strong>회원 탈퇴(동의 철회)</strong> — 앱 내 [마이 → 회원탈퇴]</li>
+  </ul>
+  <p>권리 행사는 12항의 연락처로도 요청하실 수 있으며, 회사는 지체 없이 조치합니다.</p>
+
+  <h2>10. 개인정보의 파기</h2>
+  <ul>
+    <li>파기 사유가 발생한 개인정보는 복구할 수 없는 방법으로 즉시 삭제합니다.</li>
+    <li>전자적 파일은 기록을 재생할 수 없는 기술적 방법으로 삭제하며, 출력물이 있는 경우 분쇄하거나 소각합니다.</li>
+  </ul>
+
+  <h2>11. 개인정보의 안전성 확보 조치</h2>
+  <ul>
+    <li>로그인 토큰은 기기의 <strong>보안 저장소(iOS 키체인)</strong>에 암호화하여 보관합니다.</li>
+    <li>서버와의 통신은 암호화된 채널(HTTPS)을 통해 이루어집니다.</li>
+    <li>개인정보 접근 권한은 업무상 필요한 최소한의 인원으로 제한합니다.</li>
+  </ul>
+
+  <h2>12. 개인정보 보호책임자 및 연락처</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>구분</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td>개인정보 보호책임자</td><td>조영찬</td></tr>
+        <tr><td>연락처</td><td><a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>기타 개인정보 침해에 대한 상담이 필요하신 경우 아래 기관에 문의하실 수 있습니다.</p>
+  <ul>
+    <li>개인정보침해신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
+    <li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
+    <li>대검찰청 사이버수사과 (spo.go.kr / 1301)</li>
+    <li>경찰청 사이버수사국 (ecrm.police.go.kr / 182)</li>
+  </ul>
+
+  <h2>13. 방침의 변경</h2>
+  <p>
+    본 방침이 변경되는 경우 시행 7일 전부터 앱 공지사항을 통해 알립니다.
+    다만 이용자 권리에 중대한 변경이 있는 경우 30일 전에 알립니다.
+  </p>
+  <ul>
+    <li>공고일: 2026년 8월 1일</li>
+    <li>시행일: 2026년 8월 1일</li>
+  </ul>
+
+  </section>
+
+  <!-- ===================== English ===================== -->
+  <section id="doc-en" lang="en" hidden>
+
+  <p style="margin-top:24px">
+    OffWay ("the Company") values your privacy and complies with the Personal
+    Information Protection Act and other applicable laws of the Republic of Korea.
+    This policy explains how the OffWay app ("the Service") collects, uses, retains,
+    and destroys personal information.
+  </p>
+  <p style="color:var(--ink-3);font-size:14px">
+    This English version is provided for convenience. In case of any discrepancy,
+    the Korean version prevails.
+  </p>
+
+  <h2>1. Information We Collect and How</h2>
+
+  <h3>1-1. On Sign-Up (Social Login)</h3>
+  <p>The Service offers social login only; there is no separate account registration.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Provider</th><th>Items Collected</th><th>Required</th></tr></thead>
+      <tbody>
+        <tr><td>Kakao</td><td>Email, name (nickname), Kakao member ID</td><td>Required</td></tr>
+        <tr><td>Apple</td><td>Email, name, Apple user identifier</td><td>Required</td></tr>
+        <tr><td>Google</td><td>Email, name, Google user identifier</td><td>Required</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li>If you choose <strong>Hide My Email</strong> with Apple sign-in, we receive only the anonymized relay address provided by Apple and cannot learn your actual email.</li>
+    <li>Access tokens received from social login providers are used solely for identity verification and are not stored on our servers.</li>
+  </ul>
+
+  <h3>1-2. Information Collected While Using the Service</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Item</th><th>When Collected</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Remaining annual leave days</td><td>Entered by the user</td><td>Calculating available travel periods</td></tr>
+        <tr><td>Leave usage records<br>(date, days, reason)</td><td>Entered by the user</td><td>Managing remaining leave</td></tr>
+        <tr><td>Saved travel courses and dates</td><td>When you save a course</td><td>Displaying courses and schedules</td></tr>
+        <tr><td>Location (latitude, longitude)</td><td>When recommending courses<br>(if permission granted)</td><td>Recommending reachable<br>destinations from your location</td></tr>
+        <tr><td>Push notification token</td><td>If notification permission granted</td><td>Sending trip and benefit notices</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>1-3. Automatically Generated Information</h3>
+  <ul>
+    <li><strong>Device identifier (guest ID)</strong>: a value generated by the app so the Service can be used before signing in. It does not identify an individual.</li>
+  </ul>
+  <p>We do not collect advertising identifiers (IDFA), your contacts, photo library contents, or call logs.</p>
+
+  <h2>2. Purpose of Use</h2>
+  <ul>
+    <li>Identifying members and maintaining sign-in</li>
+    <li>Recommending destinations and courses that fit your remaining leave</li>
+    <li>Managing saved courses and leave usage records</li>
+    <li>Sending trip schedule and benefit notifications</li>
+    <li>Operating the Service and fixing errors</li>
+  </ul>
+  <p>We do not use collected information for purposes beyond those listed above. If the purpose changes, we will obtain your consent in advance.</p>
+
+  <h2>3. Use of Location Information</h2>
+  <ul>
+    <li>We check your current location <strong>only at the moment a course is recommended</strong>.</li>
+    <li>Location data is used temporarily to calculate reachable regions and is <strong>not stored in a personally identifiable form</strong>.</li>
+    <li>You may withdraw location permission at any time in your device settings. Without it, location-based recommendations are unavailable.</li>
+  </ul>
+
+  <h2>4. Push Notifications</h2>
+  <ul>
+    <li>If you grant notification permission, we send push notifications about trip schedules and benefits.</li>
+    <li>For this purpose we store a per-device notification token, which does not identify an individual.</li>
+    <li>You may turn notifications off at any time in your device settings or within the app.</li>
+  </ul>
+
+  <h2>5. Retention Period</h2>
+  <ul>
+    <li>Upon account deletion, we <strong>destroy your personal information without delay</strong>.</li>
+    <li>Where retention is required by law, we keep the following for the stated periods.</li>
+  </ul>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Legal Basis</th><th>Item</th><th>Period</th></tr></thead>
+      <tbody>
+        <tr><td>Protection of Communications Secrets Act</td><td>Service access logs</td><td>3 months</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The Service offers no paid features, so contract and payment records under the Act on Consumer Protection in Electronic Commerce are not retained.</p>
+
+  <h2>6. Disclosure to Third Parties</h2>
+  <p>We do not provide your personal information to third parties, except:</p>
+  <ul>
+    <li>When you have given prior consent</li>
+    <li>When required by investigative authorities through lawful procedures</li>
+  </ul>
+  <h3>About the Course Sharing Feature</h3>
+  <p>
+    When you <strong>create and send a share link yourself</strong>, the recipient can view
+    that course (region, schedule, places) without signing in.
+    <strong>Shared courses do not include your name, email, or leave information.</strong>
+  </p>
+
+  <h2>7. Outsourcing and Overseas Transfer</h2>
+
+  <h3>7-1. Outsourcing</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Processor</th><th>Scope of Work</th></tr></thead>
+      <tbody>
+        <tr><td>Amazon Web Services, Inc.</td><td>Server operation and data storage</td></tr>
+        <tr><td>Vercel Inc.</td><td>Hosting the share-link web page</td></tr>
+        <tr><td>Google LLC</td><td>Push notification delivery (Firebase Cloud Messaging)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7-2. Overseas Transfer</h3>
+  <p>We transfer personal information overseas as follows.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Recipient</th><th>Country</th><th>Items</th><th>Timing &amp; Method</th><th>Retention</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Amazon Web Services, Inc.</td><td>Japan<br>(Tokyo region)</td>
+          <td>All items listed in Section 1</td><td>Transmitted over the network<br>when you use the Service</td><td>Until account deletion</td>
+        </tr>
+        <tr>
+          <td>Vercel Inc.</td><td>United States</td>
+          <td>Shared course data<br>(excluding identifying information)</td><td>Transmitted when a share link is opened</td><td>Until account deletion</td>
+        </tr>
+        <tr>
+          <td>Google LLC</td><td>United States</td>
+          <td>Push notification token</td><td>Transmitted when notification<br>permission is granted</td><td>Until account deletion or<br>notifications are disabled</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    You may refuse the overseas transfer, in which case use of the Service may be limited.
+    To do so, please contact us using the details in Section 12.
+  </p>
+
+  <h2>8. Third-Party Services (SDKs)</h2>
+  <p>The Service uses the following external services. Each provider's privacy policy also applies.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Service</th><th>Purpose</th><th>Policy</th></tr></thead>
+      <tbody>
+        <tr><td>Kakao Login ·<br>KakaoTalk Sharing</td><td>Sign-in, course sharing</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Apple Sign In</td><td>Sign-in</td><td><a href="https://www.apple.com/legal/privacy/en-ww/" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Google Sign-In · Firebase</td><td>Sign-in, push notifications</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Naver Map</td><td>Displaying course maps</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Korea Tourism Organization TourAPI</td><td>Destination and place data</td><td>No personal information transmitted</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>9. Your Rights and How to Exercise Them</h2>
+  <p>You may exercise the following rights at any time.</p>
+  <ul>
+    <li>Request access to or correction of your personal information</li>
+    <li>Request suspension of processing</li>
+    <li><strong>Delete your account (withdraw consent)</strong> — in the app: My → Delete Account</li>
+  </ul>
+  <p>You may also make requests using the contact details in Section 12, and we will act without delay.</p>
+
+  <h2>10. Destruction of Personal Information</h2>
+  <ul>
+    <li>Personal information subject to destruction is deleted immediately by irreversible means.</li>
+    <li>Electronic files are deleted using technical methods that prevent recovery; printed materials are shredded or incinerated.</li>
+  </ul>
+
+  <h2>11. Security Measures</h2>
+  <ul>
+    <li>Sign-in tokens are stored encrypted in the device's <strong>secure storage (iOS Keychain)</strong>.</li>
+    <li>Communication with our servers takes place over an encrypted channel (HTTPS).</li>
+    <li>Access to personal information is limited to the minimum personnel necessary.</li>
+  </ul>
+
+  <h2>12. Privacy Officer and Contact</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Role</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>Privacy Officer</td><td>Yeongchan Jo</td></tr>
+        <tr><td>Contact</td><td><a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>For consultation regarding privacy infringement, you may contact the following Korean agencies.</p>
+  <ul>
+    <li>Privacy Infringement Report Center (privacy.kisa.or.kr / 118)</li>
+    <li>Personal Information Dispute Mediation Committee (kopico.go.kr / 1833-6972)</li>
+    <li>Supreme Prosecutors' Office Cyber Investigation Division (spo.go.kr / 1301)</li>
+    <li>National Police Agency Cyber Bureau (ecrm.police.go.kr / 182)</li>
+  </ul>
+
+  <h2>13. Changes to This Policy</h2>
+  <p>
+    If this policy changes, we will announce it in the app at least 7 days before the
+    effective date — or 30 days in advance for changes materially affecting your rights.
+  </p>
+  <ul>
+    <li>Announced: August 1, 2026</li>
+    <li>Effective: August 1, 2026</li>
+  </ul>
+
+  </section>
+
+  <footer data-ko="OffWay · 연차로 떠나는 로컬 여행" data-en="OffWay · Local trips on your annual leave">OffWay · 연차로 떠나는 로컬 여행</footer>
+
+</main>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.lang button');
+    var docs = { ko: document.getElementById('doc-ko'), en: document.getElementById('doc-en') };
+    // 헤더·푸터처럼 문서 밖에 있는 문구는 속성으로 바꿔치운다
+    var swaps = document.querySelectorAll('[data-ko][data-en]');
+
+    function apply(lang) {
+      docs.ko.hidden = lang !== 'ko';
+      docs.en.hidden = lang !== 'en';
+      document.documentElement.lang = lang;
+      document.title = lang === 'en' ? 'Privacy Policy · OffWay' : '개인정보처리방침 · OffWay';
+      swaps.forEach(function (el) { el.textContent = el.dataset[lang]; });
+      buttons.forEach(function (b) {
+        b.setAttribute('aria-selected', String(b.dataset.lang === lang));
+      });
+      try { localStorage.setItem('offway-privacy-lang', lang); } catch (e) { /* 사파리 비공개 모드 */ }
+    }
+
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { apply(b.dataset.lang); });
+    });
+
+    // 우선순위: 지난 선택 → ?lang= → 브라우저 언어
+    var saved;
+    try { saved = localStorage.getItem('offway-privacy-lang'); } catch (e) { /* 무시 */ }
+    var param = new URLSearchParams(location.search).get('lang');
+    var guess = (navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en';
+    apply(saved || (param === 'en' || param === 'ko' ? param : null) || guess);
+  })();
+</script>
+</body>
+</html>
