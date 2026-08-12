@@ -892,7 +892,7 @@ void main() {
     await tester.pump();
     expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
 
-    // 연차만: 스테퍼 모달에서 완료해야 유지
+    // 연차만: 일수 선택 모달에서 완료해야 유지
     // 세 번째 카드는 작은 화면에서 액션 영역 아래로 밀려 있어 스크롤해서 누른다
     await tester.scrollUntilVisible(
       find.text('연차만 (주말 미포함)'),
@@ -903,14 +903,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // 시트 애니메이션
     expect(find.text('평일 연차, 며칠 쓸까요?'), findsOneWidget);
-    expect(find.text('3일(2박3일)'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.remove));
+    // 2일·3일 두 버튼 중에서 고른다 (정책: 최소 2일 ~ 최대 2박3일)
+    expect(find.text('1박2일'), findsOneWidget);
+    expect(find.text('2박3일'), findsOneWidget);
+    await tester.tap(find.text('1박2일'));
     await tester.pump();
-    expect(find.text('2일(1박2일)'), findsOneWidget);
-    // 정책: 최소 2일 — 더 줄어들지 않음
-    await tester.tap(find.byIcon(Icons.remove));
-    await tester.pump();
-    expect(find.text('2일(1박2일)'), findsOneWidget);
     await tester.tap(find.text('완료'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
