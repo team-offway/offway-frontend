@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -44,8 +46,7 @@ class MyScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _MenuRow(
               label: '개인정보처리방침',
-              // TODO(my): 개인정보처리방침 URL 확정 후 웹뷰/외부 브라우저 연결
-              onTap: () => _showPreparing(context, '개인정보처리방침'),
+              onTap: () => _openPrivacyPolicy(context),
             ),
             _MenuRow(label: '로그아웃', onTap: () => _confirmSignOut(context, ref)),
             _MenuRow(
@@ -135,6 +136,19 @@ class MyScreen extends ConsumerWidget {
 
   void _showPreparing(BuildContext context, String feature) {
     showAppToast(context, '$feature 기능은 준비 중이에요');
+  }
+
+  /// 개인정보처리방침을 앱 안에서 띄운다.
+  ///
+  /// iOS는 SFSafariViewController로 열려 상단에 주소가 그대로 보이고,
+  /// 닫으면 이 화면으로 돌아온다 — 읽으려고 앱을 떠날 이유가 없다.
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final uri = Uri.parse(AppConfig.privacyPolicyUrl);
+    // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
+    final opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    if (!opened && context.mounted) {
+      showAppToast(context, '페이지를 열지 못했어요');
+    }
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
