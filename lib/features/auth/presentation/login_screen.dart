@@ -8,6 +8,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
+import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
 
 /// O-01 · 로그인/회원가입
@@ -101,9 +102,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _startWithSocial(BuildContext context) {
-    // TODO(auth): 구글 로그인 연동
-    context.go(AppRoutes.onboardingLeave);
+  Future<void> _loginWithGoogle() {
+    return _runSocialLogin(
+      provider: SocialProvider.google,
+      authenticate: () async {
+        final result = await ref.read(googleAuthServiceProvider).login();
+        // 구글은 ID 토큰 안에 이메일·이름이 서명돼 들어 있지만, 카카오·Apple과
+        // 같은 형태로 넘겨 서버가 provider별로 분기하지 않아도 되게 한다
+        return (
+          token: result.idToken,
+          profile: SocialProfile(
+            email: result.email,
+            fullName: result.displayName,
+            providerUserId: result.userId,
+          ),
+        );
+      },
+      isCancelled: (e) => e is GoogleLoginCancelled,
+    );
   }
 
   @override
@@ -157,9 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: _textPrimary,
                       borderColor: _borderMuted,
-                      onPressed: _loading
-                          ? null
-                          : () => _startWithSocial(context),
+                      onPressed: _loading ? null : _loginWithGoogle,
                     ),
                     // 시안: 버튼 그룹 아래 40 띄우고 바로 약관 문구
                     const SizedBox(height: 40),

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/features/auth/data/google_auth_service.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
@@ -174,7 +175,24 @@ class _FakeCourseRepository extends CourseRepository {
 
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
 /// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
+/// 계정 선택 창을 띄우지 않고 바로 성공을 돌려주는 구글 로그인.
+///
+/// 테스트는 이 버튼으로 플로우에 진입하므로 실제 SDK를 타면 안 된다.
+class _FakeGoogleAuthService implements GoogleAuthService {
+  @override
+  Future<GoogleLoginResult> login() async => (
+    idToken: 'test-id-token',
+    email: 'test@example.com',
+    displayName: '테스트',
+    userId: 'test-user-id',
+  );
+
+  @override
+  Future<void> logout() async {}
+}
+
 final _serverOverrides = [
+  googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
   regionRecommendRepositoryProvider.overrideWithValue(

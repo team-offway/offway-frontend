@@ -27,6 +27,9 @@ dependencies:
   app_links: ^6.3.2
   sign_in_with_apple: ^7.0.1
   url_launcher: ^6.3.1
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

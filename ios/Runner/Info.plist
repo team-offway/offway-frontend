@@ -52,6 +52,16 @@
 				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- 구글 로그인 복귀 주소. GoogleService-Info.plist의
+				     REVERSED_CLIENT_ID와 같아야 하며, 값은 AppKeys.xcconfig에서 관리한다 -->
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
