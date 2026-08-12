@@ -217,7 +217,7 @@ class PeriodStyleScreen extends ConsumerWidget {
     );
   }
 
-  /// 모달: 평일 연차, 며칠 쓸까요? (2~3일 스테퍼)
+  /// 모달: 평일 연차, 며칠 쓸까요? (2일·3일 중 선택)
   void _showLeaveStepperSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
@@ -236,77 +236,47 @@ class PeriodStyleScreen extends ConsumerWidget {
                 ?.floor() ??
             kMaxTripSpanDays + 1;
         final maxDays = remaining.clamp(minDays, kMaxTripSpanDays + 1);
-        var days = (ref.read(courseWizardProvider).leaveDaysToUse ?? maxDays)
-            .clamp(minDays, maxDays);
-        String label(int d) => '$d일(${d - 1}박$d일)';
+        // 잔여 연차가 2일뿐이면 3일 버튼은 고를 수 없다
+        final choices = [
+          for (var d = minDays; d <= kMaxTripSpanDays + 1; d++)
+            (days: d, enabled: d <= maxDays),
+        ];
+        // 처음에는 아무것도 고르지 않은 상태로 연다 — 시안의 '완료'가 흐린 이유다
+        int? selected = ref.read(courseWizardProvider).leaveDaysToUse;
+        if (selected != null && selected > maxDays) selected = null;
+
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
             title: '평일 연차, 며칠 쓸까요?',
-            confirmEnabled: true,
+            confirmEnabled: selected != null,
             onConfirm: () {
-              ref.read(courseWizardProvider.notifier).selectLeaveDays(days);
+              ref
+                  .read(courseWizardProvider.notifier)
+                  .selectLeaveDays(selected!);
               Navigator.of(sheetContext).pop();
             },
-            // 상한에 닿았을 때만 왜 더 못 늘리는지 알린다(늘 띄우면 잔소리가 된다).
-            // 자리는 항상 차지해 문구가 오갈 때 시트 높이가 출렁이지 않게 한다.
-            footer: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 44),
-              child: days >= maxDays
-                  ? AppInlineNotice(
-                      // 아이콘 원본이 이미 label/assistive와 같은 색이라 그대로 쓴다
-                      iconAsset: 'assets/icons/ic_circle_exclamation.svg',
-                      message:
-                          '최대 $kMaxTripSpanDays박${kMaxTripSpanDays + 1}일까지 선택할 수 있어요',
-                      color: AppColors.labelAssistive,
-                      minHeight: 44,
-                    )
-                  : null,
+            // 시안: 상한 안내는 늘 보인다 — 버튼만 봐서는 3일이 끝인지 알 수 없다
+            footer: AppInlineNotice(
+              // 아이콘 원본이 이미 label/assistive와 같은 색이라 그대로 쓴다
+              iconAsset: 'assets/icons/ic_circle_exclamation.svg',
+              message:
+                  '최대 ${kMaxTripSpanDays + 1}일($kMaxTripSpanDays박${kMaxTripSpanDays + 1}일)까지 선택할 수 있어요',
+              color: AppColors.labelAssistive,
+              minHeight: 44,
             ),
-            child: Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                color: AppColors.fillNormal,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StepperButton(
-                    icon: Icons.remove,
-                    enabled: days > minDays,
-                    onTap: () => setSheetState(() => days--),
-                  ),
-                  // 숫자 칸은 폭을 고정한다 — 자릿수가 바뀌어도 ±버튼이 움직이지 않는다
-                  Container(
-                    width: 107,
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundNormal,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1A000000),
-                          offset: Offset(0, 1),
-                          blurRadius: 1.5,
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      label(days),
-                      style: AppTypography.headline2Bold.copyWith(
-                        color: AppColors.labelNeutral,
-                      ),
-                    ),
-                  ),
-                  _StepperButton(
-                    icon: Icons.add,
-                    enabled: days < maxDays,
-                    onTap: () => setSheetState(() => days++),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (final c in choices) ...[
+                  if (c != choices.first) const SizedBox(width: 16),
+                  _LeaveDaysButton(
+                    days: c.days,
+                    selected: selected == c.days,
+                    enabled: c.enabled,
+                    onTap: () => setSheetState(() => selected = c.days),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         );
@@ -315,30 +285,64 @@ class PeriodStyleScreen extends ConsumerWidget {
   }
 }
 
-/// 스테퍼의 증감 버튼 — 한계에 닿으면 흐려진다
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({
-    required this.icon,
+/// 연차 일수 선택 버튼 — '2일 / 1박2일' 처럼 일수와 숙박을 함께 보여준다.
+///
+/// 잔여 연차가 모자라 고를 수 없는 날은 흐리게 두고 탭을 막는다.
+class _LeaveDaysButton extends StatelessWidget {
+  const _LeaveDaysButton({
+    required this.days,
+    required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
-  final IconData icon;
+  final int days;
+  final bool selected;
   final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: IconButton(
-        onPressed: enabled ? onTap : null,
-        padding: EdgeInsets.zero,
-        icon: Icon(
-          icon,
-          size: 16,
-          color: enabled ? AppColors.labelNeutral : AppColors.labelDisable,
+    // 선택 표시는 같은 화면의 기간 카드와 같은 규칙을 쓴다 —
+    // 채움을 걷어내고 테두리로 표시한다
+    final foreground = switch ((enabled, selected)) {
+      (false, _) => AppColors.labelDisable,
+      (true, true) => AppColors.primaryNormal,
+      (true, false) => AppColors.labelNormal,
+    };
+
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 140,
+        // 고정 높이 대신 최소 높이 — 글자 배율을 키워도 넘치지 않는다
+        constraints: const BoxConstraints(minHeight: 68),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected && enabled ? null : AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(14),
+          border: selected && enabled
+              ? Border.all(color: AppColors.primaryNormal)
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$days일',
+              style: AppTypography.headline2Bold.copyWith(color: foreground),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${days - 1}박$days일',
+              style: AppTypography.caption1Medium.copyWith(
+                color: enabled
+                    ? AppColors.labelAlternative
+                    : AppColors.labelDisable,
+              ),
+            ),
+          ],
         ),
       ),
     );

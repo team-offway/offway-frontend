@@ -161,29 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? null
                           : () => _startWithSocial(context),
                     ),
-                    const SizedBox(height: 20),
-                    Text.rich(
-                      TextSpan(
-                        // 가이드는 이 줄만 body/2(자간 -0.6) 규격을 쓴다
-                        style: AppTypography.label1NormalMedium.copyWith(
-                          color: AppColors.labelNeutral,
-                          height: 20 / 14,
-                          letterSpacing: -0.6,
-                        ),
-                        children: [
-                          const TextSpan(text: '이미 계정이 있으신가요? '),
-                          const TextSpan(
-                            text: '로그인',
-                            style: TextStyle(
-                              decoration: TextDecoration.underline,
-                              // 지정하지 않으면 밑줄이 글자와 다른 색으로 그려진다
-                              decorationColor: AppColors.labelNeutral,
-                            ),
-                            // TODO(auth): 로그인/회원가입 분기 정책 확정 시 연결
-                          ),
-                        ],
-                      ),
-                    ),
+                    // 시안: 버튼 그룹 아래 40 띄우고 바로 약관 문구
                     const SizedBox(height: 40),
                     Text.rich(
                       TextSpan(
