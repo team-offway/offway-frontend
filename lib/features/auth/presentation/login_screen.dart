@@ -8,6 +8,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../data/auth_repository.dart';
+import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
 
 /// O-01 · 로그인/회원가입
@@ -51,9 +52,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             .read(authRepositoryProvider)
             .loginWithSocial(provider, result.token, profile: result.profile);
       } catch (e) {
-        // 서버 인증 도메인 미배포 상태라 교환 실패해도 화면 흐름은 이어간다.
-        // TODO(auth): 서버 배포 후 실패 시 진행을 중단하고 에러를 노출할 것
-        debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
+        // 서버에 `POST /auth/callback/{provider}`가 아직 없다 — 지금 실패를
+        // 막아 세우면 카카오·Apple·구글 어느 쪽으로도 앱에 들어올 수 없다.
+        // 그래서 교환에 실패해도 흐름을 이어가고, 대신 우리 JWT가 없는 상태로
+        // 남는다(서버 요청은 게스트 식별자 X-Guest-Id로 나간다).
+        //
+        // TODO(auth): 인증 도메인이 배포되면 이 catch를 걷어내고 실패 시
+        // 진행을 중단할 것. JWT 없이 지나가는 지금 상태는 임시다.
+        debugPrint('서버 토큰 교환 실패(인증 API 미배포): $e');
       }
       // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
       if (!mounted) return;
@@ -101,9 +107,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _startWithSocial(BuildContext context) {
-    // TODO(auth): 구글 로그인 연동
-    context.go(AppRoutes.onboardingLeave);
+  Future<void> _loginWithGoogle() {
+    return _runSocialLogin(
+      provider: SocialProvider.google,
+      authenticate: () async {
+        final result = await ref.read(googleAuthServiceProvider).login();
+        // 구글은 ID 토큰 안에 이메일·이름이 서명돼 들어 있지만, 카카오·Apple과
+        // 같은 형태로 넘겨 서버가 provider별로 분기하지 않아도 되게 한다
+        return (
+          token: result.idToken,
+          profile: SocialProfile(
+            email: result.email,
+            fullName: result.displayName,
+            providerUserId: result.userId,
+          ),
+        );
+      },
+      isCancelled: (e) => e is GoogleLoginCancelled,
+    );
   }
 
   @override
@@ -157,9 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: _textPrimary,
                       borderColor: _borderMuted,
-                      onPressed: _loading
-                          ? null
-                          : () => _startWithSocial(context),
+                      onPressed: _loading ? null : _loginWithGoogle,
                     ),
                     // 시안: 버튼 그룹 아래 40 띄우고 바로 약관 문구
                     const SizedBox(height: 40),

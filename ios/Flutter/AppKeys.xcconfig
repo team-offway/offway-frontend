@@ -5,3 +5,9 @@
 //   flutter build ios --dart-define=KAKAO_NATIVE_APP_KEY=<키>
 // (Dart 상수는 컴파일 타임에 결정되어 xcconfig를 읽을 수 없다)
 KAKAO_NATIVE_APP_KEY = 4994e03bad5d46f2e22f2386053619db
+
+// 구글 로그인이 끝나고 앱으로 돌아올 때 쓰는 주소.
+// GoogleService-Info.plist의 REVERSED_CLIENT_ID와 같은 값이어야 한다
+// (그 파일은 레포가 public이라 커밋하지 않으므로 여기에 한 번 더 적는다).
+// 번들 ID(com.nth.offway)에 묶여 있어 다른 앱이 가져다 쓸 수 없다.
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.580270478460-41pm4or1mq5h9ctp6rkjnpj2jfvv2n3a
