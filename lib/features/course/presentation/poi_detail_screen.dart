@@ -12,6 +12,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
+import 'widgets/expandable_description.dart';
 
 /// 장소 상세 (`GET /pois/{contentId}`)
 final poiDetailProvider = FutureProvider.autoDispose
@@ -149,14 +150,8 @@ class _Body extends StatelessWidget {
               ],
               if (overview != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  // 소개글은 자르지 않고 전부 보여준다 — 3줄에서 끊으면
-                  // 문장이 중간에 잘려 무슨 곳인지 알 수 없다
-                  overview,
-                  style: AppTypography.label1NormalRegular.copyWith(
-                    color: AppColors.labelNeutral,
-                  ),
-                ),
+                // 시안: 3줄까지만 보이고 넘치면 말줄임표 + 펼침 아이콘
+                ExpandableDescription(text: overview),
               ],
               const SizedBox(height: 28),
               Text(
@@ -233,7 +228,11 @@ class _Body extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String? value) {
+  Widget _buildInfoRow(String label, String? rawValue) {
+    // 서버가 빈 문자열을 보내기도 한다 — null과 같이 '정보없음'으로 다룬다
+    final value = (rawValue == null || rawValue.trim().isEmpty)
+        ? null
+        : rawValue;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
