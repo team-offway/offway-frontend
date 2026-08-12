@@ -52,9 +52,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             .read(authRepositoryProvider)
             .loginWithSocial(provider, result.token, profile: result.profile);
       } catch (e) {
-        // 서버 인증 도메인 미배포 상태라 교환 실패해도 화면 흐름은 이어간다.
-        // TODO(auth): 서버 배포 후 실패 시 진행을 중단하고 에러를 노출할 것
-        debugPrint('서버 토큰 교환 실패(서버 미배포 가능성): $e');
+        // 서버에 `POST /auth/callback/{provider}`가 아직 없다 — 지금 실패를
+        // 막아 세우면 카카오·Apple·구글 어느 쪽으로도 앱에 들어올 수 없다.
+        // 그래서 교환에 실패해도 흐름을 이어가고, 대신 우리 JWT가 없는 상태로
+        // 남는다(서버 요청은 게스트 식별자 X-Guest-Id로 나간다).
+        //
+        // TODO(auth): 인증 도메인이 배포되면 이 catch를 걷어내고 실패 시
+        // 진행을 중단할 것. JWT 없이 지나가는 지금 상태는 임시다.
+        debugPrint('서버 토큰 교환 실패(인증 API 미배포): $e');
       }
       // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
       if (!mounted) return;
