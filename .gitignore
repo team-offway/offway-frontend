@@ -127,6 +127,11 @@ app.*.symbols
 # 서버 접속 정보 (Basic 계정 포함) — 절대 커밋 금지. env.json.example을 복사해 만든다
 /env.json
 
+# 백엔드에 전달하는 요청 문서 — 서버 키·엔드포인트 정보가 섞여 있고
+# 협의가 끝나면 사라질 임시 문서라 레포에 남기지 않는다.
+# (조사·개인정보처리방침 등 다른 docs 문서는 그대로 커밋한다)
+docs/백엔드-요청*.md
+
 # Firebase 설정 — 레포가 public이라 커밋하지 않는다.
 # Firebase 콘솔 > 프로젝트 설정에서 내려받아 ios/Runner/ 아래에 둔다
 GoogleService-Info.plist
