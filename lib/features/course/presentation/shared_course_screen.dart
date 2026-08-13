@@ -151,7 +151,12 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
         // 코스 확정 화면과 같은 목록 — 점선·거리·썸네일이 함께 온다
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: CoursePlaceList(places: places, regionName: regionName),
+          child: CoursePlaceList(
+            places: places,
+            regionName: regionName,
+            // 거리는 내 코스에만 — 추천 코스 시안에는 없다
+            showDistance: _isSaved,
+          ),
         ),
         const SizedBox(height: 46),
         _buildFooter(),
@@ -286,12 +291,15 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     );
   }
 
-  /// 지난 여행에는 D-DAY를 붙이지 않는다
+  /// 내 코스 상세와 같은 규칙 — 지난 여행도 상태를 알려 준다
   String _dDayLabel(DateTime start) {
     final today = DateUtils.dateOnly(DateTime.now());
     final diff = DateUtils.dateOnly(start).difference(today).inDays;
-    if (diff == 0) return 'D-DAY';
-    return diff > 0 ? 'D-$diff' : '';
+    return switch (diff) {
+      0 => 'D-DAY',
+      > 0 => 'D-$diff',
+      _ => '여행완료',
+    };
   }
 
   String _durationLabel(int days) => switch (days) {

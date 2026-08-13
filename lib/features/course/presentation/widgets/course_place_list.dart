@@ -14,6 +14,7 @@ class CoursePlaceList extends StatelessWidget {
     required this.places,
     required this.regionName,
     this.onTapPlace,
+    this.showDistance = false,
   });
 
   final List<Map<String, dynamic>> places;
@@ -21,6 +22,10 @@ class CoursePlaceList extends StatelessWidget {
 
   /// 누를 수 있는 목록인지 — 공유받은 화면은 보기 전용이라 넘기지 않는다
   final void Function(Map<String, dynamic> place)? onTapPlace;
+
+  /// 장소 사이에 이동 거리를 얹을지. 시안은 **내 코스에만** 둔다 —
+  /// 추천 코스는 아직 어떻게 갈지 정해지지 않았다
+  final bool showDistance;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +38,7 @@ class CoursePlaceList extends StatelessWidget {
             regionName: regionName,
             isLast: i == places.length - 1,
             onTap: onTapPlace,
+            showDistance: showDistance,
           ),
       ],
     );
@@ -46,6 +52,7 @@ class _PlaceRow extends StatelessWidget {
     required this.regionName,
     required this.isLast,
     this.onTap,
+    this.showDistance = false,
   });
 
   final int index;
@@ -53,6 +60,7 @@ class _PlaceRow extends StatelessWidget {
   final String regionName;
   final bool isLast;
   final void Function(Map<String, dynamic> place)? onTap;
+  final bool showDistance;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +181,8 @@ class _PlaceRow extends StatelessWidget {
     return Column(
       children: [
         // 앞 장소에서 여기까지의 거리 — 첫 장소에는 없다
-        if (!(index == 1) && meters != null) _buildDistanceChip(meters),
+        if (showDistance && index != 1 && meters != null)
+          _buildDistanceChip(meters),
         if (onTap case final handler?)
           GestureDetector(
             onTap: () => handler(place),
