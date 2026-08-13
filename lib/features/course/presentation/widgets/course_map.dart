@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-/// 코스의 장소들을 마커로 찍어 보여주는 지도.
-/// 코스 추천 결과·저장한 코스 화면이 공유한다.
+/// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
+/// 코스 추천 결과·저장한 코스·공유받은 코스 화면이 함께 쓴다.
+/// 경로 점선 색 — Atomic/Cool Neutral/60
+const _pathColor = Color(0xFF878A93);
+
 class CourseMap extends StatelessWidget {
   const CourseMap({super.key, required this.places, required this.dayKey});
 
@@ -49,7 +52,6 @@ class CourseMap extends StatelessWidget {
         initialCameraPosition: NCameraPosition(target: center, zoom: 10.5),
       ),
       onMapReady: (controller) {
-        var n = 0;
         for (var i = 0; i < places.length; i++) {
           final p = places[i];
           if (p['mapy'] == null || p['mapx'] == null) continue;
@@ -59,16 +61,24 @@ class CourseMap extends StatelessWidget {
             caption: NOverlayCaption(text: '${i + 1}. ${p['name']}'),
           );
           controller.addOverlay(marker);
-          n++;
         }
-        if (n >= 2) {
-          controller.updateCamera(
-            NCameraUpdate.fitBounds(
-              NLatLngBounds.from(points),
-              padding: const EdgeInsets.all(40),
+        // 1→2→3 순서를 잇는 점선. 실제 도로가 아니라 도는 순서를 보이는 선이다
+        if (points.length >= 2) {
+          controller.addOverlay(
+            NPolylineOverlay(
+              id: 'course-path',
+              coords: points,
+              color: _pathColor,
+              width: 4,
+              // 웹의 shortdot과 같은 밀도 — 점이 촘촘히 이어져 경로로 읽힌다
+              pattern: const [2, 6],
+              lineCap: NLineCap.round,
             ),
           );
         }
+        // 코스는 1번에서 시작한다 — 첫 장소를 가운데 두고 시작한다.
+        // 전체를 담는 fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다
+        controller.updateCamera(NCameraUpdate.withParams(target: points.first));
       },
     );
   }

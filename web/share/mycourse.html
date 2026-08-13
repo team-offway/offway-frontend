@@ -21,6 +21,8 @@
     --primary: #3DC2FF;
     --primary-strong: #00AEFF;
     --pink: #F553DA;
+    /* 지도 마커 — 시안은 본문 primary와 다른 톤을 쓴다 */
+    --marker: #18D2FE;
 
     --bg: #ffffff;
     --label-normal: #171719;
@@ -123,15 +125,15 @@
   }
 
   /* 지도 위 번호 마커 — 목록의 번호와 같은 모양이라 눈으로 이어진다 */
+  /* 시안: 채운 원에 흰 숫자뿐 — 테두리도 그림자도 없다 (48:28 비율) */
   .pin {
-    width: 24px; height: 24px; border-radius: 999px;
-    background: var(--primary); color: #fff;
+    width: 28px; height: 28px; border-radius: 999px;
+    background: var(--marker); color: #fff;
     display: grid; place-items: center;
     font-family: var(--sans);
-    font-size: 13px; font-weight: 600;
+    font-size: 16px; font-weight: 600;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
   }
   .pin[data-kind="STAY"] { background: var(--pink); }
 
@@ -351,6 +353,7 @@
 
     var map = null;
     var markers = [];
+    var pathLine = null;
 
     /// 그 날의 장소를 지도에 찍는다. 스크립트가 못 뜨면 회색 자리로 남긴다.
     function drawMap(items) {
@@ -386,24 +389,38 @@
       }
 
       markers.forEach(function (m) { m.setMap(null); });
+      if (pathLine) pathLine.setMap(null);
+
+      // 1→2→3 순서대로 잇는 점선. 실제 도로가 아니라 순서를 보이는 선이다
+      if (pts.length >= 2) {
+        pathLine = new naver.maps.Polyline({
+          map: map,
+          path: pts.map(function (p) { return p.pos; }),
+          strokeColor: '#878A93',
+          strokeWeight: 4,
+          strokeStyle: 'shortdot',
+          strokeLineCap: 'round',
+          strokeOpacity: 1,
+        });
+      }
       markers = pts.map(function (p) {
         return new naver.maps.Marker({
           position: p.pos,
           map: map,
           icon: {
             content: '<div class="pin" data-kind="' + esc(p.kind) + '">' + p.no + '</div>',
-            anchor: new naver.maps.Point(12, 12),
+            anchor: new naver.maps.Point(14, 14),
           },
         });
       });
 
+      // 전체를 담되 첫 장소를 가운데 둔다 — 코스는 1번에서 시작한다
       if (pts.length >= 2) {
         var b = new naver.maps.LatLngBounds();
         pts.forEach(function (p) { b.extend(p.pos); });
         map.fitBounds(b, { top: 40, right: 40, bottom: 40, left: 40 });
-      } else {
-        map.setCenter(pts[0].pos);
       }
+      map.setCenter(pts[0].pos);
       } catch (e) {
         // 지도가 못 떠도 목록은 보여야 한다. 대신 원인은 남긴다
         console.error('지도를 그리지 못했습니다:', e);
