@@ -207,7 +207,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
       final regionName = course['regionName'] as String? ?? '여행';
       final duration = _durationLabel(course['durationDays'] as int? ?? 1);
-      final link = ShareLink.of(token);
+      final link = ShareLink.of(token, kind: SharedCourseKind.recommend);
 
       if (!kakao) {
         await Clipboard.setData(ClipboardData(text: link));

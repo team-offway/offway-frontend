@@ -257,7 +257,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final sent = await KakaoShare.sendCourse(
       title: '$regionName 여행${duration.isEmpty ? '' : ', $duration'}',
       description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
-      linkUrl: ShareLink.of(shareToken),
+      linkUrl: ShareLink.of(shareToken, kind: SharedCourseKind.saved),
       shareToken: shareToken,
       kind: SharedCourseKind.saved,
       imageUrl: saved['thumbnailUrl'] as String?,
@@ -276,7 +276,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       showAppToast(context, '링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
-    await Clipboard.setData(ClipboardData(text: ShareLink.of(shareToken)));
+    await Clipboard.setData(
+      ClipboardData(
+        text: ShareLink.of(shareToken, kind: SharedCourseKind.saved),
+      ),
+    );
     if (mounted) {
       showAppToast(context, '링크를 복사했어요.', kind: AppToastKind.success);
     }
