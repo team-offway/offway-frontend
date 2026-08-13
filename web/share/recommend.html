@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>추천코스 · OffWay</title>
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OffWay">
+<meta property="og:title" content="OffWay 추천코스">
+<meta property="og:description" content="맞춤코스로 연차 여행을 떠나보세요.">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- 네이버 지도. 콘솔의 Web 서비스 URL에 이 도메인이 등록돼 있어야 뜬다 —
+     못 뜨면 지도 자리는 회색으로 남고 목록은 그대로 보인다 -->
+<script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=qqdpbn2yp9"></script>
+
+<style>
+  /* 앱과 같은 디자인 토큰 */
+  :root {
+    --primary: #3DC2FF;
+    --primary-strong: #00AEFF;
+    --pink: #F553DA;
+
+    --bg: #ffffff;
+    --label-normal: #171719;
+    --label-neutral: rgba(46, 47, 51, .88);
+    --label-alt: rgba(55, 56, 60, .61);
+    --line-neutral: rgba(112, 115, 124, .16);
+    --fill: rgba(112, 115, 124, .08);
+    --inverse-label: #F7F7F8;
+
+    --sans: "Pretendard", -apple-system, BlinkMacSystemFont,
+            "Apple SD Gothic Neo", "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--label-normal);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+
+  /* 시안이 1080 기준이라 모바일 폭에 맞춰 환산했다 */
+  .page { max-width: 420px; margin-inline: auto; }
+
+  /* ── 히어로 ─────────────────────────── */
+  .hero {
+    background: var(--primary);
+    line-height: 0;
+  }
+  .hero img { width: 100%; height: auto; display: block; }
+
+  .back {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px;
+    margin: 6px 0 0 6px;
+    border: 0; background: none; cursor: pointer;
+    color: var(--label-alt);
+  }
+  .back svg { width: 24px; height: 24px; display: block; }
+  .back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
+
+  /* ── 제목 ───────────────────────────── */
+  .head { padding: 6px 20px 0; text-align: center; }
+  h1 {
+    margin: 0;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -.03em; line-height: 1.33;
+    text-wrap: balance;
+  }
+  h1 .accent { color: var(--primary); }
+  .head p {
+    margin: 8px 0 0;
+    font-size: 14px; color: var(--label-alt);
+    letter-spacing: .005em;
+  }
+
+  /* ── 지도 ───────────────────────────── */
+  .cover {
+    margin: 28px 20px 0;
+    border-radius: 12px; overflow: hidden;
+    background: var(--fill);
+  }
+  /* 지도는 부모의 비율·절대위치에 기대지 않고 자기 높이를 직접 갖는다 —
+     그렇게 해야 타일이 확실히 그려진다 (시안 925:495 ≒ 0.535) */
+  #map {
+    width: 100%;
+    /* 좌우 여백 20씩을 뺀 폭의 53.5% — 화면이 넓어져도 비율이 유지된다.
+       page 최대폭 420 기준 상한을 둔다 */
+    height: min(53.5vw, 203px);
+  }
+
+  /* 지도 위 번호 마커 — 목록의 번호와 같은 모양이라 눈으로 이어진다 */
+  .pin {
+    width: 24px; height: 24px; border-radius: 999px;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--sans);
+    font-size: 13px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  }
+  .pin[data-kind="STAY"] { background: var(--pink); }
+
+  /* ── Day 탭 ─────────────────────────── */
+  .days {
+    display: flex; gap: 9px;
+    padding: 20px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .days::-webkit-scrollbar { display: none; }
+  .days button {
+    flex-shrink: 0;
+    padding: 8px 13px; border-radius: 10px;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    letter-spacing: .01em;
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--line-neutral);
+    color: var(--label-alt);
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .days button[aria-selected="true"] {
+    background: var(--label-neutral);
+    border-color: transparent;
+    color: var(--inverse-label);
+  }
+  .days button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* ── 장소 목록 ──────────────────────── */
+  .places { padding: 16px 20px 0; }
+
+  .place {
+    display: grid;
+    grid-template-columns: 24px 1fr 70px;
+    gap: 14px;
+    align-items: start;
+  }
+  /* 번호 열은 점선이 지나가므로 행 사이 여백을 여기서 만들지 않는다 */
+  .place + .place { margin-top: 0; }
+
+  .rail { position: relative; display: flex; justify-content: center; }
+  .no {
+    position: relative; z-index: 1;
+    width: 24px; height: 24px; border-radius: 999px;
+    background: var(--primary); color: #fff;
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-top: 12px;
+  }
+  .no[data-kind="STAY"] { background: var(--pink); }
+  /* 다음 번호까지 이어지는 점선 — 마지막 행에는 그리지 않는다 */
+  .rail::after {
+    content: "";
+    position: absolute; top: 42px; bottom: -12px; left: 50%;
+    width: 0; border-left: 1.5px dashed var(--line-neutral);
+    transform: translateX(-50%);
+  }
+  .place:last-child .rail::after { display: none; }
+
+  .info { padding: 12px 0; min-width: 0; }
+  .name {
+    margin: 0;
+    font-size: 16px; font-weight: 600;
+    letter-spacing: .014em;
+    overflow-wrap: anywhere;
+  }
+  .why {
+    margin: 4px 0 0;
+    font-size: 14px; color: var(--label-neutral);
+    letter-spacing: .014em;
+  }
+  .why b { color: var(--primary-strong); font-weight: 500; }
+  .cat {
+    margin: 4px 0 0;
+    font-size: 13px; color: var(--label-alt);
+    letter-spacing: .019em;
+  }
+
+  .thumb {
+    width: 70px; height: 70px; margin-top: 12px;
+    border-radius: 12px; overflow: hidden;
+    background: var(--fill);
+    display: grid; place-items: center;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .ph { width: 24px; height: 24px; color: #C2C4C8; }
+
+  /* ── 상태 ───────────────────────────── */
+  .state {
+    padding: 80px 24px; text-align: center; color: var(--label-alt);
+  }
+  .state p { margin: 0; font-size: 15px; }
+
+  /* ── 푸터 ───────────────────────────── */
+  footer {
+    padding: 46px 20px 40px;
+    text-align: center;
+  }
+  footer p { margin: 0; font-size: 14px; color: var(--label-alt); }
+  footer .mark {
+    margin-top: 5px;
+    font-size: 19px; font-weight: 800; letter-spacing: .01em;
+    color: var(--primary);
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="hero">
+    <img src="/assets/hero.png" alt="" width="1080" height="392">
+  </div>
+
+  <button type="button" class="back" id="back" aria-label="뒤로 가기">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M15 19L8 12l7-7" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <main id="main" hidden>
+    <div class="head">
+      <h1><span id="title-region"></span>, <span class="accent" id="title-duration"></span><br>추천코스입니다.</h1>
+      <p>맞춤코스로 연차 여행을 떠나보세요.</p>
+    </div>
+
+    <div class="cover" id="cover"><div id="map"></div></div>
+
+    <!-- 당일치기는 하루뿐이라 탭을 그리지 않는다 -->
+    <div class="days" id="days" role="tablist" aria-label="여행 일자" hidden></div>
+
+    <div class="places" id="places"></div>
+  </main>
+
+  <div class="state" id="state"><p>코스를 불러오는 중이에요</p></div>
+
+  <footer>
+    <p>연차로 떠나는 로컬 여행</p>
+    <p class="mark">offway</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var PLACEHOLDER =
+      '<svg class="ph" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+      '<rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>' +
+      '<circle cx="8.5" cy="10" r="1.5" fill="currentColor"/>' +
+      '<path d="M5 17l4.5-4.5 3 3L16 12l3 3" stroke="currentColor" stroke-width="1.5" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    var main = document.getElementById('main');
+    var state = document.getElementById('state');
+    var daysEl = document.getElementById('days');
+    var placesEl = document.getElementById('places');
+
+    document.getElementById('back').addEventListener('click', function () {
+      // 링크로 바로 열면 돌아갈 곳이 없다 — 그때는 홈으로 보낸다
+      if (history.length > 1) history.back();
+      else location.href = '/';
+    });
+
+    function show(msg) {
+      state.innerHTML = '<p>' + msg + '</p>';
+      state.hidden = false;
+      main.hidden = true;
+    }
+
+    function durationLabel(days) {
+      if (days <= 1) return '당일치기';
+      return (days - 1) + '박' + days + '일';
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    var map = null;
+    var markers = [];
+
+    /// 그 날의 장소를 지도에 찍는다. 스크립트가 못 뜨면 회색 자리로 남긴다.
+    function drawMap(items) {
+      // 지도 스크립트가 늦게 뜨거나 못 뜰 수 있다 — 늦으면 한 번 더 기다린다
+      if (!window.naver || !naver.maps) {
+        if (!drawMap.retried) {
+          drawMap.retried = true;
+          window.addEventListener('load', function () {
+            drawMap.retried = false;
+            drawMap(items);
+          });
+        }
+        return;
+      }
+
+      var pts = items
+        .filter(function (it) { return it.lat != null && it.lng != null; })
+        .map(function (it, i) {
+          return { pos: new naver.maps.LatLng(it.lat, it.lng), no: i + 1, kind: it.kind };
+        });
+      if (!pts.length) return;
+
+      try {
+
+      if (!map) {
+        map = new naver.maps.Map('map', {
+          center: pts[0].pos,
+          zoom: 11,
+          // 공유 페이지는 훑어보는 화면이라 조작 UI를 걷어낸다
+          mapDataControl: false,
+          scaleControl: false,
+        });
+      }
+
+      markers.forEach(function (m) { m.setMap(null); });
+      markers = pts.map(function (p) {
+        return new naver.maps.Marker({
+          position: p.pos,
+          map: map,
+          icon: {
+            content: '<div class="pin" data-kind="' + esc(p.kind) + '">' + p.no + '</div>',
+            anchor: new naver.maps.Point(12, 12),
+          },
+        });
+      });
+
+      if (pts.length >= 2) {
+        var b = new naver.maps.LatLngBounds();
+        pts.forEach(function (p) { b.extend(p.pos); });
+        map.fitBounds(b, { top: 40, right: 40, bottom: 40, left: 40 });
+      } else {
+        map.setCenter(pts[0].pos);
+      }
+      } catch (e) {
+        // 지도가 못 떠도 목록은 보여야 한다. 대신 원인은 남긴다
+        console.error('지도를 그리지 못했습니다:', e);
+      }
+    }
+
+    function renderDay(day) {
+      var items = (day && day.items) || [];
+      drawMap(items);
+      if (!items.length) {
+        placesEl.innerHTML = '<p class="state">이 날의 일정이 아직 없어요</p>';
+        return;
+      }
+      placesEl.innerHTML = items.map(function (it, i) {
+        var thumb = it.imageUrl
+          ? '<img src="' + esc(it.imageUrl) + '" alt="" loading="lazy">'
+          : PLACEHOLDER;
+        var why = it.catchphrase
+          ? '<p class="why"><b>추천</b> ' + esc(it.catchphrase) + '</p>' : '';
+        var cat = it.categoryLabel
+          ? '<p class="cat">' + esc(it.categoryLabel) + '</p>' : '';
+        return '<div class="place">' +
+          '<div class="rail"><div class="no" data-kind="' + esc(it.kind) + '">' + (i + 1) + '</div></div>' +
+          '<div class="info"><p class="name">' + esc(it.title) + '</p>' + why + cat + '</div>' +
+          '<div class="thumb">' + thumb + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function render(course) {
+      var days = course.days || [];
+      var travelDays = course.travelDays || days.length || 1;
+
+      // 지역 이름은 코스 응답 상위에 없어 첫 장소에서 가져온다
+      var region = '';
+      days.some(function (d) {
+        return (d.items || []).some(function (it) {
+          if (it.regionName) { region = it.regionName; return true; }
+          return false;
+        });
+      });
+      document.getElementById('title-region').textContent = region || '여행';
+      document.getElementById('title-duration').textContent = durationLabel(travelDays);
+
+      // 하루짜리 코스에는 탭이 필요 없다
+      if (days.length > 1) {
+        daysEl.hidden = false;
+        daysEl.innerHTML = days.map(function (d, i) {
+          return '<button type="button" role="tab" data-i="' + i + '" ' +
+                 'aria-selected="' + (i === 0) + '">Day ' + (d.day || i + 1) + '</button>';
+        }).join('');
+        daysEl.addEventListener('click', function (e) {
+          var btn = e.target.closest('button');
+          if (!btn) return;
+          daysEl.querySelectorAll('button').forEach(function (b) {
+            b.setAttribute('aria-selected', String(b === btn));
+          });
+          renderDay(days[Number(btn.dataset.i)]);
+        });
+      }
+
+      state.hidden = true;
+      main.hidden = false;
+      // hidden을 푼 직후에는 아직 레이아웃이 잡히지 않아 지도가 크기를 0으로
+      // 읽는다 — 다음 프레임에 그려야 타일이 나온다
+      requestAnimationFrame(function () {
+        renderDay(days[0]);
+      });
+    }
+
+    // 주소는 /r/{shareToken} — 마지막 조각이 토큰이다
+    var token = location.pathname.split('/').filter(Boolean).pop();
+    if (!token || token === 'recommend.html') {
+      show('링크가 올바르지 않아요');
+      return;
+    }
+
+    fetch('/api/course?token=' + encodeURIComponent(token))
+      .then(function (res) {
+        return res.json().then(function (body) {
+          return { status: res.status, body: body };
+        });
+      })
+      .then(function (r) {
+        if (r.status === 404) return show('링크가 잘못되었거나 삭제된 코스예요');
+        if (r.status === 410) return show('만료된 링크예요');
+        if (r.status >= 400 || !r.body || !r.body.data) {
+          return show((r.body && r.body.detail) || '코스를 불러오지 못했어요');
+        }
+        render(r.body.data);
+      })
+      .catch(function () {
+        show('코스를 불러오지 못했어요');
+      });
+  })();
+</script>
+
+</body>
+</html>

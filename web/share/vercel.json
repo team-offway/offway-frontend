@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/c/:token", "destination": "/share.html" },
+    { "source": "/r/:token", "destination": "/recommend.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" }
   ]
