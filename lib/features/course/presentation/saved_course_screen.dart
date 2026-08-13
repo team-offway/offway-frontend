@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
@@ -260,7 +261,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       linkUrl: ShareLink.of(shareToken, kind: SharedCourseKind.saved),
       shareToken: shareToken,
       kind: SharedCourseKind.saved,
-      imageUrl: saved['thumbnailUrl'] as String?,
+      imageUrl: AppConfig.shareCardImageUrl,
     );
     if (!mounted || sent) return;
     showAppToast(context, '카카오톡을 열지 못했어요');

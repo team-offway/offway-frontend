@@ -5,6 +5,7 @@ import 'package:gal/gal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
@@ -223,7 +224,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         linkUrl: link,
         shareToken: token,
         kind: SharedCourseKind.recommend,
-        imageUrl: _firstImageOf(course),
+        imageUrl: AppConfig.shareCardImageUrl,
       );
       if (mounted && !sent) showAppToast(context, '카카오톡을 열지 못했어요');
     } on ApiException catch (e) {
@@ -289,17 +290,6 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           if (p['imageUrl'] case final String url when url.isNotEmpty)
             NetworkImage(url),
     ];
-  }
-
-  /// 카카오 카드에 쓸 대표 사진 — 첫날 첫 장소
-  String? _firstImageOf(Map<String, dynamic> course) {
-    for (final day in (course['days'] as List? ?? const [])) {
-      for (final p in ((day as Map)['places'] as List? ?? const [])) {
-        final url = (p as Map)['imageUrl'] as String?;
-        if (url != null && url.isNotEmpty) return url;
-      }
-    }
-    return null;
   }
 
   String _durationLabel(int days) => switch (days) {
