@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/c/:token", "destination": "/index.html" },
+    { "source": "/c/:token", "destination": "/share.html" },
     { "source": "/privacy", "destination": "/privacy.html" }
   ]
 }

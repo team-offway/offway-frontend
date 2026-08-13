@@ -3,230 +3,422 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>OffWay · 공유받은 여행 코스</title>
+<title>OffWay</title>
+<meta name="description" content="남은 연차로 갈 수 있는 인구감소지역 여행 코스를 추천합니다.">
 
-<!-- 카카오톡·슬랙 미리보기. 코스별 문구는 불러온 뒤 JS가 갈아끼운다 -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OffWay">
-<meta property="og:title" content="OffWay 여행 코스">
-<meta property="og:description" content="연차로 떠나는 로컬 여행 — 공유받은 코스를 확인해보세요">
-<meta name="twitter:card" content="summary">
+<meta property="og:title" content="OffWay · 연차로 떠나는 로컬 여행">
+<meta property="og:description" content="남은 연차 며칠, 어디까지 갈 수 있을까. 도달 가능한 인구감소지역과 날짜별 코스를 추천합니다.">
+<meta property="og:url" content="https://offway.cloud">
+<meta name="twitter:card" content="summary_large_image">
 
 <style>
-  * { box-sizing: border-box; }
-
+  /* 앱의 디자인 토큰을 그대로 쓴다 — 웹과 앱이 같은 서비스로 보이게 */
   :root {
+    --brand: #3DC2FF;
+    --brand-deep: #00AEFF;
+    --brand-wash: #E8F7FF;
+
     --bg: #ffffff;
-    --surface: #f7f7f8;
+    /* 중립색을 청록 쪽으로 살짝 기울여 브랜드 하늘색과 한 계열로 묶는다 */
+    --surface: #F6F8FA;
     --ink: #171719;
-    --ink-2: rgba(46,47,51,.88);
-    --ink-3: rgba(55,56,60,.61);
-    --ink-4: rgba(55,56,60,.28);
-    --line: rgba(112,115,124,.16);
-    --brand: #3dc2ff;
-    --brand-soft: #e5f6fe;
+    --ink-2: rgba(46, 47, 51, .88);
+    --ink-3: rgba(55, 56, 60, .61);
+    --line: rgba(112, 115, 124, .16);
+
     --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
             "Segoe UI", "Noto Sans KR", sans-serif;
+
+    --step: clamp(1rem, .6rem + 1.4vw, 1.25rem);
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #131417; --surface: #1b1d21; --ink: #f2f0ec; --ink-2: #c5c8cd;
-      --ink-3: #8d9299; --ink-4: #5e636b; --line: #2d3036; --brand-soft: #10323f;
+    :root:not([data-theme="light"]) {
+      --bg: #0F1114;
+      --surface: #171A1E;
+      --ink: #F2F4F6;
+      --ink-2: #C9CDD2;
+      --ink-3: #8B9198;
+      --line: rgba(255, 255, 255, .10);
+      --brand-wash: #0A2A38;
     }
   }
+  :root[data-theme="dark"] {
+    --bg: #0F1114;
+    --surface: #171A1E;
+    --ink: #F2F4F6;
+    --ink-2: #C9CDD2;
+    --ink-3: #8B9198;
+    --line: rgba(255, 255, 255, .10);
+    --brand-wash: #0A2A38;
+  }
+
+  * { box-sizing: border-box; }
 
   body {
     margin: 0;
     background: var(--bg);
-    color: var(--ink);
+    color: var(--ink-2);
     font-family: var(--sans);
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
   }
 
-  .wrap { max-width: 480px; margin: 0 auto; padding: 24px 20px 64px; }
+  .wrap { width: min(100% - 40px, 960px); margin-inline: auto; }
 
-  header { padding: 8px 0 24px; }
-  .brand {
-    font-size: 20px; font-weight: 800; letter-spacing: -.4px;
-    color: var(--brand);
-  }
-  h1 {
-    margin: 16px 0 6px;
-    font-size: 24px; font-weight: 700; letter-spacing: -.6px;
-    text-wrap: balance;
-  }
-  .sub { margin: 0; color: var(--ink-3); font-size: 15px; }
-
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-  .chip {
-    padding: 5px 10px; border-radius: 8px;
-    background: var(--brand-soft); color: var(--brand);
-    font-size: 13px; font-weight: 600;
-  }
-
-  .day { margin-top: 32px; }
-  .day-head {
-    display: flex; align-items: baseline; gap: 8px;
-    margin-bottom: 12px;
-  }
-  .day-title { font-size: 17px; font-weight: 700; }
-  .day-date { font-size: 15px; color: var(--ink-3); }
-
-  ol { list-style: none; margin: 0; padding: 0; }
-  li {
-    display: grid; grid-template-columns: 28px 1fr; gap: 12px;
-    padding: 12px 0;
+  /* ── 상단바 ─────────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
   }
-  li:last-child { border-bottom: 0; }
-
-  .no {
-    width: 24px; height: 24px; border-radius: 999px;
-    background: var(--brand); color: #fff;
-    font-size: 13px; font-weight: 700;
-    display: grid; place-items: center;
+  .bar .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
   }
-  .name { font-size: 16px; font-weight: 600; color: var(--ink); }
-  .meta { margin-top: 2px; font-size: 13px; color: var(--ink-3); }
-  .addr { margin-top: 2px; font-size: 13px; color: var(--ink-4); }
+  .mark { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+  .mark svg { height: 21px; width: auto; display: block; }
+  .mark svg path { fill: var(--brand); }
+  .bar nav { display: flex; gap: 22px; font-size: 14px; }
+  .bar nav a { color: var(--ink-3); text-decoration: none; }
+  .bar nav a:hover { color: var(--ink); }
+  @media (max-width: 560px) { .bar nav { display: none; } }
 
-  .state { padding: 80px 20px; text-align: center; color: var(--ink-3); }
-  .state strong { display: block; margin-bottom: 6px; font-size: 18px; color: var(--ink); }
+  /* ── 히어로 ─────────────────────────────── */
+  .hero { padding: clamp(56px, 9vw, 104px) 0 clamp(48px, 7vw, 88px); }
+  .hero-grid {
+    display: grid; gap: clamp(36px, 5vw, 60px);
+    grid-template-columns: 1fr;
+    align-items: center;
+  }
+  @media (min-width: 860px) { .hero-grid { grid-template-columns: 1.05fr .95fr; } }
 
-  footer {
-    margin-top: 48px; padding-top: 24px;
-    border-top: 1px solid var(--line);
-    text-align: center; font-size: 13px; color: var(--ink-4);
+  .eyebrow {
+    display: inline-block;
+    font-size: 13px; font-weight: 600; letter-spacing: .01em;
+    color: var(--brand-deep); background: var(--brand-wash);
+    padding: 5px 12px; border-radius: 999px;
+    margin: 0 0 20px;
+  }
+  h1 {
+    margin: 0 0 18px;
+    font-size: clamp(30px, 5.4vw, 46px);
+    line-height: 1.28;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--brand-deep); }
+  .lede { margin: 0 0 30px; font-size: var(--step); max-width: 30ch; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 22px; border-radius: 12px;
+    font-size: 15px; font-weight: 700;
+    text-decoration: none; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--brand); color: #00252F; }
+  .btn-primary:hover { background: var(--brand-deep); }
+  .btn-ghost { color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--brand); color: var(--brand-deep); }
+  .btn[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+  .cta-note { font-size: 13px; color: var(--ink-3); width: 100%; margin-top: 2px; }
+
+  /* ── 히어로 데모: 연차 → 일정 ───────────── */
+  .demo {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+  }
+  .demo-q { font-size: 14px; font-weight: 600; color: var(--ink-3); margin: 0 0 14px; }
+  .picker { display: flex; gap: 8px; margin: 0 0 20px; }
+  .picker button {
+    flex: 1; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    color: var(--ink-2); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 11px;
+    padding: 11px 0;
+    font-variant-numeric: tabular-nums;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .picker button[aria-pressed="true"] {
+    border-color: var(--brand); color: var(--brand-deep);
+    background: var(--brand-wash);
+  }
+  .picker button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .result-label { font-size: 13px; color: var(--ink-3); margin: 0 0 10px; }
+  .days { display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 11px; padding: 12px 14px;
+  }
+  .day-no {
+    flex-shrink: 0;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--brand); color: #00252F;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .day-txt { font-size: 14px; color: var(--ink-2); }
+  .day-txt b { color: var(--ink); font-weight: 650; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .day { animation: rise .32s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  }
+
+  /* ── 공통 섹션 ──────────────────────────── */
+  section { padding: clamp(48px, 7vw, 84px) 0; }
+  section + section { border-top: 1px solid var(--line); }
+  h2 {
+    margin: 0 0 12px;
+    font-size: clamp(22px, 3.2vw, 30px);
+    line-height: 1.35; letter-spacing: -.02em;
+    font-weight: 750; color: var(--ink);
+    text-wrap: balance;
+  }
+  .sub { margin: 0 0 34px; max-width: 46ch; color: var(--ink-3); }
+
+  .cards { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .card h3 {
+    margin: 0 0 8px;
+    font-size: 16px; font-weight: 700; color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .card p { margin: 0; font-size: 14.5px; color: var(--ink-3); }
+
+  /* ── 데이터 ─────────────────────────────── */
+  .stats {
+    display: grid; gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    /* 세 항목이라 좁은 화면에서는 한 줄에 하나씩 — 2칸이면 마지막이 혼자 남는다 */
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+  .stat { background: var(--bg); padding: 20px; }
+  .stat b {
+    display: block;
+    font-size: clamp(22px, 3vw, 28px); font-weight: 800;
+    color: var(--ink); letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .stat span { font-size: 13px; color: var(--ink-3); }
+
+  .src {
+    margin: 22px 0 0; font-size: 13.5px; color: var(--ink-3);
+  }
+  .src a { color: var(--brand-deep); }
+
+  /* ── 푸터 ───────────────────────────────── */
+  footer { border-top: 1px solid var(--line); padding: 34px 0 46px; }
+  footer .wrap {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    align-items: center; justify-content: space-between;
+    font-size: 13.5px; color: var(--ink-3);
+  }
+  footer a { color: var(--ink-3); }
+  footer nav { display: flex; gap: 18px; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px;
   }
 </style>
 </head>
 <body>
-<div class="wrap" id="root">
-  <div class="state">불러오는 중이에요…</div>
+
+<div class="bar">
+  <div class="wrap">
+    <a class="mark" href="/" aria-label="OffWay 홈">
+      <svg viewBox="0 0 125 38" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OffWay">
+        <path d="M10.6 29.92C4.72005 29.92 4.88758e-05 25.32 4.88758e-05 19.36C4.88758e-05 13.4 4.72005 8.79999 10.6 8.79999C16.4801 8.79999 21.2 13.4 21.2 19.36C21.2 25.32 16.4801 29.92 10.6 29.92ZM10.6 24.08C13.2 24.08 15.2 22.2 15.2 19.36C15.2 16.52 13.2 14.64 10.6 14.64C8.00005 14.64 6.00005 16.52 6.00005 19.36C6.00005 22.2 8.00005 24.08 10.6 24.08ZM46.6079 6.15998C44.3679 5.95998 42.8879 6.63998 42.8879 8.95998V9.35999H46.6079V15.12H42.8879V29.36H36.8879V15.12H31.6879V29.36H25.6879V15.12H23.0079V9.35999H25.6879C25.6879 3.75998 28.7679 0.399984 35.4079 0.799984V6.55998C33.1679 6.35998 31.6879 7.03998 31.6879 9.35999H36.8879V8.95998C36.8879 3.35998 39.9679 -1.57356e-05 46.6079 0.399984V6.15998ZM72.0032 9.35999H78.4032L72.0032 29.36H66.4032L63.2032 18.68L60.0032 29.36H54.4032L48.0032 9.35999H54.4032L57.2832 20.08L60.4032 9.35999H66.0032L69.1232 20.08L72.0032 9.35999ZM94.9232 9.35999H100.923V29.36H94.9232V27.48C93.6032 29 91.6432 29.92 88.9632 29.92C83.7232 29.92 79.4032 25.32 79.4032 19.36C79.4032 13.4 83.7232 8.79999 88.9632 8.79999C91.6432 8.79999 93.6032 9.71998 94.9232 11.24V9.35999ZM90.1632 24.24C92.9232 24.24 94.9232 22.36 94.9232 19.36C94.9232 16.36 92.9232 14.48 90.1632 14.48C87.4032 14.48 85.4032 16.36 85.4032 19.36C85.4032 22.36 87.4032 24.24 90.1632 24.24ZM118.325 9.35999H124.725L117.885 28.76C115.645 35.12 112.085 37.64 106.485 37.36V31.76C109.285 31.76 110.605 30.88 111.485 28.44L103.525 9.35999H110.125L114.565 21.6L118.325 9.35999Z"/>
+      </svg>
+    </a>
+    <nav>
+      <a href="#how">어떻게</a>
+      <a href="#why">왜</a>
+      <a href="#data">데이터</a>
+    </nav>
+  </div>
 </div>
 
+<main>
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">인구감소지역 여행 추천</p>
+        <h1>남은 연차 <em>3일</em>,<br>어디까지 갈 수 있을까</h1>
+        <p class="lede">
+          연차 일수와 이동수단을 넣으면 도달할 수 있는 지역과
+          날짜별 코스를 짜 드려요.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#" aria-disabled="true">App Store · 공개 예정</a>
+          <a class="btn btn-ghost" href="#how">어떻게 쓰나요</a>
+          <p class="cta-note">iPhone에서 이용할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div class="demo">
+        <p class="demo-q">연차를 며칠 쓸 수 있나요?</p>
+        <div class="picker" role="group" aria-label="연차 일수 선택">
+          <button type="button" data-d="1" aria-pressed="false">1일</button>
+          <button type="button" data-d="2" aria-pressed="false">2일</button>
+          <button type="button" data-d="3" aria-pressed="true">3일</button>
+        </div>
+        <p class="result-label" id="result-label">정선 · 2박 3일</p>
+        <div class="days" id="days" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>연차에서 시작합니다</h2>
+      <p class="sub">
+        가고 싶은 곳을 먼저 고르는 대신, 쓸 수 있는 시간에서 거꾸로 좁혀 갑니다.
+      </p>
+      <div class="cards">
+        <div class="card">
+          <h3>남은 연차를 넣습니다</h3>
+          <p>반차까지 0.5일 단위로. 주말을 붙일지, 평일만 쓸지도 함께 고릅니다.</p>
+        </div>
+        <div class="card">
+          <h3>닿는 곳만 남깁니다</h3>
+          <p>현재 위치에서 편도 7시간 안에 갈 수 있는 지역만 후보로 올립니다.</p>
+        </div>
+        <div class="card">
+          <h3>날짜별로 짭니다</h3>
+          <p>하루에 몇 곳을 볼지 밀도를 고르면 1일차·2일차 순서로 코스가 나옵니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="wrap">
+      <h2>왜 인구감소지역인가</h2>
+      <p class="sub">
+        좋은 콘텐츠가 있어도 알려지지 않으면 사람이 오지 않고,
+        사람이 오지 않으면 더 알려지지 않습니다.
+      </p>
+      <div class="cards">
+        <div class="card">
+          <h3>검색으로는 안 나옵니다</h3>
+          <p>어디로 갈지 정해야 검색이 되는데, 이름을 모르는 지역은 후보에 오르지 못합니다.</p>
+        </div>
+        <div class="card">
+          <h3>최대 2박 3일로 끊습니다</h3>
+          <p>콘텐츠가 얇은 지역에서 4일 이상 코스는 빈약해집니다. 짧게 제대로 보는 편이 낫습니다.</p>
+        </div>
+        <div class="card">
+          <h3>혜택을 함께 봅니다</h3>
+          <p>지자체가 운영하는 숙박·입장 지원을 코스 안에서 같이 보여줍니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="data">
+    <div class="wrap">
+      <h2>공공데이터로 만듭니다</h2>
+      <p class="sub">
+        한국관광공사 관광정보와 행정안전부 인구감소지역 지정 자료를 씁니다.
+      </p>
+      <div class="stats">
+        <div class="stat"><b>89</b><span>인구감소지역</span></div>
+        <div class="stat"><b>7시간</b><span>편도 도달 한계</span></div>
+        <div class="stat"><b>2박 3일</b><span>코스 상한</span></div>
+      </div>
+      <p class="src">
+        출처 · 한국관광공사 국문 관광정보 서비스(KorService2), 행정안전부 인구감소지역 지정 고시.
+        지역마다 관광정보의 양이 크게 달라, 코스 밀도를 지역에 맞춰 조정합니다.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>OffWay · 연차로 떠나는 로컬 여행</span>
+    <nav>
+      <a href="/privacy">개인정보처리방침</a>
+    </nav>
+  </div>
+</footer>
+
 <script>
-// 백엔드는 HTTP만 받는데 이 페이지는 HTTPS로 뜬다 — 브라우저가 그 요청을
-// 혼합 콘텐츠로 막으므로 같은 출처의 서버리스 함수를 거쳐 부른다 (api/course.js)
-const API = '/api/course';
+  (function () {
+    // 실제 앱이 짜 주는 코스의 형태를 그대로 축약해 보여준다
+    var PLANS = {
+      1: { where: '가평 · 당일치기', days: [
+        ['아침', '<b>자라섬</b>에서 산책하고 커피 한 잔'],
+        ['점심', '<b>가평 잣 칼국수</b>로 요기'],
+        ['오후', '<b>아침고요수목원</b> 한 바퀴']
+      ]},
+      2: { where: '영월 · 1박 2일', days: [
+        ['1일차', '<b>선암마을 한반도지형</b> 전망대'],
+        ['1일차', '<b>영월 게스트하우스</b> 체크인 · 숙박비 지원'],
+        ['2일차', '<b>청령포</b> 둘러보고 상경']
+      ]},
+      3: { where: '정선 · 2박 3일', days: [
+        ['1일차', '<b>삼탄아트마인</b> 폐광촌 예술 공간'],
+        ['2일차', '<b>화암동굴 둘레길</b> 걷기'],
+        ['3일차', '<b>정선아리랑시장</b>에서 곤드레밥']
+      ]}
+    };
 
-const DENSITY = { RELAXED: '여유롭게', PACKED: '알차게' };
-const TRANSPORT = { CAR: '자동차', TRANSIT: '대중교통' };
-const WEEKDAY = {
-  MONDAY: '월', TUESDAY: '화', WEDNESDAY: '수', THURSDAY: '목',
-  FRIDAY: '금', SATURDAY: '토', SUNDAY: '일',
-};
+    var picker = document.querySelector('.picker');
+    var list = document.getElementById('days');
+    var label = document.getElementById('result-label');
 
-const root = document.getElementById('root');
-
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (m) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[m]));
-}
-
-function showState(title, detail) {
-  root.innerHTML =
-    `<div class="state"><strong>${esc(title)}</strong>${esc(detail ?? '')}</div>`;
-}
-
-function durationLabel(days) {
-  if (days <= 1) return '당일치기';
-  return `${days - 1}박 ${days}일`;
-}
-
-function formatDate(iso, dayOfWeek) {
-  if (!iso) return '';
-  const [, m, d] = iso.split('-');
-  const w = WEEKDAY[dayOfWeek];
-  return `${Number(m)}.${Number(d)}${w ? ` ${w}` : ''}`;
-}
-
-function render(course) {
-  const days = course.days ?? [];
-  // 지역명은 첫 장소에 실려 온다 — 코스 자체에는 이름 필드가 없다
-  const regionName =
-    days.flatMap((d) => d.items ?? []).find((i) => i.regionName)?.regionName ?? '';
-
-  const title = regionName
-    ? `${regionName} 여행, ${durationLabel(course.travelDays)}`
-    : `여행 코스 ${durationLabel(course.travelDays)}`;
-  document.title = `${title} · OffWay`;
-
-  const chips = [
-    DENSITY[course.density],
-    TRANSPORT[course.transport],
-    ...(course.benefits ?? []).map((b) => b.text),
-  ].filter(Boolean);
-
-  const body = days.map((day) => {
-    const items = day.items ?? [];
-    const rows = items.map((it) => `
-      <li>
-        <span class="no">${esc(it.order)}</span>
-        <div>
-          <div class="name">${esc(it.title)}</div>
-          <div class="meta">${esc(it.categoryLabel ?? '')}${
-            it.travelMinutes ? ` · 이동 ${esc(it.travelMinutes)}분` : ''
-          }</div>
-          ${it.address ? `<div class="addr">${esc(it.address)}</div>` : ''}
-        </div>
-      </li>`).join('');
-
-    return `
-      <section class="day">
-        <div class="day-head">
-          <span class="day-title">여행 ${esc(day.day)}일차</span>
-          <span class="day-date">${esc(formatDate(day.date, day.dayOfWeek))}</span>
-        </div>
-        <ol>${rows || '<li><div class="meta">장소가 없어요</div></li>'}</ol>
-      </section>`;
-  }).join('');
-
-  root.innerHTML = `
-    <header>
-      <div class="brand">offway</div>
-      <h1>${esc(title)}</h1>
-      <p class="sub">${esc(formatDate(course.travelDate) || '날짜 미정')}부터</p>
-      ${chips.length ? `<div class="chips">${
-        chips.map((c) => `<span class="chip">${esc(c)}</span>`).join('')
-      }</div>` : ''}
-    </header>
-    ${body}
-    <footer>연차로 떠나는 로컬 여행 · OffWay</footer>`;
-}
-
-async function main() {
-  // 주소는 /c/{shareToken} — 마지막 조각이 토큰이다
-  const token = location.pathname.split('/').filter(Boolean).pop();
-  if (!token || token === 'c') {
-    showState('링크가 올바르지 않아요', '공유받은 주소를 다시 확인해 주세요');
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API}?token=${encodeURIComponent(token)}`);
-    if (res.status === 404) {
-      showState('코스를 찾을 수 없어요', '링크가 잘못되었거나 삭제된 코스예요');
-      return;
+    function render(d) {
+      var plan = PLANS[d];
+      label.textContent = plan.where;
+      list.innerHTML = '';
+      plan.days.forEach(function (row, i) {
+        var el = document.createElement('div');
+        el.className = 'day';
+        el.style.animationDelay = (i * 60) + 'ms';
+        el.innerHTML =
+          '<span class="day-no" aria-hidden="true">' + (i + 1) + '</span>' +
+          '<span class="day-txt"><b>' + row[0] + '</b> · ' + row[1] + '</span>';
+        list.appendChild(el);
+      });
     }
-    if (res.status === 410) {
-      showState('만료된 링크예요', '공유한 사람에게 새 링크를 받아보세요');
-      return;
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const body = await res.json();
-    if (!body.data) throw new Error('empty');
-    render(body.data);
-  } catch (e) {
-    showState('코스를 불러오지 못했어요', '잠시 후 다시 시도해 주세요');
-  }
-}
+    picker.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      picker.querySelectorAll('button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      render(btn.dataset.d);
+    });
 
-main();
+    render(3);
+  })();
 </script>
+
 </body>
 </html>
