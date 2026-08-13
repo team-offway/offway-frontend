@@ -21,8 +21,14 @@ abstract final class AppConfig {
 
   /// 개인정보처리방침 — 공유 웹페이지와 같은 배포에 함께 올라간다
   /// (`web/share/privacy.html`). 앱 심사에서 요구하는 필수 링크다.
-  static String get privacyPolicyUrl =>
-      '${shareBaseUrl.replaceAll(RegExp(r'/+$'), '')}/privacy';
+  static String get privacyPolicyUrl => '$_webBase/privacy';
+
+  /// 이용약관 — 방침과 같은 배포에 함께 올라간다 (`web/share/terms.html`).
+  /// 로그인 화면에서 "가입 시 이용약관에 동의하게 됩니다"라고 안내하므로
+  /// 실제로 열람할 수 있어야 한다.
+  static String get termsOfServiceUrl => '$_webBase/terms';
+
+  static String get _webBase => shareBaseUrl.replaceAll(RegExp(r'/+$'), '');
 
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
