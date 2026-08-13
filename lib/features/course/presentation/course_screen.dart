@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +16,8 @@ import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
-import '../data/share_token_store.dart';
+import '../data/kakao_share.dart';
+import '../domain/share_link.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -165,21 +167,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // 담기만으로는 연차를 깎지 않는다 — 여행이 끝난 뒤 홈에서 다녀왔는지
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
-      final saved = await ref.read(courseRepositoryProvider).save(savePayload);
-
-      // 여기부터는 서버에 이미 담긴 뒤다 — 실패해도 담기를 되돌리면 안 된다.
-      // 토큰 보관이 어긋났다고 실패로 알리면 사용자가 다시 눌러 코스가
-      // 두 번 담긴다. 토큰은 이 응답에만 실리므로 지금 적어두되, 못 적어도
-      // 담기 자체는 성공으로 마무리한다 (공유만 나중에 못 한다)
-      if (saved.shareToken case final String token) {
-        try {
-          await ref
-              .read(shareTokenStoreProvider)
-              .save('${saved.courseId}', token);
-        } on Exception {
-          // 공유 링크만 못 만들 뿐이라 사용자를 붙잡지 않는다
-        }
-      }
+      await ref.read(courseRepositoryProvider).save(savePayload);
       if (!mounted) return;
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
@@ -193,6 +181,63 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// 담기 전 코스를 공유한다.
+  ///
+  /// 서버가 내 코스에 넣지 않고 링크만 발급해 준다 — 친구에게 보여주려고
+  /// 굳이 담고 날짜까지 정할 필요가 없다.
+  Future<void> _shareBeforeSaving(
+    Map<String, dynamic> course, {
+    required bool kakao,
+  }) async {
+    final payload = course['_save'] as Map<String, dynamic>?;
+    if (payload == null) {
+      showAppToast(context, '링크를 만들지 못했어요');
+      return;
+    }
+    try {
+      final token = await ref
+          .read(courseRepositoryProvider)
+          .shareWithoutSaving(payload);
+      if (!mounted) return;
+
+      final regionName = course['regionName'] as String? ?? '여행';
+      final duration = _durationLabel(course['durationDays'] as int? ?? 1);
+      final link = ShareLink.of(token);
+
+      if (!kakao) {
+        await Clipboard.setData(ClipboardData(text: link));
+        if (mounted) {
+          showAppToast(context, '링크를 복사했어요.', kind: AppToastKind.success);
+        }
+        return;
+      }
+
+      final sent = await KakaoShare.sendCourse(
+        title: '$regionName 여행, $duration',
+        description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
+        linkUrl: link,
+        shareToken: token,
+        imageUrl: _firstImageOf(course),
+      );
+      if (mounted && !sent) showAppToast(context, '카카오톡을 열지 못했어요');
+    } on ApiException catch (e) {
+      if (mounted) showAppToast(context, e.detail);
+    } catch (_) {
+      if (mounted) showAppToast(context, '링크를 만들지 못했어요');
+    }
+  }
+
+  /// 카카오 카드에 쓸 대표 사진 — 첫날 첫 장소
+  String? _firstImageOf(Map<String, dynamic> course) {
+    for (final day in (course['days'] as List? ?? const [])) {
+      for (final p in ((day as Map)['places'] as List? ?? const [])) {
+        final url = (p as Map)['imageUrl'] as String?;
+        if (url != null && url.isNotEmpty) return url;
+      }
+    }
+    return null;
   }
 
   String _durationLabel(int days) => switch (days) {
@@ -279,10 +324,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                   onTap: () => CourseShareSheets.showEntry(
                     context,
                     dayCount: durationDays,
-                    // 아직 저장 전이라 공유 토큰이 없다 — 서버는 저장 응답에만
-                    // 토큰을 준다. 담아야 링크가 생긴다는 걸 알린다
-                    onCopyLink: () => showAppToast(context, '먼저 내 코스에 담아주세요'),
-                    onKakaoShare: () => showAppToast(context, '먼저 내 코스에 담아주세요'),
+                    // 담지 않아도 공유된다 — 서버가 링크만 따로 발급해 준다
+                    onCopyLink: () => _shareBeforeSaving(course, kakao: false),
+                    onKakaoShare: () => _shareBeforeSaving(course, kakao: true),
                   ),
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(

@@ -22,7 +22,6 @@ import '../../course_wizard/presentation/calendar_screen.dart'
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
 import '../data/kakao_share.dart';
-import '../data/share_token_store.dart';
 import '../domain/share_link.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
@@ -236,7 +235,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
               context,
               dayCount: course['durationDays'] as int,
               onKakaoShare: () => _shareToKakao(saved),
-              onCopyLink: _copyLink,
+              onCopyLink: () => _copyLink(saved),
               onSaveImage: (day) => _saveImage(saved, course, day),
             ),
           ),
@@ -247,12 +246,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 카카오톡으로 코스 링크 보내기 — 링크 복사와 같은 토큰을 쓴다
   Future<void> _shareToKakao(Map<String, dynamic> saved) async {
-    final shareToken = await ref
-        .read(shareTokenStoreProvider)
-        .tokenOf(widget.savedId);
-    if (!mounted) return;
+    final shareToken = saved['shareToken'] as String?;
     if (shareToken == null || shareToken.isEmpty) {
-      showAppToast(context, '이 코스는 링크를 만들 수 없어요. 다시 담으면 공유할 수 있어요');
+      showAppToast(context, '링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
 
@@ -272,18 +268,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 공유 링크 복사.
   ///
   /// 서버가 준 토큰으로 만든 주소를 넣는다 — 받은 사람은 계정이 없어도
-  /// 이 링크로 코스를 볼 수 있다.
-  /// TODO(web): 보기 전용 웹페이지는 배포 전이다. 도메인이 확정되면
-  /// `--dart-define=SHARE_BASE_URL=...`로 주입한다
-  Future<void> _copyLink() async {
-    // 서버는 저장 응답에만 토큰을 준다 — 그때 적어둔 값을 꺼낸다
-    final shareToken = await ref
-        .read(shareTokenStoreProvider)
-        .tokenOf(widget.savedId);
-    if (!mounted) return;
+  /// 이 링크로 코스를 볼 수 있다. 보기 전용 웹페이지는 offway.cloud에 있다.
+  Future<void> _copyLink(Map<String, dynamic> saved) async {
+    final shareToken = saved['shareToken'] as String?;
     if (shareToken == null || shareToken.isEmpty) {
-      // 앱을 지웠거나 이전 버전에서 담은 코스는 토큰이 없다
-      showAppToast(context, '이 코스는 링크를 만들 수 없어요. 다시 담으면 공유할 수 있어요');
+      showAppToast(context, '링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     await Clipboard.setData(ClipboardData(text: ShareLink.of(shareToken)));

@@ -110,10 +110,28 @@ class CourseRepository {
     }
   }
 
-  /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`).
+  /// 담지 않고 공유 링크만 만든다 (`POST /courses/share`).
   ///
-  /// 공유 토큰은 **이 응답에만 실린다** — 저장해야 비로소 남에게 보낼 링크가
-  /// 생긴다. 토큰이 있다고 공개된 것은 아니고, 링크를 넘겨야 남이 볼 수 있다.
+  /// 내 코스 목록에는 남지 않고 링크로만 열린다 — 친구에게 보여주려고
+  /// 매번 담을 필요가 없다. 요청 형태는 [save]와 같다.
+  Future<String> shareWithoutSaving(Map<String, dynamic> savePayload) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/v1/courses/share',
+        data: savePayload,
+      );
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      final token = data['shareToken'] as String?;
+      if (token == null || token.isEmpty) {
+        throw StateError('공유 응답에 shareToken이 없습니다: $data');
+      }
+      return token;
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
+  /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`).
   Future<({int courseId, String? shareToken})> save(
     Map<String, dynamic> savePayload,
   ) async {
@@ -456,6 +474,8 @@ class CourseRepository {
       'confirmed': travelDate != null,
       // 연차를 이미 깎았는지 — 차감 액션 노출 여부를 이 값이 정한다
       'leaveDeducted': summary['leaveDeducted'] as bool? ?? false,
+      // 공유 링크를 만들 토큰. 상세·목록 어느 쪽에서 왔든 실려 있다
+      'shareToken': (detail?['shareToken'] ?? summary['shareToken']) as String?,
       'startDate': ?travelDate,
       if (start != null)
         'endDate': isoDate(
