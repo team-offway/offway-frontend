@@ -85,7 +85,8 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
       orElse: () => days.first,
     );
     final places = (day['places'] as List).cast<Map<String, dynamic>>();
-    final regionName = _regionNameOf(days);
+    // 리포지토리가 코스 상위에 지역명을 넣어 준다
+    final regionName = course['regionName'] as String? ?? '';
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 40),
@@ -205,7 +206,8 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
   /// 시안: 내 코스는 '정선여행, 1박2일', 추천은 '정선, 1박2일 추천코스입니다.'
   Widget _buildTitle(String regionName, int durationDays) {
     final duration = _durationLabel(durationDays);
-    final base = AppTypography.title1Bold.copyWith(
+    // 내 코스 상세 제목과 같은 크기를 쓴다 — 같은 성격의 제목이다
+    final base = AppTypography.title3Bold.copyWith(
       color: AppColors.labelNormal,
     );
     return Text.rich(
@@ -228,6 +230,8 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
                 const TextSpan(text: '\n추천코스입니다.'),
               ],
       ),
+      // 추천코스 제목은 두 줄이라 정렬을 지정하지 않으면 왼쪽으로 붙는다
+      textAlign: TextAlign.center,
     );
   }
 
@@ -284,16 +288,6 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final diff = DateUtils.dateOnly(start).difference(today).inDays;
     if (diff == 0) return 'D-DAY';
     return diff > 0 ? 'D-$diff' : '';
-  }
-
-  /// 코스 응답에는 지역 이름이 없어 첫 장소에서 가져온다
-  String _regionNameOf(List<Map<String, dynamic>> days) {
-    for (final day in days) {
-      for (final p in (day['places'] as List).cast<Map<String, dynamic>>()) {
-        if (p['regionName'] case final String name) return name;
-      }
-    }
-    return '';
   }
 
   String _durationLabel(int days) => switch (days) {
