@@ -91,27 +91,24 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
       padding: const EdgeInsets.only(bottom: 40),
       children: [
         // 웹 공유 페이지와 같은 히어로
-        Stack(
-          children: [
-            Image.asset(
-              'assets/images/share_hero.png',
-              width: double.infinity,
-              fit: BoxFit.fitWidth,
-            ),
-            // 앱에서는 뒤로가기를 둔다 — 웹과 달리 돌아갈 화면이 있다
-            Positioned(
-              left: 6,
-              top: MediaQuery.paddingOf(context).top,
-              child: AppBackButton(
-                // 링크로 바로 들어오면 되돌아갈 화면이 없다 — 홈으로 보낸다
-                onTap: () => context.canPop()
-                    ? context.pop()
-                    : context.go(AppRoutes.home),
-              ),
-            ),
-          ],
+        Image.asset(
+          'assets/images/share_hero.png',
+          width: double.infinity,
+          fit: BoxFit.fitWidth,
         ),
-        const SizedBox(height: 28),
+        // 시안: 뒤로가기는 사진 위가 아니라 그 아래 줄에 놓인다
+        Padding(
+          padding: const EdgeInsets.only(left: 6, top: 2),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppBackButton(
+              // 링크로 바로 들어오면 되돌아갈 화면이 없다 — 홈으로 보낸다
+              onTap: () =>
+                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
