@@ -27,6 +27,8 @@
     --label-neutral: rgba(46, 47, 51, .88);
     --label-alt: rgba(55, 56, 60, .61);
     --line-neutral: rgba(112, 115, 124, .16);
+    /* 점선은 더 진해야 보인다 — 앱 lineNormal(22%)과 맞춘다 */
+    --line-dot: rgba(112, 115, 124, .38);
     --fill: rgba(112, 115, 124, .08);
     --inverse-label: #F7F7F8;
 
@@ -177,7 +179,9 @@
     display: grid;
     grid-template-columns: 24px 1fr 70px;
     gap: 14px;
-    align-items: start;
+    /* start 로 두면 번호 열이 제 높이로 줄어 점선이 몇 점만 찍힌다 —
+       행 높이만큼 늘어나야 다음 번호까지 이어진다 */
+    align-items: stretch;
   }
   /* 번호 열은 점선이 지나가므로 행 사이 여백을 여기서 만들지 않는다 */
   .place + .place { margin-top: 0; }
@@ -194,11 +198,20 @@
   }
   .no[data-kind="STAY"] { background: var(--pink); }
   /* 다음 번호까지 이어지는 점선 — 마지막 행에는 그리지 않는다 */
+  /* 앱과 같은 점선 — 점(1.25) + 간격으로 4.5px 주기.
+     CSS dashed 는 이 모양이 안 나와 배경 그라디언트로 찍는다 */
   .rail::after {
     content: "";
-    position: absolute; top: 42px; bottom: -12px; left: 50%;
-    width: 0; border-left: 1.5px dashed var(--line-neutral);
+    position: absolute; top: 40px; bottom: 0; left: 50%;
+    width: 1.25px;
     transform: translateX(-50%);
+    background-image: linear-gradient(
+      to bottom,
+      var(--line-dot) 0 1.25px,
+      transparent 1.25px 4.5px
+    );
+    background-size: 1.25px 4.5px;
+    background-repeat: repeat-y;
   }
   .place:last-child .rail::after { display: none; }
 
