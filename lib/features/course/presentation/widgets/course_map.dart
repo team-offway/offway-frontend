@@ -3,8 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-/// 코스의 장소들을 마커로 찍어 보여주는 지도.
-/// 코스 추천 결과·저장한 코스 화면이 공유한다.
+/// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
+/// 코스 추천 결과·저장한 코스·공유받은 코스 화면이 함께 쓴다.
+/// 경로 점선 색 — Atomic/Cool Neutral/60
+const _pathColor = Color(0xFF878A93);
+
+/// 지도 마커 — 시안 값
+const _pinSize = 36.0;
+const _placeColor = Color(0xFF18D2FE);
+const _stayColor = Color(0xFFF553DA);
+
 class CourseMap extends StatelessWidget {
   const CourseMap({super.key, required this.places, required this.dayKey});
 
@@ -48,28 +56,78 @@ class CourseMap extends StatelessWidget {
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(target: center, zoom: 10.5),
       ),
-      onMapReady: (controller) {
-        var n = 0;
+      onMapReady: (controller) async {
         for (var i = 0; i < places.length; i++) {
           final p = places[i];
           if (p['mapy'] == null || p['mapx'] == null) continue;
+          // 시안: 기본 핀 대신 목록과 같은 번호 원. 숙박은 분홍으로 구분한다
+          final icon = context.mounted
+              ? await NOverlayImage.fromWidget(
+                  widget: _NumberPin(
+                    number: i + 1,
+                    isStay: p['kind'] == 'STAY',
+                  ),
+                  size: const Size(_pinSize, _pinSize),
+                  context: context,
+                )
+              : null;
           final marker = NMarker(
             id: 'place-$i',
             position: NLatLng(p['mapy'] as double, p['mapx'] as double),
+            icon: icon,
             caption: NOverlayCaption(text: '${i + 1}. ${p['name']}'),
           );
           controller.addOverlay(marker);
-          n++;
         }
-        if (n >= 2) {
-          controller.updateCamera(
-            NCameraUpdate.fitBounds(
-              NLatLngBounds.from(points),
-              padding: const EdgeInsets.all(40),
+        // 1→2→3 순서를 잇는 점선. 실제 도로가 아니라 도는 순서를 보이는 선이다
+        if (points.length >= 2) {
+          controller.addOverlay(
+            NPolylineOverlay(
+              id: 'course-path',
+              coords: points,
+              color: _pathColor,
+              width: 4,
+              // 웹의 shortdot과 같은 밀도 — 점이 촘촘히 이어져 경로로 읽힌다
+              pattern: const [2, 6],
+              lineCap: NLineCap.round,
             ),
           );
         }
+        // 코스는 1번에서 시작한다 — 첫 장소를 가운데 두고 시작한다.
+        // 전체를 담는 fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다
+        controller.updateCamera(NCameraUpdate.withParams(target: points.first));
       },
+    );
+  }
+}
+
+/// 지도 위 번호 마커 — 목록의 번호와 같은 모양이라 눈으로 이어진다
+class _NumberPin extends StatelessWidget {
+  const _NumberPin({required this.number, required this.isStay});
+
+  final int number;
+  final bool isStay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _pinSize,
+      height: _pinSize,
+      decoration: BoxDecoration(
+        color: isStay ? _stayColor : _placeColor,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$number',
+        style: const TextStyle(
+          color: Colors.white,
+          // 시안 비율 48:28
+          fontSize: _pinSize * 0.583,
+          fontWeight: FontWeight.w600,
+          height: 1,
+        ),
+      ),
     );
   }
 }
