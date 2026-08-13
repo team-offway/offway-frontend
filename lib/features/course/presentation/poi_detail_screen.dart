@@ -97,6 +97,11 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = poi['imageUrl'] as String?;
     final catchphrase = poi['catchphrase'] as String?;
+    // 지자체 혜택 — 있는 장소가 드물어 없으면 뱃지를 그리지 않는다
+    final benefitRaw = poi['benefit'] as String?;
+    final benefit = (benefitRaw == null || benefitRaw.trim().isEmpty)
+        ? null
+        : benefitRaw;
     final overview = poi['overview'] as String?;
     final lat = (poi['lat'] as num?)?.toDouble();
     final lng = (poi['lng'] as num?)?.toDouble();
@@ -131,8 +136,26 @@ class _Body extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // TODO(server): 시안의 혜택 뱃지('입장료 50% 할인')는 장소 단위
-              // 혜택 데이터가 아직 없다 — 응답에 실리면 여기서 보여준다
+              // 지자체가 이 장소에 붙인 혜택. 없는 장소가 더 많아 있을 때만 그린다
+              if (benefit != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppPalette.lightBlue95,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    benefit,
+                    style: AppTypography.caption1Medium.copyWith(
+                      color: AppColors.primaryNormal,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 name,
                 style: AppTypography.heading1Bold.copyWith(
