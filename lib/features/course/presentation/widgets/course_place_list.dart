@@ -141,10 +141,7 @@ class _PlaceRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  PlaceThumbnail(
-                    imageUrl: imageUrl,
-                    mapSearchUrl: place['mapSearchUrl'] as String?,
-                  ),
+                  PlaceThumbnail(imageUrl: imageUrl),
                 ],
               ),
             ),
