@@ -176,7 +176,8 @@
      CSS dashed 는 이 모양이 안 나와 배경 그라디언트로 찍는다 */
   .rail::after {
     content: "";
-    position: absolute; top: 40px; bottom: 0; left: 50%;
+    /* 번호 원(top 12 + 지름 24) 바로 아래에서 시작한다 — 내 코스와 같은 선 */
+    position: absolute; top: 36px; bottom: 0; left: 50%;
     width: 1.25px;
     transform: translateX(-50%);
     background-image: linear-gradient(
@@ -321,6 +322,8 @@
     var map = null;
     var markers = [];
     var pathLine = null;
+    // 카테고리가 빈 장소는 지역명을 대신 보여준다 (앱과 같은 규칙)
+    var region = '';
 
     /// 그 날의 장소를 지도에 찍는다. 스크립트가 못 뜨면 회색 자리로 남긴다.
     function drawMap(items) {
@@ -407,8 +410,10 @@
           : PLACEHOLDER;
         var why = it.catchphrase
           ? '<p class="why"><b>추천</b> ' + esc(it.catchphrase) + '</p>' : '';
-        var cat = it.categoryLabel
-          ? '<p class="cat">' + esc(it.categoryLabel) + '</p>' : '';
+        // 카테고리가 비면 지역명을 대신 쓴다 — 줄이 통째로 비지 않게
+        var catText = it.categoryLabel || region;
+        var cat = catText
+          ? '<p class="cat">' + esc(catText) + '</p>' : '';
         return '<div class="place">' +
           '<div class="rail"><div class="no" data-kind="' + esc(it.kind) + '">' + (i + 1) + '</div></div>' +
           '<div class="info"><p class="name">' + esc(it.title) + '</p>' + why + cat + '</div>' +
@@ -422,7 +427,7 @@
       var travelDays = course.travelDays || days.length || 1;
 
       // 지역 이름은 코스 응답 상위에 없어 첫 장소에서 가져온다
-      var region = '';
+      region = '';
       days.some(function (d) {
         return (d.items || []).some(function (it) {
           if (it.regionName) { region = it.regionName; return true; }

@@ -204,7 +204,9 @@
      CSS dashed 는 이 모양이 안 나와 배경 그라디언트로 찍는다 */
   .rail::after {
     content: "";
-    position: absolute; top: 40px; bottom: 0; left: 50%;
+    /* 번호 원(top 12 + 지름 24) 바로 아래에서 시작해 행 끝까지 —
+       거리 칩 구간의 선과 맞물려 1→2→3 이 통으로 이어진다 */
+    position: absolute; top: 36px; bottom: 0; left: 50%;
     width: 1.25px;
     transform: translateX(-50%);
     background-image: linear-gradient(
@@ -215,7 +217,47 @@
     background-size: 1.25px 4.5px;
     background-repeat: repeat-y;
   }
-  .place:last-child .rail::after { display: none; }
+  /* 거리 칩이 형제로 끼어들어 :last-child 로는 마지막 장소를 못 집는다 —
+     렌더할 때 표시해 둔 마지막 행에서만 선을 끊는다 */
+  .place[data-last] .rail::after { display: none; }
+
+  /* ── 이동 거리 칩 ───────────────────── */
+  /* 앞 장소에서 여기까지의 거리. 점선 위에 흰 배경으로 얹혀 선을 끊는다.
+     내 코스에만 있다 — 추천 코스는 아직 어떻게 갈지 정해지지 않았다 */
+  .gap {
+    display: grid;
+    grid-template-columns: 24px 1fr 70px;
+    gap: 14px;
+  }
+  /* 점선이 지나가는 첫 열 위에 칩을 겹쳐 올린다 */
+  .gap .rail { position: relative; }
+  .gap .rail::after {
+    content: "";
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 1.25px;
+    transform: translateX(-50%);
+    background-image: linear-gradient(
+      to bottom,
+      var(--line-dot) 0 1.25px,
+      transparent 1.25px 4.5px
+    );
+    background-size: 1.25px 4.5px;
+    background-repeat: repeat-y;
+  }
+  .km {
+    position: relative; z-index: 1;
+    justify-self: start; align-self: center;
+    /* 점선을 가운데로 지나가게 두되 칩은 24px 열 폭에 갇히지 않는다 */
+    grid-column: 1 / 3;
+    margin-left: -12px;
+    padding: 5px 10px;
+    border: 1px solid var(--line-neutral);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 12px; color: var(--label-alt);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 
   .info { padding: 12px 0; min-width: 0; }
   .name {
@@ -354,6 +396,8 @@
     var map = null;
     var markers = [];
     var pathLine = null;
+    // 카테고리가 빈 장소는 지역명을 대신 보여준다 (앱과 같은 규칙)
+    var region = '';
 
     /// 그 날의 장소를 지도에 찍는다. 스크립트가 못 뜨면 회색 자리로 남긴다.
     function drawMap(items) {
@@ -457,8 +501,9 @@
       var items = (day && day.items) || [];
       drawMap(items);
 
+      // 앱의 공유 코스 화면과 같은 'Day 1  7.26 월'
       document.getElementById('day-head').innerHTML = day
-        ? '<span>여행 ' + (day.day || 1) + '일차</span>' +
+        ? '<span>Day ' + (day.day || 1) + '</span>' +
           '<span class="date">' + esc(dayLabel(day)) + '</span>'
         : '';
       if (!items.length) {
@@ -475,9 +520,19 @@
         var notes = '';
         if (it.closedToday) notes = '<span class="warn">휴무일</span>';
         else if (it.checkHours) notes = '<span class="warn">운영시간 확인</span>';
-        var cat = (it.categoryLabel || notes)
-          ? '<p class="cat"><span>' + esc(it.categoryLabel || '') + '</span>' + notes + '</p>' : '';
-        return '<div class="place">' +
+        // 카테고리가 비면 지역명을 대신 쓴다 — 줄이 통째로 비지 않게
+        var catText = it.categoryLabel || region;
+        var cat = (catText || notes)
+          ? '<p class="cat"><span>' + esc(catText) + '</span>' + notes + '</p>' : '';
+        // 앞 장소에서 여기까지의 거리 — 첫 장소에는 없다
+        var km = '';
+        if (i > 0 && it.distanceFromPrevMeters != null) {
+          km = '<div class="gap"><div class="rail"></div>' +
+               '<div class="km">' + (it.distanceFromPrevMeters / 1000).toFixed(1) + 'km</div>' +
+               '</div>';
+        }
+        var last = (i === items.length - 1) ? ' data-last' : '';
+        return km + '<div class="place"' + last + '>' +
           '<div class="rail"><div class="no" data-kind="' + esc(it.kind) + '">' + (i + 1) + '</div></div>' +
           '<div class="info"><p class="name">' + esc(it.title) + '</p>' + why + cat + '</div>' +
           '<div class="thumb">' + thumb + '</div>' +
@@ -490,7 +545,7 @@
       var travelDays = course.travelDays || days.length || 1;
 
       // 지역 이름은 코스 응답 상위에 없어 첫 장소에서 가져온다
-      var region = '';
+      region = '';
       days.some(function (d) {
         return (d.items || []).some(function (it) {
           if (it.regionName) { region = it.regionName; return true; }
@@ -522,8 +577,10 @@
         var today = new Date(); today.setHours(0, 0, 0, 0);
         var start = new Date(first + 'T00:00:00');
         var diff = Math.round((start - today) / 86400000);
+        // 앱과 같은 규칙 — 지난 여행도 상태를 알려 준다
         if (diff === 0) badges.push('D-DAY');
         else if (diff > 0) badges.push('D-' + diff);
+        else badges.push('여행완료');
       }
       renderBadges(badges);
 
