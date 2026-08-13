@@ -47,7 +47,12 @@
   }
 
   /* 시안이 1080 기준이라 모바일 폭에 맞춰 환산했다 */
-  .page { max-width: 420px; margin-inline: auto; }
+  .page {
+    position: relative;
+    max-width: 420px; margin-inline: auto;
+    /* 히어로는 1080:392 비율로 늘어난다 — 뒤로가기를 그 아래 놓는 기준 */
+    --hero-h: min(36.3vw, 152px);
+  }
 
   /* ── 히어로 ─────────────────────────── */
   .hero {
@@ -56,10 +61,12 @@
   }
   .hero img { width: 100%; height: auto; display: block; }
 
+  /* 뒤로가기는 앱에서만 보인다 — 없을 때도 히어로 아래 간격이 유지되도록
+     여백은 .head가 갖고, 버튼은 그 자리에 겹쳐 올린다 */
   .back {
+    position: absolute; top: calc(var(--hero-h) + 2px); left: 6px;
     display: flex; align-items: center; justify-content: center;
     width: 44px; height: 44px;
-    margin: 6px 0 0 6px;
     border: 0; background: none; cursor: pointer;
     color: var(--label-alt);
   }
@@ -67,7 +74,7 @@
   .back:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
 
   /* ── 제목 ───────────────────────────── */
-  .head { padding: 6px 20px 0; text-align: center; }
+  .head { padding: 40px 20px 0; text-align: center; }
   h1 {
     margin: 0;
     font-size: 22px; font-weight: 700;
