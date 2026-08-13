@@ -1,8 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -31,6 +34,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   final _kakaoAuth = const KakaoAuthService();
   final _appleAuth = const AppleAuthService();
+
+  /// 약관·방침 링크의 탭 인식기. 위젯이 사라질 때 함께 정리해야 해서 모아 둔다
+  final _legalRecognizers = <TapGestureRecognizer>[];
+
+  @override
+  void dispose() {
+    for (final r in _legalRecognizers) {
+      r.dispose();
+    }
+    super.dispose();
+  }
+
+  /// 눌러서 문서를 여는 밑줄 링크.
+  ///
+  /// 동의를 받는다고 적어 둔 문서는 실제로 읽을 수 있어야 한다 — 앱 안에서
+  /// 띄우므로 읽고 닫으면 로그인 화면으로 돌아온다.
+  TextSpan _legalLink(String label, String url) {
+    final recognizer = TapGestureRecognizer()
+      ..onTap = () =>
+          launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
+    _legalRecognizers.add(recognizer);
+    return TextSpan(
+      text: label,
+      recognizer: recognizer,
+      style: const TextStyle(
+        decoration: TextDecoration.underline,
+        // 지정하지 않으면 밑줄이 글자와 다른 색으로 그려진다
+        decorationColor: AppColors.labelAssistive,
+      ),
+    );
+  }
+
   bool _loading = false;
 
   /// 소셜 로그인 공통 흐름: 소셜 인증 → 서버 토큰 교환 → 온보딩 이동.
@@ -187,17 +222,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         style: AppTypography.caption1Medium.copyWith(
                           color: AppColors.labelAssistive,
                         ),
-                        children: const [
-                          TextSpan(text: '가입 시 이용약관 및 '),
-                          TextSpan(
-                            text: '개인정보 처리방침',
-                            style: TextStyle(
-                              decoration: TextDecoration.underline,
-                              // 지정하지 않으면 밑줄이 글자와 다른 색으로 그려진다
-                              decorationColor: AppColors.labelAssistive,
-                            ),
-                          ),
-                          TextSpan(text: '에 동의하게 됩니다.'),
+                        children: [
+                          const TextSpan(text: '가입 시 '),
+                          _legalLink('이용약관', AppConfig.termsOfServiceUrl),
+                          const TextSpan(text: ' 및 '),
+                          _legalLink('개인정보 처리방침', AppConfig.privacyPolicyUrl),
+                          const TextSpan(text: '에 동의하게 됩니다.'),
                         ],
                       ),
                       textAlign: TextAlign.center,
