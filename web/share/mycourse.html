@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>추천코스 · OffWay</title>
+<title>여행 코스 · OffWay</title>
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="OffWay">
-<meta property="og:title" content="OffWay 추천코스">
-<meta property="og:description" content="맞춤코스로 연차 여행을 떠나보세요.">
+<meta property="og:title" content="OffWay 여행 코스">
+<meta property="og:description" content="연차로 떠나는 로컬 여행 — 코스를 확인해보세요.">
 <meta name="twitter:card" content="summary_large_image">
 
 <!-- 네이버 지도. 콘솔의 Web 서비스 URL에 이 도메인이 등록돼 있어야 뜬다 —
@@ -75,11 +75,28 @@
     text-wrap: balance;
   }
   h1 .accent { color: var(--primary); }
-  .head p {
+  .dates {
     margin: 8px 0 0;
-    font-size: 14px; color: var(--label-alt);
-    letter-spacing: .005em;
+    font-size: 15px; color: var(--label-alt);
+    font-variant-numeric: tabular-nums;
   }
+
+  /* 사용 연차·D-DAY 뱃지 — 시안은 primary 8% 배경에 primary 글자 */
+  .badges {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 9px; border-radius: 8px;
+    background: rgba(61, 194, 255, .08);
+    color: var(--primary);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: .019em;
+    white-space: nowrap;
+  }
+  .badge svg { width: 15px; height: 15px; }
 
   /* ── 지도 ───────────────────────────── */
   .cover {
@@ -135,8 +152,19 @@
   }
   .days button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+  /* 그 날이 며칠인지 — 탭과 달리 정보 표시라 누를 수 없다 */
+  .day-head {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 20px 20px 0;
+    font-size: 15px; font-weight: 600;
+  }
+  .day-head .date {
+    color: var(--label-alt); font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ── 장소 목록 ──────────────────────── */
-  .places { padding: 16px 20px 0; }
+  .places { padding: 8px 20px 0; }
 
   .place {
     display: grid;
@@ -181,10 +209,13 @@
   }
   .why b { color: var(--primary-strong); font-weight: 500; }
   .cat {
+    display: flex; gap: 12px;
     margin: 4px 0 0;
     font-size: 13px; color: var(--label-alt);
     letter-spacing: .019em;
   }
+  /* 여행 당일 휴무·운영시간 주의 — 시안은 이 자리를 빨갛게 띄운다 */
+  .cat .warn { color: #FF4242; }
 
   .thumb {
     width: 70px; height: 70px; margin-top: 12px;
@@ -234,8 +265,9 @@
 
   <main id="main" hidden>
     <div class="head">
-      <h1><span id="title-region"></span>, <span class="accent" id="title-duration"></span><br>추천코스입니다.</h1>
-      <p>맞춤코스로 연차 여행을 떠나보세요.</p>
+      <h1 id="title"></h1>
+      <p class="dates" id="dates"></p>
+      <div class="badges" id="badges"></div>
     </div>
 
     <div class="cover" id="cover"><div id="map"></div></div>
@@ -243,6 +275,7 @@
     <!-- 당일치기는 하루뿐이라 탭을 그리지 않는다 -->
     <div class="days" id="days" role="tablist" aria-label="여행 일자" hidden></div>
 
+    <div class="day-head" id="day-head"></div>
     <div class="places" id="places"></div>
   </main>
 
@@ -357,9 +390,40 @@
       }
     }
 
+    var WEEK = { MONDAY: '월', TUESDAY: '화', WEDNESDAY: '수', THURSDAY: '목',
+                 FRIDAY: '금', SATURDAY: '토', SUNDAY: '일' };
+
+    /// '7.26 월' — 서버가 요일을 주므로 날짜에서 다시 계산하지 않는다
+    function dayLabel(day) {
+      if (!day || !day.date) return '';
+      var p = day.date.split('-');
+      var md = Number(p[1]) + '.' + Number(p[2]);
+      var w = WEEK[day.dayOfWeek];
+      return w ? md + ' ' + w : md;
+    }
+
+    var CLOCK =
+      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>' +
+      '<path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    /// 첫 뱃지에만 시계 아이콘을 단다 (시안: 사용 연차 뱃지)
+    function renderBadges(list, withClock) {
+      document.getElementById('badges').innerHTML = list.map(function (t, i) {
+        var icon = (withClock && i === 0) ? CLOCK : '';
+        return '<span class="badge">' + icon + esc(t) + '</span>';
+      }).join('');
+    }
+
     function renderDay(day) {
       var items = (day && day.items) || [];
       drawMap(items);
+
+      document.getElementById('day-head').innerHTML = day
+        ? '<span>여행 ' + (day.day || 1) + '일차</span>' +
+          '<span class="date">' + esc(dayLabel(day)) + '</span>'
+        : '';
       if (!items.length) {
         placesEl.innerHTML = '<p class="state">이 날의 일정이 아직 없어요</p>';
         return;
@@ -370,8 +434,12 @@
           : PLACEHOLDER;
         var why = it.catchphrase
           ? '<p class="why"><b>추천</b> ' + esc(it.catchphrase) + '</p>' : '';
-        var cat = it.categoryLabel
-          ? '<p class="cat">' + esc(it.categoryLabel) + '</p>' : '';
+        // 카테고리 옆에 그날 주의할 운영 정보를 붙인다 (서버가 줄 때만)
+        var notes = '';
+        if (it.closedToday) notes = '<span class="warn">휴무일</span>';
+        else if (it.checkHours) notes = '<span class="warn">운영시간 확인</span>';
+        var cat = (it.categoryLabel || notes)
+          ? '<p class="cat"><span>' + esc(it.categoryLabel || '') + '</span>' + notes + '</p>' : '';
         return '<div class="place">' +
           '<div class="rail"><div class="no" data-kind="' + esc(it.kind) + '">' + (i + 1) + '</div></div>' +
           '<div class="info"><p class="name">' + esc(it.title) + '</p>' + why + cat + '</div>' +
@@ -392,8 +460,51 @@
           return false;
         });
       });
-      document.getElementById('title-region').textContent = region || '여행';
-      document.getElementById('title-duration').textContent = durationLabel(travelDays);
+      // 시안: "정선여행, 당일치기" — 기간만 브랜드색
+      document.getElementById('title').innerHTML =
+        esc((region || '') + '여행, ') +
+        '<span class="accent">' + esc(durationLabel(travelDays)) + '</span>';
+
+      // 여행 날짜 — 하루면 하나, 여러 날이면 시작-끝
+      var first = days[0] && days[0].date;
+      var last = days[days.length - 1] && days[days.length - 1].date;
+      var dateText = '';
+      if (first) {
+        var a = first.split('-');
+        dateText = a[0] + '.' + Number(a[1]) + '.' + Number(a[2]);
+        if (last && last !== first) {
+          var b = last.split('-');
+          dateText += ' - ' + Number(b[1]) + '.' + Number(b[2]);
+        }
+      }
+      document.getElementById('dates').textContent = dateText;
+
+      // D-DAY 뱃지 — 여행 시작일 기준. 지난 여행에는 붙이지 않는다
+      var badges = [];
+      if (first) {
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var start = new Date(first + 'T00:00:00');
+        var diff = Math.round((start - today) / 86400000);
+        if (diff === 0) badges.push('D-DAY');
+        else if (diff > 0) badges.push('D-' + diff);
+      }
+      renderBadges(badges);
+
+      // 사용 연차는 응답에 없어 날짜로 서버에 계산을 맡긴다 — 늦게 와도
+      // 화면은 이미 떠 있고 뱃지만 나중에 붙는다
+      if (first && last) {
+        fetch('/api/leave?start=' + encodeURIComponent(first) +
+              '&end=' + encodeURIComponent(last))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (body) {
+            var n = body && body.data && body.data.consumedLeaveDays;
+            if (n == null) return;
+            // 0.5일 단위라 정수면 소수점을 떼고 보여준다
+            var label = Number.isInteger(n) ? String(n) : String(n);
+            renderBadges(['사용 연차 일수 ' + label + '일'].concat(badges), true);
+          })
+          .catch(function () { /* 못 받아도 D-DAY 뱃지는 그대로 */ });
+      }
 
       // 하루짜리 코스에는 탭이 필요 없다
       if (days.length > 1) {
