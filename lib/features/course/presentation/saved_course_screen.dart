@@ -281,6 +281,27 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     }
   }
 
+  /// 이미지에 들어갈 사진들 — 캡처 전에 받아 둬야 빈 자리로 찍히지 않는다
+  List<ImageProvider> _shareImages(Map<String, dynamic> course, int? day) {
+    final allDays = (course['days'] as List).cast<Map<String, dynamic>>();
+    final days = day == null ? allDays : allDays.where((d) => d['day'] == day);
+    return [
+      const AssetImage('assets/images/share_hero.png'),
+      for (final d in days)
+        for (final p in (d['places'] as List).cast<Map<String, dynamic>>())
+          if (p['imageUrl'] case final String url when url.isNotEmpty)
+            NetworkImage(url),
+    ];
+  }
+
+  /// 이미지에 넣을 사용 연차 — 날짜가 없으면 계산할 수 없다
+  double? _consumedLeave(Map<String, dynamic> saved) {
+    final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
+    final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
+    if (start == null || end == null) return null;
+    return ref.read(tripConsumedLeaveProvider((start: start, end: end))).value;
+  }
+
   /// 일정 이미지를 만들어 사진첩에 저장한다. [day]가 null이면 전체 일정
   Future<void> _saveImage(
     Map<String, dynamic> saved,
@@ -288,10 +309,19 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     int? day,
   ) async {
     try {
+      // 시안이 1080 기준이라 위젯도 그 폭으로 그린다 — 배율은 1로 두어야
+      // 실제 결과가 1080이 된다
       final png = await captureWidgetPng(
         context,
-        widget: CourseShareImage(saved: saved, course: course, day: day),
-        width: 402,
+        widget: CourseShareImage(
+          saved: saved,
+          course: course,
+          day: day,
+          consumedLeaveDays: _consumedLeave(saved),
+        ),
+        width: 1080,
+        pixelRatio: 1,
+        precacheImages: _shareImages(course, day),
       );
       await Gal.putImageBytes(
         png,
