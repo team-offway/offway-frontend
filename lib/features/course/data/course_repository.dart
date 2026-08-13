@@ -178,12 +178,17 @@ class CourseRepository {
   savedCourseDetail(String courseId) async {
     try {
       final id = int.parse(courseId);
-      final data = await _fetchCourse(id);
-      // 상세 응답에는 차감 여부가 없어 목록 요약에서 찾아 채운다.
+      // 상세 응답에는 차감 여부가 없어 목록 요약에서 찾아 채운다. 두 요청은
+      // 서로를 기다릴 이유가 없어 함께 띄운다 — 화면이 그만큼 빨리 뜬다.
+      //
+      // `.wait`는 쓰지 않는다. 상세가 404를 던지면 ParallelWaitError로 감싸여
+      // 아래 `on ApiException`이 잡지 못한다.
       // TODO(server): CourseResponse에 leaveDeducted가 실리면 걷어낼 것
-      final summary = await _findSummary(id) ?? _summaryFromDetail(data);
+      final summaryFuture = _findSummary(id);
+      final data = await _fetchCourse(id);
+      final found = await summaryFuture;
       return (
-        saved: _toSavedCardMap(summary, data),
+        saved: _toSavedCardMap(found ?? _summaryFromDetail(data), data),
         course: _toCourseMap(data),
       );
     } on ApiException catch (e) {
