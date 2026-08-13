@@ -975,7 +975,10 @@ class _PlaceRow extends ConsumerWidget {
         const SizedBox(width: 17),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: PlaceThumbnail(imageUrl: imageUrl),
+          child: PlaceThumbnail(
+            imageUrl: imageUrl,
+            mapSearchUrl: place['mapSearchUrl'] as String?,
+          ),
         ),
       ],
     );

@@ -383,6 +383,11 @@ class CourseRepository {
             'day': day['day'],
             'date': day['date'],
             'weather': day['weather'],
+            // 서버가 요일을 준다 — 날짜로 다시 계산하지 않는다
+            'dayOfWeek': day['dayOfWeek'],
+            // 전날 마지막 장소에서 이 날 첫 장소까지 (첫날은 없다)
+            'distanceFromPrevDayMeters': day['distanceFromPrevDayMeters'],
+            'travelMinutesFromPrevDay': day['travelMinutesFromPrevDay'],
             'places': [
               for (final item
                   in (day['items'] as List).cast<Map<String, dynamic>>())
@@ -398,6 +403,9 @@ class CourseRepository {
                   'mapx': item['lng'],
                   'mapy': item['lat'],
                   'distanceFromPrevMeters': item['distanceFromPrevMeters'],
+                  'travelMinutes': item['travelMinutes'],
+                  // 사진이 없는 장소에만 온다 — 지도 검색으로 대신 보낸다
+                  'mapSearchUrl': item['mapSearchUrl'],
                 },
             ],
           },
