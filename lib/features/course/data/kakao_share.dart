@@ -5,6 +5,17 @@ import 'package:url_launcher/url_launcher.dart';
 ///
 /// 카카오톡이 깔려 있으면 앱을 바로 열고, 없으면 브라우저의 카카오톡 공유
 /// 페이지로 넘긴다 — 어느 쪽이든 받는 사람에게는 같은 링크가 간다.
+/// 어느 화면에서 공유했는지 — 링크를 받은 사람에게 보여줄 화면이 갈린다.
+enum SharedCourseKind {
+  /// 담기 전 추천 코스 — 날짜가 없다
+  recommend,
+
+  /// 담아 둔 내 코스 — 날짜·연차가 붙는다
+  saved;
+
+  String get path => name;
+}
+
 abstract final class KakaoShare {
   /// 공유가 실제로 열렸는지. 실패하면 화면이 그 사실을 알린다.
   static Future<bool> sendCourse({
@@ -12,6 +23,7 @@ abstract final class KakaoShare {
     required String description,
     required String linkUrl,
     required String shareToken,
+    required SharedCourseKind kind,
     String? imageUrl,
   }) async {
     final url = Uri.parse(linkUrl);
@@ -30,8 +42,9 @@ abstract final class KakaoShare {
     final appLink = Link(
       webUrl: url,
       mobileWebUrl: url,
-      androidExecutionParams: {'shareToken': shareToken},
-      iosExecutionParams: {'shareToken': shareToken},
+      // kind를 함께 실어야 앱이 웹과 같은 화면을 띄운다
+      androidExecutionParams: {'shareToken': shareToken, 'kind': kind.path},
+      iosExecutionParams: {'shareToken': shareToken, 'kind': kind.path},
     );
 
     final template = FeedTemplate(

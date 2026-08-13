@@ -48,6 +48,8 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
 
   void _handle(Uri uri) {
     final token = uri.queryParameters['shareToken'];
+    // 어느 화면에서 공유했는지 — 없으면 추천코스로 본다(예전 링크 대비)
+    final kind = uri.queryParameters['kind'];
     if (token == null || token.isEmpty) return;
     // context로는 못 찾는다 — MaterialApp.router의 builder는 라우터 바깥이라
     // 그 안에서 GoRouter.of(context)를 부르면 예외가 난다. 라우터를 직접 잡는다
@@ -55,7 +57,7 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
     // 라우터가 준비된 뒤 옮겨야 첫 프레임과 부딪히지 않는다
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      router.push(AppRoutes.sharedCoursePath(token));
+      router.push(AppRoutes.sharedCoursePath(token, kind: kind));
     });
   }
 

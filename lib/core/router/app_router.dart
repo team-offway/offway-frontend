@@ -39,7 +39,11 @@ abstract final class AppRoutes {
 
   /// 공유 링크로 받은 코스 — 카카오톡 '앱으로 보기'가 여기로 온다
   static const sharedCourse = '/shared/:shareToken';
-  static String sharedCoursePath(String shareToken) => '/shared/$shareToken';
+
+  /// 공유받은 코스. [kind]가 'saved'면 내 코스 형태(날짜·연차)로, 아니면
+  /// 추천코스 형태로 보여준다 — 웹 공유 페이지와 같은 분기다.
+  static String sharedCoursePath(String shareToken, {String? kind}) =>
+      '/shared/$shareToken${kind == null ? '' : '?kind=$kind'}';
   static const wizardDateGate = '/wizard/date-gate';
   static const wizardCalendar = '/wizard/calendar';
   static const wizardPeriodStyle = '/wizard/period-style';
@@ -144,8 +148,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.sharedCourse,
         name: 'sharedCourse',
-        builder: (context, state) =>
-            SharedCourseScreen(shareToken: state.pathParameters['shareToken']!),
+        builder: (context, state) => SharedCourseScreen(
+          shareToken: state.pathParameters['shareToken']!,
+          kind: state.uri.queryParameters['kind'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.notifications,
