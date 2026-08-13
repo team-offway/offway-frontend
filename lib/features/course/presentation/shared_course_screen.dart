@@ -49,10 +49,11 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 히어로가 상태바까지 올라오도록 위쪽 SafeArea는 쓰지 않는다
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            _buildTopBar(context),
             Expanded(
               child: course.when(
                 loading: () => const AppCircularLoadingView(),
@@ -87,12 +88,33 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final regionName = _regionNameOf(days);
 
     return ListView(
-      padding: const EdgeInsets.only(top: 12, bottom: 32),
+      padding: const EdgeInsets.only(bottom: 40),
       children: [
+        // 웹 공유 페이지와 같은 히어로
+        Stack(
+          children: [
+            Image.asset(
+              'assets/images/share_hero.png',
+              width: double.infinity,
+              fit: BoxFit.fitWidth,
+            ),
+            // 앱에서는 뒤로가기를 둔다 — 웹과 달리 돌아갈 화면이 있다
+            Positioned(
+              left: 6,
+              top: MediaQuery.paddingOf(context).top,
+              child: AppBackButton(
+                // 링크로 바로 들어오면 되돌아갈 화면이 없다 — 홈으로 보낸다
+                onTap: () => context.canPop()
+                    ? context.pop()
+                    : context.go(AppRoutes.home),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTitle(regionName, durationDays),
               const SizedBox(height: 8),
@@ -109,18 +131,73 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        // 하루짜리 코스에는 고를 것이 없어 탭을 그리지 않는다
+        if (durationDays > 1) ...[
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: CourseDayTabs(
+              durationDays: durationDays,
+              selectedDay: _selectedDay,
+              onSelect: (d) => setState(() => _selectedDay = d),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: CourseDayTabs(
-            durationDays: durationDays,
-            selectedDay: _selectedDay,
-            onSelect: (d) => setState(() => _selectedDay = d),
-          ),
+          child: _buildDayHeader(day),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         for (final (i, place) in places.indexed)
           _SharedPlaceRow(order: i + 1, place: place),
+        const SizedBox(height: 46),
+        _buildFooter(),
+      ],
+    );
+  }
+
+  /// 'Day 1  7.26 월' — 날짜는 내 코스에서 공유된 경우에만 붙는다
+  Widget _buildDayHeader(Map<String, dynamic> day) {
+    final date = DateTime.tryParse(day['date'] as String? ?? '');
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    return Row(
+      children: [
+        Text(
+          'Day ${day['day']}',
+          style: AppTypography.headline2Bold.copyWith(
+            color: AppColors.labelNormal,
+          ),
+        ),
+        if (_isSaved && date != null) ...[
+          const SizedBox(width: 12),
+          Text(
+            '${date.month}.${date.day} ${weekdays[date.weekday - 1]}',
+            style: AppTypography.headline2Bold.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        Text(
+          '연차로 떠나는 로컬 여행',
+          style: AppTypography.label1NormalMedium.copyWith(
+            color: AppColors.labelAlternative,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'offway',
+          style: AppTypography.title3Bold.copyWith(
+            color: AppColors.primaryNormal,
+          ),
+        ),
       ],
     );
   }
@@ -227,34 +304,6 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     2 => '1박2일',
     _ => '2박3일',
   };
-
-  Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '공유받은 코스',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 6,
-            child: AppBackButton(
-              // 링크로 바로 들어오면 되돌아갈 화면이 없다 — 홈으로 보낸다
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// 옅은 Primary 면 위의 정보 뱃지 — 내 코스 상세와 같은 모양
