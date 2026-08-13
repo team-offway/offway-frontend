@@ -15,6 +15,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
 import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
+import 'widgets/course_place_list.dart';
 
 /// 공유 링크로 받은 코스 (`GET /public/courses/{shareToken}`)
 final sharedCourseProvider = FutureProvider.autoDispose
@@ -147,8 +148,11 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
           child: _buildDayHeader(day),
         ),
         const SizedBox(height: 12),
-        for (final (i, place) in places.indexed)
-          _SharedPlaceRow(order: i + 1, place: place),
+        // 코스 확정 화면과 같은 목록 — 점선·거리·썸네일이 함께 온다
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: CoursePlaceList(places: places, regionName: regionName),
+        ),
         const SizedBox(height: 46),
         _buildFooter(),
       ],
@@ -331,77 +335,6 @@ class _SharedBadge extends StatelessWidget {
             label,
             style: AppTypography.label1NormalBold.copyWith(
               color: AppColors.primaryNormal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 공유 코스의 장소 한 줄 — 보기 전용이라 탭 동작이 없다
-class _SharedPlaceRow extends StatelessWidget {
-  const _SharedPlaceRow({required this.order, required this.place});
-
-  final int order;
-  final Map<String, dynamic> place;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryNormal,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '$order',
-              style: AppTypography.label1NormalBold.copyWith(
-                color: AppColors.staticWhite,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (place['name'] as String?) ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body1NormalBold.copyWith(
-                    color: AppColors.labelNormal,
-                  ),
-                ),
-                if (place['catchphrase'] case final String phrase) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    phrase,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.label1ReadingMedium.copyWith(
-                      color: AppColors.labelNeutral,
-                    ),
-                  ),
-                ],
-                if (place['category'] case final String category) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    category,
-                    style: AppTypography.label2Regular.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                ],
-              ],
             ),
           ),
         ],
