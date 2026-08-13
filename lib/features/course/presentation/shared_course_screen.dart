@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../course_wizard/presentation/calendar_screen.dart'
+    show tripConsumedLeaveProvider;
 import '../data/course_repository.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
@@ -24,9 +28,13 @@ final sharedCourseProvider = FutureProvider.autoDispose
 /// 내 코스가 아니므로 편집·삭제·다시 공유는 없다. 대신 마음에 들면
 /// 내 코스로 담을 수 있게 한다.
 class SharedCourseScreen extends ConsumerStatefulWidget {
-  const SharedCourseScreen({super.key, required this.shareToken});
+  const SharedCourseScreen({super.key, required this.shareToken, this.kind});
 
   final String shareToken;
+
+  /// 'saved'면 내 코스 형태(날짜·연차 뱃지), 그 외에는 추천코스 형태.
+  /// 웹 공유 페이지(/m, /r)와 같은 분기다.
+  final String? kind;
 
   @override
   ConsumerState<SharedCourseScreen> createState() => _SharedCourseScreenState();
@@ -86,19 +94,10 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$regionName 여행, ${_durationLabel(durationDays)}',
-                style: AppTypography.title1Bold.copyWith(
-                  color: AppColors.labelNormal,
-                ),
-              ),
+              _buildTitle(regionName, durationDays),
               const SizedBox(height: 8),
-              Text(
-                '공유받은 코스예요',
-                style: AppTypography.body1NormalMedium.copyWith(
-                  color: AppColors.labelAlternative,
-                ),
-              ),
+              _buildSubtitle(days),
+              if (_isSaved) _buildBadges(days),
               const SizedBox(height: 28),
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -124,6 +123,93 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
           _SharedPlaceRow(order: i + 1, place: place),
       ],
     );
+  }
+
+  /// 내 코스에서 공유된 것인지 — 웹 /m 과 같은 화면을 띄운다
+  bool get _isSaved => widget.kind == 'saved';
+
+  /// 시안: 내 코스는 '정선여행, 1박2일', 추천은 '정선, 1박2일 추천코스입니다.'
+  Widget _buildTitle(String regionName, int durationDays) {
+    final duration = _durationLabel(durationDays);
+    final base = AppTypography.title1Bold.copyWith(
+      color: AppColors.labelNormal,
+    );
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: _isSaved
+            ? [
+                TextSpan(text: '$regionName여행, '),
+                TextSpan(
+                  text: duration,
+                  style: base.copyWith(color: AppColors.primaryNormal),
+                ),
+              ]
+            : [
+                TextSpan(text: '$regionName, '),
+                TextSpan(
+                  text: duration,
+                  style: base.copyWith(color: AppColors.primaryNormal),
+                ),
+                const TextSpan(text: '\n추천코스입니다.'),
+              ],
+      ),
+    );
+  }
+
+  /// 내 코스는 여행 날짜를, 추천코스는 안내 문구를 낸다
+  Widget _buildSubtitle(List<Map<String, dynamic>> days) {
+    final style = AppTypography.body1NormalMedium.copyWith(
+      color: AppColors.labelAlternative,
+    );
+    if (!_isSaved) {
+      return Text('맞춤코스로 연차 여행을 떠나보세요.', style: style);
+    }
+    final start = DateTime.tryParse(days.first['date'] as String? ?? '');
+    final end = DateTime.tryParse(days.last['date'] as String? ?? '');
+    if (start == null) return Text('공유받은 코스예요', style: style);
+    final text = end == null || end == start
+        ? '${start.year}.${start.month}.${start.day}'
+        : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}';
+    return Text(text, style: style);
+  }
+
+  /// 사용 연차·D-DAY — 내 코스에서 공유된 경우에만.
+  ///
+  /// 연차는 응답에 없어 여행 날짜로 서버에 계산을 맡긴다(웹 공유 페이지와 같다).
+  Widget _buildBadges(List<Map<String, dynamic>> days) {
+    final start = DateTime.tryParse(days.first['date'] as String? ?? '');
+    final end = DateTime.tryParse(days.last['date'] as String? ?? '');
+    if (start == null || end == null) return const SizedBox.shrink();
+
+    final consumed = ref
+        .watch(tripConsumedLeaveProvider((start: start, end: end)))
+        .value;
+    final dDay = _dDayLabel(start);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (consumed != null)
+            _SharedBadge(
+              iconAsset: 'assets/icons/ic_clock.svg',
+              label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
+            ),
+          if (dDay.isNotEmpty) _SharedBadge(label: dDay),
+        ],
+      ),
+    );
+  }
+
+  /// 지난 여행에는 D-DAY를 붙이지 않는다
+  String _dDayLabel(DateTime start) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final diff = DateUtils.dateOnly(start).difference(today).inDays;
+    if (diff == 0) return 'D-DAY';
+    return diff > 0 ? 'D-$diff' : '';
   }
 
   /// 코스 응답에는 지역 이름이 없어 첫 장소에서 가져온다
@@ -163,6 +249,48 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
               // 링크로 바로 들어오면 되돌아갈 화면이 없다 — 홈으로 보낸다
               onTap: () =>
                   context.canPop() ? context.pop() : context.go(AppRoutes.home),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 옅은 Primary 면 위의 정보 뱃지 — 내 코스 상세와 같은 모양
+class _SharedBadge extends StatelessWidget {
+  const _SharedBadge({required this.label, this.iconAsset});
+
+  final String label;
+  final String? iconAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (iconAsset case final asset?) ...[
+            SvgPicture.asset(
+              asset,
+              width: 16,
+              height: 16,
+              colorFilter: const ColorFilter.mode(
+                AppColors.primaryNormal,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: AppTypography.label1NormalBold.copyWith(
+              color: AppColors.primaryNormal,
             ),
           ),
         ],

@@ -222,6 +222,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
         linkUrl: link,
         shareToken: token,
+        kind: SharedCourseKind.recommend,
         imageUrl: _firstImageOf(course),
       );
       if (mounted && !sent) showAppToast(context, '카카오톡을 열지 못했어요');
