@@ -44,9 +44,14 @@ class MyScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             _buildProfileCard(context, user),
             const SizedBox(height: 32),
+            // 로그인 화면의 동의 문구와 같은 순서로 둔다
+            _MenuRow(
+              label: '이용약관',
+              onTap: () => _openDocument(context, AppConfig.termsOfServiceUrl),
+            ),
             _MenuRow(
               label: '개인정보처리방침',
-              onTap: () => _openPrivacyPolicy(context),
+              onTap: () => _openDocument(context, AppConfig.privacyPolicyUrl),
             ),
             _MenuRow(label: '로그아웃', onTap: () => _confirmSignOut(context, ref)),
             _MenuRow(
@@ -138,12 +143,12 @@ class MyScreen extends ConsumerWidget {
     showAppToast(context, '$feature 기능은 준비 중이에요');
   }
 
-  /// 개인정보처리방침을 앱 안에서 띄운다.
+  /// 약관·방침 문서를 앱 안에서 띄운다.
   ///
   /// iOS는 SFSafariViewController로 열려 상단에 주소가 그대로 보이고,
   /// 닫으면 이 화면으로 돌아온다 — 읽으려고 앱을 떠날 이유가 없다.
-  Future<void> _openPrivacyPolicy(BuildContext context) async {
-    final uri = Uri.parse(AppConfig.privacyPolicyUrl);
+  Future<void> _openDocument(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
     // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
     final opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
     if (!opened && context.mounted) {
