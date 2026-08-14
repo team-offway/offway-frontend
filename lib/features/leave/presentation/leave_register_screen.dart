@@ -36,7 +36,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
   DateTimeRange? _range;
   // 가장 흔한 조합을 미리 골라둔다 — 날짜만 정하면 바로 등록할 수 있게
   String? _reason = _reasons.first;
-  double? _days = 0.5;
+  double? _days = 0.25;
   final _memo = TextEditingController();
 
   /// '직접 입력하기'를 골라 입력 칸이 열려 있는지

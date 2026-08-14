@@ -7,6 +7,7 @@ import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
+import 'package:offway/features/leave/presentation/my_leave_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
@@ -49,7 +50,7 @@ class _RecordingLeaveRepository implements LeaveRepository {
 }
 
 void main() {
-  testWidgets('연차 등록 화면: 여행·0.5일이 기본으로 골라져 있다', (tester) async {
+  testWidgets('연차 등록 화면: 여행·0.25일이 기본으로 골라져 있다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -71,8 +72,11 @@ void main() {
     // 기본 선택 확인 — 브랜드색 글자가 골라진 칩이다
     final travel = tester.widget<Text>(find.text('여행'));
     expect(travel.style?.color, AppColors.primaryNormal);
+    final quarter = tester.widget<Text>(find.text('0.25일'));
+    expect(quarter.style?.color, AppColors.primaryNormal);
+    // 고르지 않은 칩까지 파래지면 어느 것이 골라졌는지 알 수 없다
     final half = tester.widget<Text>(find.text('0.5일'));
-    expect(half.style?.color, AppColors.primaryNormal);
+    expect(half.style?.color, isNot(AppColors.primaryNormal));
 
     // 날짜만 비어 있으므로 등록은 아직 잠겨 있다
     expect(
@@ -149,6 +153,35 @@ void main() {
     await tester.tap(find.text('정선 여행'));
     await tester.pumpAndSettle();
     expect(find.text('코스 자세히 보기'), findsNothing);
+  });
+
+  testWidgets('내 연차: 더보기로 들어가지 않아도 코스 건이 펼쳐진다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myLeaveProvider.overrideWith(
+            (ref) async => MyLeave(
+              totalDays: 15,
+              usedDays: 3,
+              remainingDays: 12,
+              usages: _sampleUsages,
+            ),
+          ),
+          leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
+        ],
+        child: const MaterialApp(home: MyLeaveScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('코스 자세히 보기'), findsNothing);
+
+    // 카드가 접힌 화면 아래쪽에 있어 스크롤해 올려야 탭이 닿는다
+    await tester.ensureVisible(find.text('정선 여행'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('정선 여행'));
+    await tester.pumpAndSettle();
+    expect(find.text('코스 자세히 보기'), findsOneWidget);
   });
 
   testWidgets('연차 사용일 선택: 2박3일 상한 없이 고를 수 있다', (tester) async {
