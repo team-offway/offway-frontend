@@ -18,7 +18,7 @@
           → 이동수단 → 일정 밀도 → 추천 계산 → 후보 지역 → 코스 확정
 ```
 
-**핵심 정책** — 모든 코스는 **최대 2박3일**입니다. 인구감소지역 89곳을 전수 조사한 결과 콘텐츠가 40건 수준인 지역도 있어, 그 이상 길어지면 코스가 빈약해지기 때문입니다. ([조사 문서](docs/tourapi-분류체계-조사.md))
+**핵심 정책** — 모든 코스는 **최대 2박3일**입니다. 인구감소지역 89곳을 전수 조사한 결과 콘텐츠가 40건 수준인 지역도 있어, 그 이상 길어지면 코스가 빈약해지기 때문입니다.
 
 ## 기술 스택
 
@@ -31,7 +31,9 @@
 | 토큰 저장 | flutter_secure_storage (iOS Keychain) |
 | 모델/직렬화 | freezed + json_serializable |
 | 지도 | flutter_naver_map (Dynamic Map) |
-| 소셜 로그인 | kakao_flutter_sdk_user, sign_in_with_apple |
+| 소셜 로그인 | kakao_flutter_sdk_user, sign_in_with_apple, google_sign_in |
+| 공유 | kakao_flutter_sdk_share (카카오톡 공유 카드) |
+| 푸시 기반 | firebase_core, firebase_messaging (연동 준비만 완료) |
 
 ## 폴더 구조
 
@@ -44,14 +46,19 @@ lib/
 │   ├── network/dio_client.dart    # Dio 프로바이더 + Auth 인터셉터
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# JWT 토큰 Keychain 저장소
-│   └── theme/app_theme.dart       # Material 3 라이트/다크 테마
-├── mock/                      # 서버 구축 전 mock 데이터 로더
+│   └── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
+├── mock/                      # 지역 상세 등 서버 갭이 남은 화면용 로더
 └── features/                  # 기능(도메인) 단위 모듈
-    ├── auth/                      # 로그인 (카카오·Apple)
+    ├── auth/                      # 로그인 (카카오·Apple·구글)
     ├── onboarding/                # 잔여연차 입력
     ├── home/                      # 홈
+    ├── region/                    # 지역 상세
     ├── course_wizard/             # 코스 추천 위저드
-    └── course/                    # 코스 확정 (지도·Day 탭)
+    ├── course/                    # 코스 확정·내 코스·공유
+    ├── leave/                     # 내 연차·사용 내역
+    ├── notification/              # 알림
+    ├── policy/                    # 약관·방침
+    └── my/                        # 마이
 ```
 
 새 기능은 `features/<기능명>/` 아래에 `data`(API·repository) / `domain`(모델) / `presentation`(화면·상태) 구조로 추가합니다.
@@ -59,37 +66,48 @@ lib/
 ## 실행
 
 ```bash
-flutter run                                   # iOS 시뮬레이터 실행
+flutter run                                          # iOS 시뮬레이터 실행
 
-# 백엔드 주소 지정 (기본값: http://localhost:8080)
-flutter run --dart-define=API_BASE_URL=https://api.example.com
+# 배포 서버 접속 (권장)
+flutter run --dart-define-from-file=env.json
+
+# 주소만 따로 지정할 때 (로컬 백엔드 등)
+flutter run --dart-define=API_BASE_URL=http://localhost:8080
 
 # 특정 화면부터 시작 (개발용)
 flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 ```
 
+`env.json`은 `env.json.example`을 복사해 만듭니다. 배포 서버가 임시 Basic 게이트 뒤에 있어 계정 없이 부르면 전부 401이 납니다. **gitignore 대상이라 커밋하지 않습니다.**
+
 ## 현재 상태
 
-서버 구축 전이라 **mock 데이터**로 전 화면이 동작합니다.
-
-- `assets/mock/*.json` — 사용자·지역·코스 데이터. 지어낸 값이 아니라 **TourAPI 실데이터**(정선·영월의 실제 콘텐츠와 연관관광지 동선, 실좌표·실사진)로 구성
-- 서버 연동 시 `lib/mock/mock_data_source.dart`를 실 API 구현으로 교체하면 됩니다
+메인 플로우는 **실 서버와 연동**되어 있습니다. 서버 갭이 남은 지역 상세만 `assets/mock/*.json`을 씁니다.
 
 | 영역 | 상태 |
 |---|---|
-| 와이어프레임 19개 화면 | 구현 완료 (mock으로 전 구간 동작) |
-| 카카오·Apple 로그인 | 앱 연동 완료 (서버 토큰 교환은 배포 후 검증) |
-| 구글 로그인 | 미구현 |
-| 디자인 시스템 | 시안 대기 — 교체 지점은 `TODO(디자인시스템)` 주석 표시 |
-| 내 코스 / 마이 탭 | 미구현 |
+| 코스 추천 → 확정 → 내 코스 | 서버 연동 완료 |
+| 카카오·Apple·구글 로그인 | 연동 완료 |
+| 연차 등록·삭제 (반반차 0.25일 지원) | 연동 완료 |
+| 코스 공유 (카카오톡·링크·이미지) | 연동 완료 |
+| 지역 상세 | mock — 서버 API 대기 |
+| 알림 · 회원탈퇴 | 화면만 — 서버 API 대기 |
+| 푸시(FCM) | 기반만 깔림 — 알림 기획 확정 후 연결 |
 
-## 자료
+배포는 TestFlight로 진행합니다.
 
-| 문서 | 내용 |
+## 웹 (offway.cloud)
+
+공유 링크를 받은 사람이 **앱 없이 브라우저에서** 코스를 보는 페이지와, 심사에 필요한 법적 문서를 함께 배포합니다. Vercel 프로젝트의 Root Directory는 `web/share`입니다.
+
+| 주소 | 내용 |
 |---|---|
-| [tourapi-분류체계-조사.md](docs/tourapi-분류체계-조사.md) | TourAPI 분류체계·테마 매칭·연관관광지 API 검증 (인구감소지역 89곳 전수) |
-| [tourapi-조사데이터.json](docs/tourapi-조사데이터.json) | 지역별 수치 + 양대 API 지역 코드 매핑 (백엔드용) |
-| [디자인용-샘플데이터.json](docs/디자인용-샘플데이터.json) | 실데이터 샘플 팩 (디자이너용) |
+| `/` | 서비스 소개 랜딩 |
+| `/r/{token}` | 추천코스 공유 — 담기 전 코스를 공유한 링크 |
+| `/m/{token}` | 내 코스 공유 — 담아둔 코스 (여행 날짜·사용 연차·D-DAY) |
+| `/privacy` · `/terms` | 개인정보처리방침 · 이용약관 (한국어·영문) |
+
+백엔드가 HTTP만 받아 브라우저가 혼합 콘텐츠로 막으므로, `web/share/api/*.js`가 같은 출처에서 받아 서버끼리 통신합니다.
 
 ## 코드 생성 (freezed / json_serializable)
 
@@ -101,17 +119,17 @@ dart run build_runner watch --delete-conflicting-outputs   # 개발 중 자동 �
 ## 테스트 / 린트
 
 ```bash
-flutter test
+flutter test        # 위젯·단위 테스트
 flutter analyze
 dart format .
 ```
 
-PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해야 머지할 수 있습니다.
+PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해야 머지할 수 있습니다. `main` 직접 푸시는 브랜치 보호로 차단되어 있습니다.
 
 ## 비고
 
 - 번들 ID: `com.nth.offway` · App Store 등록명: **OffWay - 연차로 떠나는 로컬 여행 플래너**
-- iOS `Info.plist`에 `NSAllowsLocalNetworking`이 켜져 있어 시뮬레이터에서 로컬 Spring 서버와 통신 가능합니다
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 엽니다 (`.xcodeproj` 아님)
+- 카카오 앱 키를 바꿀 때는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 합니다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못합니다
 - 레포가 **public**이므로 시크릿은 어떤 형태로도 커밋하지 않습니다 (카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret 등 — 서버가 쓰는 값은 백엔드 환경변수로만 관리)
-- 예외적으로 **제공자가 공개 식별자로 명시했고 콘솔에서 번들 ID(`com.nth.offway`) 제한이 걸린 값**만 포함되어 있습니다: 네이버 지도 Client ID, 카카오 네이티브 앱 키. 그 외 값은 `--dart-define`으로 주입합니다
+- 예외적으로 **제공자가 공개 식별자로 명시했고 콘솔에서 번들 ID(`com.nth.offway`) 제한이 걸린 값**만 포함되어 있습니다: 네이버 지도 Client ID, 카카오 네이티브 앱 키, 구글 `REVERSED_CLIENT_ID`. 그 외 값은 `--dart-define`으로 주입합니다
