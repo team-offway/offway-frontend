@@ -108,20 +108,20 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     if (!_customDays || text.isEmpty) return null;
     final parsed = double.tryParse(text);
     if (parsed == null || parsed <= 0) return '지원하지 않는 단위입니다.';
-    // 서버가 0.5 단위만 받는다
-    if ((parsed * 2) % 1 != 0) return '지원하지 않는 단위입니다.';
+    // 서버가 0.25(반반차) 단위까지 받는다
+    if ((parsed * 4) % 1 != 0) return '지원하지 않는 단위입니다.';
     if (remaining != null && parsed > remaining) {
       return '남은 연차보다 많이 입력했어요.';
     }
     return null;
   }
 
-  /// 입력값은 0.5 단위만 받는다 (서버 제약과 같다).
+  /// 입력값은 0.25 단위만 받는다 (서버 제약과 같다).
   /// 어긋나면 값을 비워 등록을 막되, 입력 자체는 막지 않는다
   void _onCustomDaysChanged(String text) {
     final parsed = double.tryParse(text);
     setState(() {
-      _days = (parsed != null && parsed > 0 && (parsed * 2) % 1 == 0)
+      _days = (parsed != null && parsed > 0 && (parsed * 4) % 1 == 0)
           ? parsed
           : null;
     });
@@ -382,8 +382,8 @@ class _DaysChips extends StatelessWidget {
   final ValueChanged<double> onSelect;
   final VoidCallback onCustom;
 
-  /// 시안이 제시하는 빠른 선택값
-  static const _presets = [0.5, 1.0];
+  /// 시안이 제시하는 빠른 선택값 — 반반차(0.25)부터 고를 수 있다
+  static const _presets = [0.25, 0.5, 1.0];
 
   @override
   Widget build(BuildContext context) {
