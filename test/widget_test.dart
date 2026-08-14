@@ -16,6 +16,7 @@ import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
+import 'package:offway/features/region/data/region_list_repository.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
 import 'package:offway/mock/mock_data_source.dart';
 
@@ -69,6 +70,22 @@ class _FakeLeaveRepository extends LeaveRepository {
     status: 0,
     code: 'TEST',
     detail: '테스트에는 서버가 없어요',
+  );
+}
+
+/// 지역 목록 더보기 — mock 지역을 한 페이지로 돌려준다.
+/// 실제로는 서버가 89곳을 페이지로 끊어 주지만, 화면 검증에는 한 장이면 된다
+class _FakeRegionListRepository extends RegionListRepository {
+  _FakeRegionListRepository() : super(Dio());
+
+  @override
+  Future<RegionPage> fetch({
+    String? category,
+    int page = 0,
+    int size = 20,
+  }) async => RegionPage(
+    regions: page == 0 ? await MockDataSource.allRegions() : const [],
+    hasMore: false,
   );
 }
 
@@ -194,6 +211,7 @@ class _FakeGoogleAuthService implements GoogleAuthService {
 final _serverOverrides = [
   googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
+  regionListRepositoryProvider.overrideWithValue(_FakeRegionListRepository()),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
   regionRecommendRepositoryProvider.overrideWithValue(
     _FakeRegionRecommendRepository(),

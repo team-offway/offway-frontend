@@ -53,24 +53,29 @@ class HomeRepository {
     }
   }
 
-  /// 서버 카드 → 화면(RegionCard)이 읽는 형태.
-  ///
-  /// 서버는 지역명을 "동구 · 부산광역시"로 합쳐 주므로 화면이 다시 조립하지
-  /// 않도록 쪼개 넣는다. 카테고리는 화면 필터가 한글 라벨('체험' 등)로
-  /// 거르므로 라벨을 키로 편다.
-  Map<String, dynamic> _toRegionCardMap(Map<String, dynamic> card) {
-    final nameParts = (card['name'] as String).split(' · ');
-    final benefit = card['benefit'] as Map<String, dynamic>?;
-    final categories = (card['categories'] as List)
-        .cast<Map<String, dynamic>>();
-    return {
-      'id': (card['regionId'] as num).toString(),
-      'name': nameParts.first,
-      'sido': nameParts.length > 1 ? nameParts[1] : '',
-      'imageUrl': card['imageUrl'],
-      if (benefit != null) 'benefitBadge': benefit['text'],
-      if (benefit != null) 'benefitPolicyId': benefit['policyId'],
-      'categoryCounts': {for (final c in categories) c['label'] as String: 1},
-    };
-  }
+  Map<String, dynamic> _toRegionCardMap(Map<String, dynamic> card) =>
+      toRegionCardMap(card);
+}
+
+/// 서버 카드 → 화면(RegionCard)이 읽는 형태.
+///
+/// 서버는 지역명을 "동구 · 부산광역시"로 합쳐 주므로 화면이 다시 조립하지
+/// 않도록 쪼개 넣는다. 카테고리는 화면 필터가 한글 라벨('체험' 등)로
+/// 거르므로 라벨을 키로 편다.
+///
+/// 홈(`/home`)과 지역 목록(`/regions`)이 **같은 재료**를 주므로 함께 쓴다 —
+/// 같은 화면의 더보기라 카드 모양이 달라질 이유가 없다.
+Map<String, dynamic> toRegionCardMap(Map<String, dynamic> card) {
+  final nameParts = (card['name'] as String).split(' · ');
+  final benefit = card['benefit'] as Map<String, dynamic>?;
+  final categories = (card['categories'] as List).cast<Map<String, dynamic>>();
+  return {
+    'id': (card['regionId'] as num).toString(),
+    'name': nameParts.first,
+    'sido': nameParts.length > 1 ? nameParts[1] : '',
+    'imageUrl': card['imageUrl'],
+    if (benefit != null) 'benefitBadge': benefit['text'],
+    if (benefit != null) 'benefitPolicyId': benefit['policyId'],
+    'categoryCounts': {for (final c in categories) c['label'] as String: 1},
+  };
 }

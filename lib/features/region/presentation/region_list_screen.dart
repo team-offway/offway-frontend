@@ -8,12 +8,14 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_empty_view.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../data/region_list_repository.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
 
-/// 이번달 추천 여행지 — 홈과 같은 데이터를 카테고리 필터 + 2열 그리드로 보여준다.
+/// 이번달 추천 여행지 — 카테고리 필터 + 2열 그리드.
 ///
-/// 목록 전용 API가 따로 없어 홈 스냅샷(`recommendedRegions`)을 그대로 읽는다.
+/// 목록 API(`GET /regions`)로 인구감소지역 89곳을 페이지로 받아 온다.
+/// 예전에는 홈 응답(상위 6곳)을 재사용해 6곳만 보였다.
 class RegionListScreen extends ConsumerStatefulWidget {
   const RegionListScreen({super.key});
 
@@ -28,20 +30,78 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   /// 고른 칩 `{key, label}` — null이면 '전체'
   Map<String, dynamic>? _selected;
 
-  /// 선택된 카테고리의 콘텐츠가 있는 지역만 남긴다 (홈과 같은 규칙)
-  List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) {
-    final selected = _selected;
-    if (selected == null || selected['key'] == 'ALL') return all;
-    return all.where((r) {
-      final counts = r['categoryCounts'] as Map<String, dynamic>?;
-      return (counts?[selected['label']] as int? ?? 0) > 0;
-    }).toList();
+  final _scroll = ScrollController();
+  final _regions = <Map<String, dynamic>>[];
+
+  int _page = 0;
+  bool _hasMore = true;
+  bool _loading = false;
+  Object? _error;
+
+  /// 첫 페이지를 받기 전인지 — 스켈레톤과 '더 불러오는 중'을 가른다
+  bool get _isFirstLoad => _regions.isEmpty && _loading;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+    _load(reset: true);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// 바닥에 닿기 전에 미리 다음 장을 부른다
+  void _onScroll() {
+    if (!_scroll.hasClients || _loading || !_hasMore) return;
+    final remaining =
+        _scroll.position.maxScrollExtent - _scroll.position.pixels;
+    if (remaining < 400) _load();
+  }
+
+  /// [reset]이면 칩을 바꿔 처음부터 다시 받는다
+  Future<void> _load({bool reset = false}) async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      if (reset) {
+        _regions.clear();
+        _page = 0;
+        _hasMore = true;
+      }
+    });
+    try {
+      final page = await ref
+          .read(regionListRepositoryProvider)
+          .fetch(category: _selected?['key'] as String?, page: _page);
+      if (!mounted) return;
+      setState(() {
+        _regions.addAll(page.regions);
+        _hasMore = page.hasMore;
+        _page++;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      // 이미 받아둔 페이지는 남긴다 — 더 불러오다 실패했다고 목록을 비우지 않는다
+      setState(() => _error = e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _selectCategory(Map<String, dynamic> filter) {
+    if (_selected?['key'] == filter['key']) return;
+    setState(() => _selected = Map<String, dynamic>.from(filter));
+    // 카테고리가 바뀌면 서버가 다시 걸러 준다
+    _load(reset: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = ref.watch(homeSnapshotProvider);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
@@ -58,38 +118,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
                     context,
                     columnWidth,
                   );
-                  return snapshot.when(
-                    // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다
-                    loading: () => _buildGrid(
-                      cardExtent,
-                      itemCount: _skeletonCardCount,
-                      builder: (_, _) => const RegionCardSkeleton(
-                        style: RegionCardStyle.plain,
-                      ),
-                    ),
-                    // 서버 detail이 사용자 문구라 그대로 보여준다
-                    error: (e, _) => Center(
-                      child: Text(
-                        e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.label1NormalMedium.copyWith(
-                          color: AppColors.labelAlternative,
-                        ),
-                      ),
-                    ),
-                    data: (data) {
-                      final list = _filter(data.regions);
-                      if (list.isEmpty) return _buildEmpty();
-                      return _buildGrid(
-                        cardExtent,
-                        itemCount: list.length,
-                        builder: (context, i) => RegionCard(
-                          region: list[i],
-                          style: RegionCardStyle.plain,
-                        ),
-                      );
-                    },
-                  );
+                  return _buildBody(cardExtent);
                 },
               ),
             ),
@@ -99,12 +128,52 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
     );
   }
 
+  Widget _buildBody(double cardExtent) {
+    // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다
+    if (_isFirstLoad) {
+      return _buildGrid(
+        cardExtent,
+        itemCount: _skeletonCardCount,
+        builder: (_, _) =>
+            const RegionCardSkeleton(style: RegionCardStyle.plain),
+      );
+    }
+    // 첫 페이지부터 실패했을 때만 목록 대신 오류를 낸다.
+    // 서버 detail이 사용자 문구라 그대로 보여준다
+    if (_regions.isEmpty && _error != null) {
+      final e = _error;
+      return Center(
+        child: Text(
+          e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
+          textAlign: TextAlign.center,
+          style: AppTypography.label1NormalMedium.copyWith(
+            color: AppColors.labelAlternative,
+          ),
+        ),
+      );
+    }
+    if (_regions.isEmpty) return _buildEmpty();
+
+    // 마지막 줄에 다음 장을 기다리는 자리를 둔다
+    final tail = _loading ? 2 : 0;
+    return _buildGrid(
+      cardExtent,
+      controller: _scroll,
+      itemCount: _regions.length + tail,
+      builder: (context, i) => i >= _regions.length
+          ? const RegionCardSkeleton(style: RegionCardStyle.plain)
+          : RegionCard(region: _regions[i], style: RegionCardStyle.plain),
+    );
+  }
+
   Widget _buildGrid(
     double cardExtent, {
     required int itemCount,
     required Widget Function(BuildContext, int) builder,
+    ScrollController? controller,
   }) {
     return GridView.builder(
+      controller: controller,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -176,8 +245,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
               selected: filter['key'] == 'ALL'
                   ? _selected == null || _selected!['key'] == 'ALL'
                   : _selected?['key'] == filter['key'],
-              onTap: () =>
-                  setState(() => _selected = Map<String, dynamic>.from(filter)),
+              onTap: () => _selectCategory(filter),
             ),
         ],
       ),
