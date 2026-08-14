@@ -59,7 +59,7 @@ class LeaveRepository {
 
   /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
   ///
-  /// [days]는 0.5 단위이고, 사용이면 양수·취소면 음수다.
+  /// [days]는 0.25 단위이고, 사용이면 양수·취소면 음수다.
   /// [courseId]는 코스에서 차감할 때만 넣는다.
   Future<void> addUsage({
     required DateTime usedOn,
