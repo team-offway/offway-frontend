@@ -9,17 +9,26 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
-class MyLeaveScreen extends ConsumerWidget {
+class MyLeaveScreen extends ConsumerStatefulWidget {
   const MyLeaveScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyLeaveScreen> createState() => _MyLeaveScreenState();
+}
+
+class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen> {
+  /// 펼쳐 둔 카드의 인덱스 — 한 번에 하나만 펼친다
+  int? _expanded;
+
+  @override
+  Widget build(BuildContext context) {
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
     final usagesAsync = ref.watch(leaveUsagesProvider);
@@ -100,7 +109,17 @@ class MyLeaveScreen extends ConsumerWidget {
                         children: [
                           for (final (i, usage) in usages.indexed) ...[
                             if (i > 0) const SizedBox(height: 8),
-                            LeaveUsageCard(usage: usage),
+                            LeaveUsageCard(
+                              usage: usage,
+                              expanded: _expanded == i,
+                              // 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
+                              onTap: usage.fromCourse
+                                  ? () => setState(
+                                      () =>
+                                          _expanded = _expanded == i ? null : i,
+                                    )
+                                  : null,
+                            ),
                           ],
                         ],
                       ),
@@ -271,12 +290,20 @@ class _RegisterRow extends StatelessWidget {
 /// 사용 내역 카드 한 장.
 ///
 /// 코스에서 차감된 건은 파란 배경에 코스명을, 직접 등록한 건은 회색 배경에
-/// 사유와 메모를 보여준다.
+/// 사유와 메모를 보여준다. 코스 건은 펼치면 '코스 자세히 보기'가 붙는다.
 class LeaveUsageCard extends StatelessWidget {
-  const LeaveUsageCard({super.key, required this.usage, this.onTap});
+  const LeaveUsageCard({
+    super.key,
+    required this.usage,
+    this.onTap,
+    this.expanded = false,
+  });
 
   final LeaveUsage usage;
   final VoidCallback? onTap;
+
+  /// 펼쳐서 '코스 자세히 보기'를 보이는지 — 코스 건에만 쓴다
+  final bool expanded;
 
   static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -300,76 +327,128 @@ class LeaveUsageCard extends StatelessWidget {
               : AppColors.backgroundElevatedAlternative,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateLabel,
-                    style: AppTypography.body1NormalBold.copyWith(
-                      color: AppColors.labelNeutral,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  if (fromCourse)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/icons/ic_chevron_down.svg',
-                          width: 16,
-                          height: 16,
-                        ),
-                        const SizedBox(width: 2),
-                        Flexible(
-                          child: Text(
-                            usage.courseName ?? '코스 차감',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.label1NormalMedium.copyWith(
-                              color: AppColors.primaryNormal,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  else ...[
-                    // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
-                    // (서버 요청에 memo 필드가 따로 없다)
-                    if (reasonOf(usage.reason) case final String reason)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        reason,
-                        style: AppTypography.label1NormalMedium.copyWith(
+                        dateLabel,
+                        style: AppTypography.body1NormalBold.copyWith(
                           color: AppColors.labelNeutral,
                         ),
                       ),
-                    if (memoOf(usage.reason) case final String memo) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        memo,
-                        style: AppTypography.label1ReadingRegular.copyWith(
-                          color: AppColors.labelAlternative,
-                        ),
-                      ),
+                      if (fromCourse)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 펼침 상태를 쉐브론 방향으로 알린다
+                            RotatedBox(
+                              quarterTurns: expanded ? 2 : 0,
+                              child: SvgPicture.asset(
+                                'assets/icons/ic_chevron_down.svg',
+                                width: 16,
+                                height: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                usage.courseName ?? '코스 차감',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.label1NormalMedium
+                                    .copyWith(color: AppColors.primaryNormal),
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
+                        // (서버 요청에 memo 필드가 따로 없다)
+                        if (reasonOf(usage.reason) case final String reason)
+                          Text(
+                            reason,
+                            style: AppTypography.label1NormalMedium.copyWith(
+                              color: AppColors.labelNeutral,
+                            ),
+                          ),
+                        if (memoOf(usage.reason) case final String memo) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            memo,
+                            style: AppTypography.label1ReadingRegular.copyWith(
+                              color: AppColors.labelAlternative,
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                '-${formatLeaveDays(usage.days)}일',
-                style: AppTypography.body1NormalBold.copyWith(
-                  color: AppColors.primaryNormal,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    '-${formatLeaveDays(usage.days)}일',
+                    style: AppTypography.body1NormalBold.copyWith(
+                      color: AppColors.primaryNormal,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            if (expanded) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: CourseDetailButton(courseId: usage.courseId),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 펼친 코스 카드 아래에 붙는 '코스 자세히 보기'
+class CourseDetailButton extends StatelessWidget {
+  const CourseDetailButton({super.key, required this.courseId});
+
+  final int? courseId;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // 담아둔 코스를 지웠으면 갈 곳이 없어 알려만 준다
+        final id = courseId;
+        if (id == null) {
+          showAppToast(context, '연결된 코스를 찾을 수 없어요');
+          return;
+        }
+        context.push(AppRoutes.savedCoursePath('$id'));
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+        decoration: BoxDecoration(
+          // 시안 Fill/Normal — 파란 카드 위에 얹히는 옅은 회색
+          color: AppColors.fillNormal,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          '코스 자세히 보기',
+          style: AppTypography.body2NormalMedium.copyWith(
+            color: AppColors.labelNeutral,
+          ),
         ),
       ),
     );

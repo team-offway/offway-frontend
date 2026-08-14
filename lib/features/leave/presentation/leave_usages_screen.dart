@@ -15,7 +15,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import '../../onboarding/data/leave_repository.dart';
-import 'my_leave_screen.dart' show reasonOf, memoOf;
+import 'my_leave_screen.dart' show reasonOf, memoOf, CourseDetailButton;
 import 'widgets/leave_empty_view.dart';
 
 /// O-13 · 연차 사용 내역 전체.
@@ -503,27 +503,7 @@ class _UsageCard extends StatelessWidget {
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  // TODO(server): 내역에 courseId가 실리면 그 코스 상세로 보낸다
-                  onTap: () => showAppToast(context, '코스 연결은 서버 연동 후 동작해요'),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundNormal,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '코스 자세히 보기',
-                      style: AppTypography.label2Medium.copyWith(
-                        color: AppColors.labelNeutral,
-                      ),
-                    ),
-                  ),
-                ),
+                child: CourseDetailButton(courseId: usage.courseId),
               ),
             ],
           ],
