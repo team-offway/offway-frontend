@@ -89,6 +89,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   /// 저장 요청 중 — 중복 탭과 이중 저장을 막는다
   bool _saving = false;
 
+  /// 공유 링크 발급 중 — 연속으로 누르면 토큰이 여러 개 발급된다.
+  /// 서버가 동시성은 막아도 순차로 들어온 요청은 각각 새 링크가 된다
+  bool _sharing = false;
+
   /// '새로운 추천 받기'로 다시 뽑은 코스. provider 결과보다 우선한다
   Map<String, dynamic>? _regenerated;
 
@@ -195,11 +199,15 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     Map<String, dynamic> course, {
     required bool kakao,
   }) async {
+    // 응답을 기다리는 동안 또 누르면 쓰지 않을 링크가 계속 발급된다
+    if (_sharing) return;
+
     final payload = course['_save'] as Map<String, dynamic>?;
     if (payload == null) {
       showAppToast(context, '링크를 만들지 못했어요');
       return;
     }
+    setState(() => _sharing = true);
     try {
       final token = await ref
           .read(courseRepositoryProvider)
@@ -231,6 +239,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       if (mounted) showAppToast(context, e.detail);
     } catch (_) {
       if (mounted) showAppToast(context, '링크를 만들지 못했어요');
+    } finally {
+      // 링크 복사 경로는 중간에 return한다 — finally라야 잠금이 반드시 풀린다
+      if (mounted) setState(() => _sharing = false);
     }
   }
 
@@ -373,14 +384,19 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 button: true,
                 label: '공유하기',
                 child: GestureDetector(
-                  onTap: () => CourseShareSheets.showEntry(
-                    context,
-                    dayCount: durationDays,
-                    // 담지 않아도 공유된다 — 서버가 링크만 따로 발급해 준다
-                    onCopyLink: () => _shareBeforeSaving(course, kakao: false),
-                    onKakaoShare: () => _shareBeforeSaving(course, kakao: true),
-                    onSaveImage: (day) => _saveImage(course, day),
-                  ),
+                  // 링크를 발급하는 중에는 시트를 다시 열지 않는다
+                  onTap: _sharing
+                      ? null
+                      : () => CourseShareSheets.showEntry(
+                          context,
+                          dayCount: durationDays,
+                          // 담지 않아도 공유된다 — 서버가 링크만 따로 발급해 준다
+                          onCopyLink: () =>
+                              _shareBeforeSaving(course, kakao: false),
+                          onKakaoShare: () =>
+                              _shareBeforeSaving(course, kakao: true),
+                          onSaveImage: (day) => _saveImage(course, day),
+                        ),
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(
                     width: 44,
