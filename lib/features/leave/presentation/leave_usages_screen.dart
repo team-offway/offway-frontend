@@ -61,13 +61,6 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     });
   }
 
-  /// 되돌릴 수 있는 내역인지.
-  ///
-  /// TODO(server): 취소 요청에 원본 id를 실을 수 없어(요청 필드가
-  /// usedOn·days·reason·courseId뿐) 같은 건을 두 번 되돌리는 걸 서버가 막지
-  /// 못한다. 지금은 이미 취소된 음수 내역만 걸러 최소한의 오작동을 막는다.
-  bool _canRevert(LeaveUsage usage) => usage.days > 0;
-
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(leaveUsagesProvider);
@@ -96,10 +89,12 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                         expanded: _expanded == i,
                         selecting: _selecting,
                         checked: _selected.contains(i),
-                        // 삭제 모드에서는 어느 카드든 골라진다.
+                        // 삭제 모드에서는 어느 카드든 골라진다 — 옛 상쇄 행(음수)도
+                        // 지워 장부를 정리할 수 있어야 한다. 못 지우는 건(코스 확정)은
+                        // 서버가 이유와 함께 막는다.
                         // 평소에는 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
                         onTap: _selecting
-                            ? (_canRevert(usages[i]) ? () => _toggle(i) : null)
+                            ? () => _toggle(i)
                             : usages[i].courseName == null
                             ? null
                             : () => setState(
@@ -288,23 +283,32 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     );
     if (!mounted || confirmed != true) return;
 
-    // 삭제 전용 API는 없다 — 같은 날짜에 음수를 남겨 상쇄하면 연차가 되돌아온다
     final picked = [
       for (final i in _selected)
         if (i < usages.length) usages[i],
     ];
     _exitSelecting();
-    try {
-      final repo = ref.read(leaveRepositoryProvider);
-      for (final usage in picked) {
-        await repo.revertUsage(usage);
+
+    // 한 건이 막혀도(코스 확정 건은 409) 나머지는 지운다 —
+    // 중간에 멈추면 사용자는 무엇이 지워졌는지 알 수 없다
+    final repo = ref.read(leaveRepositoryProvider);
+    var deleted = 0;
+    String? failure;
+    for (final usage in picked) {
+      try {
+        await repo.deleteUsage(usage.id);
+        deleted++;
+      } on ApiException catch (e) {
+        failure ??= e.detail.isEmpty ? '삭제하지 못했어요' : e.detail;
       }
-      if (!mounted) return;
-      ref.invalidate(myLeaveProvider);
+    }
+    if (!mounted) return;
+    if (deleted > 0) ref.invalidate(myLeaveProvider);
+    // 막힌 게 있으면 그 이유를 알려준다 — 코스 화면으로 갈 수 있게
+    if (failure case final String message) {
+      showAppToast(context, message);
+    } else {
       showAppToast(context, '연차 사용 내역이 삭제됐어요.', kind: AppToastKind.success);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      showAppToast(context, e.detail.isEmpty ? '삭제하지 못했어요' : e.detail);
     }
   }
 
