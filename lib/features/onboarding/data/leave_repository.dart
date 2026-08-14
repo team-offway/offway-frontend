@@ -50,12 +50,25 @@ class LeaveRepository {
     }
   }
 
-  /// 사용 내역 되돌리기.
+  /// 사용 내역 삭제 (`DELETE /leaves/me/usages/{id}`) — core#268.
   ///
-  /// 삭제 전용 API는 없다 — 서버 설계상 같은 날짜에 음수 [days]를 남겨
-  /// 상쇄한다("사용 양수 · 취소 음수"). 그래서 깎였던 연차가 되돌아온다.
-  Future<void> revertUsage(LeaveUsage usage) =>
-      addUsage(usedOn: usage.usedOn, days: -usage.days, reason: usage.reason);
+  /// 예전에는 음수를 새로 등록해 상쇄했는데, 같은 요청이 두 번 들어가면
+  /// 그만큼 더 상쇄돼 **없던 연차가 생겼다.** 이제 한 행을 지운다.
+  ///
+  /// 응답에 갱신된 연차 전체가 실려 오므로 목록을 다시 부르지 않아도 된다.
+  /// 코스 확정으로 생긴 내역은 409로 막힌다 — 코스 화면에서 되돌려야 한다.
+  Future<MyLeave> deleteUsage(int usageId) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        '/api/v1/leaves/me/usages/$usageId',
+      );
+      return MyLeave.fromJson(
+        ApiEnvelope.unwrap(response) as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
 
   /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
   ///

@@ -35,15 +35,23 @@ final _sampleUsages = [
   ),
 ];
 
-/// 되돌리기 요청만 기록하는 대역 — 서버를 부르지 않는다
+/// 삭제 요청만 기록하는 대역 — 서버를 부르지 않는다
 class _RecordingLeaveRepository implements LeaveRepository {
-  _RecordingLeaveRepository(this.reverted);
+  _RecordingLeaveRepository(this.deletedIds);
 
-  final List<({DateTime usedOn, double days})> reverted;
+  /// 지운 내역 id — 상쇄 등록이 아니라 id로 지우는지 확인한다
+  final List<int> deletedIds;
 
   @override
-  Future<void> revertUsage(LeaveUsage usage) async =>
-      reverted.add((usedOn: usage.usedOn, days: -usage.days));
+  Future<MyLeave> deleteUsage(int usageId) async {
+    deletedIds.add(usageId);
+    return const MyLeave(
+      totalDays: 15,
+      usedDays: 0,
+      remainingDays: 15,
+      usages: [],
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -215,13 +223,13 @@ void main() {
   });
 
   testWidgets('삭제 모드: 고른 것이 있어야 삭제할 수 있다', (tester) async {
-    final reverted = <({DateTime usedOn, double days})>[];
+    final deletedIds = <int>[];
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
           leaveRepositoryProvider.overrideWithValue(
-            _RecordingLeaveRepository(reverted),
+            _RecordingLeaveRepository(deletedIds),
           ),
         ],
         child: const MaterialApp(home: LeaveUsagesScreen()),
@@ -252,9 +260,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // 되돌리기 요청이 실제로 나간다 (같은 날짜에 음수를 남겨 상쇄)
-    expect(reverted, hasLength(1));
-    expect(reverted.first.days, -1);
+    // 상쇄 등록이 아니라 그 내역 id로 삭제가 나간다 (core#268)
+    expect(deletedIds, [1]);
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });
