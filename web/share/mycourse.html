@@ -382,6 +382,14 @@
       main.hidden = true;
     }
 
+    /// 연차 일수 표기 — 앱의 formatLeaveDays와 같은 규칙.
+    /// 정수는 '2', 반차는 '0.5', 반반차는 '0.25'. 자릿수를 고정하면
+    /// 0.25가 '0.3'이 되어 앱과 어긋난다
+    function formatLeaveDays(days) {
+      if (days === Math.round(days)) return String(Math.round(days));
+      return days.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
     function durationLabel(days) {
       if (days <= 1) return '당일치기';
       return (days - 1) + '박' + days + '일';
@@ -593,9 +601,10 @@
           .then(function (body) {
             var n = body && body.data && body.data.consumedLeaveDays;
             if (n == null) return;
-            // 0.5일 단위라 정수면 소수점을 떼고 보여준다
-            var label = Number.isInteger(n) ? String(n) : String(n);
-            renderBadges(['사용 연차 일수 ' + label + '일'].concat(badges), true);
+            renderBadges(
+              ['사용 연차 일수 ' + formatLeaveDays(n) + '일'].concat(badges),
+              true
+            );
           })
           .catch(function () { /* 못 받아도 D-DAY 뱃지는 그대로 */ });
       }
