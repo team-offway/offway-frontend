@@ -339,6 +339,16 @@ class CourseRepository {
           data[key] = cleanTourApiText(data[key] as String);
         }
       }
+      // 운영 정보는 타입별 블록에 담겨 온다 — 그 안의 글도 같은 원문이다
+      for (final key in const ['sight', 'culture', 'leports', 'food', 'stay']) {
+        if (data[key] case final Map<String, dynamic> block) {
+          for (final entry in block.entries.toList()) {
+            if (entry.value is String) {
+              block[entry.key] = cleanTourApiText(entry.value as String);
+            }
+          }
+        }
+      }
       return data;
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
@@ -346,13 +356,40 @@ class CourseRepository {
   }
 
   /// 장소의 운영 정보만 — 여행 당일 휴무일·운영시간 안내에 쓴다.
+  ///
+  /// 서버는 타입별 블록에 값을 담고 최상위는 비워 둔다 — 관광지·문화·레포츠는
+  /// `useTime`, 식당은 `food.openTime`, 숙소는 체크인/아웃이다. 최상위만 읽으면
+  /// 식당·숙소는 늘 빈 줄로 보인다.
   Future<({String? useTime, String? restDate})> poiSchedule(
     String contentId,
   ) async {
     final data = await poiDetail(contentId);
+    Map<String, dynamic>? block(String key) =>
+        data[key] as Map<String, dynamic>?;
+
+    final food = block('food');
+    final stay = block('stay');
+    final typed = block('sight') ?? block('culture') ?? block('leports');
+
+    final stayHours = stay == null
+        ? null
+        : switch ((stay['checkIn'], stay['checkOut'])) {
+            (final String i, final String o) => '체크인 $i · 체크아웃 $o',
+            (final String i, _) => '체크인 $i',
+            (_, final String o) => '체크아웃 $o',
+            _ => null,
+          };
+
     return (
-      useTime: data['useTime'] as String?,
-      restDate: data['restDate'] as String?,
+      useTime:
+          data['useTime'] as String? ??
+          typed?['useTime'] as String? ??
+          food?['openTime'] as String? ??
+          stayHours,
+      restDate:
+          data['restDate'] as String? ??
+          typed?['restDate'] as String? ??
+          food?['restDate'] as String?,
     );
   }
 
