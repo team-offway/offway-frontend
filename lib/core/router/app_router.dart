@@ -19,6 +19,7 @@ import '../../features/course_wizard/presentation/period_style_screen.dart';
 import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my/presentation/my_screen.dart';
+import '../../features/my/presentation/withdraw_screen.dart';
 import '../../features/leave/presentation/leave_register_screen.dart';
 import '../../features/leave/presentation/leave_usages_screen.dart';
 import '../../features/leave/presentation/my_leave_screen.dart';
@@ -72,6 +73,7 @@ abstract final class AppRoutes {
       '?name=${Uri.encodeComponent(name)}';
 
   static const my = '/my';
+  static const withdraw = '/my/withdraw';
 
   static const regionList = '/regions';
 
@@ -225,6 +227,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.my,
         name: 'my',
         pageBuilder: (context, state) => _noTransitionPage(const MyScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.withdraw,
+        name: 'withdraw',
+        builder: (context, state) => const WithdrawScreen(),
       ),
       GoRoute(
         path: AppRoutes.regionList,
