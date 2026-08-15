@@ -58,7 +58,7 @@ class _RecordingLeaveRepository implements LeaveRepository {
 }
 
 void main() {
-  testWidgets('연차 등록 화면: 여행·0.25일이 기본으로 골라져 있다', (tester) async {
+  testWidgets('연차 등록 화면: 날짜 전에는 차감 일수도 등록도 잠겨 있다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -80,63 +80,16 @@ void main() {
     // 기본 선택 확인 — 브랜드색 글자가 골라진 칩이다
     final travel = tester.widget<Text>(find.text('여행'));
     expect(travel.style?.color, AppColors.primaryNormal);
-    final quarter = tester.widget<Text>(find.text('0.25일'));
-    expect(quarter.style?.color, AppColors.primaryNormal);
-    // 고르지 않은 칩까지 파래지면 어느 것이 골라졌는지 알 수 없다
-    final half = tester.widget<Text>(find.text('0.5일'));
-    expect(half.style?.color, isNot(AppColors.primaryNormal));
 
-    // 날짜만 비어 있으므로 등록은 아직 잠겨 있다
+    // 차감 일수는 날짜에서 계산되는 값이라 그전에는 섹션 자체가 없다
+    expect(find.text('차감 일수'), findsNothing);
+    expect(find.text('자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.'), findsNothing);
+
+    // 날짜가 비어 있으므로 등록은 잠겨 있다
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
-  });
-
-  testWidgets('직접 입력하기를 누르면 입력 칸이 열린다', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          homeSnapshotProvider.overrideWith(
-            (ref) async => const HomeSnapshot(
-              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
-              regions: [],
-            ),
-          ),
-        ],
-        child: const MaterialApp(home: LeaveRegisterScreen()),
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('차감 일수를 입력해주세요.'), findsNothing);
-
-    await tester.tap(find.text('직접 입력하기'));
-    await tester.pump();
-    expect(find.text('차감 일수를 입력해주세요.'), findsOneWidget);
-
-    // 0.5 단위가 아니면 오류를 알리고 등록을 막는다
-    await tester.enterText(find.byType(TextField).last, '9.1');
-    await tester.pump();
-    expect(find.text('지원하지 않는 단위입니다.'), findsOneWidget);
-    expect(
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
-      isNull,
-    );
-
-    // 맞는 값이면 오류가 사라진다 ('일'이 붙어 보인다)
-    await tester.enterText(find.byType(TextField).last, '4');
-    await tester.pump();
-    expect(find.text('지원하지 않는 단위입니다.'), findsNothing);
-    expect(find.text('4일'), findsOneWidget);
-
-    // 프리셋을 다시 고르면 입력 칸이 닫힌다.
-    // 입력 칸이 열려 화면이 좁아졌으니 칩을 화면 안으로 올린 뒤 누른다
-    await tester.ensureVisible(find.text('1일'));
-    await tester.pump();
-    await tester.tap(find.text('1일'), warnIfMissed: false);
-    await tester.pump();
-    expect(find.text('차감 일수를 입력해주세요.'), findsNothing);
   });
 
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
