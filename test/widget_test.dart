@@ -402,8 +402,9 @@ void main() {
     // 로그아웃은 확인 다이얼로그를 거친다
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
-    expect(find.text('로그아웃할까요?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    // 모달이 열리면 '로그아웃'이 메뉴와 제목 두 곳에 뜬다
+    expect(find.text('정말 로그아웃 할까요?'), findsOneWidget);
+    await tester.tap(find.text('확인'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
@@ -442,7 +443,7 @@ void main() {
 
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.tap(find.text('확인'));
     await tester.pump();
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 500)),
