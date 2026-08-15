@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
@@ -90,6 +92,61 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
+  });
+
+  testWidgets('차감 일수는 숫자만 편집하고 연필을 누르면 바로 고칠 수 있다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveRepositoryProvider.overrideWithValue(
+            _NoAvailableTimeRepository(),
+          ),
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveRegisterScreen()),
+      ),
+    );
+    await tester.pump();
+
+    // 주말을 고르면 평일이 0일이라 차감 일수가 0이 된다 — 평일을 고른다
+    await tester.tap(find.text('날짜를 선택해 주세요'));
+    await tester.pumpAndSettle();
+    var target = DateTime.now();
+    while (target.weekday == DateTime.saturday ||
+        target.weekday == DateTime.sunday) {
+      target = target.add(const Duration(days: 1));
+    }
+    final day = find.text('${target.day}').first;
+    await tester.tap(day);
+    await tester.pump();
+    await tester.tap(day);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('선택 완료'));
+    await tester.pumpAndSettle();
+
+    // 단위는 화면에만 붙는다 — 컨트롤러에는 숫자만 담겨 지워질 수 없다
+    final field = tester.widget<TextField>(find.byType(TextField).last);
+    expect(field.controller?.text, isNot(contains('일')));
+    expect(find.text('일'), findsOneWidget);
+
+    // 연필을 누르면 입력 칸으로 커서가 가 지우기 아이콘으로 바뀐다
+    expect(find.byIcon(Icons.cancel), findsNothing);
+    await tester.tap(
+      find
+          .ancestor(
+            of: find.byType(SvgPicture).last,
+            matching: find.byType(GestureDetector),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
 
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
@@ -218,4 +275,21 @@ void main() {
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });
+}
+
+/// 차감 일수 계산은 실패로 친다 — 화면이 로컬 근사로 폴백해 바로 확정할 수 있다
+class _NoAvailableTimeRepository implements LeaveRepository {
+  @override
+  Future<AvailableTime> availableTime({
+    required String transport,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodStyle,
+    DateTime? baseDate,
+    String? weekendBridge,
+    int? leaveDays,
+  }) async => throw const ApiException(status: 500, code: 'X', detail: '');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

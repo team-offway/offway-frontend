@@ -67,9 +67,10 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     super.dispose();
   }
 
-  /// 입력 칸의 현재 값 — '2.5일'처럼 단위가 붙어 있어도 숫자만 읽는다
+  /// 입력 칸의 현재 값. 컨트롤러에는 숫자만 담기고 '일'은 화면에만 붙는다 —
+  /// 사용자가 단위를 지워 버리는 일이 없다
   double? get _days {
-    final text = _daysInput.text.replaceAll('일', '').trim();
+    final text = _daysInput.text.trim();
     if (text.isEmpty) return null;
     return double.tryParse(text);
   }
@@ -98,7 +99,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
       // 서버가 센 차감 일수(평일−공휴일)를 자동으로 채운다.
       // 못 받았으면 고른 날 수를 그대로 쓴다
       final auto = picked.consumed ?? _rangeDayCount.toDouble();
-      _daysInput.text = '${formatLeaveDays(auto)}일';
+      _daysInput.text = formatLeaveDays(auto);
       // 날짜를 다시 고르면 자동 계산으로 되돌아간다
       _daysEdited = false;
     });
@@ -107,7 +108,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
   /// 입력값이 왜 못 쓰는지 — 없으면 정상.
   /// 남은 연차는 빌드 시점에만 알 수 있어 화면이 넘겨준다
   String? _daysErrorFor(num? remaining) {
-    final text = _daysInput.text.replaceAll('일', '').trim();
+    final text = _daysInput.text.trim();
     if (text.isEmpty) return null;
     final parsed = double.tryParse(text);
     if (parsed == null || parsed <= 0) return '지원하지 않는 단위입니다.';
@@ -410,21 +411,38 @@ class _DaysField extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    onChanged: onChanged,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: AppTypography.body1NormalRegular.copyWith(
-                      color: AppColors.labelNormal,
-                    ),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 숫자만 편집한다 — 단위까지 지워지지 않도록
+                      Flexible(
+                        child: IntrinsicWidth(
+                          child: TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            onChanged: onChanged,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: AppTypography.body1NormalRegular.copyWith(
+                              color: AppColors.labelNormal,
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 단위는 화면에만 붙는다 (값에는 들어가지 않는다)
+                      Text(
+                        '일',
+                        style: AppTypography.body1NormalRegular.copyWith(
+                          color: AppColors.labelNormal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -434,6 +452,8 @@ class _DaysField extends StatelessWidget {
                 focused: focused,
                 edited: edited,
                 onClear: onClear,
+                // 연필을 눌러도 바로 고칠 수 있게 입력 칸으로 보낸다
+                onEdit: focusNode.requestFocus,
               ),
             ],
           ),
@@ -463,12 +483,16 @@ class _TrailingIcon extends StatelessWidget {
     required this.focused,
     required this.edited,
     required this.onClear,
+    required this.onEdit,
   });
 
   final bool hasError;
   final bool focused;
   final bool edited;
   final VoidCallback onClear;
+
+  /// 연필·체크를 눌렀을 때 — 입력 칸으로 커서를 보낸다
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -491,13 +515,18 @@ class _TrailingIcon extends StatelessWidget {
         child: Icon(Icons.cancel, size: 22, color: AppColors.labelAssistive),
       );
     }
-    // 에셋이 각자 제 색(체크는 브랜드색, 연필은 Label/Alternative)을 품고 있다
-    return SvgPicture.asset(
-      edited
-          ? 'assets/icons/ic_check_circle_fill.svg'
-          : 'assets/icons/ic_write.svg',
-      width: 22,
-      height: 22,
+    // 에셋이 각자 제 색(체크는 브랜드색, 연필은 Label/Alternative)을 품고 있다.
+    // 연필은 눌러서 고칠 수 있다는 표시라 실제로 눌리게 한다
+    return GestureDetector(
+      onTap: onEdit,
+      behavior: HitTestBehavior.opaque,
+      child: SvgPicture.asset(
+        edited
+            ? 'assets/icons/ic_check_circle_fill.svg'
+            : 'assets/icons/ic_write.svg',
+        width: 22,
+        height: 22,
+      ),
     );
   }
 }
