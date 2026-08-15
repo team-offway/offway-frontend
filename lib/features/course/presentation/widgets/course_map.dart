@@ -10,6 +10,10 @@ const _pathColor = Color(0xFF878A93);
 
 /// 지도 마커 — 36은 지도를 덮어 장소가 겹칠 때 서로 가렸다
 const _pinSize = 28.0;
+
+/// 처음 보여줄 확대 정도. 10.5는 군 전체가 들어와 마커가 한 덩어리로 뭉쳤다 —
+/// 코스는 대개 한 지역 안이라 더 당겨야 순서가 읽힌다
+const _initialZoom = 12.0;
 const _placeColor = Color(0xFF18D2FE);
 const _stayColor = Color(0xFFF553DA);
 
@@ -54,7 +58,10 @@ class CourseMap extends StatelessWidget {
       // 리스트 스크롤보다 지도 제스처(이동/확대)가 우선하도록 설정
       forceGesture: true,
       options: NaverMapViewOptions(
-        initialCameraPosition: NCameraPosition(target: center, zoom: 10.5),
+        initialCameraPosition: NCameraPosition(
+          target: center,
+          zoom: _initialZoom,
+        ),
       ),
       onMapReady: (controller) async {
         for (var i = 0; i < places.length; i++) {
@@ -95,8 +102,11 @@ class CourseMap extends StatelessWidget {
           );
         }
         // 코스는 1번에서 시작한다 — 첫 장소를 가운데 두고 시작한다.
-        // 전체를 담는 fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다
-        controller.updateCamera(NCameraUpdate.withParams(target: points.first));
+        // 전체를 담는 fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다.
+        // 줌도 함께 준다 — 옮기기만 하면 초기값이 유지된다는 보장이 없다
+        controller.updateCamera(
+          NCameraUpdate.withParams(target: points.first, zoom: _initialZoom),
+        );
       },
     );
   }
