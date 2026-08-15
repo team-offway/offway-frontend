@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
@@ -58,7 +60,7 @@ class _RecordingLeaveRepository implements LeaveRepository {
 }
 
 void main() {
-  testWidgets('연차 등록 화면: 여행·0.25일이 기본으로 골라져 있다', (tester) async {
+  testWidgets('연차 등록 화면: 날짜 전에는 차감 일수도 등록도 잠겨 있다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -80,23 +82,25 @@ void main() {
     // 기본 선택 확인 — 브랜드색 글자가 골라진 칩이다
     final travel = tester.widget<Text>(find.text('여행'));
     expect(travel.style?.color, AppColors.primaryNormal);
-    final quarter = tester.widget<Text>(find.text('0.25일'));
-    expect(quarter.style?.color, AppColors.primaryNormal);
-    // 고르지 않은 칩까지 파래지면 어느 것이 골라졌는지 알 수 없다
-    final half = tester.widget<Text>(find.text('0.5일'));
-    expect(half.style?.color, isNot(AppColors.primaryNormal));
 
-    // 날짜만 비어 있으므로 등록은 아직 잠겨 있다
+    // 차감 일수는 날짜에서 계산되는 값이라 그전에는 섹션 자체가 없다
+    expect(find.text('차감 일수'), findsNothing);
+    expect(find.text('자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.'), findsNothing);
+
+    // 날짜가 비어 있으므로 등록은 잠겨 있다
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
   });
 
-  testWidgets('직접 입력하기를 누르면 입력 칸이 열린다', (tester) async {
+  testWidgets('차감 일수는 숫자만 편집하고 연필을 누르면 바로 고칠 수 있다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          leaveRepositoryProvider.overrideWithValue(
+            _NoAvailableTimeRepository(),
+          ),
           homeSnapshotProvider.overrideWith(
             (ref) async => const HomeSnapshot(
               user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
@@ -109,34 +113,55 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('차감 일수를 입력해주세요.'), findsNothing);
-
-    await tester.tap(find.text('직접 입력하기'));
+    // 주말을 고르면 평일이 0일이라 차감 일수가 0이 된다 — 평일을 고른다
+    await tester.tap(find.text('날짜를 선택해 주세요'));
+    await tester.pumpAndSettle();
+    var target = DateTime.now();
+    while (target.weekday == DateTime.saturday ||
+        target.weekday == DateTime.sunday) {
+      target = target.add(const Duration(days: 1));
+    }
+    final day = find.text('${target.day}').first;
+    await tester.tap(day);
     await tester.pump();
-    expect(find.text('차감 일수를 입력해주세요.'), findsOneWidget);
-
-    // 0.5 단위가 아니면 오류를 알리고 등록을 막는다
-    await tester.enterText(find.byType(TextField).last, '9.1');
+    await tester.tap(day);
     await tester.pump();
-    expect(find.text('지원하지 않는 단위입니다.'), findsOneWidget);
-    expect(
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
-      isNull,
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('선택 완료'));
+    await tester.pumpAndSettle();
+
+    // 단위는 화면에만 붙는다 — 컨트롤러에는 숫자만 담겨 지워질 수 없다
+    final field = tester.widget<TextField>(find.byType(TextField).last);
+    expect(field.controller?.text, isNot(contains('일')));
+    expect(find.text('일'), findsOneWidget);
+
+    // 연필을 누르면 입력 칸으로 커서가 가 지우기 아이콘으로 바뀐다
+    expect(find.byIcon(Icons.cancel), findsNothing);
+    await tester.tap(
+      find
+          .ancestor(
+            of: find.byType(SvgPicture).last,
+            matching: find.byType(GestureDetector),
+          )
+          .first,
     );
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsOneWidget);
 
-    // 맞는 값이면 오류가 사라진다 ('일'이 붙어 보인다)
-    await tester.enterText(find.byType(TextField).last, '4');
-    await tester.pump();
-    expect(find.text('지원하지 않는 단위입니다.'), findsNothing);
-    expect(find.text('4일'), findsOneWidget);
+    // 값을 지우면 설명할 것이 없어 안내도 사라진다
+    await tester.enterText(find.byType(TextField).last, '');
+    await tester.pumpAndSettle();
+    expect(find.text('차감 일수가 직접 입력한 값으로 수정됐어요.'), findsNothing);
+    expect(find.text('자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.'), findsNothing);
 
-    // 프리셋을 다시 고르면 입력 칸이 닫힌다.
-    // 입력 칸이 열려 화면이 좁아졌으니 칩을 화면 안으로 올린 뒤 누른다
-    await tester.ensureVisible(find.text('1일'));
-    await tester.pump();
-    await tester.tap(find.text('1일'), warnIfMissed: false);
-    await tester.pump();
-    expect(find.text('차감 일수를 입력해주세요.'), findsNothing);
+    // 칸의 빈 자리를 눌러도 수정으로 들어간다 — 숫자 폭만큼만 TextField라
+    // 그 바깥을 눌러도 닿아야 한다
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsNothing);
+    await tester.tap(find.text('일'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
 
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
@@ -265,4 +290,21 @@ void main() {
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });
+}
+
+/// 차감 일수 계산은 실패로 친다 — 화면이 로컬 근사로 폴백해 바로 확정할 수 있다
+class _NoAvailableTimeRepository implements LeaveRepository {
+  @override
+  Future<AvailableTime> availableTime({
+    required String transport,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodStyle,
+    DateTime? baseDate,
+    String? weekendBridge,
+    int? leaveDays,
+  }) async => throw const ApiException(status: 500, code: 'X', detail: '');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

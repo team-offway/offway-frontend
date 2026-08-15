@@ -65,13 +65,21 @@ Future<void> _pump(WidgetTester tester, LeaveRepository repo) async {
   await tester.pump();
 }
 
-/// 날짜 칸을 눌러 캘린더에서 하루를 고른다
+/// 날짜 칸을 눌러 캘린더에서 하루를 고른다.
+///
+/// 주말을 고르면 차감 일수가 0일이 되어(평일만 센다) 등록이 잠긴다 —
+/// 테스트가 도는 요일에 흔들리지 않도록 이번 달의 평일을 고른다.
 Future<void> _pickOneDay(WidgetTester tester) async {
   await tester.tap(find.text('날짜를 선택해 주세요'));
   await tester.pumpAndSettle();
-  // 오늘 이후 첫 선택 가능일을 두 번 눌러 하루짜리 범위를 만든다
   final today = DateTime.now();
-  final day = find.text('${today.day}').first;
+  var target = today;
+  while (target.weekday == DateTime.saturday ||
+      target.weekday == DateTime.sunday) {
+    target = target.add(const Duration(days: 1));
+  }
+  // 같은 날을 두 번 눌러 하루짜리 범위를 만든다
+  final day = find.text('${target.day}').first;
   await tester.tap(day);
   await tester.pump();
   await tester.tap(day);
