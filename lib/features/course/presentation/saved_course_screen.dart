@@ -170,25 +170,20 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (_mapExpanded)
-                Center(
-                  child: AppIconButton(
-                    icon: Icons.keyboard_arrow_up,
-                    // 가이드 아이콘 32
-                    size: 32,
-                    onTap: () => setState(() => _mapExpanded = false),
-                    semanticLabel: '지도 접기',
-                    color: AppColors.labelAlternative,
-                  ),
-                )
-              else
-                Center(
-                  child: Container(
-                    width: 374,
-                    height: 1,
-                    color: AppColors.lineNormalAlternative,
-                  ),
+              // 접기·펼치기를 같은 자리에서 화살표 방향만 바꿔 처리한다 —
+              // 지도를 직접 눌러 펼치던 방식은 지도 조작과 충돌했다
+              Center(
+                child: AppIconButton(
+                  icon: _mapExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  // 가이드 아이콘 32
+                  size: 32,
+                  onTap: () => setState(() => _mapExpanded = !_mapExpanded),
+                  semanticLabel: _mapExpanded ? '지도 접기' : '지도 펼치기',
+                  color: AppColors.labelAlternative,
                 ),
+              ),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -403,12 +398,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         child: CourseMap(places: places, dayKey: _selectedDay),
       ),
     );
-    if (_mapExpanded) return map;
-    // 접힌 상태는 미리보기 — 탭 한 번이 통째로 '펼치기'가 되도록 지도 조작을 막는다
-    return GestureDetector(
-      onTap: () => setState(() => _mapExpanded = true),
-      child: AbsorbPointer(child: map),
-    );
+    // 접힌 상태에서도 지도를 옮기고 확대할 수 있다 — 예전에는 조작을 통째로
+    // 막아 탭이 곧 '펼치기'였는데, 미리보기라도 손이 닿지 않으면 답답하다.
+    // 펼치기는 지도 아래 화살표 버튼이 맡아 지도 제스처와 겹치지 않는다
+    return map;
   }
 
   /// `여행 1일차 7.26 월` + 날씨 — 가까운 여행만 날씨가 붙고 당일엔 기온까지

@@ -8,8 +8,8 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 /// 경로 점선 색 — Atomic/Cool Neutral/60
 const _pathColor = Color(0xFF878A93);
 
-/// 지도 마커 — 시안 값
-const _pinSize = 36.0;
+/// 지도 마커 — 36은 지도를 덮어 장소가 겹칠 때 서로 가렸다
+const _pinSize = 28.0;
 const _placeColor = Color(0xFF18D2FE);
 const _stayColor = Color(0xFFF553DA);
 
@@ -86,7 +86,8 @@ class CourseMap extends StatelessWidget {
               id: 'course-path',
               coords: points,
               color: _pathColor,
-              width: 4,
+              // 마커를 줄인 만큼 선도 얇게 — 4는 점이 아니라 굵은 띠로 보였다
+              width: 3,
               // 웹의 shortdot과 같은 밀도 — 점이 촘촘히 이어져 경로로 읽힌다
               pattern: const [2, 6],
               lineCap: NLineCap.round,
