@@ -147,6 +147,21 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.cancel), findsOneWidget);
+
+    // 값을 지우면 설명할 것이 없어 안내도 사라진다
+    await tester.enterText(find.byType(TextField).last, '');
+    await tester.pumpAndSettle();
+    expect(find.text('차감 일수가 직접 입력한 값으로 수정됐어요.'), findsNothing);
+    expect(find.text('자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.'), findsNothing);
+
+    // 칸의 빈 자리를 눌러도 수정으로 들어간다 — 숫자 폭만큼만 TextField라
+    // 그 바깥을 눌러도 닿아야 한다
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsNothing);
+    await tester.tap(find.text('일'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
 
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {

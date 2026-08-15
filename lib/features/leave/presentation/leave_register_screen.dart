@@ -389,88 +389,105 @@ class _DaysField extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasError = error != null;
     final focused = focusNode.hasFocus;
+    final empty = controller.text.trim().isEmpty;
+    // 값이 비면 설명할 것이 없다 — 오류도 안내도 띄우지 않는다
+    final message = hasError
+        ? error
+        : empty
+        ? null
+        : edited
+        ? '차감 일수가 직접 입력한 값으로 수정됐어요.'
+        : '자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundNormal,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: hasError
-                  ? AppColors.statusNegative
-                  : focused
-                  ? AppColors.primaryNormal
-                  : AppColors.lineNormalNeutral,
+        // 숫자 폭만큼만 TextField라 빈 자리를 눌러도 닿지 않는다 —
+        // 칸 어디를 눌러도 수정으로 들어가게 전체를 탭 영역으로 둔다
+        GestureDetector(
+          onTap: focusNode.requestFocus,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundNormal,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: hasError
+                    ? AppColors.statusNegative
+                    : focused
+                    ? AppColors.primaryNormal
+                    : AppColors.lineNormalNeutral,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 숫자만 편집한다 — 단위까지 지워지지 않도록
-                      Flexible(
-                        child: IntrinsicWidth(
-                          child: TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            onChanged: onChanged,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            style: AppTypography.body1NormalRegular.copyWith(
-                              color: AppColors.labelNormal,
-                            ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 숫자만 편집한다 — 단위까지 지워지지 않도록
+                        Flexible(
+                          child: IntrinsicWidth(
+                            child: TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              onChanged: onChanged,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              style: AppTypography.body1NormalRegular.copyWith(
+                                color: AppColors.labelNormal,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      // 단위는 화면에만 붙는다 (값에는 들어가지 않는다)
-                      Text(
-                        '일',
-                        style: AppTypography.body1NormalRegular.copyWith(
-                          color: AppColors.labelNormal,
+                        // 단위는 화면에만 붙는다 (값에는 들어가지 않는다)
+                        Text(
+                          '일',
+                          style: AppTypography.body1NormalRegular.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _TrailingIcon(
-                hasError: hasError,
-                focused: focused,
-                edited: edited,
-                onClear: onClear,
-                // 연필을 눌러도 바로 고칠 수 있게 입력 칸으로 보낸다
-                onEdit: focusNode.requestFocus,
-              ),
-            ],
+                const SizedBox(width: 8),
+                _TrailingIcon(
+                  hasError: hasError,
+                  focused: focused,
+                  // 값을 지운 상태를 '수정 완료'로 보여줄 수는 없다
+                  edited: edited && !empty,
+                  onClear: onClear,
+                  // 연필을 눌러도 바로 고칠 수 있게 입력 칸으로 보낸다
+                  onEdit: focusNode.requestFocus,
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        // 오류가 있으면 그 이유를, 없으면 값이 어디서 왔는지 알린다
-        Text(
-          error ??
-              (edited
-                  ? '차감 일수가 직접 입력한 값으로 수정됐어요.'
-                  : '자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.'),
-          style: AppTypography.caption1Regular.copyWith(
-            color: hasError
-                ? AppColors.statusNegative
-                : AppColors.labelAlternative,
+        // 오류가 있으면 그 이유를, 없으면 값이 어디서 왔는지 알린다.
+        // 값을 지운 동안에는 설명할 값 자체가 없어 아무 말도 하지 않는다
+        if (message != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: AppTypography.caption1Regular.copyWith(
+              color: hasError
+                  ? AppColors.statusNegative
+                  : AppColors.labelAlternative,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
