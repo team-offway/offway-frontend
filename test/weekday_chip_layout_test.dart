@@ -112,4 +112,37 @@ void main() {
       expect(twoDays, closeTo(39.6 * 2 + 13.2, 1));
     });
   });
+
+  group('주를 넘어가는 선택', () {
+    Finder bands() => find.byWidgetPredicate(
+      (w) =>
+          w is DecoratedBox &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).color ==
+              AppPalette.lightBlue70.withValues(alpha: 0.3),
+    );
+
+    testWidgets('일·월·화를 고르면 띠가 양 끝 두 조각으로 나뉜다', (tester) async {
+      // 한 덩어리로 그리면 줄 밖으로 삐져나가고 월·화 위에는 깔리지 않는다
+      await openSheet(tester, 402);
+      await tester.tap(find.text('일'));
+      await tester.pump();
+      await tester.tap(find.text('화'));
+      await tester.pump();
+
+      expect(bands(), findsNWidgets(2));
+      final right = tester.getRect(bands().at(0));
+      final left = tester.getRect(bands().at(1));
+      // 일요일 조각은 줄 오른쪽 끝, 월·화 조각은 왼쪽에서 시작한다
+      expect(right.left, greaterThan(left.right));
+    });
+
+    testWidgets('월·화·수는 주말에 닿지 못해 처음부터 못 고른다', (tester) async {
+      await openSheet(tester, 402);
+      await tester.tap(find.text('월'));
+      await tester.pump();
+      // 아무것도 선택되지 않아 띠도 없다
+      expect(bands(), findsNothing);
+    });
+  });
 }

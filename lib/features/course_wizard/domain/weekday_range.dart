@@ -3,25 +3,29 @@ import '../../../core/constants/trip_constants.dart';
 /// '주말 포함 여행' 요일 선택 상태 — 고른 요일 범위와 그 규칙.
 ///
 /// 시안 정책:
-/// - 시작 요일을 고르면 **그 이전 요일은 고를 수 없다**(과거 방향 방지)
+/// - 시작 요일을 고르면 **그 요일부터 앞으로만** 이어 고른다
 /// - 시작 요일부터 최대 [kMaxTripSpanDays]박, 즉 3일까지만
 /// - **연속된 요일만** — 목·일처럼 띄어 고를 수 없다
 /// - 하루만 고른 상태는 당일치기라 완료할 수 없다(별도 옵션이 이미 있다)
+/// - **토·일이 최소 하루는 들어가야 한다** — '주말 포함 여행'이기 때문이다
 ///
-/// 요일은 `DateTime.monday`(1) ~ `DateTime.sunday`(7)를 쓴다. 주를 넘기지
-/// 않는다 — 시안이 월~일 한 줄만 보여주고, 일요일 다음은 다시 월요일이 아니라
-/// 그냥 끝이다.
+/// 요일은 `DateTime.monday`(1) ~ `DateTime.sunday`(7)를 쓴다.
+///
+/// **주를 넘어간다.** 일요일 다음은 월요일이다 — 일요일 출발 2박3일(일·월·화)은
+/// 현실에 있는 여행이고, 시안이 월~일 한 줄로 보여주는 것은 표시 방식일 뿐
+/// 요일의 순환과 무관하다. 그래서 시작 요일과 일수로 담고, 화면에 칠할 때
+/// 감싸진 요일까지 [contains]로 판단한다.
 class WeekdayRange {
-  const WeekdayRange({this.start, this.end});
+  const WeekdayRange({this.start, this.days = 0});
 
   /// 아무것도 고르지 않은 상태
-  const WeekdayRange.empty() : start = null, end = null;
+  const WeekdayRange.empty() : start = null, days = 0;
 
   /// 고른 첫 요일 (1=월 … 7=일)
   final int? start;
 
-  /// 고른 마지막 요일. 하루만 골랐으면 [start]와 같다
-  final int? end;
+  /// 고른 날 수 (0~3). 주를 넘어가면 [start]에서 감싸 센다
+  final int days;
 
   /// 최대로 고를 수 있는 일수 — 2박3일이면 3일
   static const maxDays = kMaxTripSpanDays + 1;
@@ -29,37 +33,64 @@ class WeekdayRange {
   /// 완료할 수 있는 최소 일수. 하루는 당일치기라 이 모달의 몫이 아니다
   static const minDays = 2;
 
-  bool get isEmpty => start == null;
+  static const _weekLength = 7;
 
-  /// 고른 날 수 (0~3)
-  int get days => start == null ? 0 : end! - start! + 1;
+  bool get isEmpty => start == null;
 
   /// 숙박 수 — 2일이면 1박
   int get nights => days == 0 ? 0 : days - 1;
 
-  /// 완료 버튼을 누를 수 있는지. 하루만 고른 상태는 막는다
-  bool get canConfirm => days >= minDays;
+  /// 완료 버튼을 누를 수 있는지.
+  ///
+  /// 하루만 고른 상태(당일치기)와 **주말이 없는 범위**를 막는다. 후자는
+  /// 목·금처럼 평일만 이어 고른 경우다 — 그건 '연차만' 옵션의 몫이다.
+  bool get canConfirm => days >= minDays && includesWeekend;
 
-  bool contains(int weekday) =>
-      start != null && weekday >= start! && weekday <= end!;
+  /// 고른 범위에 토·일이 하루라도 있는지
+  bool get includesWeekend {
+    if (start == null) return false;
+    for (var i = 0; i < days; i++) {
+      if (_isWeekend(_wrap(start! + i))) return true;
+    }
+    return false;
+  }
+
+  /// 마지막 요일. 주를 넘어가면 감싼 값이다(일요일 시작 3일 → 화요일)
+  int? get end => start == null ? null : _wrap(start! + days - 1);
+
+  /// [weekday]가 고른 범위 안에 있는지 — 감싸진 요일도 포함한다
+  bool contains(int weekday) {
+    if (start == null) return false;
+    return _offsetFromStart(weekday) < days;
+  }
 
   /// [weekday]를 지금 고를 수 있는지.
   ///
-  /// 아직 아무것도 안 골랐으면 전부 고를 수 있다. 하나라도 골랐으면
-  /// **이미 고른 범위 + 그 뒤로 이어지는 요일**만 남는다.
+  /// 아직 아무것도 안 골랐으면 **주말에 닿을 수 있는 요일**만 열어 둔다 —
+  /// 월·화·수에서 시작하면 3일을 다 써도 토·일에 닿지 못해(월화수·화수목·
+  /// 수목금) 고르고 나서 완료가 잠긴다. 헛수고를 앞에서 막는다.
+  ///
+  /// 하나라도 골랐으면 **시작 요일부터 [maxDays] 안에 드는 요일**만 남는다.
   bool canSelect(int weekday) {
-    if (start == null) return true;
-    if (contains(weekday)) return true;
-    // 시작보다 앞이면 과거 방향이라 막는다
-    if (weekday < start!) return false;
-    // 시작부터 세어 상한을 넘으면 막는다
-    return weekday - start! + 1 <= maxDays;
+    if (start == null) return _canStartFrom(weekday);
+    return _offsetFromStart(weekday) < maxDays;
   }
+
+  /// [weekday]에서 시작해 [maxDays] 안에 주말이 들어오는지
+  static bool _canStartFrom(int weekday) {
+    for (var i = 0; i < maxDays; i++) {
+      if (_isWeekend(_wrap(weekday + i))) return true;
+    }
+    return false;
+  }
+
+  static bool _isWeekend(int weekday) =>
+      weekday == DateTime.saturday || weekday == DateTime.sunday;
 
   /// [weekday]를 탭했을 때의 다음 상태.
   ///
   /// - 아무것도 없으면 그 요일 하루로 시작한다
-  /// - 이어지는 요일을 누르면 거기까지 늘어난다
+  /// - 이어지는 요일을 누르면 거기까지 늘어난다(주를 넘어가도 이어진다)
   /// - **하루만 고른 상태에서 그 하루를 누르면 해제한다** — 켠 것을 다시
   ///   누르면 꺼지는 것이 칩의 상식이고, 그러지 않으면 비울 길이 없다
   /// - **여러 날 고른 상태에서 범위 안을 누르면 그 요일 하루로 다시 시작한다**
@@ -67,11 +98,18 @@ class WeekdayRange {
   /// - 고를 수 없는 요일은 그대로 둔다
   WeekdayRange toggle(int weekday) {
     if (!canSelect(weekday)) return this;
-    if (start == null) return WeekdayRange(start: weekday, end: weekday);
+    if (start == null) return WeekdayRange(start: weekday, days: 1);
     if (contains(weekday)) {
       if (days == 1) return const WeekdayRange.empty();
-      return WeekdayRange(start: weekday, end: weekday);
+      return WeekdayRange(start: weekday, days: 1);
     }
-    return WeekdayRange(start: start, end: weekday);
+    return WeekdayRange(start: start, days: _offsetFromStart(weekday) + 1);
   }
+
+  /// 시작 요일에서 [weekday]까지 며칠 뒤인지 (0~6). 주를 넘어가면 감싸 센다
+  int _offsetFromStart(int weekday) =>
+      (weekday - start! + _weekLength) % _weekLength;
+
+  /// 1~7 범위로 되돌린다
+  static int _wrap(int weekday) => (weekday - 1) % _weekLength + 1;
 }

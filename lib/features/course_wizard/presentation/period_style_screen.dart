@@ -194,7 +194,11 @@ class PeriodStyleScreen extends ConsumerWidget {
               // 시안: 안내문 위 24, 완료 버튼과 16
               padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
               child: Text(
-                '연속된 요일만 선택 가능해요',
+                // 왜 완료가 잠겼는지 알려준다. 주말이 빠진 경우가 가장 헷갈린다
+                // — 목·금처럼 이어 골랐는데도 버튼이 흐린 이유가 안 보인다
+                range.days >= WeekdayRange.minDays && !range.includesWeekend
+                    ? '토요일이나 일요일이 하루는 포함돼야 해요'
+                    : '연속된 요일만 선택 가능해요',
                 textAlign: TextAlign.center,
                 style: AppTypography.label2Regular.copyWith(
                   color: AppColors.labelNeutral,
@@ -223,11 +227,15 @@ class PeriodStyleScreen extends ConsumerWidget {
                   child: Stack(
                     children: [
                       // 고른 범위를 하나로 이어 보이게 칩 사이까지 옅게 깐다.
-                      // 칩만 칠하면 3일을 골라도 따로 떨어진 날처럼 읽힌다
-                      if (!range.isEmpty && range.days > 1)
+                      // 칩만 칠하면 3일을 골라도 따로 떨어진 날처럼 읽힌다.
+                      //
+                      // 주를 넘어가면(일·월·화) 한 줄에서는 양 끝으로 갈라지므로
+                      // 조각을 나눠 그린다 — 한 덩어리로 그리면 줄 밖으로 삐져
+                      // 나가고 월·화 위에는 깔리지 않는다
+                      for (final piece in _rangePieces(range))
                         Positioned(
-                          left: rowLeft + (range.start! - 1) * step,
-                          width: _WeekdayChip.size + (range.days - 1) * step,
+                          left: rowLeft + (piece.from - 1) * step,
+                          width: _WeekdayChip.size + (piece.length - 1) * step,
                           top: 0,
                           bottom: 0,
                           child: DecoratedBox(
@@ -565,6 +573,26 @@ class _StyleCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 요일 한 줄에 띠를 그릴 조각 — `from`(1=월) 에서 `length`칸
+typedef _RangePiece = ({int from, int length});
+
+/// 고른 범위를 한 줄에 그릴 조각으로 나눈다.
+///
+/// 주를 넘어가지 않으면 한 조각이다. 넘어가면(일·월·화) 줄에서 양 끝으로
+/// 갈라지므로 두 조각이 된다 — 일요일까지, 그리고 월요일부터.
+///
+/// 하루만 고른 상태는 빈 목록이다. 칩 하나에 띠를 겹치면 테두리만 번져 보인다.
+List<_RangePiece> _rangePieces(WeekdayRange range) {
+  final start = range.start;
+  if (start == null || range.days < 2) return const [];
+  final overflow = start + range.days - 1 - DateTime.sunday;
+  if (overflow <= 0) return [(from: start, length: range.days)];
+  return [
+    (from: start, length: DateTime.sunday - start + 1),
+    (from: DateTime.monday, length: overflow),
+  ];
 }
 
 /// 요일 칩 사이 간격 — 시안 실측. 화면이 좁으면 이 값보다 좁아진다
