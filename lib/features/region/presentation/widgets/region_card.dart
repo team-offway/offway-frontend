@@ -99,13 +99,17 @@ class RegionCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.fillNormal,
+                  // 혜택 뱃지는 브랜드색 8% 배경에 브랜드색 글자다(시안 Badge).
+                  // 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
+                  color: AppColors.primaryNormal.withValues(
+                    alpha: AppOpacity.o8,
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   badge,
                   style: AppTypography.caption2Medium.copyWith(
-                    color: AppColors.labelAlternative,
+                    color: AppColors.primaryNormal,
                   ),
                 ),
               ),

@@ -7,6 +7,7 @@ import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../data/region_places_repository.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../mock/mock_data_source.dart';
@@ -91,8 +92,12 @@ class RegionDetailScreen extends ConsumerWidget {
   static const _infoText = Color(0xFF666666);
   static const _divider = Color(0xFFF2F3F6);
   static const _imagePlaceholder = Color(0xFFC5C8CE);
-  static const _badgeBg = Color(0x293182F6); // rgba(49,130,246,0.16)
-  static const _badgeText = Color(0xFF2272EB);
+  // 혜택 뱃지 — 시안 Badge와 같은 브랜드색 8% 배경 + 브랜드색 글자.
+  // 예전에는 다른 파랑(#3182F6)을 쓰고 있어 카드 뱃지와 색이 달랐다
+  static final _badgeBg = AppColors.primaryNormal.withValues(
+    alpha: AppOpacity.o8,
+  );
+  static const _badgeText = AppColors.primaryNormal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

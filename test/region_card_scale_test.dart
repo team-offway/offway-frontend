@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/region/presentation/widgets/region_card.dart';
 
 void main() {
@@ -97,5 +98,35 @@ void main() {
     final card = tester.getSize(find.byType(RegionCard));
     final skeleton = tester.getSize(find.byType(RegionCardSkeleton));
     expect(skeleton.height, closeTo(card.height, 1));
+  });
+
+  testWidgets('혜택 뱃지는 브랜드색 8% 배경에 브랜드색 글자다', (tester) async {
+    const region = {
+      'id': '정선',
+      'name': '정선',
+      'sido': '강원',
+      'description': '설명',
+      'benefitBadge': '입장료 50% 할인',
+    };
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: RegionCard(region: region)),
+      ),
+    );
+
+    // 회색(Fill/Normal)로 되돌아가면 혜택이 분류 뱃지처럼 보인다
+    final box = tester.widget<Container>(
+      find
+          .ancestor(
+            of: find.text('입장료 50% 할인'),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = box.decoration as BoxDecoration;
+    expect(decoration.color, AppColors.primaryNormal.withValues(alpha: 0.08));
+
+    final text = tester.widget<Text>(find.text('입장료 50% 할인'));
+    expect(text.style?.color, AppColors.primaryNormal);
   });
 }
