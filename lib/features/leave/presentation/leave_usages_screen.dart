@@ -495,7 +495,7 @@ class _UsageCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Text(
-                    '-${formatLeaveDays(usage.days)}일',
+                    formatLeaveDelta(usage.days),
                     style: AppTypography.body1NormalBold.copyWith(
                       color: AppColors.primaryNormal,
                     ),

@@ -63,4 +63,40 @@ void main() {
     expect(find.text('정선 여행'), findsOneWidget);
     expect(find.text('-1일'), findsNWidgets(3));
   });
+
+  testWidgets('취소 내역(음수)은 부호가 겹치지 않고 +로 보인다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myLeaveProvider.overrideWith(
+            (ref) async => MyLeave(
+              totalDays: 30,
+              usedDays: 0,
+              remainingDays: 30,
+              usages: const [],
+            ),
+          ),
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              LeaveUsage(id: 1, usedOn: DateTime(2026, 8, 10), days: 3),
+              // 예전 상쇄 방식으로 쌓인 음수 행 — '-' 를 글자로 붙이면 '--3일'이 된다
+              LeaveUsage(id: 2, usedOn: DateTime(2026, 8, 10), days: -3),
+            ],
+          ),
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 30.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: MyLeaveScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('--3일'), findsNothing);
+    expect(find.text('-3일'), findsOneWidget);
+    expect(find.text('+3일'), findsOneWidget);
+  });
 }
