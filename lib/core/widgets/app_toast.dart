@@ -37,10 +37,22 @@ class AppToast extends StatelessWidget {
   const AppToast({
     super.key,
     required this.message,
+    this.detail,
+    this.actionLabel,
+    this.onAction,
     this.kind = AppToastKind.negative,
   });
 
   final String message;
+
+  /// 둘째 줄 — 결과의 숫자를 덧붙일 때 쓴다
+  /// ('연차 3일을 사용해 10일 남았어요.'). null이면 한 줄짜리다
+  final String? detail;
+
+  /// 오른쪽 텍스트 버튼 ('보러가기'). [onAction]과 함께 줘야 그려진다
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
   final AppToastKind kind;
 
   @override
@@ -74,20 +86,75 @@ class AppToast extends StatelessWidget {
                   ],
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        message,
-                        style: AppTypography.body2NormalBold.copyWith(
-                          color: AppColors.staticWhite.withValues(
-                            alpha: AppOpacity.o88,
+                      // 두 줄이면 위아래 5를 둔다 (시안 Message 블록)
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: detail == null ? 0 : 5,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            message,
+                            style: AppTypography.body2NormalBold.copyWith(
+                              color: AppColors.staticWhite.withValues(
+                                alpha: AppOpacity.o88,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (detail != null)
+                            Text(
+                              detail!,
+                              style: AppTypography.label2Regular.copyWith(
+                                color: AppColors.staticWhite.withValues(
+                                  alpha: AppOpacity.o88,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
+                  if (actionLabel != null && onAction != null) ...[
+                    // 시안 간격 32 − 버튼 자체 좌우 여백 8
+                    const SizedBox(width: 24),
+                    _ToastAction(label: actionLabel!, onTap: onAction!),
+                  ],
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 토스트 오른쪽 텍스트 버튼 — 누르면 토스트를 닫고 [onTap]으로 넘어간다
+class _ToastAction extends StatelessWidget {
+  const _ToastAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // 눌러서 다른 화면으로 가는데 토스트가 남아 따라다니면 안 된다
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        // 시안 버튼 높이 32 = 글자 24 + 위아래 4
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Text(
+          label,
+          maxLines: 1,
+          style: AppTypography.body2NormalBold.copyWith(
+            color: AppColors.staticWhite,
           ),
         ),
       ),
@@ -128,21 +195,35 @@ class _StatusIcon extends StatelessWidget {
 /// 화면 하단(액션 영역 위)에 토스트를 띄운다.
 ///
 /// 같은 메시지가 연달아 쌓이지 않도록 떠 있던 토스트는 먼저 지운다.
+///
+/// [detail]을 주면 두 줄이 되고, [actionLabel]·[onAction]을 함께 주면
+/// 오른쪽에 텍스트 버튼이 붙는다. 버튼이 있으면 **읽고 누를 시간**이
+/// 필요하므로 조금 더 오래 띄운다.
 void showAppToast(
   BuildContext context,
   String message, {
+  String? detail,
+  String? actionLabel,
+  VoidCallback? onAction,
   AppToastKind kind = AppToastKind.negative,
 }) {
+  final hasAction = actionLabel != null && onAction != null;
   final messenger = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
-      content: AppToast(message: message, kind: kind),
+      content: AppToast(
+        message: message,
+        detail: detail,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        kind: kind,
+      ),
       backgroundColor: Colors.transparent,
       elevation: 0,
       behavior: SnackBarBehavior.floating,
       padding: EdgeInsets.zero,
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      duration: const Duration(seconds: 2),
+      duration: Duration(seconds: hasAction ? 4 : 2),
     ),
   );
 }

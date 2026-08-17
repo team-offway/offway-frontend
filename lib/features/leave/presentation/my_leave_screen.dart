@@ -10,6 +10,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../course/presentation/trip_outcome_prompt.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
@@ -23,12 +24,21 @@ class MyLeaveScreen extends ConsumerStatefulWidget {
   ConsumerState<MyLeaveScreen> createState() => _MyLeaveScreenState();
 }
 
-class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen> {
+class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
+    with TripOutcomePrompt {
   /// 펼쳐 둔 카드의 인덱스 — 한 번에 하나만 펼친다
   int? _expanded;
 
+  /// 이미 연차 화면이다 — '보러가기'가 제자리를 가리킨다
+  @override
+  bool get showsLeaveShortcut => false;
+
   @override
   Widget build(BuildContext context) {
+    // 시안 노트: 내 연차 화면에서도 "다녀오셨나요?" 모달을 띄운다.
+    // 홈에서 미뤘어도 연차를 보러 들어왔다면 물어볼 자리가 맞다
+    watchTripOutcomePrompt();
+
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
     final usagesAsync = ref.watch(leaveUsagesProvider);

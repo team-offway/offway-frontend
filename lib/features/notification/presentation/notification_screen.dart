@@ -3,46 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
-
-/// 알림 한 건.
-///
-/// [read]가 false면 아직 안 본 알림이라 옅은 하늘색 배경으로 구분한다.
-typedef AppNotification = ({
-  String title,
-  String body,
-  String timeLabel,
-  bool read,
-});
-
-/// TODO(server): 알림 API가 아직 없다 — 조회·읽음 처리·권한 등록이 모두 필요하다.
-/// 스펙이 나오면 이 mock을 리포지토리 호출로 바꾼다.
-final notificationsProvider = Provider.autoDispose<List<AppNotification>>((
-  ref,
-) {
-  return const [
-    (
-      title: '알림',
-      body: "오늘은 '정선 여행'을 떠나는 날이에요.",
-      timeLabel: '방금전',
-      read: false,
-    ),
-    (
-      title: '알림',
-      body: "'정선 여행' 다녀오셨나요?\n연차 차감을 확인해주세요.",
-      timeLabel: '방금전',
-      read: true,
-    ),
-    (title: '알림', body: "'정선 여행'까지 3일 남았어요.", timeLabel: '방금전', read: true),
-  ];
-});
-
-/// 안 읽은 알림이 하나라도 있는지 — 홈 종 아이콘의 배지가 이 값을 본다
-final hasUnreadNotificationsProvider = Provider<bool>(
-  (ref) => ref.watch(notificationsProvider).any((n) => !n.read),
-);
+import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../application/notification_provider.dart';
+import '../data/notification_repository.dart';
+import '../domain/app_notification.dart';
 
 /// 기기 알림 권한이 켜져 있는지.
 ///
@@ -57,7 +26,16 @@ class NotificationScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(notificationEnabledProvider);
-    final items = ref.watch(notificationsProvider);
+    final feed = ref.watch(notificationFeedProvider);
+
+    // 목록을 읽을 때마다 배지를 맞춘다 — 읽고 나왔는데 배지가 남아 있으면
+    // 눌러도 새 알림이 없어 사용자를 속인다
+    ref.listen(notificationFeedProvider, (_, next) {
+      final count = next.value?.unreadCount;
+      if (count != null) {
+        ref.read(hasUnreadNotificationsProvider.notifier).setUnreadCount(count);
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -68,9 +46,18 @@ class NotificationScreen extends ConsumerWidget {
             Expanded(
               child: !enabled
                   ? const _PermissionOff()
-                  : items.isEmpty
-                  ? const _EmptyNotifications()
-                  : _buildList(items),
+                  : switch (feed) {
+                      AsyncData(:final value)
+                          when value.notifications.isEmpty =>
+                        const _EmptyNotifications(),
+                      AsyncData(:final value) => _buildList(
+                        value.notifications,
+                      ),
+                      AsyncError() => AppErrorView(
+                        onRetry: () => ref.invalidate(notificationFeedProvider),
+                      ),
+                      _ => const Center(child: AppCircularLoading()),
+                    },
             ),
           ],
         ),
@@ -134,58 +121,99 @@ class NotificationScreen extends ConsumerWidget {
   }
 }
 
-/// 알림 한 줄 — 안 읽은 건 옅은 하늘색으로 깔린다
-class _NotificationCell extends StatelessWidget {
+/// 알림 한 줄 — 안 읽은 건 옅은 하늘색으로 깔린다.
+///
+/// 누르면 읽음으로 바꾸고 종류에 맞는 화면으로 보낸다.
+class _NotificationCell extends ConsumerWidget {
   const _NotificationCell({required this.item});
 
   final AppNotification item;
 
+  /// 알림을 눌렀을 때 — 읽음 처리하고 갈 곳으로 보낸다.
+  ///
+  /// **읽음 처리를 기다리지 않고 이동한다.** 서버가 느리다고 화면이 멈춰
+  /// 있으면 누른 보람이 없고, 실패해도 다음 조회에서 다시 안 읽음으로
+  /// 보일 뿐이라 잃는 게 없다.
+  Future<void> _onTap(BuildContext context, WidgetRef ref) async {
+    final destination = _destination;
+    if (destination != null) context.push(destination);
+
+    if (item.read) return;
+    try {
+      final unread = await ref
+          .read(notificationRepositoryProvider)
+          .markRead(item.id);
+      ref.read(hasUnreadNotificationsProvider.notifier).setUnreadCount(unread);
+      ref.invalidate(notificationFeedProvider);
+    } on ApiException {
+      // 읽음 표시가 안 남는 것뿐이다 — 알릴 만한 실패가 아니다.
+      // 비로그인은 여기서 403(COMMON-403)이 온다 — 서버가 쓰기에 JWT를
+      // 요구한다. 이동은 이미 했으므로 화면 흐름은 끊기지 않는다
+    }
+  }
+
+  /// 종류별로 갈 곳. 없으면 누르기만 하고 이동하지 않는다.
+  String? get _destination => switch (item.type) {
+    // 시안 흐름: 알림 → 내 연차. 그 화면이 "다녀오셨나요?" 모달을 띄운다
+    NotificationType.tripAfter => AppRoutes.myLeave,
+    // 내일 떠날 여행을 보러 간다. 코스가 지워졌으면 갈 곳이 없다
+    NotificationType.tripTomorrow =>
+      item.courseId == null
+          ? null
+          : AppRoutes.savedCoursePath(item.courseId.toString()),
+    NotificationType.unknown => null,
+  };
+
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: item.read ? AppColors.backgroundNormal : AppPalette.lightBlue95,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            // 아이콘이 첫 줄(라벨) 높이에 맞게 앉도록 살짝 내린다
-            padding: const EdgeInsets.only(top: 2),
-            child: SvgPicture.asset(
-              'assets/icons/ic_bell_fill.svg',
-              width: 16,
-              height: 16,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => _onTap(context, ref),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        color: item.read ? AppColors.backgroundNormal : AppPalette.lightBlue95,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              // 아이콘이 첫 줄(라벨) 높이에 맞게 앉도록 살짝 내린다
+              padding: const EdgeInsets.only(top: 2),
+              child: SvgPicture.asset(
+                'assets/icons/ic_bell_fill.svg',
+                width: 16,
+                height: 16,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: AppTypography.label1NormalMedium.copyWith(
-                    color: AppColors.labelAlternative,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: AppTypography.label1NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.body,
-                  style: AppTypography.body1NormalMedium.copyWith(
-                    color: AppColors.labelNeutral,
+                  const SizedBox(height: 4),
+                  Text(
+                    item.body,
+                    style: AppTypography.body1NormalMedium.copyWith(
+                      color: AppColors.labelNeutral,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            item.timeLabel,
-            style: AppTypography.label1NormalMedium.copyWith(
-              color: AppColors.labelAssistive,
+            const SizedBox(width: 8),
+            Text(
+              item.timeLabel(),
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelAssistive,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

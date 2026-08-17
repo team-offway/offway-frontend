@@ -15,6 +15,8 @@ import 'package:offway/features/course_wizard/data/region_recommend_repository.d
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
+import 'package:offway/features/notification/data/notification_repository.dart';
+import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
 import 'package:offway/features/region/data/region_list_repository.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
@@ -158,6 +160,20 @@ class _FakeCourseRepository extends CourseRepository {
   @override
   Future<void> deductLeave(int courseId) async {}
 
+  /// 물어볼 지난 여행은 없다 — 홈에 들어설 때마다 "다녀오셨나요?" 모달이
+  /// 뜨면 다른 테스트가 전부 그 모달에 가려 막힌다.
+  /// 모달 자체는 trip_outcome_dialog_test.dart가 따로 확인한다
+  @override
+  Future<({double? remainingDays, List<Map<String, dynamic>> trips})>
+  pendingTrips() async =>
+      (remainingDays: null, trips: const <Map<String, dynamic>>[]);
+
+  @override
+  Future<double?> answerTripOutcome(
+    int courseId, {
+    required bool visited,
+  }) async => null;
+
   @override
   Future<List<Map<String, dynamic>>> savedCourseCards({
     String scope = 'ALL',
@@ -191,6 +207,25 @@ class _FakeCourseRepository extends CourseRepository {
   Future<void> delete(String courseId) async {}
 }
 
+/// 알림은 비어 있다 — 홈이 배지를 그리려고 서버를 부르는데,
+/// 안 덮으면 그 요청 타이머가 테스트가 끝날 때까지 남는다.
+/// 알림 화면 자체는 notification_test.dart가 따로 확인한다
+class _FakeNotificationRepository extends NotificationRepository {
+  _FakeNotificationRepository() : super(Dio());
+
+  @override
+  Future<({List<AppNotification> notifications, int unreadCount})> fetch({
+    int page = 0,
+    int size = 20,
+  }) async => (notifications: const <AppNotification>[], unreadCount: 0);
+
+  @override
+  Future<int> markRead(int notificationId) async => 0;
+
+  @override
+  Future<int> markAllRead() async => 0;
+}
+
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
 /// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
 /// 계정 선택 창을 띄우지 않고 바로 성공을 돌려주는 구글 로그인.
@@ -211,6 +246,9 @@ class _FakeGoogleAuthService implements GoogleAuthService {
 
 final _serverOverrides = [
   googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
+  notificationRepositoryProvider.overrideWithValue(
+    _FakeNotificationRepository(),
+  ),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
   regionListRepositoryProvider.overrideWithValue(_FakeRegionListRepository()),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
@@ -45,6 +46,9 @@ void main() {
               ),
             ],
           ),
+          // 물어볼 지난 여행은 없다 — 안 덮으면 화면이 서버를 부르고,
+          // 그 요청 타이머가 테스트가 끝날 때까지 남는다
+          pendingTripProvider.overrideWith((ref) async => null),
           homeSnapshotProvider.overrideWith(
             (ref) async => const HomeSnapshot(
               user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
@@ -85,6 +89,9 @@ void main() {
               LeaveUsage(id: 2, usedOn: DateTime(2026, 8, 10), days: -3),
             ],
           ),
+          // 물어볼 지난 여행은 없다 — 안 덮으면 화면이 서버를 부르고,
+          // 그 요청 타이머가 테스트가 끝날 때까지 남는다
+          pendingTripProvider.overrideWith((ref) async => null),
           homeSnapshotProvider.overrideWith(
             (ref) async => const HomeSnapshot(
               user: {'nickname': '예빈', 'remainingLeaveDays': 30.0},
