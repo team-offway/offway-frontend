@@ -355,7 +355,11 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 }
 
-/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스
+/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스.
+///
+/// 시안 실측: 18×18, 반경 6. 끈 상태는 **속을 비워** 카드 배경이 그대로
+/// 비쳐야 한다 — 흰색으로 칠하면 코스 건의 하늘색 카드 위에서 흰 사각형이
+/// 도드라진다.
 class _SelectBox extends StatelessWidget {
   const _SelectBox({required this.checked});
 
@@ -364,22 +368,57 @@ class _SelectBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 22,
-      height: 22,
+      width: 18,
+      height: 18,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: checked ? AppColors.primaryNormal : AppColors.backgroundNormal,
+          color: checked ? AppColors.primaryNormal : null,
           borderRadius: BorderRadius.circular(6),
           border: checked
               ? null
-              : Border.all(color: AppColors.lineNormalNeutral),
+              : Border.all(color: AppColors.lineNormalNeutral, width: 1.5),
         ),
-        child: checked
-            ? Icon(Icons.check, size: 16, color: AppColors.staticWhite)
-            : null,
+        child: checked ? const Center(child: _CheckGlyph(size: 11)) : null,
       ),
     );
   }
+}
+
+/// 체크 표시. Material [Icons.check]는 시안보다 획이 얇고 꼬리가 길어
+/// 18px 박스 안에서 비뚤어 보이므로 직접 그린다.
+class _CheckGlyph extends StatelessWidget {
+  const _CheckGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(size: Size.square(size), painter: _CheckPainter());
+  }
+}
+
+class _CheckPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.08, h * 0.52)
+      ..lineTo(w * 0.38, h * 0.82)
+      ..lineTo(w * 0.94, h * 0.18);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.staticWhite
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.18
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CheckPainter oldDelegate) => false;
 }
 
 /// 내역 카드 한 장 — 코스 건은 펼치면 상세로 가는 버튼이 붙는다

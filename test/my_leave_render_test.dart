@@ -5,6 +5,7 @@ import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
+import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
 import 'package:offway/features/leave/presentation/my_leave_screen.dart';
 
 void main() {
@@ -98,5 +99,45 @@ void main() {
     expect(find.text('--3일'), findsNothing);
     expect(find.text('-3일'), findsOneWidget);
     expect(find.text('+3일'), findsOneWidget);
+  });
+
+  testWidgets('삭제 모드 체크박스는 18×18이고 끈 상태는 속이 비어 있다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              LeaveUsage(id: 1, usedOn: DateTime(2026, 8, 10), days: 2),
+              LeaveUsage(id: 2, usedOn: DateTime(2026, 8, 19), days: 1),
+            ],
+          ),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
+    );
+    await tester.pump();
+
+    // 더 보기 → 삭제 로 삭제 모드에 들어간다
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사용 내역 삭제'));
+    await tester.pumpAndSettle();
+
+    final boxes = find.byWidgetPredicate(
+      (w) => w is DecoratedBox && w.decoration is BoxDecoration,
+    );
+    final checkBoxes = <BoxDecoration>[];
+    for (final e in boxes.evaluate()) {
+      final size = e.size;
+      if (size != null && size.width == 18 && size.height == 18) {
+        checkBoxes.add((e.widget as DecoratedBox).decoration as BoxDecoration);
+      }
+    }
+    expect(checkBoxes, hasLength(2), reason: '카드마다 18×18 체크박스가 하나씩');
+    // 아무것도 안 고른 상태 — 칠하지 않아 하늘색 카드 배경이 그대로 비친다
+    for (final d in checkBoxes) {
+      expect(d.color, isNull);
+      expect(d.border, isNotNull);
+    }
   });
 }
