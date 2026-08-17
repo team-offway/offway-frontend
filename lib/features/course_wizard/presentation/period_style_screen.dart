@@ -212,27 +212,60 @@ class PeriodStyleScreen extends ConsumerWidget {
                   0.0,
                   _weekdayChipGap,
                 );
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (
-                      var day = DateTime.monday;
-                      day <= DateTime.sunday;
-                      day++
-                    )
-                      Padding(
-                        padding: EdgeInsets.only(
-                          left: day == DateTime.monday ? 0 : gap,
+                final step = _WeekdayChip.size + gap;
+                final rowWidth =
+                    _WeekdayChip.size * chipCount + gap * (chipCount - 1);
+                // 칩 한 줄의 실제 시작 x — 가운데 정렬된 만큼 왼쪽 여백이 생긴다
+                final rowLeft = (constraints.maxWidth - rowWidth) / 2;
+
+                return SizedBox(
+                  height: _WeekdayChip.size,
+                  child: Stack(
+                    children: [
+                      // 고른 범위를 하나로 이어 보이게 칩 사이까지 옅게 깐다.
+                      // 칩만 칠하면 3일을 골라도 따로 떨어진 날처럼 읽힌다
+                      if (!range.isEmpty && range.days > 1)
+                        Positioned(
+                          left: rowLeft + (range.start! - 1) * step,
+                          width: _WeekdayChip.size + (range.days - 1) * step,
+                          top: 0,
+                          bottom: 0,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: AppPalette.lightBlue70.withValues(
+                                alpha: 0.3,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                _WeekdayChip.radius,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: _WeekdayChip(
-                          weekday: day,
-                          selected: range.contains(day),
-                          enabled: range.canSelect(day),
-                          onTap: () =>
-                              setSheetState(() => range = range.toggle(day)),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (
+                            var day = DateTime.monday;
+                            day <= DateTime.sunday;
+                            day++
+                          )
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: day == DateTime.monday ? 0 : gap,
+                              ),
+                              child: _WeekdayChip(
+                                weekday: day,
+                                selected: range.contains(day),
+                                enabled: range.canSelect(day),
+                                onTap: () => setSheetState(
+                                  () => range = range.toggle(day),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
@@ -558,7 +591,7 @@ class _WeekdayChip extends StatelessWidget {
 
   /// 시안 실측 — 좁은 화면에서 간격을 계산할 때 쓴다
   static const size = 39.6;
-  static const _radius = 15.4;
+  static const radius = 15.4;
   static const _fontSize = 18.7;
 
   @override
@@ -570,7 +603,7 @@ class _WeekdayChip extends StatelessWidget {
         color: selected
             ? AppPalette.lightBlue70
             : AppColors.backgroundNormalAlternative,
-        borderRadius: BorderRadius.circular(_radius),
+        borderRadius: BorderRadius.circular(radius),
       ),
       alignment: Alignment.center,
       child: Text(
