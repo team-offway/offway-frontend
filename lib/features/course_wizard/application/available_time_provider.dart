@@ -31,6 +31,22 @@ final availableTimeProvider = FutureProvider.autoDispose<AvailableTime?>((
     }
     final style = draft.periodStyle;
     if (style == null) return null;
+
+    // 주말 포함은 사용자가 요일 범위를 직접 골랐다 — 그 요일을 날짜로 바꿔
+    // 날짜 모드로 보낸다. 기간스타일 모드의 weekendBridge는 금·토·일과
+    // 토·일·월 두 조합만 표현할 수 있어 목·금·토나 일·월·화를 담지 못한다
+    final weekend = draft.weekendPattern;
+    if (style == PeriodStyle.weekendCombo && weekend != null) {
+      final today = DateTime.now();
+      return await ref
+          .read(leaveRepositoryProvider)
+          .availableTime(
+            transport: transport,
+            startDate: weekend.firstStartDate(today),
+            endDate: weekend.lastDate(today),
+          );
+    }
+
     return await ref
         .read(leaveRepositoryProvider)
         .availableTime(
@@ -41,9 +57,6 @@ final availableTimeProvider = FutureProvider.autoDispose<AvailableTime?>((
             PeriodStyle.weekendCombo => 'WEEKEND',
             PeriodStyle.leaveOnly => 'CONNECTED',
           },
-          // 서버는 아직 금·토·일/토·일·월 두 경우만 받는다. 그 밖의 범위는
-          // 보낼 값이 없어 null이고, 계산이 비면 화면이 로컬 추정으로 떨어진다
-          weekendBridge: draft.weekendPattern?.weekendBridge,
           leaveDays: style == PeriodStyle.leaveOnly
               ? draft.leaveDaysToUse
               : null,

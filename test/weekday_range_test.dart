@@ -143,37 +143,43 @@ void main() {
     });
   });
 
-  group('서버 계약 매핑', () {
-    // 서버는 아직 금·토·일(FRIDAY)과 토·일·월(MONDAY) 두 경우만 받는다
-    test('금·토·일은 FRIDAY로 보낸다', () {
-      expect(
-        const WeekendDays(startWeekday: fri, days: 3).weekendBridge,
-        'FRIDAY',
-      );
+  group('서버로 보낼 날짜', () {
+    // 요일만으로는 서버가 어느 주를 말하는지 알 수 없다 — 날짜로 바꿔 보낸다.
+    // 기간스타일 모드의 weekendBridge는 금·토·일/토·일·월 두 조합만 담을 수
+    // 있어 목·금·토나 일·월·화를 표현하지 못한다
+    test('오늘 이후 가장 가까운 시작 요일을 찾는다', () {
+      // 2026-08-18 은 화요일
+      final today = DateTime(2026, 8, 18);
+      const days = WeekendDays(startWeekday: thu, days: 3);
+
+      expect(days.firstStartDate(today), DateTime(2026, 8, 20), reason: '목');
+      expect(days.lastDate(today), DateTime(2026, 8, 22), reason: '토');
     });
 
-    test('토·일·월은 MONDAY로 보낸다', () {
-      expect(
-        const WeekendDays(startWeekday: sat, days: 3).weekendBridge,
-        'MONDAY',
-      );
+    test('오늘이 그 요일이면 다음 주로 잡는다', () {
+      // 오늘 떠나라는 추천은 짐 쌀 시간이 없다
+      final tuesday = DateTime(2026, 8, 18);
+      const days = WeekendDays(startWeekday: tue, days: 2);
+
+      expect(days.firstStartDate(tuesday), DateTime(2026, 8, 25));
     });
 
-    test('그 밖의 범위는 보낼 값이 없다 — 로컬 추정으로 떨어진다', () {
-      // 서버 계약이 두 조합뿐이라 목·금·토와 일·월·화는 표현할 수 없다
-      expect(
-        const WeekendDays(startWeekday: thu, days: 3).weekendBridge,
-        isNull,
-      );
-      expect(
-        const WeekendDays(startWeekday: sun, days: 3).weekendBridge,
-        isNull,
-      );
-      // 2일짜리도 계약에 없다 (서버는 주말포함을 늘 2박3일로 본다)
-      expect(
-        const WeekendDays(startWeekday: fri, days: 2).weekendBridge,
-        isNull,
-      );
+    test('주를 넘어가는 범위도 날짜로는 이어진다', () {
+      // 일·월·화 — 요일은 감싸지만 날짜는 그냥 다음 날이다
+      final today = DateTime(2026, 8, 18); // 화
+      const days = WeekendDays(startWeekday: sun, days: 3);
+
+      expect(days.firstStartDate(today), DateTime(2026, 8, 23), reason: '일');
+      expect(days.lastDate(today), DateTime(2026, 8, 25), reason: '화');
+    });
+
+    test('월말을 넘어가도 날짜가 맞는다', () {
+      // 2026-08-30 은 일요일 — 3일이면 9월로 넘어간다
+      final today = DateTime(2026, 8, 26); // 수
+      const days = WeekendDays(startWeekday: sun, days: 3);
+
+      expect(days.firstStartDate(today), DateTime(2026, 8, 30));
+      expect(days.lastDate(today), DateTime(2026, 9, 1));
     });
 
     test('마지막 요일을 계산한다', () {

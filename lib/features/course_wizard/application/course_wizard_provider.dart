@@ -39,17 +39,23 @@ class WeekendDays {
   /// 마지막 요일
   int get endWeekday => startWeekday + days - 1;
 
-  /// 서버가 받는 `weekendBridge` 값.
+  /// [today] 이후 가장 가까운 [startWeekday]의 날짜.
   ///
-  /// 서버는 아직 **금·토·일(FRIDAY)과 토·일·월(MONDAY) 두 경우만** 받는다.
-  /// 그 밖의 범위는 보낼 값이 없어 null이고, 그때는 가용시간 계산을 건너뛰고
-  /// 로컬 추정으로 떨어진다.
-  /// TODO(server): 시작 요일·일수를 그대로 받는 계약이 생기면 이 매핑을 지운다
-  String? get weekendBridge {
-    if (days != 3) return null;
-    if (startWeekday == DateTime.friday) return 'FRIDAY';
-    if (startWeekday == DateTime.saturday) return 'MONDAY';
-    return null;
+  /// 오늘이 그 요일이어도 **다음 주**로 잡는다 — 오늘 떠나라는 추천은 짐 쌀
+  /// 시간이 없다.
+  DateTime firstStartDate(DateTime today) {
+    final delta = (startWeekday - today.weekday + 7) % 7;
+    return DateTime(
+      today.year,
+      today.month,
+      today.day + (delta == 0 ? 7 : delta),
+    );
+  }
+
+  /// 그 구간의 마지막 날
+  DateTime lastDate(DateTime today) {
+    final start = firstStartDate(today);
+    return DateTime(start.year, start.month, start.day + days - 1);
   }
 }
 
