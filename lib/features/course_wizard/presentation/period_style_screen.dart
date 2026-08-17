@@ -12,6 +12,7 @@ import '../../../core/widgets/app_inline_notice.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
+import '../domain/weekday_range.dart';
 
 /// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.
@@ -82,7 +83,7 @@ class PeriodStyleScreen extends ConsumerWidget {
                               ref
                                   .read(courseWizardProvider.notifier)
                                   .selectPeriodStyle(PeriodStyle.weekendCombo);
-                              _showWeekendPatternSheet(context, ref);
+                              _showWeekendDaysSheet(context, ref);
                             },
                           ),
                           const SizedBox(height: 12),
@@ -166,45 +167,57 @@ class PeriodStyleScreen extends ConsumerWidget {
     );
   }
 
-  /// 모달: 언제 하루 더 쉴까요? (금요일 / 월요일 하루를 붙인다)
-  void _showWeekendPatternSheet(BuildContext context, WidgetRef ref) {
+  /// 모달: 언제 떠날까요? (주말 포함 — 이어지는 요일 범위를 고른다)
+  ///
+  /// 예전에는 금·토·일 / 토·일·월 두 조합만 골랐다. 시안이 월~일에서 범위를
+  /// 직접 고르게 바뀌었다 — 사용자는 "조합"보다 "목·금·토"로 생각한다.
+  void _showWeekendDaysSheet(BuildContext context, WidgetRef ref) {
     showAppBottomSheet<void>(
       context,
       builder: (sheetContext) {
-        WeekendPattern? selected = ref
-            .read(courseWizardProvider)
-            .weekendPattern;
+        var range = const WeekdayRange.empty();
+
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
-            title: '언제 하루 더 쉴까요?',
-            subtitle: '주말은 자동으로 포함돼요.',
-            confirmEnabled: selected != null,
+            title: '언제 떠날까요?',
+            subtitle: '이어지는 최대 ${WeekdayRange.maxDays}일까지 선택할 수 있어요',
+            confirmEnabled: range.canConfirm,
             onConfirm: () {
               ref
                   .read(courseWizardProvider.notifier)
-                  .selectWeekendPattern(selected!);
+                  .selectWeekendDays(
+                    WeekendDays(startWeekday: range.start!, days: range.days),
+                  );
               Navigator.of(sheetContext).pop();
             },
+            footer: Padding(
+              // 시안: 안내문 위 24, 완료 버튼과 16
+              padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
+              child: Text(
+                '연속된 요일만 선택 가능해요',
+                textAlign: TextAlign.center,
+                style: AppTypography.label2Regular.copyWith(
+                  color: AppColors.labelNeutral,
+                ),
+              ),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _PatternChip(
-                  // 고르는 건 '어느 하루를 더 쉬는지'라 요일을 크게 보이고
-                  // 그 결과 생기는 연휴를 아래에 덧붙인다
-                  label: '금요일',
-                  caption: '금·토·일 연휴',
-                  selected: selected == WeekendPattern.friSatSun,
-                  onTap: () =>
-                      setSheetState(() => selected = WeekendPattern.friSatSun),
-                ),
-                const SizedBox(width: 16),
-                _PatternChip(
-                  label: '월요일',
-                  caption: '토·일·월 연휴',
-                  selected: selected == WeekendPattern.satSunMon,
-                  onTap: () =>
-                      setSheetState(() => selected = WeekendPattern.satSunMon),
-                ),
+                for (var day = DateTime.monday; day <= DateTime.sunday; day++)
+                  Padding(
+                    // 시안 실측: 칩 사이 13.2
+                    padding: EdgeInsets.only(
+                      left: day == DateTime.monday ? 0 : 13.2,
+                    ),
+                    child: _WeekdayChip(
+                      weekday: day,
+                      selected: range.contains(day),
+                      enabled: range.canSelect(day),
+                      onTap: () =>
+                          setSheetState(() => range = range.toggle(day)),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -505,56 +518,58 @@ class _StyleCard extends StatelessWidget {
   }
 }
 
-/// 요일 선택 칩 — 고른 요일과 그때 생기는 연휴를 함께 보여준다
-class _PatternChip extends StatelessWidget {
-  const _PatternChip({
-    required this.label,
-    required this.caption,
+/// 요일 칩 — 시안 실측 39.6×39.6, 반경 15.4.
+///
+/// 고를 수 없는 요일은 지우지 않고 흐리게 남긴다. 사라지면 한 줄이 흔들려
+/// 어느 요일을 보고 있었는지 잃는다.
+class _WeekdayChip extends StatelessWidget {
+  const _WeekdayChip({
+    required this.weekday,
     required this.selected,
+    required this.enabled,
     required this.onTap,
   });
 
-  final String label;
-  final String caption;
+  final int weekday;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
+
+  static const _labels = ['월', '화', '수', '목', '금', '토', '일'];
+
+  /// 시안 실측
+  static const _size = 39.6;
+  static const _radius = 15.4;
+  static const _fontSize = 18.7;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected
-        ? AppColors.primaryNormal
-        : AppColors.labelNormal;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-        decoration: BoxDecoration(
-          // 카드와 같은 규칙: 고르면 채움 대신 테두리
-          color: selected ? null : AppColors.fillNormal,
-          borderRadius: BorderRadius.circular(14),
-          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: AppTypography.headline2Bold.copyWith(color: foreground),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              caption,
-              style: AppTypography.caption1Medium.copyWith(
-                color: selected
-                    ? AppColors.primaryNormal
-                    : AppColors.labelAlternative,
-              ),
-            ),
-          ],
+    final chip = Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        color: selected
+            ? AppPalette.lightBlue70
+            : AppColors.backgroundNormalAlternative,
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        _labels[weekday - 1],
+        style: TextStyle(
+          fontSize: _fontSize,
+          fontWeight: FontWeight.w600,
+          height: 1.412,
+          color: selected ? AppPalette.offway99 : AppColors.labelAlternative,
         ),
       ),
+    );
+
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      // 시안: 못 고르는 요일은 30%로 흐리다
+      child: enabled ? chip : Opacity(opacity: 0.3, child: chip),
     );
   }
 }

@@ -23,13 +23,34 @@ enum PeriodStyle {
   leaveOnly,
 }
 
-/// 주말 포함 여행에서 하루 더 쉴 요일 조합
-enum WeekendPattern {
-  /// 금·토·일
-  friSatSun,
+/// 주말 포함 여행에서 고른 요일 범위.
+///
+/// 예전에는 금·토·일 / 토·일·월 두 조합만 골랐다. 시안이 월~일에서 이어지는
+/// 범위를 직접 고르게 바뀌어, 시작 요일과 일수로 담는다.
+class WeekendDays {
+  const WeekendDays({required this.startWeekday, required this.days});
 
-  /// 토·일·월
-  satSunMon,
+  /// 여행 시작 요일 (`DateTime.monday`~`DateTime.sunday`)
+  final int startWeekday;
+
+  /// 고른 날 수 (2~3)
+  final int days;
+
+  /// 마지막 요일
+  int get endWeekday => startWeekday + days - 1;
+
+  /// 서버가 받는 `weekendBridge` 값.
+  ///
+  /// 서버는 아직 **금·토·일(FRIDAY)과 토·일·월(MONDAY) 두 경우만** 받는다.
+  /// 그 밖의 범위는 보낼 값이 없어 null이고, 그때는 가용시간 계산을 건너뛰고
+  /// 로컬 추정으로 떨어진다.
+  /// TODO(server): 시작 요일·일수를 그대로 받는 계약이 생기면 이 매핑을 지운다
+  String? get weekendBridge {
+    if (days != 3) return null;
+    if (startWeekday == DateTime.friday) return 'FRIDAY';
+    if (startWeekday == DateTime.saturday) return 'MONDAY';
+    return null;
+  }
 }
 
 /// 이동수단(O-05)
@@ -61,7 +82,7 @@ class CourseWizardDraft {
 
   /// B 경로(기간스타일) 선택값
   final PeriodStyle? periodStyle;
-  final WeekendPattern? weekendPattern;
+  final WeekendDays? weekendPattern;
 
   /// 연차만 선택 시 사용할 연차일수 (1~3일)
   final int? leaveDaysToUse;
@@ -78,7 +99,7 @@ class CourseWizardDraft {
     }
     return switch (periodStyle) {
       PeriodStyle.dayTrip => 1,
-      PeriodStyle.weekendCombo => 3,
+      PeriodStyle.weekendCombo => weekendPattern?.days ?? 3,
       PeriodStyle.leaveOnly => leaveDaysToUse ?? 1,
       null => 1,
     };
@@ -93,10 +114,9 @@ class CourseWizardDraft {
   DateTime travelStartDate(DateTime today) {
     if (startDate != null) return startDate!;
     final targetWeekday = switch (periodStyle) {
-      PeriodStyle.weekendCombo
-          when weekendPattern == WeekendPattern.friSatSun =>
-        DateTime.friday,
-      PeriodStyle.weekendCombo => DateTime.saturday,
+      // 사용자가 고른 시작 요일을 그대로 쓴다 — 조합 두 개가 아니라 범위다
+      PeriodStyle.weekendCombo =>
+        weekendPattern?.startWeekday ?? DateTime.saturday,
       PeriodStyle.leaveOnly => DateTime.monday,
       _ => DateTime.saturday,
     };
@@ -120,7 +140,7 @@ class CourseWizardDraft {
   CourseWizardDraft copyWith({
     DatePathChoice? datePath,
     PeriodStyle? periodStyle,
-    WeekendPattern? weekendPattern,
+    WeekendDays? weekendPattern,
     int? leaveDaysToUse,
     TransportMode? transportMode,
     ScheduleDensity? scheduleDensity,
@@ -182,8 +202,8 @@ class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
     );
   }
 
-  void selectWeekendPattern(WeekendPattern pattern) {
-    state = state.copyWith(weekendPattern: pattern);
+  void selectWeekendDays(WeekendDays days) {
+    state = state.copyWith(weekendPattern: days);
   }
 
   void selectLeaveDays(int days) {

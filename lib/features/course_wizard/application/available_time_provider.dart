@@ -41,11 +41,9 @@ final availableTimeProvider = FutureProvider.autoDispose<AvailableTime?>((
             PeriodStyle.weekendCombo => 'WEEKEND',
             PeriodStyle.leaveOnly => 'CONNECTED',
           },
-          weekendBridge: switch (draft.weekendPattern) {
-            WeekendPattern.friSatSun => 'FRIDAY',
-            WeekendPattern.satSunMon => 'MONDAY',
-            null => null,
-          },
+          // 서버는 아직 금·토·일/토·일·월 두 경우만 받는다. 그 밖의 범위는
+          // 보낼 값이 없어 null이고, 계산이 비면 화면이 로컬 추정으로 떨어진다
+          weekendBridge: draft.weekendPattern?.weekendBridge,
           leaveDays: style == PeriodStyle.leaveOnly
               ? draft.leaveDaysToUse
               : null,
