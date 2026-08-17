@@ -8,6 +8,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/network/api_envelope.dart';
@@ -244,44 +245,13 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 
   Future<void> _confirmDelete(List<LeaveUsage> usages) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.backgroundElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '사용 내역을 삭제할까요?',
-          style: AppTypography.headline1Bold.copyWith(
-            color: AppColors.labelNormal,
-          ),
-        ),
-        content: Text(
-          '삭제하면 차감된 연차가 복구돼요.',
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              '취소',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.labelNeutral,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              '삭제하기',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.primaryNormal,
-              ),
-            ),
-          ),
-        ],
-      ),
+    // 회원탈퇴·로그아웃과 같은 DS 모달을 쓴다. Material AlertDialog는 폭·여백·
+    // 버튼 배치가 시안과 달라 이 화면만 다르게 보였다
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: '사용 내역을 삭제할까요?',
+      message: '삭제하면 차감된 연차가 복구돼요.',
+      confirmLabel: '삭제하기',
     );
     if (!mounted || confirmed != true) return;
 

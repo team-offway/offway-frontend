@@ -6,6 +6,7 @@ import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/trip_constants.dart';
@@ -536,44 +537,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.backgroundElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '코스를 삭제할까요?',
-          style: AppTypography.headline1Bold.copyWith(
-            color: AppColors.labelNormal,
-          ),
-        ),
-        content: Text(
-          '삭제한 코스는 다시 볼 수 없어요.',
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              '취소',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.labelNeutral,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              '삭제하기',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.primaryNormal,
-              ),
-            ),
-          ),
-        ],
-      ),
+    // 회원탈퇴·연차 내역 삭제와 같은 DS 모달을 쓴다
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: '코스를 삭제할까요?',
+      message: '삭제한 코스는 다시 볼 수 없어요.',
+      confirmLabel: '삭제하기',
     );
     if (confirmed != true || !mounted) return;
     try {

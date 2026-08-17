@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
@@ -133,6 +134,51 @@ void main() {
 
     // 닫기는 DS 에셋이어야 한다 — Material Icons.close가 남아 있으면 안 된다
     expect(find.byIcon(Icons.close), findsNothing);
+  });
+
+  testWidgets('삭제 확인은 공통 DS 모달로 뜬다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              LeaveUsage(id: 1, usedOn: DateTime(2026, 8, 10), days: 2),
+            ],
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const LeaveUsagesScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사용 내역 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byType(Checkbox).evaluate().isEmpty
+          ? find.text('2026.08.10(월)')
+          : find.byType(Checkbox).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '삭제하기'));
+    await tester.pumpAndSettle();
+
+    // Material AlertDialog로 되돌아가면 폭·여백이 시안과 달라진다
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('사용 내역을 삭제할까요?'), findsOneWidget);
+    final card = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(Dialog),
+            matching: find.byType(ConstrainedBox),
+          )
+          .first,
+    );
+    expect(card.width, 320);
   });
 
   testWidgets('삭제 모드 체크박스는 18×18이고 끈 상태는 속이 비어 있다', (tester) async {

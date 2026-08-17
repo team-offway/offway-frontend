@@ -353,7 +353,10 @@ void main() {
     expect(find.text('사용 내역을 삭제할까요?'), findsOneWidget);
     expect(find.text('삭제하면 차감된 연차가 복구돼요.'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, '삭제하기'));
+    // 하단 CTA도 같은 글자라 모달 안의 것으로 좁힌다
+    await tester.tap(
+      find.descendant(of: find.byType(Dialog), matching: find.text('삭제하기')),
+    );
     await tester.pump();
     await tester.pump();
 
