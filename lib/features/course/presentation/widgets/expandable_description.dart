@@ -15,10 +15,19 @@ class ExpandableDescription extends StatefulWidget {
     super.key,
     required this.text,
     this.maxLines = 3,
+    this.style,
+    this.semanticsLabel,
   });
 
   final String text;
   final int maxLines;
+
+  /// 본문 서체. 안 주면 장소 상세와 같은 스타일로 그린다
+  final TextStyle? style;
+
+  /// 펼침 버튼의 접근성 라벨 — 한 화면에 여럿이면 무엇을 펼치는지
+  /// 구별되어야 한다 ('지역 소개' → '지역 소개 더 보기')
+  final String? semanticsLabel;
 
   @override
   State<ExpandableDescription> createState() => _ExpandableDescriptionState();
@@ -29,9 +38,11 @@ class _ExpandableDescriptionState extends State<ExpandableDescription> {
 
   @override
   Widget build(BuildContext context) {
-    final style = AppTypography.label1NormalRegular.copyWith(
-      color: AppColors.labelNeutral,
-    );
+    final style =
+        widget.style ??
+        AppTypography.label1NormalRegular.copyWith(
+          color: AppColors.labelNeutral,
+        );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -51,11 +62,12 @@ class _ExpandableDescriptionState extends State<ExpandableDescription> {
               const SizedBox(height: 12),
               Center(
                 child: GestureDetector(
+                  key: const Key('expandable-description-toggle'),
                   onTap: () => setState(() => _expanded = !_expanded),
                   behavior: HitTestBehavior.opaque,
                   child: Semantics(
                     button: true,
-                    label: _expanded ? '접기' : '더 보기',
+                    label: _label,
                     child: Icon(
                       _expanded
                           ? Icons.keyboard_arrow_up
@@ -71,6 +83,13 @@ class _ExpandableDescriptionState extends State<ExpandableDescription> {
         );
       },
     );
+  }
+
+  /// 펼침 버튼의 접근성 라벨 — 무엇을 펼치는지 이름이 있으면 앞에 붙인다
+  String get _label {
+    final action = _expanded ? '접기' : '더 보기';
+    final subject = widget.semanticsLabel;
+    return subject == null ? action : '$subject $action';
   }
 
   /// 주어진 폭에서 [widget.maxLines]줄을 넘기는지
