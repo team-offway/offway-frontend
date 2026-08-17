@@ -97,7 +97,7 @@ void main() {
     testWidgets('쉐브론을 누르면 펼쳐진다', (tester) async {
       await pump(tester);
 
-      await tester.tap(find.byKey(const Key('region-story-toggle')));
+      await tester.tap(find.byKey(const Key('expandable-description-toggle')));
       await tester.pumpAndSettle();
 
       expect(storyText(tester).maxLines, isNull);
@@ -106,9 +106,9 @@ void main() {
     testWidgets('펼친 뒤 다시 누르면 접힌다', (tester) async {
       await pump(tester);
 
-      await tester.tap(find.byKey(const Key('region-story-toggle')));
+      await tester.tap(find.byKey(const Key('expandable-description-toggle')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('region-story-toggle')));
+      await tester.tap(find.byKey(const Key('expandable-description-toggle')));
       await tester.pumpAndSettle();
 
       expect(storyText(tester).maxLines, 3);
@@ -118,7 +118,10 @@ void main() {
       // 눌러도 변화가 없는 버튼은 없느니만 못하다
       await pump(tester, story: '삼탄아트마인이 있는 고장.');
 
-      expect(find.byKey(const Key('region-story-toggle')), findsNothing);
+      expect(
+        find.byKey(const Key('expandable-description-toggle')),
+        findsNothing,
+      );
     });
   });
 
