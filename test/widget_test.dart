@@ -736,7 +736,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('더보기'));
+    // 시안에서 '더보기' 글자가 빠지고 쉐브론만 남았다 — 라벨로 찾는다
+    await tester.tap(find.byKey(const Key('home-region-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.runAsync(

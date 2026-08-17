@@ -48,6 +48,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const _minLeavePicks = 3;
   static const _maxLeavePicks = 7;
 
+  /// 지역 카드 아래에서 '이번 연차엔' 제목까지.
+  ///
+  /// 시안은 혜택 뱃지 글자 아래로 42다. 뱃지에 자체 아래 여백 3이 있어
+  /// 그만큼 덜 준다
+  static const _sectionGap = 39.0;
+
   /// 고른 칩 `{key, label}` — null이면 '전체'
   Map<String, dynamic>? _selected;
 
@@ -80,12 +86,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildLeaveCard(user),
             ),
-            const SizedBox(height: 8),
+            // 시안 실측: 연차 카드~히어로 10
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildHeroCard(context, user),
             ),
-            const SizedBox(height: 28),
+            // 시안 실측: 히어로~섹션 제목 42
+            const SizedBox(height: 42),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -97,24 +105,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
-                    onTap: () => context.push(AppRoutes.regionList),
-                    child: Text(
-                      '더보기',
-                      style: AppTypography.headline2Regular.copyWith(
-                        color: AppColors.labelAlternative,
+                  // 시안에서 '더보기' 글자는 숨겨지고 쉐브론만 남았다
+                  Semantics(
+                    button: true,
+                    label: '추천 여행지 더 보기',
+                    child: GestureDetector(
+                      key: const Key('home-region-more'),
+                      onTap: () => context.push(AppRoutes.regionList),
+                      behavior: HitTestBehavior.opaque,
+                      child: SvgPicture.asset(
+                        'assets/icons/ic_chevron_right.svg',
+                        // DS 쉐브론(Tight)은 12×24 비율이다
+                        width: 12,
+                        height: 24,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.labelAlternative,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // 가이드: 섹션 제목~칩 34, 칩~카드 20
-            const SizedBox(height: 34),
+            // 시안 실측: 제목~칩 16, 칩~카드 16
+            const SizedBox(height: 16),
             _buildCategoryRow(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildRegionCards(regions),
-            const SizedBox(height: 40),
+            const SizedBox(height: _sectionGap),
             _buildLeavePicks(regions),
           ],
         ),
@@ -384,11 +403,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildRegionCards(AsyncValue<List<Map<String, dynamic>>> regions) {
-    return SizedBox(
-      height: 230,
-      child: regions.when(
-        // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다 (O-03 스켈레톤)
-        loading: () => ListView.separated(
+    // 로딩·에러·빈 상태는 자리만 잡아두면 되므로 높이를 고정한다.
+    // 카드가 들어오면 높이를 카드에 맡긴다 — 고정하면 카드 내용보다 커져
+    // 뱃지 아래에 빈 영역이 남고 다음 섹션이 그만큼 밀려 내려간다
+    final placeholderHeight = RegionCard.boxedHeightFor(context);
+
+    return regions.when(
+      // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다 (O-03 스켈레톤)
+      loading: () => SizedBox(
+        height: placeholderHeight,
+        child: ListView.separated(
           scrollDirection: Axis.horizontal,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -396,8 +420,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           separatorBuilder: (_, _) => const SizedBox(width: 20),
           itemBuilder: (_, _) => const RegionCardSkeleton(),
         ),
-        // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
-        error: (e, _) => Center(
+      ),
+      // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
+      error: (e, _) => SizedBox(
+        height: placeholderHeight,
+        child: Center(
           child: Text(
             e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
             textAlign: TextAlign.center,
@@ -406,27 +433,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-        data: (all) {
-          final list = _filter(all);
-          if (list.isEmpty) {
-            return Center(
+      ),
+      data: (all) {
+        final list = _filter(all);
+        if (list.isEmpty) {
+          return SizedBox(
+            height: placeholderHeight,
+            child: Center(
               child: Text(
                 '해당 카테고리의 여행지가 아직 없어요',
                 style: AppTypography.label1NormalMedium.copyWith(
                   color: AppColors.labelAlternative,
                 ),
               ),
-            );
-          }
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 20),
-            itemBuilder: (context, i) => RegionCard(region: list[i]),
+            ),
           );
-        },
-      ),
+        }
+        // Row로 감싸 카드가 스스로 높이를 정하게 한다. 가로 ListView는
+        // 부모가 높이를 정해줘야 해서 여유분이 빈 영역으로 남는다
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < list.length; i++) ...[
+                if (i > 0) const SizedBox(width: 20),
+                RegionCard(region: list[i]),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
