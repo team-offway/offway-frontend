@@ -8,7 +8,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
-import '../../notification/presentation/notification_screen.dart'
+import '../../course/presentation/trip_outcome_prompt.dart';
+import '../../notification/application/notification_provider.dart'
     show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/category_chip.dart';
 import '../../region/presentation/widgets/leave_pick_card.dart';
@@ -40,7 +41,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with TripOutcomePrompt {
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
 
@@ -71,6 +73,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(homeUserProvider);
     final regions = ref.watch(homeRegionsProvider);
+
+    // 시안 노트: 여행 종료 D+1 첫 홈 진입시 "다녀오셨나요?" 모달
+    watchTripOutcomePrompt();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
