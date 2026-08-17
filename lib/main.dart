@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import 'app/app.dart';
+import 'core/network/dio_client.dart';
+import 'features/auth/data/auth_repository.dart';
 import 'core/config/app_config.dart';
 
 Future<void> main() async {
@@ -24,5 +26,16 @@ Future<void> main() async {
     clientId: AppConfig.naverMapClientId,
     onAuthFailed: (e) => debugPrint('네이버 지도 인증 실패: $e'),
   );
-  runApp(const ProviderScope(child: OffwayApp()));
+  runApp(
+    ProviderScope(
+      // 401을 만난 요청이 토큰을 되살릴 수 있게 연결한다. core가 인증 기능을
+      // 직접 참조하면 순환 import가 되므로 여기서 이어 붙인다
+      overrides: [
+        tokenRefresherProvider.overrideWith(
+          (ref) => ref.watch(authTokenRefresherProvider),
+        ),
+      ],
+      child: const OffwayApp(),
+    ),
+  );
 }
