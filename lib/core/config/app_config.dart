@@ -34,7 +34,9 @@ abstract final class AppConfig {
   /// 코스 사진 대신 고정 이미지를 쓴다 — TourAPI 사진은 죽은 URL이 섞여 있어
   /// 카드가 회색으로 뜨는 경우가 있고, 카드 모양이 매번 달라진다.
   /// 카카오는 URL만 받으므로 앱 에셋이 아니라 웹에 올린 것을 가리킨다.
-  static String get shareCardImageUrl => '$_webBase/assets/share-card.png';
+  /// 파일명에 버전을 붙인다 — 카카오톡이 URL 기준으로 이미지를 캐싱해,
+  /// 같은 이름으로 덮어쓰면 한동안 옛 그림이 뜬다
+  static String get shareCardImageUrl => '$_webBase/assets/share-card-v2.png';
 
   static String get _webBase => shareBaseUrl.replaceAll(RegExp(r'/+$'), '');
 
