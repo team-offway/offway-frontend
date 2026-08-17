@@ -232,6 +232,36 @@ void main() {
     expect(done.onPressed, isNull, reason: '날짜를 안 골랐으면 잠겨 있어야 한다');
   });
 
+  testWidgets('연차 사용일 선택: 하루를 한 번만 눌러도 선택 완료가 열린다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          // 차감 일수 계산이 끝나야 버튼이 열린다 — 대역으로 즉시 끝내고
+          // 화면이 로컬 근사로 폴백하게 한다
+          leaveRepositoryProvider.overrideWithValue(
+            _NoAvailableTimeRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveDatePickerScreen()),
+      ),
+    );
+    await tester.pump();
+
+    // 여행이 아니라 연차 쓴 날이라 '가는날/오는날' 라벨은 붙지 않는다
+    expect(find.text('가는날'), findsNothing);
+    expect(find.text('오는날'), findsNothing);
+
+    // 오늘 이후 아무 날이나 한 번 누르면 하루짜리 범위가 완성된다 —
+    // 두 번 눌러야 열리면 하루만 쓰는 사람은 버튼이 잠긴 이유를 알 수 없다
+    final today = DateTime.now();
+    await tester.tap(find.text('${today.day}').first);
+    await tester.pumpAndSettle();
+
+    final done = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(done.onPressed, isNotNull, reason: '한 번 눌렀으면 열려 있어야 한다');
+    expect(find.text('가는날'), findsNothing);
+  });
+
   testWidgets('내역이 없으면 빈 상태 안내가 뜬다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

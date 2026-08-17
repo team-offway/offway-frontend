@@ -55,16 +55,23 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
 
   bool get _hasRange => _start != null && _end != null;
 
-  /// 캘린더 탭 규칙 — 위저드와 같다.
-  /// 범위가 완성된 상태에서 다시 누르면 그 날짜로 새로 시작한다.
+  /// 캘린더 탭 규칙.
+  ///
+  /// 하루만 쓰는 경우가 가장 흔하므로 **첫 탭에 하루짜리 범위가 완성된다** —
+  /// 여행 위저드처럼 두 번 눌러야 열리면, 하루를 고른 사람은 버튼이 잠긴
+  /// 이유를 알 수 없다. 이어서 다른 날을 누르면 그 날까지 범위가 늘어난다.
   void _select(DateTime day) {
     setState(() {
       final start = _start;
-      if (start == null || _end != null) {
+      final end = _end;
+      // 아직 아무것도 없거나, 이미 여러 날을 고른 뒤라면 그 날 하루로 새로 시작
+      if (start == null || (end != null && end != start)) {
         _start = day;
-        _end = null;
-      } else if (day.isBefore(start)) {
-        // 가는날보다 앞을 누르면 그 날이 새 시작이 된다
+        _end = day;
+        return;
+      }
+      // 하루가 골라진 상태 — 다른 날을 누르면 그 사이가 범위가 된다
+      if (day.isBefore(start)) {
         _start = day;
       } else {
         _end = day;
@@ -97,6 +104,9 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
                   icon: Icons.close,
                   onTap: () => Navigator.of(context).pop(),
                   semanticLabel: '닫기',
+                  // 시안 실측 #858588 = Label/Alternative.
+                  // 기본값(Label/Normal)은 거의 검정이라 시안보다 진하다
+                  color: AppColors.labelAlternative,
                 ),
               ),
             ),
@@ -129,6 +139,8 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
                 onSelect: _select,
                 // 연차는 여행과 달리 며칠이든 등록할 수 있다
                 maxSpanDays: null,
+                // 여행이 아니라 연차 쓴 날이라 '가는날/오는날'이 맞지 않는다
+                showTripLabels: false,
               ),
             ),
             _buildActionArea(consumed, calculating),
