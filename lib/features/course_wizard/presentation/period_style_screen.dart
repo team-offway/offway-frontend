@@ -12,6 +12,7 @@ import '../../../core/widgets/app_inline_notice.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
+import '../domain/weekday_range.dart';
 
 /// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.
@@ -82,7 +83,7 @@ class PeriodStyleScreen extends ConsumerWidget {
                               ref
                                   .read(courseWizardProvider.notifier)
                                   .selectPeriodStyle(PeriodStyle.weekendCombo);
-                              _showWeekendPatternSheet(context, ref);
+                              _showWeekendDaysSheet(context, ref);
                             },
                           ),
                           const SizedBox(height: 12),
@@ -166,46 +167,115 @@ class PeriodStyleScreen extends ConsumerWidget {
     );
   }
 
-  /// 모달: 언제 하루 더 쉴까요? (금요일 / 월요일 하루를 붙인다)
-  void _showWeekendPatternSheet(BuildContext context, WidgetRef ref) {
+  /// 모달: 언제 떠날까요? (주말 포함 — 이어지는 요일 범위를 고른다)
+  ///
+  /// 예전에는 금·토·일 / 토·일·월 두 조합만 골랐다. 시안이 월~일에서 범위를
+  /// 직접 고르게 바뀌었다 — 사용자는 "조합"보다 "목·금·토"로 생각한다.
+  void _showWeekendDaysSheet(BuildContext context, WidgetRef ref) {
     showAppBottomSheet<void>(
       context,
       builder: (sheetContext) {
-        WeekendPattern? selected = ref
-            .read(courseWizardProvider)
-            .weekendPattern;
+        var range = const WeekdayRange.empty();
+
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
-            title: '언제 하루 더 쉴까요?',
-            subtitle: '주말은 자동으로 포함돼요.',
-            confirmEnabled: selected != null,
+            title: '언제 떠날까요?',
+            subtitle: '이어지는 최대 ${WeekdayRange.maxDays}일까지 선택할 수 있어요',
+            confirmEnabled: range.canConfirm,
             onConfirm: () {
               ref
                   .read(courseWizardProvider.notifier)
-                  .selectWeekendPattern(selected!);
+                  .selectWeekendDays(
+                    WeekendDays(startWeekday: range.start!, days: range.days),
+                  );
               Navigator.of(sheetContext).pop();
             },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _PatternChip(
-                  // 고르는 건 '어느 하루를 더 쉬는지'라 요일을 크게 보이고
-                  // 그 결과 생기는 연휴를 아래에 덧붙인다
-                  label: '금요일',
-                  caption: '금·토·일 연휴',
-                  selected: selected == WeekendPattern.friSatSun,
-                  onTap: () =>
-                      setSheetState(() => selected = WeekendPattern.friSatSun),
+            footer: Padding(
+              // 시안: 안내문 위 24, 완료 버튼과 16
+              padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
+              child: Text(
+                // 왜 완료가 잠겼는지 알려준다. 주말이 빠진 경우가 가장 헷갈린다
+                // — 목·금처럼 이어 골랐는데도 버튼이 흐린 이유가 안 보인다
+                range.days >= WeekdayRange.minDays && !range.includesWeekend
+                    ? '토요일이나 일요일이 하루는 포함돼야 해요'
+                    : '연속된 요일만 선택 가능해요',
+                textAlign: TextAlign.center,
+                style: AppTypography.label2Regular.copyWith(
+                  color: AppColors.labelNeutral,
                 ),
-                const SizedBox(width: 16),
-                _PatternChip(
-                  label: '월요일',
-                  caption: '토·일·월 연휴',
-                  selected: selected == WeekendPattern.satSunMon,
-                  onTap: () =>
-                      setSheetState(() => selected = WeekendPattern.satSunMon),
-                ),
-              ],
+              ),
+            ),
+            // 시안 간격(13.2)은 402pt 기준이라 iPhone 12(390pt)에서 6.4 넘친다.
+            // 칩은 탭 대상이라 크기를 지키고, 좁은 화면에서는 간격만 좁힌다
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const chipCount = 7;
+                final free =
+                    constraints.maxWidth - _WeekdayChip.size * chipCount;
+                final gap = (free / (chipCount - 1)).clamp(
+                  0.0,
+                  _weekdayChipGap,
+                );
+                final step = _WeekdayChip.size + gap;
+                final rowWidth =
+                    _WeekdayChip.size * chipCount + gap * (chipCount - 1);
+                // 칩 한 줄의 실제 시작 x — 가운데 정렬된 만큼 왼쪽 여백이 생긴다
+                final rowLeft = (constraints.maxWidth - rowWidth) / 2;
+
+                return SizedBox(
+                  height: _WeekdayChip.size,
+                  child: Stack(
+                    children: [
+                      // 고른 범위를 하나로 이어 보이게 칩 사이까지 옅게 깐다.
+                      // 칩만 칠하면 3일을 골라도 따로 떨어진 날처럼 읽힌다.
+                      //
+                      // 주를 넘어가면(일·월·화) 한 줄에서는 양 끝으로 갈라지므로
+                      // 조각을 나눠 그린다 — 한 덩어리로 그리면 줄 밖으로 삐져
+                      // 나가고 월·화 위에는 깔리지 않는다
+                      for (final piece in _rangePieces(range))
+                        Positioned(
+                          left: rowLeft + (piece.from - 1) * step,
+                          width: _WeekdayChip.size + (piece.length - 1) * step,
+                          top: 0,
+                          bottom: 0,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: AppPalette.lightBlue70.withValues(
+                                alpha: 0.3,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                _WeekdayChip.radius,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (
+                            var day = DateTime.monday;
+                            day <= DateTime.sunday;
+                            day++
+                          )
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: day == DateTime.monday ? 0 : gap,
+                              ),
+                              child: _WeekdayChip(
+                                weekday: day,
+                                selected: range.contains(day),
+                                enabled: range.canSelect(day),
+                                onTap: () => setSheetState(
+                                  () => range = range.toggle(day),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -505,56 +575,81 @@ class _StyleCard extends StatelessWidget {
   }
 }
 
-/// 요일 선택 칩 — 고른 요일과 그때 생기는 연휴를 함께 보여준다
-class _PatternChip extends StatelessWidget {
-  const _PatternChip({
-    required this.label,
-    required this.caption,
+/// 요일 한 줄에 띠를 그릴 조각 — `from`(1=월) 에서 `length`칸
+typedef _RangePiece = ({int from, int length});
+
+/// 고른 범위를 한 줄에 그릴 조각으로 나눈다.
+///
+/// 주를 넘어가지 않으면 한 조각이다. 넘어가면(일·월·화) 줄에서 양 끝으로
+/// 갈라지므로 두 조각이 된다 — 일요일까지, 그리고 월요일부터.
+///
+/// 하루만 고른 상태는 빈 목록이다. 칩 하나에 띠를 겹치면 테두리만 번져 보인다.
+List<_RangePiece> _rangePieces(WeekdayRange range) {
+  final start = range.start;
+  if (start == null || range.days < 2) return const [];
+  final overflow = start + range.days - 1 - DateTime.sunday;
+  if (overflow <= 0) return [(from: start, length: range.days)];
+  return [
+    (from: start, length: DateTime.sunday - start + 1),
+    (from: DateTime.monday, length: overflow),
+  ];
+}
+
+/// 요일 칩 사이 간격 — 시안 실측. 화면이 좁으면 이 값보다 좁아진다
+const _weekdayChipGap = 13.2;
+
+/// 요일 칩 — 시안 실측 39.6×39.6, 반경 15.4.
+///
+/// 고를 수 없는 요일은 지우지 않고 흐리게 남긴다. 사라지면 한 줄이 흔들려
+/// 어느 요일을 보고 있었는지 잃는다.
+class _WeekdayChip extends StatelessWidget {
+  const _WeekdayChip({
+    required this.weekday,
     required this.selected,
+    required this.enabled,
     required this.onTap,
   });
 
-  final String label;
-  final String caption;
+  final int weekday;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
+
+  static const _labels = ['월', '화', '수', '목', '금', '토', '일'];
+
+  /// 시안 실측 — 좁은 화면에서 간격을 계산할 때 쓴다
+  static const size = 39.6;
+  static const radius = 15.4;
+  static const _fontSize = 18.7;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected
-        ? AppColors.primaryNormal
-        : AppColors.labelNormal;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-        decoration: BoxDecoration(
-          // 카드와 같은 규칙: 고르면 채움 대신 테두리
-          color: selected ? null : AppColors.fillNormal,
-          borderRadius: BorderRadius.circular(14),
-          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: AppTypography.headline2Bold.copyWith(color: foreground),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              caption,
-              style: AppTypography.caption1Medium.copyWith(
-                color: selected
-                    ? AppColors.primaryNormal
-                    : AppColors.labelAlternative,
-              ),
-            ),
-          ],
+    final chip = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: selected
+            ? AppPalette.lightBlue70
+            : AppColors.backgroundNormalAlternative,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        _labels[weekday - 1],
+        style: TextStyle(
+          fontSize: _fontSize,
+          fontWeight: FontWeight.w600,
+          height: 1.412,
+          color: selected ? AppPalette.offway99 : AppColors.labelAlternative,
         ),
       ),
+    );
+
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      // 시안: 못 고르는 요일은 30%로 흐리다
+      child: enabled ? chip : Opacity(opacity: 0.3, child: chip),
     );
   }
 }
