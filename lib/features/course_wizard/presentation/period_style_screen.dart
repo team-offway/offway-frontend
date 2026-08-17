@@ -201,24 +201,40 @@ class PeriodStyleScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var day = DateTime.monday; day <= DateTime.sunday; day++)
-                  Padding(
-                    // 시안 실측: 칩 사이 13.2
-                    padding: EdgeInsets.only(
-                      left: day == DateTime.monday ? 0 : 13.2,
-                    ),
-                    child: _WeekdayChip(
-                      weekday: day,
-                      selected: range.contains(day),
-                      enabled: range.canSelect(day),
-                      onTap: () =>
-                          setSheetState(() => range = range.toggle(day)),
-                    ),
-                  ),
-              ],
+            // 시안 간격(13.2)은 402pt 기준이라 iPhone 12(390pt)에서 6.4 넘친다.
+            // 칩은 탭 대상이라 크기를 지키고, 좁은 화면에서는 간격만 좁힌다
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const chipCount = 7;
+                final free =
+                    constraints.maxWidth - _WeekdayChip.size * chipCount;
+                final gap = (free / (chipCount - 1)).clamp(
+                  0.0,
+                  _weekdayChipGap,
+                );
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (
+                      var day = DateTime.monday;
+                      day <= DateTime.sunday;
+                      day++
+                    )
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: day == DateTime.monday ? 0 : gap,
+                        ),
+                        child: _WeekdayChip(
+                          weekday: day,
+                          selected: range.contains(day),
+                          enabled: range.canSelect(day),
+                          onTap: () =>
+                              setSheetState(() => range = range.toggle(day)),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -518,6 +534,9 @@ class _StyleCard extends StatelessWidget {
   }
 }
 
+/// 요일 칩 사이 간격 — 시안 실측. 화면이 좁으면 이 값보다 좁아진다
+const _weekdayChipGap = 13.2;
+
 /// 요일 칩 — 시안 실측 39.6×39.6, 반경 15.4.
 ///
 /// 고를 수 없는 요일은 지우지 않고 흐리게 남긴다. 사라지면 한 줄이 흔들려
@@ -537,16 +556,16 @@ class _WeekdayChip extends StatelessWidget {
 
   static const _labels = ['월', '화', '수', '목', '금', '토', '일'];
 
-  /// 시안 실측
-  static const _size = 39.6;
+  /// 시안 실측 — 좁은 화면에서 간격을 계산할 때 쓴다
+  static const size = 39.6;
   static const _radius = 15.4;
   static const _fontSize = 18.7;
 
   @override
   Widget build(BuildContext context) {
     final chip = Container(
-      width: _size,
-      height: _size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: selected
             ? AppPalette.lightBlue70
