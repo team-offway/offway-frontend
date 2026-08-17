@@ -60,13 +60,16 @@ class WeekdayRange {
   ///
   /// - 아무것도 없으면 그 요일 하루로 시작한다
   /// - 이어지는 요일을 누르면 거기까지 늘어난다
-  /// - **이미 고른 범위 안을 누르면 그 요일 하루로 다시 시작한다** — 줄이는
-  ///   방법이 따로 없으면 잘못 고른 사람이 모달을 닫는 수밖에 없다
+  /// - **하루만 고른 상태에서 그 하루를 누르면 해제한다** — 켠 것을 다시
+  ///   누르면 꺼지는 것이 칩의 상식이고, 그러지 않으면 비울 길이 없다
+  /// - **여러 날 고른 상태에서 범위 안을 누르면 그 요일 하루로 다시 시작한다**
+  ///   — 줄이는 방법이 따로 없으면 잘못 고른 사람이 모달을 닫는 수밖에 없다
   /// - 고를 수 없는 요일은 그대로 둔다
   WeekdayRange toggle(int weekday) {
     if (!canSelect(weekday)) return this;
     if (start == null) return WeekdayRange(start: weekday, end: weekday);
     if (contains(weekday)) {
+      if (days == 1) return const WeekdayRange.empty();
       return WeekdayRange(start: weekday, end: weekday);
     }
     return WeekdayRange(start: start, end: weekday);

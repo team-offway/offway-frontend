@@ -84,6 +84,29 @@ void main() {
       expect(restarted.days, 1);
     });
 
+    test('하루만 고른 상태에서 그 하루를 누르면 해제된다', () {
+      // 켠 것을 다시 누르면 꺼지는 것이 칩의 상식이고,
+      // 그러지 않으면 고른 것을 비울 길이 없다
+      final one = const WeekdayRange.empty().toggle(thu);
+      expect(one.days, 1);
+
+      final cleared = one.toggle(thu);
+      expect(cleared.isEmpty, isTrue);
+      expect(cleared.days, 0);
+      expect(cleared.canConfirm, isFalse);
+      // 비운 뒤에는 다시 아무 요일이나 고를 수 있다
+      expect(cleared.canSelect(mon), isTrue);
+    });
+
+    test('여러 날 고른 상태에서는 해제가 아니라 하루로 재시작한다', () {
+      // 3일에서 한 번에 비우면 실수로 지운 것처럼 보인다
+      final range = const WeekdayRange.empty().toggle(thu).toggle(sat);
+      final restarted = range.toggle(sat);
+      expect(restarted.isEmpty, isFalse);
+      expect(restarted.days, 1);
+      expect(restarted.start, sat);
+    });
+
     test('막힌 요일을 눌러도 상태가 바뀌지 않는다', () {
       final range = const WeekdayRange.empty().toggle(thu);
       expect(range.toggle(mon).start, thu, reason: '과거 방향');
