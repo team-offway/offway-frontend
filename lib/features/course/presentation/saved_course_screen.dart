@@ -475,13 +475,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const AppSheetTitleBar(title: '편집'),
-            const SizedBox(height: 22),
+            // 시안 실측: 상단바 끝에서 첫 항목까지 19
+            const SizedBox(height: 19),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_calendar.svg',
               label: '여행날짜 수정',
               onTap: () => Navigator.of(sheetContext).pop('reschedule'),
             ),
-            const SizedBox(height: 28),
+            // 시안 실측: 두 항목 상단 간격 52 = 아이콘 32 + 이 여백 20
+            const SizedBox(height: 20),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_trash.svg',
               label: '코스 삭제',
