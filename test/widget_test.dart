@@ -18,6 +18,7 @@ import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
 import 'package:offway/features/region/data/region_list_repository.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
+import 'package:offway/features/region/presentation/widgets/leave_pick_card.dart';
 import 'package:offway/mock/mock_data_source.dart';
 
 /// Keychain 삭제가 실패하는 상황을 재현하는 저장소
@@ -371,6 +372,35 @@ void main() {
     expect(cta.style?.backgroundColor?.resolve({}), const Color(0xFF303030));
   });
 
+  testWidgets('홈 아래에 "이번 연차엔 여기 어때요?" 카드가 깔린다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Google로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('시작하기'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump();
+
+    // 섹션이 화면 밖에 있으므로 끌어올려 찾는다
+    final section = find.text('이번 연차엔 여기 어때요?');
+    await tester.scrollUntilVisible(
+      section,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(section, findsOneWidget);
+
+    // 시안 실측 190×220 — 카드가 그 크기로 깔린다
+    final card = find.byType(LeavePickCard);
+    expect(card, findsWidgets);
+    expect(tester.getSize(card.first), const Size(190, 220));
+  });
+
   testWidgets('하단 탭에서 마이로 이동하고 로그아웃하면 로그인 화면으로 돌아간다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(overrides: _serverOverrides, child: const OffwayApp()),
@@ -706,7 +736,8 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('더보기'));
+    // 시안에서 '더보기' 글자가 빠지고 쉐브론만 남았다 — 라벨로 찾는다
+    await tester.tap(find.byKey(const Key('home-region-more')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.runAsync(

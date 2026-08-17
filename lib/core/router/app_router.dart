@@ -68,9 +68,16 @@ abstract final class AppRoutes {
   /// 장소(POI) 상세. `:contentId` 경로 파라미터 + `name` 쿼리(헤더 제목)
   static const poiDetail = '/pois/:contentId';
 
-  static String poiDetailPath(String contentId, {required String name}) =>
+  /// [regionName]을 주면 상단바에 그 지역명이 뜬다 — 지역에서 들어온 경로다.
+  /// 코스에서 들어올 때는 어느 지역인지 이미 알고 있어 비워 둔다
+  static String poiDetailPath(
+    String contentId, {
+    required String name,
+    String? regionName,
+  }) =>
       '/pois/${Uri.encodeComponent(contentId)}'
-      '?name=${Uri.encodeComponent(name)}';
+      '?name=${Uri.encodeComponent(name)}'
+      '${regionName == null ? '' : '&region=${Uri.encodeComponent(regionName)}'}';
 
   static const my = '/my';
   static const withdraw = '/my/withdraw';
@@ -221,6 +228,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           contentId: state.pathParameters['contentId']!,
           // 헤더 제목은 코스 리스트에서 넘어온 이름을 그대로 쓴다
           name: state.uri.queryParameters['name'] ?? '',
+          regionName: state.uri.queryParameters['region'],
         ),
       ),
       GoRoute(

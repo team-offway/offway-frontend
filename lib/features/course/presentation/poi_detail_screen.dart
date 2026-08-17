@@ -21,18 +21,23 @@ final poiDetailProvider = FutureProvider.autoDispose
           ref.watch(courseRepositoryProvider).poiDetail(contentId),
     );
 
-/// 코스 속 장소 하나의 상세 — 대표 이미지·소개·기본정보·위치와 길 찾기.
+/// 장소 하나의 상세 — 대표 이미지·소개·기본정보·위치와 길 찾기.
 ///
-/// [name]은 코스 리스트에서 넘어온 장소명 그대로 헤더에 쓴다.
+/// [name]은 목록에서 넘어온 장소명 그대로 본문 제목에 쓴다.
+/// [regionName]이 있으면 상단바에 지역명을 띄운다 — 지역 상세에서 들어온
+/// 경로라 "어느 지역을 보고 있었는지"를 유지해 줘야 한다. 코스에서 들어올
+/// 때는 이미 알고 있어 비운다.
 class PoiDetailScreen extends ConsumerWidget {
   const PoiDetailScreen({
     super.key,
     required this.contentId,
     required this.name,
+    this.regionName,
   });
 
   final String contentId;
   final String name;
+  final String? regionName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +75,23 @@ class PoiDetailScreen extends ConsumerWidget {
         // 제목 기준이 된다 — 뒤로가기가 제목 옆에 붙어버린다
         fit: StackFit.expand,
         children: [
-          // 시안에는 상단바 제목이 없다 — 장소명은 이미지 아래 본문에서 크게 보여준다
+          // 장소명은 본문에서 크게 보여주므로 상단바에는 넣지 않는다.
+          // 지역에서 들어왔을 때만 지역명을 띄운다
+          if (regionName != null && regionName!.isNotEmpty)
+            Center(
+              child: Padding(
+                // 뒤로가기 버튼과 겹치지 않게 양옆을 비운다
+                padding: const EdgeInsets.symmetric(horizontal: 50),
+                child: Text(
+                  regionName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.headline2Bold.copyWith(
+                    color: AppColors.labelStrong,
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             // 다른 화면과 같은 위치 — 버튼이 아이콘보다 넓어 여백을 줄여 맞춘다
             left: 6,
@@ -144,7 +165,10 @@ class _Body extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppPalette.lightBlue95,
+                    // 지역 카드·지역 상세의 혜택 뱃지와 같은 값 (시안 Badge)
+                    color: AppColors.primaryNormal.withValues(
+                      alpha: AppOpacity.o8,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -154,7 +178,8 @@ class _Body extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                // 시안 실측: 혜택 뱃지에서 장소명까지 12
+                const SizedBox(height: 12),
               ],
               Text(
                 name,
@@ -186,7 +211,8 @@ class _Body extends StatelessWidget {
               const SizedBox(height: 12),
               _buildInfoCard(),
               if (lat != null && lng != null) ...[
-                const SizedBox(height: 16),
+                // 시안 실측: 기본정보 카드에서 지도까지 12
+                const SizedBox(height: 12),
                 // 이 스팟 위치만 표시하는 정적 지도 (코스 전체 동선 아님)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),

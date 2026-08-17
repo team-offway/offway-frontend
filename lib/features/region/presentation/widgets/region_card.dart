@@ -26,6 +26,9 @@ class RegionCard extends StatelessWidget {
   final Map<String, dynamic> region;
   final RegionCardStyle style;
 
+  /// 홈 가로 리스트에서 쓰는 고정 폭
+  static const boxedWidth = 152.0;
+
   /// 텍스트·뱃지 영역의 기본 높이 (제목·설명 각 1줄 + 뱃지 + 간격)
   static const _textAreaHeight = 84.0;
 
@@ -36,6 +39,11 @@ class RegionCard extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(10) / 10;
     return columnWidth * 3 / 4 + _textAreaHeight * textScale + 8;
   }
+
+  /// 홈 가로 리스트를 담을 높이. 하드코딩하면 카드 내용보다 커져 아래에
+  /// 빈 공간이 남고, 다음 섹션이 그만큼 밀려 내려간다
+  static double boxedHeightFor(BuildContext context) =>
+      mainAxisExtentFor(context, boxedWidth);
 
   @override
   Widget build(BuildContext context) {
@@ -91,13 +99,17 @@ class RegionCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.fillNormal,
+                  // 혜택 뱃지는 브랜드색 8% 배경에 브랜드색 글자다(시안 Badge).
+                  // 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
+                  color: AppColors.primaryNormal.withValues(
+                    alpha: AppOpacity.o8,
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   badge,
                   style: AppTypography.caption2Medium.copyWith(
-                    color: AppColors.labelAlternative,
+                    color: AppColors.primaryNormal,
                   ),
                 ),
               ),
@@ -111,7 +123,7 @@ class RegionCard extends StatelessWidget {
       onTap: () =>
           context.push(AppRoutes.regionDetailPath(region['id'] as String)),
       child: style == RegionCardStyle.boxed
-          ? SizedBox(width: 152, child: content)
+          ? SizedBox(width: boxedWidth, child: content)
           : content,
     );
   }
@@ -212,7 +224,7 @@ class RegionCardSkeleton extends StatelessWidget {
     );
 
     return style == RegionCardStyle.boxed
-        ? SizedBox(width: 152, child: content)
+        ? SizedBox(width: RegionCard.boxedWidth, child: content)
         : content;
   }
 }
