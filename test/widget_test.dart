@@ -860,16 +860,17 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('폐광촌에서 예술마을로'), findsOneWidget);
+    // 시안: 제목·뱃지 바로 아래가 소개 본문이다(한 줄 제목은 시안에 없다)
+    expect(find.textContaining('삼탄아트마인'), findsOneWidget);
     expect(find.text('정선 매력 포인트 장소'), findsOneWidget);
 
-    // 기본 정보는 뷰포트 아래라 스크롤해서 확인
+    // 화면 끝 안내는 뷰포트 아래라 스크롤해서 확인
     await tester.scrollUntilVisible(
-      find.text('기본 정보'),
+      find.text('새롭게 주목받는 인구감소지역이에요'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.textContaining('인구감소지역 지정'), findsOneWidget);
+    expect(find.textContaining('지역의 새로운 매력을 만나보세요'), findsOneWidget);
   });
 
   testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {
