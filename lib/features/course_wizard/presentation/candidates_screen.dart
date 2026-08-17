@@ -8,6 +8,7 @@ import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../application/available_time_provider.dart';
@@ -73,13 +74,8 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
   }
 
   Future<void> _pickSort() async {
-    final picked = await showModalBottomSheet<CandidateSort>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final picked = await showAppBottomSheet<CandidateSort>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

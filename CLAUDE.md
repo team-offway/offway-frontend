@@ -87,8 +87,14 @@ grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/pr
 
 의심되면 임시로 진단 코드(빨간 글씨 등)를 심어 **그 코드가 실행되는 경로인지** 먼저 확인한다. 화면에 안 보이면 엉뚱한 파일을 고치고 있는 것이다.
 
-- 확인 모달은 전부 `showAppConfirmDialog`(`core/widgets/app_confirm_dialog.dart`)를 쓴다. `AlertDialog` 직접 생성 금지
-- **바텀시트는 아직 공통이 아니다** — 6개 화면이 제목 바(가운데 제목 + 우측 닫기)를 각자 짜고 있다. 손대게 되면 공통화를 검토할 것
+현재 공통으로 묶인 것 — 새로 만들지 말고 이걸 쓴다:
+
+| 대상 | 공통 API | 금지 |
+|---|---|---|
+| 확인 모달 | `showAppConfirmDialog` | `AlertDialog` 직접 생성 |
+| 바텀시트 | `showAppBottomSheet` | `showModalBottomSheet` 직접 호출 |
+| 시트 제목 바 | `AppSheetTitleBar` | `height: 56` + `Stack` 직접 조립 |
+| 닫기 버튼 | `AppIconButton.close` | `Icons.close` 직접 사용 |
 
 ### 시안 치수 실측
 

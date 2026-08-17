@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
@@ -443,19 +444,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다.
-      // isScrollControlled가 없으면 이 상한 대신 화면의 9/16이 적용된다
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-      ),
+    showAppBottomSheet<void>(
+      context,
+      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다
+      maxHeightRatio: 0.75,
       builder: (sheetContext) => _PlaceSheet(
         place: place,
         isToday: isToday,
@@ -474,39 +466,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 편집 시트 — 여행날짜 수정 · 코스 삭제
   Future<void> _showEditSheet() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final action = await showAppBottomSheet<String>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    '편집',
-                    style: AppTypography.headline2Bold.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                  Positioned(
-                    right: 6,
-                    child: AppIconButton.close(
-                      onTap: () => Navigator.of(sheetContext).pop(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppSheetTitleBar(title: '편집'),
             const SizedBox(height: 22),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_calendar.svg',

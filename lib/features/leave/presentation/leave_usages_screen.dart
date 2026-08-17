@@ -7,10 +7,10 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/leave_usages_provider.dart';
@@ -114,39 +114,15 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
 
   /// '...' 메뉴 — 지금은 삭제만 있다
   Future<void> _showMenu() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final action = await showAppBottomSheet<String>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    '삭제',
-                    style: AppTypography.headline2Bold.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                  Positioned(
-                    right: 6,
-                    child: AppIconButton.close(
-                      onTap: () => Navigator.of(sheetContext).pop(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppSheetTitleBar(title: '삭제'),
             // 시안 실측: 상단바 56 + 이 블록 76 = 132, 남는 34는 하단 SafeArea.
             // 항목은 이 76 안에서 수직 중앙에 놓인다
             SizedBox(
