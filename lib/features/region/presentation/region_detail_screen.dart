@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_circular_loading.dart';
@@ -80,7 +81,7 @@ final regionDetailProvider = FutureProvider.autoDispose
       };
     });
 
-/// 지역 상세 정보 — 대표 이미지·소개·매력 포인트 장소·기본 정보
+/// 지역 상세 정보 — 소개글·대표 이미지·매력 포인트 장소
 class RegionDetailScreen extends ConsumerWidget {
   const RegionDetailScreen({super.key, required this.regionId});
 
@@ -88,9 +89,6 @@ class RegionDetailScreen extends ConsumerWidget {
 
   // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
   static const _labelNormal = Color(0xFF171719);
-  static const _bodyText = Color(0xFF6F767E);
-  static const _infoText = Color(0xFF666666);
-  static const _divider = Color(0xFFF2F3F6);
   static const _imagePlaceholder = Color(0xFFC5C8CE);
   // 혜택 뱃지 — 시안 Badge와 같은 브랜드색 8% 배경 + 브랜드색 글자.
   // 예전에는 다른 파랑(#3182F6)을 쓰고 있어 카드 뱃지와 색이 달랐다
@@ -186,39 +184,18 @@ class RegionDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _PhotoCarousel(photos: photos),
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                (region['headline'] as String?) ?? '',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                (region['story'] as String?) ?? '',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: _bodyText,
-                  height: 24 / 14,
-                  letterSpacing: -0.6,
-                ),
-              ),
-            ],
+        // 시안: 뱃지 아래 16 → 소개글 → 사진. 사진이 먼저 오면 지역이
+        // 어떤 곳인지 읽기 전에 스크롤부터 하게 된다
+        if ((region['story'] as String?)?.isNotEmpty ?? false) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _RegionStory(text: region['story'] as String),
           ),
-        ),
+        ],
         const SizedBox(height: 24),
-        Container(height: 10, color: _divider),
-        const SizedBox(height: 24),
+        _PhotoCarousel(photos: photos),
+        const SizedBox(height: 36),
         if (spots.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -246,58 +223,10 @@ class RegionDetailScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Container(height: 10, color: _divider),
-          const SizedBox(height: 24),
         ],
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '기본 정보',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: _labelNormal,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: _divider,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final line in [
-                      region['transitInfo'] as String?,
-                      region['designationNote'] as String?,
-                    ])
-                      if (line != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Text(
-                            line,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: _infoText,
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        // 시안: 매력 포인트 아래 52 (카드 220 + 여백)
+        const SizedBox(height: 52),
+        const _PopulationDeclineNote(),
       ],
     );
   }
@@ -478,6 +407,129 @@ class _SpotCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 지역 소개글 — 3줄까지 보여주고 쉐브론으로 펼친다.
+///
+/// 소개글은 지역마다 길이가 크게 다르다. 다 펼쳐 두면 긴 지역에서는
+/// 사진과 매력 포인트가 화면 밖으로 밀려, 정작 보러 온 것을 못 본다.
+class _RegionStory extends StatefulWidget {
+  const _RegionStory({required this.text});
+
+  final String text;
+
+  /// 접었을 때 보여줄 줄 수 — 시안 실측(높이 60 = 20 × 3)
+  static const collapsedLines = 3;
+
+  @override
+  State<_RegionStory> createState() => _RegionStoryState();
+}
+
+class _RegionStoryState extends State<_RegionStory> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AppTypography.label1NormalMedium.copyWith(
+      color: AppColors.labelNeutral,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 접을 이유가 없으면 쉐브론도 두지 않는다 — 눌러도 변화가 없는
+        // 버튼은 없느니만 못하다
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: style),
+          maxLines: _RegionStory.collapsedLines,
+          textDirection: Directionality.of(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = painter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.text,
+              style: style,
+              maxLines: _expanded ? null : _RegionStory.collapsedLines,
+              overflow: _expanded ? TextOverflow.clip : TextOverflow.ellipsis,
+            ),
+            if (overflows)
+              Center(
+                child: Semantics(
+                  button: true,
+                  label: _expanded ? '지역 소개 접기' : '지역 소개 더 보기',
+                  child: GestureDetector(
+                    key: const Key('region-story-toggle'),
+                    onTap: () => setState(() => _expanded = !_expanded),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      // 시안: 글 아래 12, 아이콘 24
+                      padding: const EdgeInsets.only(top: 12),
+                      // 펼치면 화살표가 위를 본다
+                      child: RotatedBox(
+                        quarterTurns: _expanded ? 2 : 0,
+                        child: SvgPicture.asset(
+                          'assets/icons/ic_chevron_down.svg',
+                          width: 24,
+                          height: 24,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.labelAlternative,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 화면 맨 아래 안내 — 이 지역이 왜 추천되는지 한 줄로 남긴다.
+///
+/// 예전에는 이 자리에 '기본 정보'(교통편·지정 안내)가 있었다. 시안이
+/// 그 자리를 이 문구로 바꿨다 — 개별 지역의 사실 나열보다, 여기 모인
+/// 지역들이 어떤 곳인지 말하는 편이 이 화면의 끝맺음에 맞는다.
+class _PopulationDeclineNote extends StatelessWidget {
+  const _PopulationDeclineNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SvgPicture.asset(
+            'assets/icons/ic_heart_fill.svg',
+            width: 48,
+            height: 48,
+          ),
+          // 시안: 하트 아래 24
+          const SizedBox(height: 24),
+          Text(
+            '새롭게 주목받는 인구감소지역이에요',
+            textAlign: TextAlign.center,
+            style: AppTypography.headline2Bold.copyWith(
+              color: AppColors.labelStrong,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '익숙한 여행지에서 조금 벗어나,\n지역의 새로운 매력을 만나보세요.',
+            textAlign: TextAlign.center,
+            style: AppTypography.body2NormalMedium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+        ],
       ),
     );
   }
