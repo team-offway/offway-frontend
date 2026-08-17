@@ -70,11 +70,16 @@ class MyScreen extends ConsumerWidget {
     );
   }
 
-  /// 하늘색 원 안의 사람 아이콘과 인사말 — 시안은 가운데 정렬 한 덩어리다.
-  ///
-  /// 이메일과 프로필 수정은 시안에서 빠졌다.
+  /// 프로필 사진이 없거나 못 불러왔을 때 쓰는 아이콘.
+  /// 에셋이 Light Blue/80을 이미 품고 있어 색을 덧입히지 않는다
+  static Widget get _defaultAvatar =>
+      SvgPicture.asset('assets/icons/ic_person.svg', width: 49, height: 49);
+
+  /// 하늘색 원 안의 프로필 사진(없으면 아이콘)과 인사말 —
+  /// 시안은 가운데 정렬 한 덩어리다. 이메일과 프로필 수정은 시안에서 빠졌다.
   Widget _buildProfile(AsyncValue<Map<String, dynamic>> user) {
     final nickname = user.value?['nickname'] as String?;
+    final photoUrl = user.value?['profileImageUrl'] as String?;
     return Column(
       children: [
         Container(
@@ -86,12 +91,18 @@ class MyScreen extends ConsumerWidget {
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          // 에셋이 Light Blue/80을 이미 품고 있어 색을 덧입히지 않는다
-          child: SvgPicture.asset(
-            'assets/icons/ic_person.svg',
-            width: 49,
-            height: 49,
-          ),
+          clipBehavior: Clip.antiAlias,
+          // 소셜 프로필 사진이 있으면 그걸, 없으면 기본 아이콘을 쓴다.
+          // 사진 주소가 죽어 있을 수도 있어 실패하면 아이콘으로 되돌린다
+          child: photoUrl == null || photoUrl.isEmpty
+              ? _defaultAvatar
+              : Image.network(
+                  photoUrl,
+                  width: 76,
+                  height: 76,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _defaultAvatar,
+                ),
         ),
         const SizedBox(height: 16),
         Text(
