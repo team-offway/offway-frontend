@@ -42,10 +42,13 @@ class RegionPlacesRepository {
   }
 }
 
-/// 지역 상세에 보여줄 관광명소 — 소개글이 없는 지역이라도 이건 채울 수 있다
+/// 지역 상세에 보여줄 관광명소 — 소개글이 없는 지역이라도 이건 채울 수 있다.
+///
+/// 시안의 매력 포인트 장소는 최대 10개다. 같은 상호 중복을 걷어내면 줄어들어
+/// 여유 있게 받아 둔다
 final regionSightsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>(
       (ref, regionId) => ref
           .watch(regionPlacesRepositoryProvider)
-          .places(regionId: regionId, kind: 'SIGHT', size: 6),
+          .places(regionId: regionId, kind: 'SIGHT', size: 20),
     );

@@ -18,6 +18,13 @@ import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 /// - mock에 있는 지역(정선·영월 등): 소개글·사진까지 갖춘 mock을 그대로 쓴다
 /// - 서버 89개 지역: 홈 카드 정보 + 장소 목록(`/regions/{id}/places`)으로
 ///   같은 형태를 만들어 준다. 소개글·사진은 없어 그 칸은 비워둔다
+/// 매력 포인트 장소 개수 — 시안 노트: 최소 2 ~ 최대 10
+const kMaxHighlightSpots = 10;
+
+/// 매력 포인트 장소 카드 — 시안 실측
+const _spotCardWidth = 190.0;
+const _spotCardHeight = 220.0;
+
 final regionDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, regionId) async {
       final all = await MockDataSource.allRegions();
@@ -59,10 +66,15 @@ final regionDetailProvider = FutureProvider.autoDispose
           'benefitPolicyId': card['benefitPolicyId'],
         // 대표 사진은 홈 카드 이미지 한 장뿐이다
         'photos': [if (card['imageUrl'] case final String url) url],
-        // 인허가 데이터에는 사진·소개가 없어 이름과 분류만 채운다
+        // 인허가 데이터에는 사진·소개가 없어 이름과 분류만 채운다.
+        // id를 함께 실어 탭하면 장소 상세로 갈 수 있게 한다
         'highlightSpots': [
-          for (final p in sights.take(2))
-            {'name': p['name'], 'caption': p['categoryLabel'] ?? ''},
+          for (final p in sights.take(kMaxHighlightSpots))
+            {
+              'name': p['name'],
+              'caption': p['categoryLabel'] ?? '',
+              if (p['id'] != null) 'poiContentId': p['id'],
+            },
         ],
       };
     });
@@ -205,27 +217,28 @@ class RegionDetailScreen extends ConsumerWidget {
         if (spots.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${region['name']} 매력 포인트 장소',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: _labelNormal,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    for (var i = 0; i < spots.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 12),
-                      Expanded(child: _SpotCard(spot: spots[i])),
-                    ],
-                  ],
-                ),
-              ],
+            child: Text(
+              '${region['name']} 매력 포인트 장소',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: _labelNormal,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // 최대 10개까지 오므로 2열 그리드에 가둘 수 없다 — 옆으로 넘긴다
+          SizedBox(
+            height: _spotCardHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: spots.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 18),
+              itemBuilder: (context, i) => _SpotCard(
+                spot: spots[i],
+                regionName: region['name'] as String? ?? '',
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -380,59 +393,85 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
   }
 }
 
+/// 매력 포인트 장소 카드 — 시안 실측 190×220, 반경 12.
+///
+/// 탭하면 장소 상세로 간다. 인허가 데이터에는 사진이 없어 회색 판만 남는
+/// 경우가 많은데, 그래도 이름은 읽혀야 하므로 아래쪽을 어둡게 깐다.
 class _SpotCard extends StatelessWidget {
-  const _SpotCard({required this.spot});
+  const _SpotCard({required this.spot, required this.regionName});
 
   final Map<String, dynamic> spot;
+
+  /// 장소 상세 상단바에 띄울 지역명 — 어디를 보다 들어왔는지 남긴다
+  final String regionName;
 
   @override
   Widget build(BuildContext context) {
     final imageUrl = spot['imageUrl'] as String?;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: SizedBox(
-        height: 188,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Container(
-              color: RegionDetailScreen._imagePlaceholder,
-              child: imageUrl == null
-                  ? null
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.expand(),
+    final name = spot['name'] as String? ?? '';
+    final contentId = spot['poiContentId']?.toString();
+
+    return GestureDetector(
+      // 아직 id가 없는 mock 지역은 눌러도 갈 곳이 없다
+      onTap: contentId == null
+          ? null
+          : () => context.push(
+              AppRoutes.poiDetailPath(
+                contentId,
+                name: name,
+                regionName: regionName,
+              ),
+            ),
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: _spotCardWidth,
+          height: _spotCardHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Container(
+                color: RegionDetailScreen._imagePlaceholder,
+                child: imageUrl == null
+                    ? null
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.expand(),
+                      ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(18, 30, 18, 18),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Color(0xCC000000), Colors.transparent],
                     ),
-            ),
-            // 이미지 위 글자 가독성 확보
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.center,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0x99000000)],
+                  ),
+                  child: Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.467,
+                      shadows: [
+                        Shadow(blurRadius: 12, color: Color(0x29000000)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              child: SizedBox.expand(),
-            ),
-            Positioned(
-              left: 16,
-              bottom: 16,
-              right: 12,
-              child: Text(
-                spot['name'] as String,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  height: 1.25,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

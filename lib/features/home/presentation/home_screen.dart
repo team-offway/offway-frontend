@@ -11,6 +11,7 @@ import '../../../core/widgets/app_tab_pills.dart';
 import '../../notification/presentation/notification_screen.dart'
     show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/category_chip.dart';
+import '../../region/presentation/widgets/leave_pick_card.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -42,6 +43,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
+
+  /// '이번 연차엔 여기 어때요?' 카드 개수 — 시안 노트: 최소 3 ~ 최대 7
+  static const _minLeavePicks = 3;
+  static const _maxLeavePicks = 7;
 
   /// 고른 칩 `{key, label}` — null이면 '전체'
   Map<String, dynamic>? _selected;
@@ -109,6 +114,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _buildCategoryRow(),
             const SizedBox(height: 20),
             _buildRegionCards(regions),
+            const SizedBox(height: 40),
+            _buildLeavePicks(regions),
           ],
         ),
       ),
@@ -323,6 +330,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  /// '이번 연차엔 여기 어때요?' — 위쪽 '이번달 추천 여행지'와 같은 목록을
+  /// 쓰지만 카테고리 필터를 걸지 않는다. 조건 없이 지역만 훑어보는 자리다.
+  ///
+  /// 시안: 카드 3~7개. 서버가 그보다 많이 주면 앞에서 7개만 쓴다
+  Widget _buildLeavePicks(AsyncValue<List<Map<String, dynamic>>> regions) {
+    final picks = (regions.value ?? const <Map<String, dynamic>>[])
+        .take(_maxLeavePicks)
+        .toList();
+    // 3개도 못 채우면 섹션째 감춘다 — 한두 장만 놓인 가로 목록은 비어 보인다
+    if (regions.hasValue && picks.length < _minLeavePicks) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            '이번 연차엔 여기 어때요?',
+            style: AppTypography.heading1Bold.copyWith(
+              color: AppColors.labelNormal,
+            ),
+          ),
+        ),
+        // 시안 실측: 제목~카드 16, 카드 사이 18
+        const SizedBox(height: 16),
+        SizedBox(
+          height: LeavePickCard.height,
+          child: regions.isLoading
+              ? ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _skeletonCardCount,
+                  separatorBuilder: (_, _) => const SizedBox(width: 18),
+                  itemBuilder: (_, _) => const LeavePickCardSkeleton(),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: picks.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 18),
+                  itemBuilder: (context, i) => LeavePickCard(region: picks[i]),
+                ),
+        ),
+      ],
     );
   }
 
