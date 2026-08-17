@@ -173,50 +173,60 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(context),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                children: [
-                  _FieldLabel('날짜'),
-                  const SizedBox(height: 8),
-                  _DateField(range: _range, onTap: _pickDate),
-                  const SizedBox(height: 28),
-                  _FieldLabel('사유'),
-                  const SizedBox(height: 8),
-                  _ChipRow(
-                    labels: _reasons,
-                    selected: _reason,
-                    onSelect: (v) => setState(() => _reason = v),
-                  ),
-                  const SizedBox(height: 8),
-                  _MemoField(controller: _memo),
-                  // 차감 일수는 날짜에서 계산된 값이라 날짜를 고르기 전에는
-                  // 보여줄 것이 없다 — 섹션을 통째로 감춘다
-                  if (_range != null) ...[
-                    const SizedBox(height: 28),
-                    _FieldLabel('차감 일수'),
+      // 빈 곳을 누르면 키보드를 접는다 — 입력 칸 밖을 눌러도 키보드가 남아
+      // 있으면 아래 버튼이 가려진 채 갇힌 느낌이 된다
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        // 탭을 삼키지 않아야 아래 위젯(칩·필드)이 제 동작을 그대로 받는다
+        behavior: HitTestBehavior.translucent,
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(context),
+              Expanded(
+                child: ListView(
+                  // 손가락으로 목록을 훑으면 키보드가 함께 내려간다
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                  children: [
+                    _FieldLabel('날짜'),
                     const SizedBox(height: 8),
-                    _DaysField(
-                      controller: _daysInput,
-                      focusNode: _daysFocus,
-                      error: daysError,
-                      edited: _daysEdited,
-                      onChanged: (_) => setState(() => _daysEdited = true),
-                      onClear: () => setState(_daysInput.clear),
+                    _DateField(range: _range, onTap: _pickDate),
+                    const SizedBox(height: 28),
+                    _FieldLabel('사유'),
+                    const SizedBox(height: 8),
+                    _ChipRow(
+                      labels: _reasons,
+                      selected: _reason,
+                      onSelect: (v) => setState(() => _reason = v),
                     ),
+                    const SizedBox(height: 8),
+                    _MemoField(controller: _memo),
+                    // 차감 일수는 날짜에서 계산된 값이라 날짜를 고르기 전에는
+                    // 보여줄 것이 없다 — 섹션을 통째로 감춘다
+                    if (_range != null) ...[
+                      const SizedBox(height: 28),
+                      _FieldLabel('차감 일수'),
+                      const SizedBox(height: 8),
+                      _DaysField(
+                        controller: _daysInput,
+                        focusNode: _daysFocus,
+                        error: daysError,
+                        edited: _daysEdited,
+                        onChanged: (_) => setState(() => _daysEdited = true),
+                        onClear: () => setState(_daysInput.clear),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            _SubmitBar(
-              enabled: _canSubmit && daysError == null && !_submitting,
-              onTap: _submit,
-            ),
-          ],
+              _SubmitBar(
+                enabled: _canSubmit && daysError == null && !_submitting,
+                onTap: _submit,
+              ),
+            ],
+          ),
         ),
       ),
     );

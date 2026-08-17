@@ -164,6 +164,48 @@ void main() {
     expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
 
+  testWidgets('입력 칸 밖을 누르면 키보드가 닫히고 칩은 그대로 눌린다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveRegisterScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(TextField).first);
+    await tester.pumpAndSettle();
+    // 포커스를 가진 노드가 실제 입력 칸의 것인지 견주어 본다
+    bool memoHasFocus() {
+      final memo = tester.widget<TextField>(find.byType(TextField).first);
+      final node = FocusManager.instance.primaryFocus;
+      return node != null &&
+          node.context?.findAncestorWidgetOfExactType<TextField>() == memo;
+    }
+
+    expect(memoHasFocus(), isTrue, reason: '메모 칸에 포커스가 가야 한다');
+
+    // 입력 칸 밖(라벨)을 누르면 포커스가 풀려 키보드가 내려간다
+    await tester.tap(find.text('사유'));
+    await tester.pumpAndSettle();
+    expect(memoHasFocus(), isFalse, reason: '키보드가 내려가야 한다');
+
+    // 탭을 삼키지 않아야 칩이 제 동작을 그대로 받는다
+    await tester.tap(find.text('병가'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('병가')).style?.color,
+      AppColors.primaryNormal,
+    );
+  });
+
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
