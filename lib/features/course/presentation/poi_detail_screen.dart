@@ -165,7 +165,10 @@ class _Body extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppPalette.lightBlue95,
+                    // 지역 카드·지역 상세의 혜택 뱃지와 같은 값 (시안 Badge)
+                    color: AppColors.primaryNormal.withValues(
+                      alpha: AppOpacity.o8,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -175,7 +178,8 @@ class _Body extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                // 시안 실측: 혜택 뱃지에서 장소명까지 12
+                const SizedBox(height: 12),
               ],
               Text(
                 name,
@@ -207,7 +211,8 @@ class _Body extends StatelessWidget {
               const SizedBox(height: 12),
               _buildInfoCard(),
               if (lat != null && lng != null) ...[
-                const SizedBox(height: 16),
+                // 시안 실측: 기본정보 카드에서 지도까지 12
+                const SizedBox(height: 12),
                 // 이 스팟 위치만 표시하는 정적 지도 (코스 전체 동선 아님)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
