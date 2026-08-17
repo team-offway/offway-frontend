@@ -30,6 +30,24 @@ final tokenRefresherProvider = Provider<TokenRefresher>(
       () async => false,
 );
 
+/// 세션이 끊겼다는 신호 — 되살리기까지 실패한 401을 만나면 true가 된다.
+///
+/// 인터셉터가 화면을 직접 옮기면 네트워크 계층이 라우터를 알게 된다. 상태만
+/// 올리고, 앱 루트가 이 값을 보고 로그인 화면으로 보낸다.
+class SessionExpiredNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void markExpired() => state = true;
+
+  /// 로그인 화면으로 보낸 뒤 되돌린다 — 남아 있으면 다시 로그인해도 튕긴다
+  void reset() => state = false;
+}
+
+final sessionExpiredProvider = NotifierProvider<SessionExpiredNotifier, bool>(
+  SessionExpiredNotifier.new,
+);
+
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
@@ -123,7 +141,12 @@ class AuthInterceptor extends Interceptor {
     final refreshed = await (_refreshing ??= _ref
         .read(tokenRefresherProvider)()
         .whenComplete(() => _refreshing = null));
-    if (!refreshed) return handler.next(err);
+    if (!refreshed) {
+      // 되살릴 수 없는 401 — 다시 로그인해야 한다. 이 신호를 올리지 않으면
+      // 화면이 오류만 띄운 채 멈춰, 사용자가 나갈 길을 찾지 못한다
+      _ref.read(sessionExpiredProvider.notifier).markExpired();
+      return handler.next(err);
+    }
 
     try {
       // 새 토큰으로 원래 요청을 한 번만 다시 보낸다

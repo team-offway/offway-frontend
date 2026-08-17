@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/network/dio_client.dart';
+import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 
@@ -221,6 +222,81 @@ void main() {
       );
       // 재시도하지 않았다 — 되살릴 방법이 없으면 되풀이가 무의미하다
       expect(adapter.calls, hasLength(1));
+    });
+  });
+
+  group('세션 만료 신호', () {
+    test('되살리지 못한 401 이면 신호를 올린다', () async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(
+            _MemoryStorage()..access = 'expired',
+          ),
+          // 기본값 — 되살릴 수 없다
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)
+        ..httpClientAdapter = _StubAdapter((_) => _json(401, {}));
+
+      expect(container.read(sessionExpiredProvider), isFalse);
+      await dio
+          .get<dynamic>('/api/v1/leaves/me')
+          .catchError(
+            (_) => Response<dynamic>(requestOptions: RequestOptions()),
+          );
+
+      // 이 신호가 없으면 화면이 오류만 띄운 채 멈춘다
+      expect(container.read(sessionExpiredProvider), isTrue);
+    });
+
+    test('되살렸으면 신호를 올리지 않는다', () async {
+      final storage = _MemoryStorage()..access = 'expired';
+      var attempt = 0;
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              storage.access = 'fresh';
+              return true;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)
+        ..httpClientAdapter = _StubAdapter((_) {
+          attempt++;
+          return attempt == 1 ? _json(401, {}) : _json(200, {});
+        });
+
+      await dio.get<dynamic>('/api/v1/leaves/me');
+
+      expect(container.read(sessionExpiredProvider), isFalse);
+    });
+  });
+
+  group('앱 시작 경로', () {
+    test('기본은 로그인 화면이다', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(container.read(initialRouteProvider), AppRoutes.login);
+    });
+
+    test('토큰이 있으면 홈으로 시작한다 — main이 이 값을 덮어쓴다', () {
+      // 앱을 켤 때마다 로그인 버튼을 다시 누르게 하면 안 된다
+      final container = ProviderContainer(
+        overrides: [initialRouteProvider.overrideWithValue(AppRoutes.home)],
+      );
+      addTearDown(container.dispose);
+      expect(
+        container.read(appRouterProvider).configuration.routes,
+        isNotEmpty,
+      );
+      expect(container.read(initialRouteProvider), AppRoutes.home);
     });
   });
 }

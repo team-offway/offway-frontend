@@ -120,14 +120,23 @@ CustomTransitionPage<void> _noTransitionPage(Widget child) {
   );
 }
 
+/// 앱을 켰을 때 처음 열 화면.
+///
+/// 토큰이 남아 있으면 홈으로 바로 들어간다 — 앱을 켤 때마다 로그인 버튼을
+/// 다시 누르게 하면 안 된다. 이 값은 앱 시작 시 [main]이 Keychain을 읽어
+/// 덮어쓴다(스플래시를 두지 않으려면 라우터가 만들어지기 전에 알아야 한다).
+///
+/// 개발용: `--dart-define=INITIAL_ROUTE=/onboarding/leave` 가 늘 우선한다
+final initialRouteProvider = Provider<String>((ref) {
+  return const String.fromEnvironment(
+    'INITIAL_ROUTE',
+    defaultValue: AppRoutes.login,
+  );
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    // TODO(auth): 로그인 상태 저장 후 redirect로 분기 (지금은 항상 로그인부터)
-    // 개발용: --dart-define=INITIAL_ROUTE=/onboarding/leave 로 시작 화면 지정 가능
-    initialLocation: const String.fromEnvironment(
-      'INITIAL_ROUTE',
-      defaultValue: AppRoutes.login,
-    ),
+    initialLocation: ref.watch(initialRouteProvider),
     routes: [
       GoRoute(
         path: AppRoutes.login,
