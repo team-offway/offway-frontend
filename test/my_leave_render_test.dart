@@ -101,6 +101,40 @@ void main() {
     expect(find.text('+3일'), findsOneWidget);
   });
 
+  testWidgets('삭제 모달은 상단바 56 + 항목 76으로 시안 높이를 지킨다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              LeaveUsage(id: 1, usedOn: DateTime(2026, 8, 10), days: 2),
+            ],
+          ),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+
+    // 항목이 76 안에서 중앙에 놓여야 원 위 여백이 시안(22)과 맞는다
+    final row = find.ancestor(
+      of: find.text('사용 내역 삭제'),
+      matching: find.byType(SizedBox),
+    );
+    final heights = row
+        .evaluate()
+        .map((e) => (e.widget as SizedBox).height)
+        .whereType<double>()
+        .toList();
+    expect(heights, contains(76.0));
+
+    // 닫기는 DS 에셋이어야 한다 — Material Icons.close가 남아 있으면 안 된다
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
+
   testWidgets('삭제 모드 체크박스는 18×18이고 끈 상태는 속이 비어 있다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

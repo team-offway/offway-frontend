@@ -81,7 +81,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                   : usages.isEmpty
                   ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                      // 시안 실측: 헤더에서 첫 카드까지 24
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
                       itemCount: usages.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) => _UsageCard(
@@ -138,56 +139,57 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                   ),
                   Positioned(
                     right: 6,
-                    child: AppIconButton(
-                      icon: Icons.close,
+                    child: AppIconButton.close(
                       onTap: () => Navigator.of(sheetContext).pop(),
-                      semanticLabel: '닫기',
-                      color: AppColors.labelAlternative,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 22),
-            GestureDetector(
-              onTap: () => Navigator.of(sheetContext).pop('delete'),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.staticBlack.withValues(
-                          alpha: AppOpacity.o5,
+            // 시안 실측: 상단바 56 + 이 블록 76 = 132, 남는 34는 하단 SafeArea.
+            // 항목은 이 76 안에서 수직 중앙에 놓인다
+            SizedBox(
+              height: 76,
+              child: GestureDetector(
+                onTap: () => Navigator.of(sheetContext).pop('delete'),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.staticBlack.withValues(
+                            alpha: AppOpacity.o5,
+                          ),
+                          shape: BoxShape.circle,
                         ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Opacity(
-                          opacity: AppOpacity.o61,
-                          child: SvgPicture.asset(
-                            'assets/icons/ic_trash.svg',
-                            width: 20,
-                            height: 20,
+                        child: Center(
+                          child: Opacity(
+                            opacity: AppOpacity.o61,
+                            child: SvgPicture.asset(
+                              'assets/icons/ic_trash.svg',
+                              width: 20,
+                              height: 20,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Text(
-                      '사용 내역 삭제',
-                      style: AppTypography.body1NormalMedium.copyWith(
-                        color: AppColors.labelNeutral,
+                      // 시안 실측: 원 우측 끝에서 글자까지 16
+                      const SizedBox(width: 16),
+                      Text(
+                        '사용 내역 삭제',
+                        style: AppTypography.body1NormalMedium.copyWith(
+                          color: AppColors.labelNeutral,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
           ],
         ),
       ),

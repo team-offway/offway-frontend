@@ -100,13 +100,8 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
               padding: const EdgeInsets.fromLTRB(10, 0, 20, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: AppIconButton(
-                  icon: Icons.close,
+                child: AppIconButton.close(
                   onTap: () => Navigator.of(context).pop(),
-                  semanticLabel: '닫기',
-                  // 시안 실측 #858588 = Label/Alternative.
-                  // 기본값(Label/Normal)은 거의 검정이라 시안보다 진하다
-                  color: AppColors.labelAlternative,
                 ),
               ),
             ),

@@ -90,11 +90,8 @@ class _PolicyDetailSheet extends ConsumerWidget {
                 ),
                 Positioned(
                   right: 0,
-                  child: AppIconButton(
-                    icon: Icons.close,
+                  child: AppIconButton.close(
                     onTap: () => Navigator.of(context).pop(),
-                    semanticLabel: '닫기',
-                    color: AppColors.labelAlternative,
                   ),
                 ),
               ],

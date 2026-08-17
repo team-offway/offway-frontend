@@ -372,11 +372,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              AppIconButton(
-                icon: Icons.close,
-                onTap: _exitToHome,
-                semanticLabel: '닫기',
-              ),
+              AppIconButton.close(onTap: _exitToHome),
               const Spacer(),
               // 내 코스 상세와 같은 DS 에셋을 쓴다 — Material 기본 아이콘은
               // 모양·굵기가 달라 두 화면의 공유 버튼이 서로 다르게 보였다

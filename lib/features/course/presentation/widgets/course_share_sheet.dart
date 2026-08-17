@@ -163,12 +163,8 @@ class _SheetTitleBar extends StatelessWidget {
           Positioned(
             // 버튼이 아이콘보다 넓으므로 여백을 줄여 아이콘 위치를 맞춘다
             right: 6,
-            child: AppIconButton(
-              icon: Icons.close,
+            child: AppIconButton.close(
               onTap: () => Navigator.of(context).pop(),
-              semanticLabel: '닫기',
-              // 가이드는 제목과 같은 옅은 색 — 기본 검정은 너무 진하다
-              color: AppColors.labelAlternative,
             ),
           ),
         ],

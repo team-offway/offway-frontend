@@ -124,14 +124,12 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
               padding: const EdgeInsets.fromLTRB(10, 0, 20, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: AppIconButton(
-                  icon: Icons.close,
+                child: AppIconButton.close(
                   onTap: () {
                     // 위저드 종료: 조건 초기화 후 홈으로
                     ref.read(courseWizardProvider.notifier).reset();
                     context.go(AppRoutes.home);
                   },
-                  semanticLabel: '닫기',
                 ),
               ),
             ),
