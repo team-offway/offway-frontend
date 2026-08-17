@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,8 +7,12 @@ import '../theme/tokens/tokens.dart';
 
 /// 브랜드 마크가 도는 로딩 표시 (DS Loading 컴포넌트).
 ///
-/// 시계방향으로 45°씩 여덟 번에 나눠 딱딱 끊어 돈다 — 이어서 도는 것보다
-/// '처리 중'이라는 신호가 또렷하다.
+/// 디자이너가 준 `Loading.svg`의 모션을 그대로 옮겼다.
+/// 한 바퀴(2초)를 **90°씩 네 구간**으로 나누고, 각 구간을 `ease-out`으로
+/// 돈다 — 훅 돌았다가 멎기를 반복해 '처리 중'이라는 신호가 또렷하다.
+///
+/// 예전에는 45°씩 여덟 칸을 타이머로 순간이동시켰다. 각도가 뚝뚝 끊겨
+/// 시안의 감속이 살지 않았다.
 class AppLoadingIndicator extends StatefulWidget {
   const AppLoadingIndicator({super.key, this.size = 48});
 
@@ -19,27 +22,22 @@ class AppLoadingIndicator extends StatefulWidget {
   State<AppLoadingIndicator> createState() => _AppLoadingIndicatorState();
 }
 
-class _AppLoadingIndicatorState extends State<AppLoadingIndicator> {
-  /// 한 칸(45°) 머무는 시간 — 여덟 칸이면 한 바퀴에 4초
-  static const _step = Duration(milliseconds: 500);
+class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  /// 한 바퀴에 걸리는 시간 — 시안 `animation: loading-spin 2s`
+  static const _turn = Duration(seconds: 2);
 
-  /// 한 바퀴를 나누는 칸 수
-  static const _steps = 8;
+  /// 한 바퀴를 나누는 구간 수 — 시안 keyframes가 0·25·50·75·100%다
+  static const _steps = 4;
 
-  Timer? _timer;
-  int _index = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(_step, (_) {
-      if (mounted) setState(() => _index = (_index + 1) % _steps);
-    });
-  }
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: _turn,
+  )..repeat();
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -48,9 +46,11 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator> {
     return SizedBox(
       width: widget.size,
       height: widget.size,
-      child: Transform.rotate(
-        // 자연스럽게 미끄러지지 않도록 각도를 칸 단위로만 바꾼다
-        angle: _index * 2 * math.pi / _steps,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) =>
+            Transform.rotate(angle: _angleAt(_controller.value), child: child),
+        // 회전만 바뀐다 — 매 프레임 SVG를 다시 만들지 않는다
         child: SvgPicture.asset(
           'assets/icons/ic_loading_mark.svg',
           width: widget.size,
@@ -58,6 +58,17 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator> {
         ),
       ),
     );
+  }
+
+  /// 진행도(0~1)를 각도로. 구간 안에서만 `ease-out`으로 감속한다.
+  ///
+  /// 시안은 -360°에서 0°로 가지만 회전은 같은 자리를 도는 것이라
+  /// 0°에서 시계방향으로 재도 결과가 같다.
+  double _angleAt(double t) {
+    final scaled = t * _steps;
+    final step = scaled.floor(); // 몇 번째 구간인가 (0~3)
+    final within = Curves.easeOut.transform(scaled - step);
+    return (step + within) * 2 * math.pi / _steps;
   }
 }
 
