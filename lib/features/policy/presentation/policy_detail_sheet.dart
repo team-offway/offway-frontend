@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -13,18 +14,10 @@ import '../data/policy_repository.dart';
 ///
 /// TODO(design): 전용 시안이 없어 DS 시트 패턴을 따랐다. 시안이 나오면 맞춘다.
 Future<void> showPolicyDetailSheet(BuildContext context, int policyId) {
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: AppColors.backgroundElevated,
-    barrierColor: AppColors.materialDimmer,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
+  return showAppBottomSheet<void>(
+    context,
     // 혜택 설명이 길면 시트가 넘친다 — 화면의 3/4까지만 쓰고 그 안에서 스크롤
-    isScrollControlled: true,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.75,
-    ),
+    maxHeightRatio: 0.75,
     builder: (_) => _PolicyDetailSheet(policyId: policyId),
   );
 }
@@ -90,11 +83,8 @@ class _PolicyDetailSheet extends ConsumerWidget {
                 ),
                 Positioned(
                   right: 0,
-                  child: AppIconButton(
-                    icon: Icons.close,
+                  child: AppIconButton.close(
                     onTap: () => Navigator.of(context).pop(),
-                    semanticLabel: '닫기',
-                    color: AppColors.labelAlternative,
                   ),
                 ),
               ],

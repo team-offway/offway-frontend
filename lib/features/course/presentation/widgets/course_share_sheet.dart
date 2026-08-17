@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
-import '../../../../core/widgets/app_icon_button.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 
 /// 코스 공유 바텀시트 묶음 (O-09·내 코스 상세 공유).
 ///
@@ -116,62 +116,20 @@ abstract final class CourseShareSheets {
     required String title,
     required List<_SheetItem> Function(BuildContext) itemsBuilder,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    return showAppBottomSheet<void>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SheetTitleBar(title: title),
+            AppSheetTitleBar(title: title),
             const SizedBox(height: 23),
             ...itemsBuilder(sheetContext),
             // 마지막 항목의 자체 여백(14)과 합쳐 디자인의 하단 간격(40)을 만든다
             const SizedBox(height: 26),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 시트 상단 — 가운데 제목, 오른쪽 닫기
-class _SheetTitleBar extends StatelessWidget {
-  const _SheetTitleBar({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Text(
-            // 가이드: 시트 제목은 헤드라인 17에 옅은 색 (본문보다 낮은 위계)
-            title,
-            style: AppTypography.headline2Bold.copyWith(
-              color: AppColors.labelAlternative,
-            ),
-          ),
-          Positioned(
-            // 버튼이 아이콘보다 넓으므로 여백을 줄여 아이콘 위치를 맞춘다
-            right: 6,
-            child: AppIconButton(
-              icon: Icons.close,
-              onTap: () => Navigator.of(context).pop(),
-              semanticLabel: '닫기',
-              // 가이드는 제목과 같은 옅은 색 — 기본 검정은 너무 진하다
-              color: AppColors.labelAlternative,
-            ),
-          ),
-        ],
       ),
     );
   }

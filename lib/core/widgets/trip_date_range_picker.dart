@@ -24,6 +24,7 @@ class TripDateRangePicker extends StatelessWidget {
     this.monthCount = 12,
     this.padding = const EdgeInsets.fromLTRB(22, 28, 22, 24),
     this.maxSpanDays = kMaxTripSpanDays,
+    this.showTripLabels = true,
   });
 
   final DateTime today;
@@ -39,6 +40,10 @@ class TripDateRangePicker extends StatelessWidget {
   /// 시작일로부터 고를 수 있는 최대 박 수. null이면 상한이 없다
   final int? maxSpanDays;
 
+  /// 고른 날 아래 '가는날'·'오는날'을 붙일지.
+  /// 연차 사용일처럼 여행이 아닌 날짜를 고를 때는 끈다
+  final bool showTripLabels;
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -51,6 +56,7 @@ class TripDateRangePicker extends StatelessWidget {
         endDate: endDate,
         onSelect: onSelect,
         maxSpanDays: maxSpanDays,
+        showTripLabels: showTripLabels,
       ),
     );
   }
@@ -64,6 +70,7 @@ class _MonthCalendar extends StatelessWidget {
     required this.endDate,
     required this.onSelect,
     required this.maxSpanDays,
+    required this.showTripLabels,
   });
 
   final DateTime month;
@@ -72,6 +79,7 @@ class _MonthCalendar extends StatelessWidget {
   final DateTime? endDate;
   final ValueChanged<DateTime> onSelect;
   final int? maxSpanDays;
+  final bool showTripLabels;
 
   static const _weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -165,7 +173,10 @@ class _MonthCalendar extends StatelessWidget {
       textColor = AppColors.labelNormal;
     }
 
-    final label = isStart && !isEnd || (isStart && isEnd)
+    // 연차 사용일처럼 여행이 아닌 날짜를 고를 때는 라벨을 붙이지 않는다
+    final label = !showTripLabels
+        ? null
+        : isStart && !isEnd || (isStart && isEnd)
         ? '가는날'
         : isEnd
         ? '오는날'

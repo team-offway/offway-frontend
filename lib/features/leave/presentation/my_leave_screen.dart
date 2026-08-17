@@ -42,7 +42,8 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen> {
             _buildTopBar(context),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.only(bottom: 32),
+                // 시안: 상단바와 히어로 카드 사이 24
+                padding: const EdgeInsets.only(top: 24, bottom: 32),
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -192,18 +193,16 @@ class _LeaveHeroCard extends StatelessWidget {
         // 없으면 Stack이 가장 큰 자식 크기로 줄어 카드가 화면 폭을 못 채운다
         fit: StackFit.expand,
         children: [
-          // 캐리어 일러스트는 카드 오른쪽 절반만 차지한다 —
-          // 시안 기준 카드 362 중 182. 왼쪽 글자를 덮지 않아야 한다
+          // 캐리어 일러스트 — 시안 1:1 크기(156×141)로 오른쪽 12, 아래 0에 놓는다.
+          // 카드(362×187) 안에서 실측한 값이라 늘리거나 자르지 않는다.
+          //
+          // SVG로 둔다 — PNG는 1배(182×187)라 3배 화면에서 뭉개졌다
           Positioned(
-            right: 0,
-            top: 0,
+            right: 12,
             bottom: 0,
-            width: 182,
-            child: Image.asset(
-              'assets/images/leave_hero_luggage.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
+            width: 156,
+            height: 141,
+            child: SvgPicture.asset('assets/images/leave_hero_luggage.svg'),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 23, 0, 0),
@@ -396,7 +395,7 @@ class LeaveUsageCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Text(
-                    '-${formatLeaveDays(usage.days)}일',
+                    formatLeaveDelta(usage.days),
                     style: AppTypography.body1NormalBold.copyWith(
                       color: AppColors.primaryNormal,
                     ),

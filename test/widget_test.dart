@@ -552,6 +552,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('여행날짜 수정'), findsOneWidget);
     expect(find.text('코스 삭제'), findsOneWidget);
+    // 시안 실측: 두 항목 상단 간격 52 (아이콘 배경 32 + 여백 20)
+    final first = tester.getRect(find.text('여행날짜 수정'));
+    final second = tester.getRect(find.text('코스 삭제'));
+    expect(second.top - first.top, 52);
   });
 
   testWidgets('미확정 코스는 날짜 대신 일정 정하기 링크가 보인다', (tester) async {

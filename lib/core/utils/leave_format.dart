@@ -13,3 +13,12 @@ String formatLeaveDays(num days) {
       .replaceFirst(RegExp(r'0+$'), '')
       .replaceFirst(RegExp(r'\.$'), '');
 }
+
+/// 사용 내역 카드의 증감 표기 — 사용은 '-2일', 되돌림은 '+2일'.
+///
+/// 부호를 글자로 직접 붙이면(`'-$days일'`) 값이 이미 음수인 취소 내역에서
+/// '--2일'이 된다. 부호는 값에서만 끌어온다.
+String formatLeaveDelta(num days) {
+  final sign = days < 0 ? '+' : '-';
+  return '$sign${formatLeaveDays(days.abs())}일';
+}

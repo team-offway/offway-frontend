@@ -5,7 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/trip_constants.dart';
@@ -442,19 +444,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다.
-      // isScrollControlled가 없으면 이 상한 대신 화면의 9/16이 적용된다
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-      ),
+    showAppBottomSheet<void>(
+      context,
+      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다
+      maxHeightRatio: 0.75,
       builder: (sheetContext) => _PlaceSheet(
         place: place,
         isToday: isToday,
@@ -473,50 +466,24 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 편집 시트 — 여행날짜 수정 · 코스 삭제
   Future<void> _showEditSheet() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final action = await showAppBottomSheet<String>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    '편집',
-                    style: AppTypography.headline2Bold.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                  Positioned(
-                    right: 6,
-                    child: AppIconButton(
-                      icon: Icons.close,
-                      onTap: () => Navigator.of(sheetContext).pop(),
-                      semanticLabel: '닫기',
-                      // 가이드는 제목과 같은 옅은 색 — 기본 검정은 너무 진하다
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 22),
+            const AppSheetTitleBar(title: '편집'),
+            // 시안 실측: 상단바 끝에서 첫 항목까지 19
+            const SizedBox(height: 19),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_calendar.svg',
               label: '여행날짜 수정',
               onTap: () => Navigator.of(sheetContext).pop('reschedule'),
             ),
-            const SizedBox(height: 28),
+            // 시안 실측: 두 항목 상단 간격 52 = 아이콘 32 + 이 여백 20
+            const SizedBox(height: 20),
             _EditSheetRow(
               iconAsset: 'assets/icons/ic_trash.svg',
               label: '코스 삭제',
@@ -540,44 +507,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.backgroundElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '코스를 삭제할까요?',
-          style: AppTypography.headline1Bold.copyWith(
-            color: AppColors.labelNormal,
-          ),
-        ),
-        content: Text(
-          '삭제한 코스는 다시 볼 수 없어요.',
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              '취소',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.labelNeutral,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              '삭제하기',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.primaryNormal,
-              ),
-            ),
-          ),
-        ],
-      ),
+    // 회원탈퇴·연차 내역 삭제와 같은 DS 모달을 쓴다
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: '코스를 삭제할까요?',
+      message: '삭제한 코스는 다시 볼 수 없어요.',
+      confirmLabel: '삭제하기',
     );
     if (confirmed != true || !mounted) return;
     try {

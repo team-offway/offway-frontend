@@ -7,6 +7,7 @@ import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_inline_notice.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart';
@@ -167,13 +168,8 @@ class PeriodStyleScreen extends ConsumerWidget {
 
   /// 모달: 언제 하루 더 쉴까요? (금요일 / 월요일 하루를 붙인다)
   void _showWeekendPatternSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    showAppBottomSheet<void>(
+      context,
       builder: (sheetContext) {
         WeekendPattern? selected = ref
             .read(courseWizardProvider)
@@ -219,13 +215,8 @@ class PeriodStyleScreen extends ConsumerWidget {
 
   /// 모달: 평일 연차, 며칠 쓸까요? (2일·3일 중 선택)
   void _showLeaveStepperSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    showAppBottomSheet<void>(
+      context,
       builder: (sheetContext) {
         // 정책: 연차만은 최소 2일 ~ 최대 3일 (연차소모 = 총 여행일수)
         // 상한은 잔여 연차일수를 넘지 않는다

@@ -164,6 +164,48 @@ void main() {
     expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
 
+  testWidgets('입력 칸 밖을 누르면 키보드가 닫히고 칩은 그대로 눌린다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveRegisterScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(TextField).first);
+    await tester.pumpAndSettle();
+    // 포커스를 가진 노드가 실제 입력 칸의 것인지 견주어 본다
+    bool memoHasFocus() {
+      final memo = tester.widget<TextField>(find.byType(TextField).first);
+      final node = FocusManager.instance.primaryFocus;
+      return node != null &&
+          node.context?.findAncestorWidgetOfExactType<TextField>() == memo;
+    }
+
+    expect(memoHasFocus(), isTrue, reason: '메모 칸에 포커스가 가야 한다');
+
+    // 입력 칸 밖(라벨)을 누르면 포커스가 풀려 키보드가 내려간다
+    await tester.tap(find.text('사유'));
+    await tester.pumpAndSettle();
+    expect(memoHasFocus(), isFalse, reason: '키보드가 내려가야 한다');
+
+    // 탭을 삼키지 않아야 칩이 제 동작을 그대로 받는다
+    await tester.tap(find.text('병가'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('병가')).style?.color,
+      AppColors.primaryNormal,
+    );
+  });
+
   testWidgets('사용 내역: 코스 건만 펼쳐진다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -232,6 +274,36 @@ void main() {
     expect(done.onPressed, isNull, reason: '날짜를 안 골랐으면 잠겨 있어야 한다');
   });
 
+  testWidgets('연차 사용일 선택: 하루를 한 번만 눌러도 선택 완료가 열린다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          // 차감 일수 계산이 끝나야 버튼이 열린다 — 대역으로 즉시 끝내고
+          // 화면이 로컬 근사로 폴백하게 한다
+          leaveRepositoryProvider.overrideWithValue(
+            _NoAvailableTimeRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveDatePickerScreen()),
+      ),
+    );
+    await tester.pump();
+
+    // 여행이 아니라 연차 쓴 날이라 '가는날/오는날' 라벨은 붙지 않는다
+    expect(find.text('가는날'), findsNothing);
+    expect(find.text('오는날'), findsNothing);
+
+    // 오늘 이후 아무 날이나 한 번 누르면 하루짜리 범위가 완성된다 —
+    // 두 번 눌러야 열리면 하루만 쓰는 사람은 버튼이 잠긴 이유를 알 수 없다
+    final today = DateTime.now();
+    await tester.tap(find.text('${today.day}').first);
+    await tester.pumpAndSettle();
+
+    final done = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(done.onPressed, isNotNull, reason: '한 번 눌렀으면 열려 있어야 한다');
+    expect(find.text('가는날'), findsNothing);
+  });
+
   testWidgets('내역이 없으면 빈 상태 안내가 뜬다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -281,7 +353,10 @@ void main() {
     expect(find.text('사용 내역을 삭제할까요?'), findsOneWidget);
     expect(find.text('삭제하면 차감된 연차가 복구돼요.'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, '삭제하기'));
+    // 하단 CTA도 같은 글자라 모달 안의 것으로 좁힌다
+    await tester.tap(
+      find.descendant(of: find.byType(Dialog), matching: find.text('삭제하기')),
+    );
     await tester.pump();
     await tester.pump();
 

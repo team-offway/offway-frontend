@@ -7,9 +7,10 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
-import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/leave_usages_provider.dart';
@@ -81,7 +82,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                   : usages.isEmpty
                   ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                      // 시안 실측: 헤더에서 첫 카드까지 24
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
                       itemCount: usages.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) => _UsageCard(
@@ -112,82 +114,59 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
 
   /// '...' 메뉴 — 지금은 삭제만 있다
   Future<void> _showMenu() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.backgroundElevated,
-      barrierColor: AppColors.materialDimmer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final action = await showAppBottomSheet<String>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           // 제목 바가 시트 전체 폭을 차지해야 닫기 버튼이 오른쪽 끝에 붙는다
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const AppSheetTitleBar(title: '삭제'),
+            // 시안 실측: 상단바 56 + 이 블록 76 = 132, 남는 34는 하단 SafeArea.
+            // 항목은 이 76 안에서 수직 중앙에 놓인다
             SizedBox(
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    '삭제',
-                    style: AppTypography.headline2Bold.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                  Positioned(
-                    right: 6,
-                    child: AppIconButton(
-                      icon: Icons.close,
-                      onTap: () => Navigator.of(sheetContext).pop(),
-                      semanticLabel: '닫기',
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 22),
-            GestureDetector(
-              onTap: () => Navigator.of(sheetContext).pop('delete'),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.staticBlack.withValues(
-                          alpha: AppOpacity.o5,
+              height: 76,
+              child: GestureDetector(
+                onTap: () => Navigator.of(sheetContext).pop('delete'),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.staticBlack.withValues(
+                            alpha: AppOpacity.o5,
+                          ),
+                          shape: BoxShape.circle,
                         ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Opacity(
-                          opacity: AppOpacity.o61,
-                          child: SvgPicture.asset(
-                            'assets/icons/ic_trash.svg',
-                            width: 20,
-                            height: 20,
+                        child: Center(
+                          child: Opacity(
+                            opacity: AppOpacity.o61,
+                            child: SvgPicture.asset(
+                              'assets/icons/ic_trash.svg',
+                              width: 20,
+                              height: 20,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Text(
-                      '사용 내역 삭제',
-                      style: AppTypography.body1NormalMedium.copyWith(
-                        color: AppColors.labelNeutral,
+                      // 시안 실측: 원 우측 끝에서 글자까지 16
+                      const SizedBox(width: 16),
+                      Text(
+                        '사용 내역 삭제',
+                        style: AppTypography.body1NormalMedium.copyWith(
+                          color: AppColors.labelNeutral,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -242,44 +221,13 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 
   Future<void> _confirmDelete(List<LeaveUsage> usages) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.backgroundElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '사용 내역을 삭제할까요?',
-          style: AppTypography.headline1Bold.copyWith(
-            color: AppColors.labelNormal,
-          ),
-        ),
-        content: Text(
-          '삭제하면 차감된 연차가 복구돼요.',
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              '취소',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.labelNeutral,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              '삭제하기',
-              style: AppTypography.body1NormalBold.copyWith(
-                color: AppColors.primaryNormal,
-              ),
-            ),
-          ),
-        ],
-      ),
+    // 회원탈퇴·로그아웃과 같은 DS 모달을 쓴다. Material AlertDialog는 폭·여백·
+    // 버튼 배치가 시안과 달라 이 화면만 다르게 보였다
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: '사용 내역을 삭제할까요?',
+      message: '삭제하면 차감된 연차가 복구돼요.',
+      confirmLabel: '삭제하기',
     );
     if (!mounted || confirmed != true) return;
 
@@ -355,7 +303,11 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 }
 
-/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스
+/// 삭제 모드에서 카드 왼쪽 위에 뜨는 체크박스.
+///
+/// 시안 실측: 18×18, 반경 6. 끈 상태는 **속을 비워** 카드 배경이 그대로
+/// 비쳐야 한다 — 흰색으로 칠하면 코스 건의 하늘색 카드 위에서 흰 사각형이
+/// 도드라진다.
 class _SelectBox extends StatelessWidget {
   const _SelectBox({required this.checked});
 
@@ -364,22 +316,57 @@ class _SelectBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 22,
-      height: 22,
+      width: 18,
+      height: 18,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: checked ? AppColors.primaryNormal : AppColors.backgroundNormal,
+          color: checked ? AppColors.primaryNormal : null,
           borderRadius: BorderRadius.circular(6),
           border: checked
               ? null
-              : Border.all(color: AppColors.lineNormalNeutral),
+              : Border.all(color: AppColors.lineNormalNeutral, width: 1.5),
         ),
-        child: checked
-            ? Icon(Icons.check, size: 16, color: AppColors.staticWhite)
-            : null,
+        child: checked ? const Center(child: _CheckGlyph(size: 11)) : null,
       ),
     );
   }
+}
+
+/// 체크 표시. Material [Icons.check]는 시안보다 획이 얇고 꼬리가 길어
+/// 18px 박스 안에서 비뚤어 보이므로 직접 그린다.
+class _CheckGlyph extends StatelessWidget {
+  const _CheckGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(size: Size.square(size), painter: _CheckPainter());
+  }
+}
+
+class _CheckPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.08, h * 0.52)
+      ..lineTo(w * 0.38, h * 0.82)
+      ..lineTo(w * 0.94, h * 0.18);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.staticWhite
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.18
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CheckPainter oldDelegate) => false;
 }
 
 /// 내역 카드 한 장 — 코스 건은 펼치면 상세로 가는 버튼이 붙는다
@@ -495,7 +482,7 @@ class _UsageCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Text(
-                    '-${formatLeaveDays(usage.days)}일',
+                    formatLeaveDelta(usage.days),
                     style: AppTypography.body1NormalBold.copyWith(
                       color: AppColors.primaryNormal,
                     ),

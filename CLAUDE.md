@@ -72,6 +72,37 @@ lib/
 - **뒤로가기·닫기·스텝 인디케이터 등 당연한 내비게이션은 지시 없이 알아서 연결**한다. 아직 없는 화면으로의 이동만 TODO로 남긴다
 - 구현 후 시뮬레이터로 실행해 디자인과 대조한다
 
+### 디자인 QA 고칠 때 (중요)
+
+**공통 컴포넌트를 고치기 전에, 그 화면이 정말 그걸 쓰는지 먼저 확인한다.**
+
+`lib/core/widgets/`에 공통 위젯이 있어도 화면이 Material 기본 위젯을 직접 쓰는 경우가 많다. 공통 파일만 고치고 "반영됐다"고 하면 화면은 그대로다 — 실기기 리로드 문제로 오해하며 시간을 버린다.
+
+```bash
+# ① 그 화면의 실제 호출부를 먼저 읽는다 (grep 으로 사용처 목록만 보고 단정하지 말 것)
+grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/presentation/<화면>.dart
+
+# ② 공통 위젯을 안 쓰고 있으면, 공통으로 옮기는 것부터 한다
+```
+
+의심되면 임시로 진단 코드(빨간 글씨 등)를 심어 **그 코드가 실행되는 경로인지** 먼저 확인한다. 화면에 안 보이면 엉뚱한 파일을 고치고 있는 것이다.
+
+현재 공통으로 묶인 것 — 새로 만들지 말고 이걸 쓴다:
+
+| 대상 | 공통 API | 금지 |
+|---|---|---|
+| 확인 모달 | `showAppConfirmDialog` | `AlertDialog` 직접 생성 |
+| 바텀시트 | `showAppBottomSheet` | `showModalBottomSheet` 직접 호출 |
+| 시트 제목 바 | `AppSheetTitleBar` | `height: 56` + `Stack` 직접 조립 |
+| 닫기 버튼 | `AppIconButton.close` | `Icons.close` 직접 사용 |
+
+### 시안 치수 실측
+
+- **Figma 좌표(`get_metadata`)를 우선**한다. 스크린샷 픽셀 측정은 잉크 기준이라 텍스트 박스·여백과 어긋난다
+- Figma의 `gap`이 눈에 보이는 간격과 다를 수 있다 — 자식이 `inset` 음수로 밖으로 넘치거나 `flex-wrap`의 `gap-y`인 경우
+- **시안 서체는 Pretendard JP, 앱은 Pretendard**로 글자 폭이 다르다. 폭을 고정값으로 박으면 글자가 잘리거나 부푼다 (`취소` 27.8 / `삭제하기` 55.7 / `탈퇴할게요` 69.6)
+- 위젯 테스트는 기본 서체가 **Ahem**(모든 글자 1em 정사각형)이다. 폭·줄바꿈을 재려면 `test/flutter_test_config.dart`가 실은 Pretendard가 필요하고, **`MaterialApp(theme: AppTheme.light)`를 함께 줘야** 적용된다 (타이포 토큰은 `fontFamily`를 비워두고 테마에서 지정하므로)
+
 ### 개발일지
 
 `devlog/_template.html` 템플릿을 복사해 `devlog/offway-devlog-MMDD.html` 로 작성한다 (한 화면 가로형 HTML, 팀에 파일째 공유). `devlog/`는 gitignore 대상 — 커밋하지 않는다.
