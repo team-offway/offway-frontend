@@ -292,7 +292,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     BuildContext context,
     AsyncValue<Map<String, dynamic>> user,
   ) {
-    final nickname = user.value?['nickname'] ?? '오프웨이';
+    // 이름을 아직 못 읽었으면 이름 없이 인사한다.
+    //
+    // 기본값을 '오프웨이'로 두었더니 로그인 직후 '오프웨이님'으로 인사하고
+    // 곧 내 이름으로 바뀌었다 — 남의 이름으로 불리는 것처럼 보인다.
+    // 이름이 오면 그때 붙인다
+    final nickname = user.value?['nickname'] as String?;
+    final greeting = nickname == null ? '어디로 떠나볼까요?' : '$nickname님, 어디로 떠나볼까요?';
     return Container(
       height: 230,
       padding: const EdgeInsets.all(24),
@@ -320,7 +326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$nickname님, 어디로 떠나볼까요?',
+                greeting,
                 style: AppTypography.heading2Bold.copyWith(
                   color: AppColors.labelNormal,
                 ),
