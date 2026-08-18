@@ -51,6 +51,13 @@ void main() {
       expect(find.text('숙박 할인'), findsOneWidget);
     });
 
+    testWidgets('우측 상단에 공유 버튼이 없다', (tester) async {
+      // 시안에 없는 버튼이었다. 누르면 아무 일도 일어나지 않아 고장난
+      // 것처럼 보였다
+      await pump(tester);
+      expect(find.byIcon(Icons.ios_share), findsNothing);
+    });
+
     testWidgets('한 줄 제목은 그리지 않는다', (tester) async {
       // 시안에 headline 자리가 없다 — 제목·뱃지 바로 아래가 본문이다
       await pump(tester);
