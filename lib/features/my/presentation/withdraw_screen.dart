@@ -9,6 +9,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../notification/application/push_registration.dart';
 import '../../home/presentation/home_screen.dart' show homeUserProvider;
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
@@ -154,6 +155,9 @@ class WithdrawScreen extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
+      // 계정이 지워지기 전에 푼다 — 지운 뒤에는 이 기기의 토큰이 누구
+      // 것이었는지 서버가 알 수 없다
+      await ref.read(pushRegistrationProvider).stop();
       await ref.read(authRepositoryProvider).withdraw();
     } on ApiException catch (e) {
       // 서버가 못 지웠는데 로그인 화면으로 보내면 탈퇴된 줄 알고 넘어간다
