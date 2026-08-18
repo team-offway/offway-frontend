@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
@@ -9,23 +10,56 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../application/notification_provider.dart';
+import '../application/push_registration.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
 
 /// 기기 알림 권한이 켜져 있는지.
 ///
-/// TODO(push): 실제 권한 조회로 바꾼다 (permission_handler 등).
-/// 지금은 늘 켜진 것으로 보고 목록을 그린다.
-final notificationEnabledProvider = Provider.autoDispose<bool>((ref) => true);
+/// 화면에 들어올 때마다 다시 읽는다 — 설정에서 켜고 돌아온 사람에게
+/// 안내가 남아 있으면 안 된다.
+final notificationEnabledProvider = FutureProvider.autoDispose<bool>(
+  (ref) => ref.watch(pushRegistrationProvider).isAuthorized(),
+);
 
 /// 알림 목록 — 홈 상단 종 아이콘에서 들어온다.
-class NotificationScreen extends ConsumerWidget {
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = ref.watch(notificationEnabledProvider);
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends ConsumerState<NotificationScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 설정에서 권한을 켜고 돌아왔을 수 있다 — 안내가 남아 있으면
+    // 켰는데도 못 받는 줄 안다
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(notificationEnabledProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 아직 못 읽었으면 목록을 그린다 — 권한이 있는데 안내가 깜빡이면
+    // 사용자를 설정으로 헛걸음시킨다
+    final enabled = ref.watch(notificationEnabledProvider).value ?? true;
     final feed = ref.watch(notificationFeedProvider);
 
     // 목록을 읽을 때마다 배지를 맞춘다 — 읽고 나왔는데 배지가 남아 있으면
@@ -267,6 +301,19 @@ class _EmptyNotifications extends StatelessWidget {
 class _PermissionOff extends StatelessWidget {
   const _PermissionOff();
 
+  /// 이 앱의 설정 화면을 연다.
+  ///
+  /// **앱 안에서 다시 물을 수 없다.** iOS는 한 번 거부한 사용자에게 권한
+  /// 팝업을 두 번 띄우지 않는다 — 켜려면 설정으로 가는 수밖에 없다.
+  ///
+  /// `app-settings:`는 iOS가 앱별 설정 화면에 붙여 둔 주소다.
+  Future<void> _openSettings(BuildContext context) async {
+    final opened = await launchUrl(Uri.parse('app-settings:'));
+    if (opened || !context.mounted) return;
+    // 열지 못하면 손으로 찾아가야 한다 — 어디로 갈지 알려준다
+    showAppToast(context, '설정 > OffWay > 알림에서 켤 수 있어요');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -294,8 +341,7 @@ class _PermissionOff extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           GestureDetector(
-            // TODO(push): 기기 설정 화면으로 보낸다 (app_settings 등)
-            onTap: () {},
+            onTap: () => _openSettings(context),
             behavior: HitTestBehavior.opaque,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
