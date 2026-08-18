@@ -34,7 +34,15 @@ Future<void> main() async {
   // 토큰이 만료됐어도 홈으로 보낸다: 첫 요청이 401을 맞으면 인터셉터가
   // 재발급하고, 그것도 실패하면 세션 만료로 로그인 화면으로 돌아간다
   final storage = TokenStorage(const FlutterSecureStorage());
-  final signedIn = await storage.accessToken != null;
+  // Keychain 읽기가 실패해도 앱은 떠야 한다 — 여기서 던지면 첫 화면이
+  // 그려지기 전이라 흰 화면으로 죽는다. 못 읽으면 로그인부터 시작한다
+  bool signedIn;
+  try {
+    signedIn = await storage.accessToken != null;
+  } on Exception catch (e) {
+    debugPrint('저장된 토큰을 읽지 못해 로그인부터 시작합니다: $e');
+    signedIn = false;
+  }
 
   runApp(
     ProviderScope(

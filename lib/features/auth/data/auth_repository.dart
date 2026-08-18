@@ -163,7 +163,13 @@ class AuthRepository {
   /// 토큰이 남았는데 로그인 화면으로 보내면 로그아웃된 줄 알고 넘어간다.
   Future<void> logout() async {
     try {
-      await _dio.post<dynamic>('/api/v1/auth/logout');
+      await _dio.post<dynamic>(
+        '/api/v1/auth/logout',
+        // 만료된 토큰으로 로그아웃하면 서버가 401을 준다. 인터셉터가 그걸
+        // 보면 재발급을 시도하고, 실패 시 '세션이 만료됐어요'를 띄운다 —
+        // 스스로 로그아웃한 사람에게는 틀린 안내다
+        options: Options(extra: {kSkipAuthKey: true}),
+      );
     } on DioException {
       // 무시 — 아래에서 로컬을 비우는 것이 사용자가 기대하는 결과다
     }

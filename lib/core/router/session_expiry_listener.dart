@@ -29,11 +29,18 @@ class SessionExpiryListener extends ConsumerWidget {
   }
 
   Future<void> _handleExpiry(BuildContext context, WidgetRef ref) async {
-    // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
-    // 되풀이된다
-    await ref.read(secureStorageProvider).clear();
-    // 신호를 내려 둔다 — 남아 있으면 다시 로그인해도 곧장 튕긴다
-    ref.read(sessionExpiredProvider.notifier).reset();
+    try {
+      // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
+      // 되풀이된다
+      await ref.read(secureStorageProvider).clear();
+    } on Exception catch (e) {
+      // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
+      // 사용자는 아무 안내 없이 만료된 화면에 갇힌다
+      debugPrint('세션 만료 처리 중 토큰 삭제 실패: $e');
+    } finally {
+      // 신호를 내려 둔다 — 남아 있으면 다시 로그인해도 곧장 튕긴다
+      ref.read(sessionExpiredProvider.notifier).reset();
+    }
 
     if (!context.mounted) return;
     ref.read(appRouterProvider).go(AppRoutes.login);
