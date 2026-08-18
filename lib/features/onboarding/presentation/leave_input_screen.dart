@@ -112,8 +112,12 @@ class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
     try {
       // 게스트(X-Guest-Id) 앞으로 총 연차를 저장한다 — 홈이 이 값을 읽는다
       await ref.read(leaveRepositoryProvider).updateTotalDays(days);
-      // 홈이 이미 캐시를 갖고 있으면 옛 연차가 보이므로 다시 불러오게 한다
+      // 홈이 이미 캐시를 갖고 있으면 옛 연차가 보이므로 다시 불러오게 한다.
+      // **새 값을 받고 나서 옮긴다** — invalidate는 다시 읽으라는 표시일
+      // 뿐이라, 곧장 가면 홈이 아직 연차가 없는 상태를 보고 온보딩으로
+      // 되돌려 보낸다(같은 화면을 두 번 입력하게 된다)
       ref.invalidate(homeSnapshotProvider);
+      await ref.read(homeSnapshotProvider.future);
       if (mounted) context.go(AppRoutes.home);
     } on ApiException catch (e) {
       // 저장 없이 홈으로 보내면 연차가 0으로 보여 더 혼란스럽다 — 머물러 알린다
