@@ -175,6 +175,28 @@ class AuthRepository {
     }
     await _storage.clear();
   }
+
+  /// 회원 탈퇴 (`DELETE /users/me`).
+  ///
+  /// 서버가 계정·저장 코스·연차 내역·여행 후기를 지우고, Apple 로그인이면
+  /// 저장해 둔 refresh 토큰으로 Apple 연결까지 끊는다.
+  ///
+  /// **로그아웃과 달리 실패를 삼키지 않는다.** 서버가 못 지웠는데 앱만
+  /// 로그인 화면으로 보내면, 사용자는 탈퇴된 줄 알지만 데이터는 그대로다.
+  ///
+  /// 성공하면 게스트 ID까지 비운다 — 남겨두면 서버에서 지운 데이터를 옛
+  /// 게스트 ID로 다시 만들어 탈퇴한 흔적이 따라온다.
+  Future<void> withdraw() async {
+    try {
+      await _dio.delete<dynamic>('/api/v1/users/me');
+    } on DioException catch (e) {
+      // 서버가 준 문구를 살려 화면이 원인을 보여줄 수 있게 한다.
+      // 이미 탈퇴한 계정이면 USER-006(401)이 온다 — 토큰이 만료 전이라
+      // 서명 검증은 통과하지만 계정이 없는 창이다
+      throw ApiEnvelope.toApiException(e);
+    }
+    await _storage.clearAll();
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
