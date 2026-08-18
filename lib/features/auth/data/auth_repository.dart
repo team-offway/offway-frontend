@@ -176,6 +176,24 @@ class AuthRepository {
     await _storage.clear();
   }
 
+  /// 로그인한 사용자 정보 (`GET /users/me`).
+  ///
+  /// 닉네임을 로그인 응답에만 기대지 않기 위해 있다 — 기기를 바꾸거나 앱을
+  /// 다시 깔면 세션은 재발급으로 살아나는데 표시할 이름이 없다.
+  ///
+  /// `email`·`provider`는 null일 수 있다(카카오 미동의, 개발 로그인).
+  /// **프로필 사진은 아직 응답에 없다** — 서버에 요청해 둔 상태다.
+  Future<Map<String, dynamic>> me() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/v1/users/me');
+      return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+    } on DioException catch (e) {
+      // 탈퇴한 계정이면 USER-006(401)이 온다 — access 토큰이 만료 전이라
+      // 서명은 통과하지만 계정이 없는 창이다
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 회원 탈퇴 (`DELETE /users/me`).
   ///
   /// 서버가 계정·저장 코스·연차 내역·여행 후기를 지우고, Apple 로그인이면
