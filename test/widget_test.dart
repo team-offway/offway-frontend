@@ -260,6 +260,7 @@ class _FakeAuthRepository implements AuthRepository {
     SocialProvider provider,
     String socialAccessToken, {
     SocialProfile? profile,
+    String? authorizationCode,
   }) async => const AuthTokens(
     accessToken: 'test-access',
     refreshToken: 'test-refresh',
