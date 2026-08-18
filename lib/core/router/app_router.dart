@@ -28,8 +28,14 @@ import '../../features/notification/presentation/notification_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
 import '../../features/region/presentation/region_detail_screen.dart';
 import '../../features/region/presentation/region_list_screen.dart';
+import '../../features/onboarding/presentation/onboarding_intro_screen.dart';
+import '../../features/splash/presentation/splash_screen.dart';
 
 abstract final class AppRoutes {
+  static const splash = '/splash';
+
+  /// 앱 소개 두 장 — 로그인 전에 보여준다
+  static const onboardingIntro = '/onboarding/intro';
   static const login = '/login';
   static const onboardingLeave = '/onboarding/leave';
   static const myLeave = '/leave';
@@ -122,22 +128,50 @@ CustomTransitionPage<void> _noTransitionPage(Widget child) {
 
 /// 앱을 켰을 때 처음 열 화면.
 ///
+/// 스플래시가 끝나면 갈 곳.
+///
 /// 토큰이 남아 있으면 홈으로 바로 들어간다 — 앱을 켤 때마다 로그인 버튼을
 /// 다시 누르게 하면 안 된다. 이 값은 앱 시작 시 [main]이 Keychain을 읽어
-/// 덮어쓴다(스플래시를 두지 않으려면 라우터가 만들어지기 전에 알아야 한다).
+/// 덮어쓴다. 스플래시가 머무는 동안이 아니라 **그 전에** 읽는 이유는, 라우터가
+/// 만들어질 때 목적지가 정해져 있어야 스플래시가 끝나고 곧장 넘길 수 있기
+/// 때문이다.
+///
+/// 로그인 전이면 소개 두 장([AppRoutes.onboardingIntro])부터 보여준다.
 ///
 /// 개발용: `--dart-define=INITIAL_ROUTE=/onboarding/leave` 가 늘 우선한다
-final initialRouteProvider = Provider<String>((ref) {
+final postSplashRouteProvider = Provider<String>((ref) {
   return const String.fromEnvironment(
     'INITIAL_ROUTE',
-    defaultValue: AppRoutes.login,
+    defaultValue: AppRoutes.onboardingIntro,
   );
+});
+
+/// 앱이 처음 그리는 경로.
+///
+/// 늘 스플래시다. 단 개발용 `INITIAL_ROUTE`를 준 경우에는 그 화면을 바로 띄운다
+/// — 특정 화면만 보려고 실행할 때 스플래시를 기다릴 이유가 없다.
+final initialRouteProvider = Provider<String>((ref) {
+  const override = String.fromEnvironment('INITIAL_ROUTE');
+  return override.isEmpty ? AppRoutes.splash : override;
 });
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: ref.watch(initialRouteProvider),
     routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        name: 'splash',
+        // 다음 목적지는 main이 정해 둔 초기 경로다. 스플래시가 그 값을
+        // 그대로 들고 가서, 머문 뒤 거기로 보낸다
+        builder: (context, state) =>
+            SplashScreen(next: ref.read(postSplashRouteProvider)),
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingIntro,
+        name: 'onboardingIntro',
+        builder: (context, state) => const OnboardingIntroScreen(),
+      ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',

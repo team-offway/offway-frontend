@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/auth/data/google_auth_service.dart';
@@ -306,6 +307,11 @@ class _FakeAuthRepository implements AuthRepository {
 }
 
 final _serverOverrides = [
+  // 이 파일의 테스트는 로그인 화면부터 시작하는 플로우를 본다. 앱의 실제 첫
+  // 화면은 스플래시라 그대로 두면 1.2초를 기다려야 하고, 테스트가 재는 것도
+  // 스플래시가 아니다 — 초기 경로를 로그인으로 고정한다.
+  // 스플래시 자체는 splash_test.dart 가 따로 검증한다
+  initialRouteProvider.overrideWithValue(AppRoutes.login),
   googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
   deviceRepositoryProvider.overrideWithValue(_FakeDeviceRepository()),
   // OffwayApp.initState가 FirebaseMessaging을 직접 부른다 —
