@@ -7,6 +7,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 class AppleLoginResult {
   const AppleLoginResult({
     required this.identityToken,
+    required this.authorizationCode,
     required this.userIdentifier,
     this.email,
     this.fullName,
@@ -14,6 +15,17 @@ class AppleLoginResult {
 
   /// 서버가 Apple 공개키로 검증할 JWT
   final String identityToken;
+
+  /// 서버가 Apple과 토큰을 교환할 때 쓰는 1회용 코드.
+  ///
+  /// **탈퇴 시 Apple 연결 해제(revoke)에 필요하다** — 앱 심사 항목이다
+  /// (5.1.1(v)). Apple의 `/auth/revoke`는 refresh 토큰만 받는데, 서버가
+  /// 그것을 얻는 유일한 길이 이 코드를 `/auth/token`에서 교환하는 것이다.
+  ///
+  /// **1회용이고 5분이면 만료된다** — 로그인하는 그 순간 함께 보내야 하고
+  /// 나중에 따로 받아올 수 없다. [identityToken]은 신원 증명서라 취소할
+  /// 대상이 아니므로 이 값을 대신하지 못한다.
+  final String authorizationCode;
 
   /// Apple이 앱마다 부여하는 고유 사용자 ID
   final String userIdentifier;
@@ -65,6 +77,8 @@ class AppleAuthService {
       final name = [family, given].whereType<String>().join();
       return AppleLoginResult(
         identityToken: identityToken,
+        // SDK가 non-nullable로 주므로 항상 들어온다
+        authorizationCode: credential.authorizationCode,
         userIdentifier: credential.userIdentifier ?? '',
         email: credential.email,
         fullName: name.isEmpty ? null : name,

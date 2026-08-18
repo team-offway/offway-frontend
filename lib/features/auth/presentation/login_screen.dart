@@ -72,9 +72,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   ///
   /// [authenticate]는 서버로 넘길 소셜 토큰과, 최초 로그인 시에만 얻을 수 있는
   /// 프로필(Apple의 이름·이메일)을 함께 반환한다.
+  ///
+  /// `authorizationCode`는 **Apple만** 채운다 — 탈퇴할 때 Apple 연결을
+  /// 해제하는 데 쓰인다. 카카오·구글은 null이다.
   Future<void> _runSocialLogin({
     required SocialProvider provider,
-    required Future<({String token, SocialProfile? profile})> Function()
+    required Future<
+      ({String token, String? authorizationCode, SocialProfile? profile})
+    >
+    Function()
     authenticate,
     required bool Function(Object error) isCancelled,
   }) async {
@@ -85,7 +91,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       try {
         await ref
             .read(authRepositoryProvider)
-            .loginWithSocial(provider, result.token, profile: result.profile);
+            .loginWithSocial(
+              provider,
+              result.token,
+              profile: result.profile,
+              authorizationCode: result.authorizationCode,
+            );
       } catch (e) {
         // 서버에 `POST /auth/callback/{provider}`가 아직 없다 — 지금 실패를
         // 막아 세우면 카카오·Apple·구글 어느 쪽으로도 앱에 들어올 수 없다.
@@ -114,7 +125,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       provider: SocialProvider.kakao,
       authenticate: () async {
         // 카카오는 프로필을 서버가 액세스 토큰으로 조회한다
-        return (token: await _kakaoAuth.login(), profile: null);
+        return (
+          token: await _kakaoAuth.login(),
+          authorizationCode: null,
+          profile: null,
+        );
       },
       isCancelled: (e) => e is KakaoLoginCancelled,
     );
@@ -135,6 +150,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
         return (
           token: result.identityToken,
+          // 1회용·5분 만료라 로그인하는 지금 함께 넘겨야 한다
+          authorizationCode: result.authorizationCode,
           profile: profile.isEmpty ? null : profile,
         );
       },
@@ -151,6 +168,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // 같은 형태로 넘겨 서버가 provider별로 분기하지 않아도 되게 한다
         return (
           token: result.idToken,
+          authorizationCode: null,
           profile: SocialProfile(
             email: result.email,
             fullName: result.displayName,

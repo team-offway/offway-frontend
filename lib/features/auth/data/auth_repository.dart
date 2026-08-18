@@ -66,15 +66,23 @@ class AuthRepository {
   ///
   /// [profile]: Apple처럼 **최초 로그인 1회만** 제공되는 이름·이메일.
   /// 이때 서버가 저장하지 않으면 이후에는 복구할 수 없으므로 함께 전달한다.
+  /// [authorizationCode]는 **Apple만** 채워 보낸다 — 서버가 이 값으로 Apple과
+  /// 토큰을 교환해 refresh 토큰을 갖고 있어야 탈퇴할 때 Apple 연결을 해제할
+  /// 수 있다(심사 항목 5.1.1(v)).
+  ///
+  /// 서버에서 선택 필드라 배포 순서를 맞추지 않아도 된다 — 앱이 먼저 나가도
+  /// 서버가 무시하고, 서버가 먼저 나가도 옛 앱은 그대로 동작한다.
   Future<AuthTokens> loginWithSocial(
     SocialProvider provider,
     String socialAccessToken, {
     SocialProfile? profile,
+    String? authorizationCode,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/auth/callback/${provider.path}',
       data: {
         'accessToken': socialAccessToken,
+        'authorizationCode': ?authorizationCode,
         if (profile != null) ...profile.toJson(),
       },
       options: Options(headers: {'X-Client-Type': 'app'}),
