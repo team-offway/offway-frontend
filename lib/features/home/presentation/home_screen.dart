@@ -69,10 +69,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }).toList();
   }
 
+  /// 온보딩으로 한 번만 보낸다 — 프로바이더가 다시 읽힐 때마다 go가
+  /// 겹치면 화면이 덜컥거린다
+  bool _redirectedToOnboarding = false;
+
+  /// 잔여 연차가 없으면 온보딩으로.
+  ///
+  /// 아직 못 읽었거나 실패했으면 아무것도 하지 않는다 — 서버를 못 부른 것과
+  /// '연차가 없다'는 다르다. 홈은 그대로 두고 다음 조회를 기다린다.
+  void _redirectIfLeaveMissing(AsyncValue<Map<String, dynamic>> user) {
+    if (_redirectedToOnboarding) return;
+    final data = user.value;
+    if (data == null || data['remainingLeaveDays'] != null) return;
+
+    _redirectedToOnboarding = true;
+    // build 도중에는 화면을 바꿀 수 없다
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go(AppRoutes.onboardingLeave);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(homeUserProvider);
     final regions = ref.watch(homeRegionsProvider);
+
+    // 연차를 등록하지 않았으면 온보딩으로 돌려보낸다.
+    //
+    // 로그인 직후의 분기(isNewUser)만으로는 부족하다 — 그 값은 '이번에
+    // 계정을 만들었나'라서 온보딩에서 앱을 껐다 켠 사람에게는 다시 false다.
+    // 그러면 잔여 연차가 빈 채로 홈에 갇혀, 코스 추천이 제 값을 못 낸다.
+    _redirectIfLeaveMissing(user);
 
     // 시안 노트: 여행 종료 D+1 첫 홈 진입시 "다녀오셨나요?" 모달
     watchTripOutcomePrompt();
