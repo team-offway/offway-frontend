@@ -22,10 +22,13 @@ class DeviceRepository {
   /// 실패했는지 애매하면 그냥 다시 보내면 된다.
   Future<void> register(String token) async {
     try {
-      await _dio.post<dynamic>(
+      final response = await _dio.post<dynamic>(
         '/api/v1/devices',
         data: {'token': token, 'platform': Platform.isIOS ? 'IOS' : 'ANDROID'},
       );
+      // 공통 래퍼는 200에도 실패 code를 담을 수 있다 — 그것까지 걸러야
+      // '등록됐다'가 사실이 된다
+      ApiEnvelope.unwrap(response);
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }
@@ -37,7 +40,8 @@ class DeviceRepository {
   /// 사실상 이 기기의 것이다. 지울 것이 없어도 성공이다.
   Future<void> unregister() async {
     try {
-      await _dio.delete<dynamic>('/api/v1/devices');
+      final response = await _dio.delete<dynamic>('/api/v1/devices');
+      ApiEnvelope.unwrap(response);
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }

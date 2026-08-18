@@ -21,11 +21,19 @@ class PushRegistration {
   final Ref _ref;
   StreamSubscription<String>? _refreshSubscription;
 
+  /// 해제된 뒤에는 등록하지 않는다.
+  ///
+  /// [start]는 권한 팝업·토큰 조회로 몇 초가 걸린다. 그 사이 로그아웃하면
+  /// DELETE가 먼저 나가고 뒤늦은 POST가 기기를 되살려, 로그아웃했는데
+  /// 푸시가 계속 온다.
+  bool _stopped = false;
+
   /// 앱이 뜬 뒤 한 번 부른다.
   ///
   /// 권한을 묻고, 받은 토큰을 등록하고, 갱신을 구독한다. 토큰은 서버가
   /// 몇 번을 받아도 한 행만 두므로 매번 보내도 된다.
   Future<void> start() async {
+    _stopped = false;
     try {
       final messaging = FirebaseMessaging.instance;
 
@@ -55,6 +63,7 @@ class PushRegistration {
   }
 
   Future<void> _register(String token) async {
+    if (_stopped) return;
     try {
       await _ref.read(deviceRepositoryProvider).register(token);
     } on Object catch (e) {
@@ -64,8 +73,16 @@ class PushRegistration {
 
   /// 로그아웃·탈퇴에서 부른다 — 이 기기로 알림이 가지 않게 한다.
   Future<void> stop() async {
-    await _refreshSubscription?.cancel();
-    _refreshSubscription = null;
+    // 먼저 세운다 — 뒤늦게 돌아온 start()의 등록을 막는다
+    _stopped = true;
+    try {
+      await _refreshSubscription?.cancel();
+    } on Object catch (e) {
+      // 구독 취소가 실패해도 해제는 해야 한다
+      debugPrint('토큰 갱신 구독 취소 실패: $e');
+    } finally {
+      _refreshSubscription = null;
+    }
     try {
       await _ref.read(deviceRepositoryProvider).unregister();
     } on Object catch (e) {
