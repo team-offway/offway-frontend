@@ -6,7 +6,7 @@ import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
-import 'package:offway/features/my/application/my_profile_provider.dart';
+import 'package:offway/features/auth/application/current_user_provider.dart';
 
 /// 마이 화면 프로필 — 로그인 상태에서는 서버 이름이 홈의 '게스트'를 덮는다.
 ///
@@ -64,7 +64,7 @@ void main() {
     // 토큰이 없으면 401이 뻔하다 — 부를 이유가 없다
     final container = containerWith(home: {'name': '게스트'});
 
-    final profile = await container.read(myProfileProvider.future);
+    final profile = await container.read(currentUserProvider.future);
     expect(profile['name'], '게스트');
     expect(profile.containsKey('nickname'), isFalse);
   });
@@ -76,7 +76,7 @@ void main() {
       me: {'nickname': '영찬', 'email': 'a@b.com', 'provider': 'KAKAO'},
     );
 
-    final profile = await container.read(myProfileProvider.future);
+    final profile = await container.read(currentUserProvider.future);
     expect(profile['nickname'], '영찬');
     expect(profile['email'], 'a@b.com');
     // 홈이 준 값은 그대로 남는다
@@ -91,7 +91,7 @@ void main() {
       fails: true,
     );
 
-    final profile = await container.read(myProfileProvider.future);
+    final profile = await container.read(currentUserProvider.future);
     expect(profile['remainingLeaveDays'], 3.5);
     expect(profile.containsKey('nickname'), isFalse);
   });
@@ -105,7 +105,7 @@ void main() {
       me: {'nickname': '영찬', 'email': null, 'provider': null},
     );
 
-    final profile = await container.read(myProfileProvider.future);
+    final profile = await container.read(currentUserProvider.future);
     expect(profile['nickname'], '영찬');
     expect(profile.containsKey('email'), isFalse);
     expect(profile.containsKey('provider'), isFalse);
