@@ -37,11 +37,16 @@ void main() {
     expect(find.text('영찬님, 어디로 떠나볼까요?'), findsOneWidget);
   });
 
-  testWidgets('이름이 없으면 서비스 이름으로 부른다', (tester) async {
-    // 비회원이거나 서버가 이름을 못 준 상태 — 'null님'이 보이면 안 된다
+  testWidgets('이름이 없으면 이름 없이 인사한다', (tester) async {
+    // 아직 못 읽었거나 서버가 이름을 못 준 상태.
+    //
+    // 예전에는 '오프웨이님'으로 불렀는데, 로그인 직후 잠깐 그렇게 떴다가
+    // 내 이름으로 바뀌어 남의 이름으로 불리는 것처럼 보였다(#102).
     await pump(tester, user: {'remainingLeaveDays': 12.0});
 
-    expect(find.text('오프웨이님, 어디로 떠나볼까요?'), findsOneWidget);
+    expect(find.text('어디로 떠나볼까요?'), findsOneWidget);
+    // 'null님'도, 남의 이름도 보이면 안 된다
     expect(find.textContaining('null'), findsNothing);
+    expect(find.textContaining('오프웨이님'), findsNothing);
   });
 }
