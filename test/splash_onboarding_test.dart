@@ -88,6 +88,22 @@ void main() {
       expect(find.text('짧은 연차도 특별한 여행이 돼요'), findsOneWidget);
     });
 
+    testWidgets('둘째 장에서 시스템 뒤로가기는 첫 장으로 되돌린다', (tester) async {
+      await tester.pumpWidget(appWith(initial: AppRoutes.onboardingIntro));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.text('코스 추천과 정부 혜택까지!'), findsOneWidget);
+
+      // 스와이프 백이 온보딩을 통째로 빠져나가면 안 된다 — 한 장만 되돌린다
+      final popped = await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(popped, isTrue);
+      expect(find.text('짧은 연차도 특별한 여행이 돼요'), findsOneWidget);
+    });
+
     testWidgets('마지막 장에서 다음을 누르면 로그인으로 간다', (tester) async {
       await tester.pumpWidget(appWith(initial: AppRoutes.onboardingIntro));
       await tester.pumpAndSettle();

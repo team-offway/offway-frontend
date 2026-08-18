@@ -48,6 +48,19 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      // 둘째 장에서 스와이프 백을 하면 온보딩을 통째로 빠져나가 버린다 —
+      // 화면 안의 '이전'과 같게 한 장만 되돌린다. 첫 장에서는 막지 않아
+      // 원래대로 나갈 수 있다
+      canPop: _page == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _previous();
+      },
+      child: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
