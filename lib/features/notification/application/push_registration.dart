@@ -28,6 +28,25 @@ class PushRegistration {
   /// 푸시가 계속 온다.
   bool _stopped = false;
 
+  /// 기기 알림 권한이 켜져 있는지 — 알림 화면이 안내를 띄울지 정한다.
+  ///
+  /// **묻지 않고 지금 상태만 본다.** 권한 팝업은 [start]가 앱 시작 때 한 번
+  /// 띄우고, iOS는 거부한 사람에게 두 번 묻지 않는다 — 여기서 다시 부르면
+  /// 아무 일도 없이 거부 상태만 돌아온다.
+  ///
+  /// 읽지 못하면 켜진 것으로 본다. 실제로는 켜져 있는데 안내를 띄우면
+  /// 사용자를 설정으로 헛걸음시킨다.
+  Future<bool> isAuthorized() async {
+    try {
+      final settings = await FirebaseMessaging.instance
+          .getNotificationSettings();
+      return settings.authorizationStatus != AuthorizationStatus.denied;
+    } on Object catch (e) {
+      debugPrint('알림 권한을 읽지 못했다: $e');
+      return true;
+    }
+  }
+
   /// 앱이 뜬 뒤 한 번 부른다.
   ///
   /// 권한을 묻고, 받은 토큰을 등록하고, 갱신을 구독한다. 토큰은 서버가
