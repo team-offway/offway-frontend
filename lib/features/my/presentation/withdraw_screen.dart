@@ -8,9 +8,11 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../auth/application/current_user_provider.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/application/push_registration.dart';
-import '../../home/presentation/home_screen.dart' show homeUserProvider;
+import '../../home/presentation/home_screen.dart'
+    show homeSnapshotProvider, homeUserProvider;
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
 ///
@@ -165,6 +167,11 @@ class WithdrawScreen extends ConsumerWidget {
       showAppToast(context, e.detail.isEmpty ? '탈퇴하지 못했어요' : e.detail);
       return;
     }
+    // 지워진 계정의 이름·연차가 남아 있으면 다음 사람이 그걸로 인사받는다
+    ref
+      ..invalidate(currentUserProvider)
+      ..invalidate(homeSnapshotProvider);
+
     if (!context.mounted) return;
 
     // 남은 화면이 지워진 데이터를 다시 읽지 않도록 처음부터 시작한다
