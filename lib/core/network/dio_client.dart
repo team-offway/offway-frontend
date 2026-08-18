@@ -8,10 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../storage/secure_storage.dart';
 
-/// 이 요청에는 Authorization을 붙이지 말라는 표시 (`Options.extra`).
+/// 이 요청에는 **우리 JWT를 싣지 말라**는 표시 (`Options.extra`).
 ///
 /// 재발급 요청에 만료된 액세스 토큰이 실리면 서버가 그걸 먼저 보고 401을 내
 /// 재발급 자체가 막힌다.
+///
+/// Authorization 헤더가 아예 비는 것은 아니다 — 서버가 임시 Basic 게이트
+/// 뒤에 있어(#122) JWT를 뺀 자리에 Basic 자격증명이 들어간다.
 const kSkipAuthKey = 'skipAuth';
 
 bool shouldSkipAuth(RequestOptions options) =>
