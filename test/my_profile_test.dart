@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offway/features/my/application/my_profile_provider.dart';
+import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 
 /// 마이 화면 프로필 — 소셜 닉네임과 프로필 사진을 서버에서 받아 그린다.
@@ -10,7 +10,7 @@ void main() {
   // 화면이 무엇을 그리는지만 본다 — 값이 홈에서 왔는지 /users/me에서
   // 왔는지는 my_profile_provider_test.dart가 따로 확인한다
   Widget wrap(Map<String, dynamic> user) => ProviderScope(
-    overrides: [myProfileProvider.overrideWith((ref) async => user)],
+    overrides: [currentUserProvider.overrideWith((ref) async => user)],
     child: const MaterialApp(home: MyScreen()),
   );
 

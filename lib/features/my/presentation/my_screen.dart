@@ -12,7 +12,7 @@ import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/application/push_registration.dart';
-import '../application/my_profile_provider.dart';
+import '../../auth/application/current_user_provider.dart';
 
 /// 마이 — 프로필과 계정 관리 메뉴
 class MyScreen extends ConsumerWidget {
@@ -20,7 +20,7 @@ class MyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(myProfileProvider);
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,

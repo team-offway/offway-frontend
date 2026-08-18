@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
@@ -40,6 +41,8 @@ void main() {
           homeSnapshotProvider.overrideWith(
             (ref) async => HomeSnapshot(user: user, regions: const []),
           ),
+          // 홈이 이름을 이 프로바이더로 읽는다 — 안 덮으면 /users/me를 탄다
+          currentUserProvider.overrideWith((ref) async => user),
           // 홈이 함께 부르는 것들 — 서버를 타면 타이머가 남는다
           pendingTripProvider.overrideWith((ref) async => null),
         ],

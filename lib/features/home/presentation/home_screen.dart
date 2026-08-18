@@ -8,6 +8,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../auth/application/current_user_provider.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../../notification/application/notification_provider.dart'
     show hasUnreadNotificationsProvider;
@@ -91,7 +92,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(homeUserProvider);
+    // 홈 API의 user.name은 비회원까지 아우르는 값이라 로그인해도 '게스트'가
+    // 온다(core HomeResponse.GUEST_NAME). 로그인했으면 /users/me의 이름으로
+    // 덮은 값을 쓴다
+    final user = ref.watch(currentUserProvider);
     final regions = ref.watch(homeRegionsProvider);
 
     // 연차를 등록하지 않았으면 온보딩으로 돌려보낸다.

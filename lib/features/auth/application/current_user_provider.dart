@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/storage/secure_storage.dart';
-import '../../auth/data/auth_repository.dart';
+import '../data/auth_repository.dart';
 import '../../home/presentation/home_screen.dart' show homeUserProvider;
 
-/// 마이 화면에 그릴 사용자 — 로그인했으면 서버에서, 아니면 홈 응답에서 읽는다.
+/// 지금 로그인한 사용자 — 홈·마이가 함께 읽는다.
 ///
 /// **홈 응답만으로는 부족하다.** `/home`의 `user.name`은 비회원까지 아우르는
 /// 값이라 로그인해도 '게스트'가 온다(core `HomeResponse.GUEST_NAME`).
@@ -13,7 +13,7 @@ import '../../home/presentation/home_screen.dart' show homeUserProvider;
 ///
 /// 실패하면 홈 값으로 돌아간다 — 이름을 못 부르는 것뿐이라 화면을 막을 일이
 /// 아니다.
-final myProfileProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+final currentUserProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
   final home = await ref.watch(homeUserProvider.future);
