@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
@@ -15,9 +16,10 @@ import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
 
 /// O-01 · 로그인/회원가입
-/// 카카오·Apple은 SDK 연동 완료. 서버 인증 도메인 구축 전이라 토큰 교환 실패는
-/// 경고만 남기고 온보딩으로 진행한다(서버 배포 후 실패 시 중단으로 변경).
-/// 구글은 아직 stub.
+///
+/// 소셜 인증 → 서버 토큰 교환(`POST /auth/callback/{provider}`) → 분기.
+/// 교환이 실패하면 진행하지 않는다 — JWT 없이 들어가면 읽기만 되고 쓰기가
+/// 전부 403이다. 서버가 준 `isNewUser`로 온보딩과 홈을 가른다.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -88,33 +90,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _loading = true);
     try {
       final result = await authenticate();
-      try {
-        await ref
-            .read(authRepositoryProvider)
-            .loginWithSocial(
-              provider,
-              result.token,
-              profile: result.profile,
-              authorizationCode: result.authorizationCode,
-            );
-      } catch (e) {
-        // 서버에 `POST /auth/callback/{provider}`가 아직 없다 — 지금 실패를
-        // 막아 세우면 카카오·Apple·구글 어느 쪽으로도 앱에 들어올 수 없다.
-        // 그래서 교환에 실패해도 흐름을 이어가고, 대신 우리 JWT가 없는 상태로
-        // 남는다(서버 요청은 게스트 식별자 X-Guest-Id로 나간다).
-        //
-        // TODO(auth): 인증 도메인이 배포되면 이 catch를 걷어내고 실패 시
-        // 진행을 중단할 것. JWT 없이 지나가는 지금 상태는 임시다.
-        debugPrint('서버 토큰 교환 실패(인증 API 미배포): $e');
-      }
-      // TODO(auth): 서버 응답의 신규 가입 여부로 온보딩/홈 분기
+      // 토큰 교환이 실패하면 여기서 멈춘다 — JWT 없이 들어가면 읽기만 되고
+      // 연차 등록·코스 담기가 전부 403이라 앱이 고장난 것처럼 보인다
+      final tokens = await ref
+          .read(authRepositoryProvider)
+          .loginWithSocial(
+            provider,
+            result.token,
+            profile: result.profile,
+            authorizationCode: result.authorizationCode,
+          );
       if (!mounted) return;
-      context.go(AppRoutes.onboardingLeave);
+      // 이번에 계정이 만들어졌으면 잔여 연차를 받아야 홈이 채워진다.
+      // 돌아온 사용자는 그 값이 이미 있어 홈으로 곧장 보낸다
+      context.go(tokens.isNewUser ? AppRoutes.onboardingLeave : AppRoutes.home);
     } catch (e) {
       if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지
       debugPrint('${provider.name} 로그인 실패: $e');
       if (!mounted) return;
-      showAppToast(context, '${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      // 서버 detail은 사용자에게 보여줄 문구다 — 원인을 감추면 재시도만 반복한다
+      showAppToast(
+        context,
+        e is ApiException && e.detail.isNotEmpty
+            ? e.detail
+            : '${provider.label} 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }

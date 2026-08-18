@@ -1,0 +1,302 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/core/network/dio_client.dart';
+import 'package:offway/core/router/app_router.dart';
+import 'package:offway/core/storage/secure_storage.dart';
+import 'package:offway/features/auth/data/auth_repository.dart';
+
+/// 메모리에만 담는 토큰 저장소 — Keychain 플러그인이 없는 테스트 환경용
+class _MemoryStorage implements TokenStorage {
+  String? access;
+  String? refresh;
+  String? guest;
+
+  @override
+  Future<String?> get accessToken async => access;
+
+  @override
+  Future<String?> get refreshToken async => refresh;
+
+  @override
+  Future<String?> get guestId async => guest;
+
+  @override
+  Future<void> saveGuestId(String id) async => guest = id;
+
+  @override
+  Future<void> saveTokens({
+    required String accessToken,
+    String? refreshToken,
+  }) async {
+    access = accessToken;
+    if (refreshToken != null) refresh = refreshToken;
+  }
+
+  @override
+  Future<void> clear() async {
+    access = null;
+    refresh = null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// 요청을 서버까지 보내지 않고 미리 정한 답을 돌려주는 어댑터
+class _StubAdapter implements HttpClientAdapter {
+  _StubAdapter(this.respond);
+
+  /// 경로별 응답을 정하는 함수. 호출된 순서를 [calls]에 남긴다
+  final ResponseBody Function(RequestOptions options) respond;
+  final calls = <String>[];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    calls.add(options.path);
+    return respond(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+ResponseBody _json(int status, Map<String, dynamic> body) =>
+    ResponseBody.fromString(
+      '{"status":$status,"data":${_encode(body)},"detail":"","code":"OK"}',
+      status,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+
+String _encode(Map<String, dynamic> m) =>
+    '{${m.entries.map((e) {
+      final v = e.value;
+      final encoded = v is String ? '"$v"' : '$v';
+      return '"${e.key}":$encoded';
+    }).join(',')}}';
+
+void main() {
+  group('로그인 응답', () {
+    test('isNewUser를 그대로 읽는다 — 온보딩/홈 분기의 근거다', () {
+      expect(
+        AuthTokens.fromJson({'accessToken': 'a', 'isNewUser': true}).isNewUser,
+        isTrue,
+      );
+      // 서버가 값을 빼먹으면 기존 사용자로 본다 — 새 사용자를 홈으로 보내는
+      // 쪽이 기존 사용자를 온보딩으로 되돌리는 것보다 덜 나쁘다
+      expect(AuthTokens.fromJson({'accessToken': 'a'}).isNewUser, isFalse);
+    });
+
+    test('토큰 쌍을 저장한다', () async {
+      final storage = _MemoryStorage();
+      final adapter = _StubAdapter(
+        (_) => _json(200, {
+          'accessToken': 'new-access',
+          'refreshToken': 'new-refresh',
+          'isNewUser': true,
+        }),
+      );
+      final dio = Dio()..httpClientAdapter = adapter;
+
+      final tokens = await AuthRepository(
+        dio,
+        storage,
+      ).loginWithSocial(SocialProvider.kakao, 'social-token');
+
+      expect(tokens.isNewUser, isTrue);
+      expect(storage.access, 'new-access');
+      expect(storage.refresh, 'new-refresh');
+    });
+  });
+
+  group('재발급', () {
+    test('회전된 리프레시 토큰을 반드시 저장한다', () async {
+      // 옛 값을 다시 쓰면 서버가 재사용으로 보고 계정 토큰을 전부 끊는다
+      final storage = _MemoryStorage()
+        ..access = 'old-access'
+        ..refresh = 'old-refresh';
+      final dio = Dio()
+        ..httpClientAdapter = _StubAdapter(
+          (_) => _json(200, {
+            'accessToken': 'rotated-access',
+            'refreshToken': 'rotated-refresh',
+          }),
+        );
+
+      final tokens = await AuthRepository(dio, storage).reissue();
+
+      expect(tokens, isNotNull);
+      expect(storage.access, 'rotated-access');
+      expect(storage.refresh, 'rotated-refresh');
+    });
+
+    test('리프레시가 없으면 서버를 부르지 않는다', () async {
+      final adapter = _StubAdapter((_) => _json(200, {}));
+      final dio = Dio()..httpClientAdapter = adapter;
+
+      final tokens = await AuthRepository(dio, _MemoryStorage()).reissue();
+
+      expect(tokens, isNull);
+      expect(adapter.calls, isEmpty);
+    });
+
+    test('재발급이 거절되면 토큰을 비운다 — 안 그러면 401을 되풀이한다', () async {
+      final storage = _MemoryStorage()
+        ..access = 'dead'
+        ..refresh = 'dead';
+      final dio = Dio()
+        ..httpClientAdapter = _StubAdapter((_) => _json(401, {}));
+
+      final tokens = await AuthRepository(dio, storage).reissue();
+
+      expect(tokens, isNull);
+      expect(storage.access, isNull);
+      expect(storage.refresh, isNull);
+    });
+  });
+
+  group('401 인터셉터', () {
+    test('토큰을 되살려 원래 요청을 한 번 다시 보낸다', () async {
+      final storage = _MemoryStorage()..access = 'expired';
+      var refreshed = false;
+      var attempt = 0;
+
+      final adapter = _StubAdapter((options) {
+        attempt++;
+        // 첫 시도는 만료로 막고, 되살린 뒤에는 통과시킨다
+        if (attempt == 1) return _json(401, {});
+        return _json(200, {'ok': 'yes'});
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              refreshed = true;
+              storage.access = 'fresh';
+              return true;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+      final response = await dio.get<dynamic>('/api/v1/leaves/me');
+
+      expect(refreshed, isTrue);
+      expect(response.statusCode, 200);
+      expect(adapter.calls, hasLength(2), reason: '원래 요청 + 재시도');
+    });
+
+    test('되살리지 못하면 401을 그대로 올린다', () async {
+      final adapter = _StubAdapter((_) => _json(401, {}));
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(
+            _MemoryStorage()..access = 'expired',
+          ),
+          // 기본값 — 되살릴 수 없다
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      await expectLater(
+        dio.get<dynamic>('/api/v1/leaves/me'),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.response?.statusCode,
+            'statusCode',
+            401,
+          ),
+        ),
+      );
+      // 재시도하지 않았다 — 되살릴 방법이 없으면 되풀이가 무의미하다
+      expect(adapter.calls, hasLength(1));
+    });
+  });
+
+  group('세션 만료 신호', () {
+    test('되살리지 못한 401 이면 신호를 올린다', () async {
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(
+            _MemoryStorage()..access = 'expired',
+          ),
+          // 기본값 — 되살릴 수 없다
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)
+        ..httpClientAdapter = _StubAdapter((_) => _json(401, {}));
+
+      expect(container.read(sessionExpiredProvider), isFalse);
+      await dio
+          .get<dynamic>('/api/v1/leaves/me')
+          .catchError(
+            (_) => Response<dynamic>(requestOptions: RequestOptions()),
+          );
+
+      // 이 신호가 없으면 화면이 오류만 띄운 채 멈춘다
+      expect(container.read(sessionExpiredProvider), isTrue);
+    });
+
+    test('되살렸으면 신호를 올리지 않는다', () async {
+      final storage = _MemoryStorage()..access = 'expired';
+      var attempt = 0;
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              storage.access = 'fresh';
+              return true;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)
+        ..httpClientAdapter = _StubAdapter((_) {
+          attempt++;
+          return attempt == 1 ? _json(401, {}) : _json(200, {});
+        });
+
+      await dio.get<dynamic>('/api/v1/leaves/me');
+
+      expect(container.read(sessionExpiredProvider), isFalse);
+    });
+  });
+
+  group('앱 시작 경로', () {
+    test('기본은 로그인 화면이다', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(container.read(initialRouteProvider), AppRoutes.login);
+    });
+
+    test('토큰이 있으면 홈으로 시작한다 — main이 이 값을 덮어쓴다', () {
+      // 앱을 켤 때마다 로그인 버튼을 다시 누르게 하면 안 된다
+      final container = ProviderContainer(
+        overrides: [initialRouteProvider.overrideWithValue(AppRoutes.home)],
+      );
+      addTearDown(container.dispose);
+      expect(
+        container.read(appRouterProvider).configuration.routes,
+        isNotEmpty,
+      );
+      expect(container.read(initialRouteProvider), AppRoutes.home);
+    });
+  });
+}

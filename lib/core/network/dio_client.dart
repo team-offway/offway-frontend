@@ -8,6 +8,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../storage/secure_storage.dart';
 
+/// 이 요청에는 **우리 JWT를 싣지 말라**는 표시 (`Options.extra`).
+///
+/// 재발급 요청에 만료된 액세스 토큰이 실리면 서버가 그걸 먼저 보고 401을 내
+/// 재발급 자체가 막힌다.
+///
+/// Authorization 헤더가 아예 비는 것은 아니다 — 서버가 임시 Basic 게이트
+/// 뒤에 있어(#122) JWT를 뺀 자리에 Basic 자격증명이 들어간다.
+const kSkipAuthKey = 'skipAuth';
+
+bool shouldSkipAuth(RequestOptions options) =>
+    options.extra[kSkipAuthKey] == true;
+
+/// 만료된 액세스 토큰을 되살리는 방법.
+///
+/// 되살렸으면 true. 이 파일이 인증 기능(features/auth)을 직접 참조하면
+/// `core → features` 방향 의존과 순환 import가 생기므로, 실제 구현은
+/// 앱 시작 시 [tokenRefresherProvider]를 덮어써 넣는다.
+typedef TokenRefresher = Future<bool> Function();
+
+/// 기본값은 "되살릴 수 없다" — 인증 기능이 이 값을 갈아끼운다
+final tokenRefresherProvider = Provider<TokenRefresher>(
+  (ref) =>
+      () async => false,
+);
+
+/// 세션이 끊겼다는 신호 — 되살리기까지 실패한 401을 만나면 true가 된다.
+///
+/// 인터셉터가 화면을 직접 옮기면 네트워크 계층이 라우터를 알게 된다. 상태만
+/// 올리고, 앱 루트가 이 값을 보고 로그인 화면으로 보낸다.
+class SessionExpiredNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void markExpired() => state = true;
+
+  /// 로그인 화면으로 보낸 뒤 되돌린다 — 남아 있으면 다시 로그인해도 튕긴다
+  void reset() => state = false;
+}
+
+final sessionExpiredProvider = NotifierProvider<SessionExpiredNotifier, bool>(
+  SessionExpiredNotifier.new,
+);
+
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
@@ -18,7 +61,9 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  dio.interceptors.add(AuthInterceptor(ref));
+  // 인터셉터가 재시도할 때 이 dio를 쓴다. provider를 다시 읽으면 자기 자신을
+  // 의존하게 되어 Riverpod이 막는다
+  dio.interceptors.add(AuthInterceptor(ref, dio));
 
   if (kDebugMode) {
     dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
@@ -27,15 +72,24 @@ final dioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-/// 저장된 액세스 토큰을 Authorization 헤더에 붙인다.
-/// 401 응답 시 토큰 갱신 로직은 백엔드 인증 스펙 확정 후 onError에 추가한다.
+/// 저장된 액세스 토큰을 Authorization 헤더에 붙이고, 만료되면 한 번 되살린다.
 ///
-/// JWT가 없으면 임시 Basic 계정(#122 게이트)으로 대신 통과한다.
-/// 소셜 로그인(#93)이 서버에 붙으면 Basic 분기는 서버와 함께 걷어낸다.
+/// JWT가 없으면 임시 Basic 계정(#122 게이트)으로 대신 통과한다 — 읽기 요청은
+/// 그것만으로 되지만 쓰기는 403이다. Basic 분기는 게이트가 걷힐 때 함께 지운다.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._ref);
+  AuthInterceptor(this._ref, this._dio);
 
   final Ref _ref;
+
+  /// 재시도에 쓸 클라이언트 — 이 인터셉터가 붙어 있는 그 인스턴스다
+  final Dio _dio;
+
+  /// 재발급이 진행 중이면 그 결과를 함께 기다린다.
+  ///
+  /// 토큰이 만료된 순간 여러 요청이 동시에 401을 맞는다. 각자 재발급하면
+  /// 리프레시 토큰이 여러 번 회전하고, 뒤늦게 옛 값으로 부른 쪽이 서버에
+  /// **재사용 감지**로 걸려 계정 토큰이 전부 끊긴다.
+  Future<bool>? _refreshing;
 
   /// 매 요청마다 다시 인코딩하지 않도록 한 번만 만든다
   static final String? _basicCredential =
@@ -53,7 +107,8 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final storage = _ref.read(secureStorageProvider);
 
-    final token = await storage.accessToken;
+    // 재발급 요청에 만료된 토큰을 실으면 서버가 그걸 먼저 보고 401을 낸다
+    final token = shouldSkipAuth(options) ? null : await storage.accessToken;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     } else if (_basicCredential != null) {
@@ -67,6 +122,48 @@ class AuthInterceptor extends Interceptor {
 
     handler.next(options);
   }
+
+  /// 만료된 액세스 토큰(401 · `USER-004`)을 한 번 되살려 재시도한다.
+  ///
+  /// Bearer 없이 맞는 403은 여기서 손대지 않는다 — 되살릴 토큰이 없다.
+  /// 재발급 자체가 실패하면 원래 오류를 그대로 올려 화면이 로그인으로 보낸다.
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final options = err.requestOptions;
+    // 재발급 요청이 401이면 리프레시도 죽은 것 — 다시 재발급하면 무한 루프다
+    if (err.response?.statusCode != 401 ||
+        shouldSkipAuth(options) ||
+        options.extra[_retriedKey] == true) {
+      return handler.next(err);
+    }
+
+    // 동시에 401을 맞은 요청들이 하나의 재발급을 함께 기다린다
+    final refreshed = await (_refreshing ??= _ref
+        .read(tokenRefresherProvider)()
+        .whenComplete(() => _refreshing = null));
+    if (!refreshed) {
+      // 되살릴 수 없는 401 — 다시 로그인해야 한다. 이 신호를 올리지 않으면
+      // 화면이 오류만 띄운 채 멈춰, 사용자가 나갈 길을 찾지 못한다
+      _ref.read(sessionExpiredProvider.notifier).markExpired();
+      return handler.next(err);
+    }
+
+    try {
+      // 새 토큰으로 원래 요청을 한 번만 다시 보낸다
+      final retried = await _dio.fetch<dynamic>(
+        options..extra[_retriedKey] = true,
+      );
+      return handler.resolve(retried);
+    } on DioException catch (e) {
+      return handler.next(e);
+    }
+  }
+
+  /// 재시도한 요청임을 표시 — 두 번 이상 되풀이하지 않게 막는다
+  static const _retriedKey = 'authRetried';
 
   Future<String> _loadOrCreateGuestId(TokenStorage storage) async {
     final existing = await storage.guestId;

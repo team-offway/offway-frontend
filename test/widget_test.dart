@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/core/storage/secure_storage.dart';
+import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/auth/data/google_auth_service.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
@@ -244,6 +246,39 @@ class _FakeGoogleAuthService implements GoogleAuthService {
   Future<void> logout() async {}
 }
 
+/// 서버 토큰 교환 — 테스트 환경은 HTTP가 400으로 막혀 실제 호출을 못 한다.
+///
+/// `isNewUser: true`로 둔다. 테스트들이 로그인 직후 온보딩(잔여 연차 입력)을
+/// 지나 홈으로 가는 흐름을 검증하기 때문이다.
+class _FakeAuthRepository implements AuthRepository {
+  _FakeAuthRepository(this._storage);
+
+  final TokenStorage _storage;
+
+  @override
+  Future<AuthTokens> loginWithSocial(
+    SocialProvider provider,
+    String socialAccessToken, {
+    SocialProfile? profile,
+    String? authorizationCode,
+  }) async => const AuthTokens(
+    accessToken: 'test-access',
+    refreshToken: 'test-refresh',
+    isNewUser: true,
+  );
+
+  @override
+  Future<AuthTokens?> reissue() async => null;
+
+  /// 서버는 부르지 않고 Keychain만 비운다 — 삭제가 실패하면 그대로 던져
+  /// "토큰이 남았는데 로그인 화면으로 보내지 않는다"를 검증할 수 있게 한다
+  @override
+  Future<void> logout() => _storage.clear();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 final _serverOverrides = [
   googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
   notificationRepositoryProvider.overrideWithValue(
@@ -256,6 +291,9 @@ final _serverOverrides = [
     _FakeRegionRecommendRepository(),
   ),
   courseRepositoryProvider.overrideWithValue(_FakeCourseRepository()),
+  authRepositoryProvider.overrideWith(
+    (ref) => _FakeAuthRepository(ref.watch(secureStorageProvider)),
+  ),
 ];
 
 void main() {

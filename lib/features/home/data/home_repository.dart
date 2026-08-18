@@ -43,6 +43,9 @@ class HomeRepository {
         user: {
           'nickname': user['name'],
           'remainingLeaveDays': user['remainingLeaveDays'],
+          // 소셜 프로필 사진 — 서버가 아직 안 실어 준다. 필드가 붙으면
+          // 마이 화면이 기본 아이콘 대신 이 사진을 그린다
+          'profileImageUrl': ?user['profileImageUrl'],
         },
         regions: regions.map(_toRegionCardMap).toList(),
         filters: ((data['filters'] as List?) ?? const [])
