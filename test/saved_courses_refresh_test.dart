@@ -39,9 +39,20 @@ void main() {
     return container;
   }
 
+  /// 테스트가 끝날 때까지 구독을 붙들어 둔다.
+  ///
+  /// 목록은 autoDispose다 — `read`만 하면 그 순간 구독이 닫혀 다음 이벤트
+  /// 루프에서 버려진다. 그러면 무효화를 안 해도 다시 읽혀서, 무효화가
+  /// 실제로 필요한지 이 테스트가 가리지 못한다.
+  void keepAlive(ProviderContainer container, String scope) {
+    final sub = container.listen(savedCoursesProvider(scope), (_, _) {});
+    addTearDown(sub.close);
+  }
+
   test('담은 뒤 무효화하면 목록에 새 코스가 보인다', () async {
     final repository = _FakeRepository();
     final container = containerWith(repository);
+    keepAlive(container, 'ALL');
 
     expect(await container.read(savedCoursesProvider('ALL').future), isEmpty);
 
@@ -58,6 +69,7 @@ void main() {
     // 무효화를 빼먹었을 때 사용자가 무엇을 보는지 적어 둔다
     final repository = _FakeRepository();
     final container = containerWith(repository);
+    keepAlive(container, 'ALL');
 
     expect(await container.read(savedCoursesProvider('ALL').future), isEmpty);
     await repository.save(const {});
@@ -69,6 +81,8 @@ void main() {
     // 목록은 scope별 family다 — 담기는 ALL·UPCOMING 양쪽에 영향을 준다
     final repository = _FakeRepository();
     final container = containerWith(repository);
+    keepAlive(container, 'ALL');
+    keepAlive(container, 'UPCOMING');
 
     await container.read(savedCoursesProvider('ALL').future);
     await container.read(savedCoursesProvider('UPCOMING').future);
