@@ -308,7 +308,14 @@ class _PermissionOff extends StatelessWidget {
   ///
   /// `app-settings:`는 iOS가 앱별 설정 화면에 붙여 둔 주소다.
   Future<void> _openSettings(BuildContext context) async {
-    final opened = await launchUrl(Uri.parse('app-settings:'));
+    // false를 돌려주기도, PlatformException을 던지기도 한다 —
+    // 둘 다 '못 열었다'이고 사용자에게는 같은 안내가 필요하다
+    var opened = false;
+    try {
+      opened = await launchUrl(Uri.parse('app-settings:'));
+    } on Object catch (e) {
+      debugPrint('설정 화면을 열지 못했다: $e');
+    }
     if (opened || !context.mounted) return;
     // 열지 못하면 손으로 찾아가야 한다 — 어디로 갈지 알려준다
     showAppToast(context, '설정 > OffWay > 알림에서 켤 수 있어요');
