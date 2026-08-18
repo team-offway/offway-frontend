@@ -251,7 +251,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
       }
     }
     if (!mounted) return;
-    if (deleted > 0) ref.invalidate(myLeaveProvider);
+    // 지운 만큼 잔여 연차가 늘었다 — 홈도 함께 다시 읽는다
+    if (deleted > 0) invalidateLeaveData(ref);
     // 막힌 게 있으면 그 이유를 알려준다 — 코스 화면으로 갈 수 있게
     if (failure case final String message) {
       showAppToast(context, message);

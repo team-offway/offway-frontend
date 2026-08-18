@@ -1,8 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../course/data/course_repository.dart';
+import '../../home/presentation/home_screen.dart';
 import '../../onboarding/data/leave_repository.dart';
 import '../domain/leave_usage.dart';
+
+/// 연차가 바뀐 뒤 다시 읽어야 할 것들을 한꺼번에 비운다.
+///
+/// 등록·삭제·"다녀오셨나요?" 어디서 바뀌든 **보이는 곳은 같다** — 홈 최상단의
+/// '남은 연차'와 내 연차 화면이다. 그런데 화면마다 손으로 챙기다 보니 한쪽씩
+/// 빠뜨려 왔다. 등록은 홈만, 삭제는 내 연차만 비우는 식이었다(#99).
+///
+/// [leaveUsagesProvider]는 [myLeaveProvider]를 watch하므로 따로 비우지 않아도
+/// 함께 다시 읽힌다.
+void invalidateLeaveData(WidgetRef ref) {
+  ref
+    ..invalidate(homeSnapshotProvider)
+    ..invalidate(myLeaveProvider);
+}
 
 /// 내 연차 — 잔여 일수와 사용 내역 (`GET /leaves/me`)
 final myLeaveProvider = FutureProvider.autoDispose<MyLeave>(

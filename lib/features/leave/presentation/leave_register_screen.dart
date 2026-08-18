@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/leave_usages_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -142,7 +143,7 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
           );
       if (!mounted) return;
       // 잔여 연차가 줄었으니 홈·내 연차가 새 값을 읽게 한다
-      ref.invalidate(homeSnapshotProvider);
+      invalidateLeaveData(ref);
       // 이 화면이 사라진 뒤에도 토스트가 남도록 부모 화면에 띄운다.
       // pop 뒤에는 이 위젯의 context가 죽으므로 부모를 미리 잡아둔다
       final parent = Navigator.of(context).context;
