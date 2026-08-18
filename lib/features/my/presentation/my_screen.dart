@@ -11,6 +11,7 @@ import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../notification/application/push_registration.dart';
 import '../application/my_profile_provider.dart';
 
 /// 마이 — 프로필과 계정 관리 메뉴
@@ -139,6 +140,9 @@ class MyScreen extends ConsumerWidget {
     // 토큰이 남은 채 로그인 화면으로 보내면 로그아웃된 줄 알고 넘어가므로,
     // Keychain 삭제가 실패하면 세션을 유지한 채 실패를 알린다
     try {
+      // 이 기기로 더는 알림이 가지 않게 한다 — 로그아웃했는데 푸시가
+      // 계속 오면 계정이 남아 있는 것처럼 보인다
+      await ref.read(pushRegistrationProvider).stop();
       await ref.read(authRepositoryProvider).logout();
     } catch (_) {
       if (!context.mounted) return;

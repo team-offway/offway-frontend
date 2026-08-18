@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,10 +22,58 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+		<string>nmap</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>코스 일정 이미지를 사진 앨범에 저장하기 위해 사용합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>코스 일정 이미지를 사진 앨범에 저장하기 위해 사용합니다.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -41,63 +91,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<!-- 값은 ios/Flutter/AppKeys.xcconfig 의 KAKAO_NATIVE_APP_KEY 하나로 관리 -->
-				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<!-- 구글 로그인 복귀 주소. GoogleService-Info.plist의
-				     REVERSED_CLIENT_ID와 같아야 하며, 값은 AppKeys.xcconfig에서 관리한다 -->
-				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
-			</array>
-		</dict>
-	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>kakaokompassauth</string>
-		<string>kakaolink</string>
-		<!-- 길 찾기 딥링크 — 네이버지도 설치 여부 확인용 -->
-		<string>nmap</string>
-	</array>
-	<!-- 개발 서버(18.181.168.227)가 도메인 없는 HTTP라 전면 허용이 불가피하다.
-	     도메인이면 NSExceptionDomains로 좁힐 수 있지만 IP에는 적용되지 않는다.
-	     서버에 HTTPS가 붙으면 이 예외를 제거할 것 — 심사 시 사유 소명 대상. -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<!-- HTTPS 등 표준 암호화만 사용(면제 대상) — TestFlight 업로드마다 받는 수출 규정 질문 생략 -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<!-- 네이버 지도 SDK가 위치 API를 참조해 문구가 필수(App Store 검증 90683).
-	     실제 위치 사용은 서버 추천 API(출발 좌표) 연동 시 시작된다 -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
-	<!-- 앱은 사용 중 권한만 쓰지만, 위치 SDK가 Always API를 참조해 문구가 필수 (검증 90683) -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>현재 위치를 기준으로 도달 가능한 여행지를 추천하기 위해 위치 정보를 사용합니다.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>코스 일정 이미지를 사진 앨범에 저장하기 위해 사용합니다.</string>
-	<!-- 앱은 저장만 하지만, 사진 플러그인이 읽기 API를 참조해 문구가 필수 (검증 90683) -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>코스 일정 이미지를 사진 앨범에 저장하기 위해 사용합니다.</string>
 </dict>
 </plist>

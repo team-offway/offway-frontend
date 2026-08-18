@@ -17,6 +17,8 @@ import 'package:offway/features/course_wizard/data/region_recommend_repository.d
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
+import 'package:offway/features/notification/application/push_registration.dart';
+import 'package:offway/features/notification/data/device_repository.dart';
 import 'package:offway/features/notification/data/notification_repository.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
@@ -228,6 +230,30 @@ class _FakeNotificationRepository extends NotificationRepository {
   Future<int> markAllRead() async => 0;
 }
 
+/// 기기 등록은 서버를 부르지 않는다 — 로그아웃·탈퇴가 이걸 타는데,
+/// 안 덮으면 그 요청 타이머가 테스트가 끝날 때까지 남는다
+class _FakePushRegistration implements PushRegistration {
+  @override
+  Future<void> start() async {}
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeDeviceRepository implements DeviceRepository {
+  @override
+  Future<void> register(String token) async {}
+
+  @override
+  Future<void> unregister() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// 실서버를 부르는 repository를 전부 가짜로 바꾼다.
 /// 테스트 환경은 HTTP를 400으로 막아, 안 바꾸면 화면 플로우가 전부 끊긴다.
 /// 계정 선택 창을 띄우지 않고 바로 성공을 돌려주는 구글 로그인.
@@ -281,6 +307,10 @@ class _FakeAuthRepository implements AuthRepository {
 
 final _serverOverrides = [
   googleAuthServiceProvider.overrideWithValue(_FakeGoogleAuthService()),
+  deviceRepositoryProvider.overrideWithValue(_FakeDeviceRepository()),
+  // OffwayApp.initState가 FirebaseMessaging을 직접 부른다 —
+  // 덮지 않으면 테스트가 실제 SDK를 탄다
+  pushRegistrationProvider.overrideWithValue(_FakePushRegistration()),
   notificationRepositoryProvider.overrideWithValue(
     _FakeNotificationRepository(),
   ),

@@ -1,0 +1,92 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/device_repository.dart';
+
+final pushRegistrationProvider = Provider<PushRegistration>(
+  (ref) => PushRegistration(ref),
+);
+
+/// 푸시를 받을 준비 — 권한을 묻고 FCM 토큰을 서버에 등록한다.
+///
+/// **실패해도 앱은 그대로 간다.** 푸시는 덤이라 권한 거부·APNs 미설정·서버
+/// 오류 어느 쪽이든 조용히 넘어간다. 여기서 던지면 알림 하나 때문에 앱이
+/// 안 뜬다.
+class PushRegistration {
+  PushRegistration(this._ref);
+
+  final Ref _ref;
+  StreamSubscription<String>? _refreshSubscription;
+
+  /// 해제된 뒤에는 등록하지 않는다.
+  ///
+  /// [start]는 권한 팝업·토큰 조회로 몇 초가 걸린다. 그 사이 로그아웃하면
+  /// DELETE가 먼저 나가고 뒤늦은 POST가 기기를 되살려, 로그아웃했는데
+  /// 푸시가 계속 온다.
+  bool _stopped = false;
+
+  /// 앱이 뜬 뒤 한 번 부른다.
+  ///
+  /// 권한을 묻고, 받은 토큰을 등록하고, 갱신을 구독한다. 토큰은 서버가
+  /// 몇 번을 받아도 한 행만 두므로 매번 보내도 된다.
+  Future<void> start() async {
+    _stopped = false;
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      // iOS는 권한을 받아야 APNs 토큰이 나온다. 거부해도 앱은 그대로 간다
+      final settings = await messaging.requestPermission();
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint('푸시 권한 거부 — 기기를 등록하지 않는다');
+        return;
+      }
+
+      final token = await messaging.getToken();
+      if (token == null) {
+        // APNs 설정이 덜 됐거나 시뮬레이터다 — 둘 다 실기기에서만 풀린다
+        debugPrint('FCM 토큰을 받지 못했다 (APNs 미설정이거나 시뮬레이터)');
+        return;
+      }
+      await _register(token);
+
+      // 토큰은 재설치·복원·주기적 갱신으로 바뀐다. 놓치면 그때부터
+      // 푸시가 조용히 끊긴다
+      _refreshSubscription ??= messaging.onTokenRefresh.listen(_register);
+    } on Object catch (e) {
+      // PlatformException까지 포함해 전부 삼킨다 — 푸시 하나가 앱을
+      // 막아서는 안 된다
+      debugPrint('푸시 등록 실패: $e');
+    }
+  }
+
+  Future<void> _register(String token) async {
+    if (_stopped) return;
+    try {
+      await _ref.read(deviceRepositoryProvider).register(token);
+    } on Object catch (e) {
+      debugPrint('기기 등록 실패: $e');
+    }
+  }
+
+  /// 로그아웃·탈퇴에서 부른다 — 이 기기로 알림이 가지 않게 한다.
+  Future<void> stop() async {
+    // 먼저 세운다 — 뒤늦게 돌아온 start()의 등록을 막는다
+    _stopped = true;
+    try {
+      await _refreshSubscription?.cancel();
+    } on Object catch (e) {
+      // 구독 취소가 실패해도 해제는 해야 한다
+      debugPrint('토큰 갱신 구독 취소 실패: $e');
+    } finally {
+      _refreshSubscription = null;
+    }
+    try {
+      await _ref.read(deviceRepositoryProvider).unregister();
+    } on Object catch (e) {
+      debugPrint('기기 해제 실패: $e');
+    }
+  }
+}
