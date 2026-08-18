@@ -247,15 +247,10 @@ class RegionDetailScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
-        children: [
-          AppBackButton(onTap: () => context.pop()),
-          const Spacer(),
-          GestureDetector(
-            // TODO(share): 지역 공유 기능 정책 확정 시 연결
-            onTap: () {},
-            child: const Icon(Icons.ios_share, size: 24, color: _labelNormal),
-          ),
-        ],
+        // 시안에는 뒤로가기만 있다. 공유 버튼이 있었으나 누르면 아무 일도
+        // 일어나지 않아 고장난 것처럼 보였다 — 정책이 정해지면 시안과 함께
+        // 다시 넣는다
+        children: [AppBackButton(onTap: () => context.pop())],
       ),
     );
   }
