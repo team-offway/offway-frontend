@@ -19,6 +19,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../data/course_repository.dart';
+import 'my_courses_screen.dart' show savedCoursesProvider;
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
 import 'widgets/course_day_tabs.dart';
@@ -176,7 +177,11 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
       await ref.read(courseRepositoryProvider).save(savePayload);
+      // await 뒤라 화면이 이미 사라졌을 수 있다 — 그때 ref를 만지면 던진다
       if (!mounted) return;
+      // 목록이 캐시를 들고 있으면 방금 담은 코스가 안 보인다 — 탭을 오갔다
+      // 와야 뜨는데, 사용자는 담기가 실패한 줄 안다
+      ref.invalidate(savedCoursesProvider);
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
       context.go(AppRoutes.myCourses);
