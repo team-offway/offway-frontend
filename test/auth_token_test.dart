@@ -280,23 +280,34 @@ void main() {
   });
 
   group('앱 시작 경로', () {
-    test('기본은 로그인 화면이다', () {
+    test('첫 화면은 스플래시다', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      expect(container.read(initialRouteProvider), AppRoutes.login);
+      expect(container.read(initialRouteProvider), AppRoutes.splash);
     });
 
-    test('토큰이 있으면 홈으로 시작한다 — main이 이 값을 덮어쓴다', () {
+    test('로그인 전이면 스플래시 다음은 소개 화면이다', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(
+        container.read(postSplashRouteProvider),
+        AppRoutes.onboardingIntro,
+      );
+    });
+
+    test('토큰이 있으면 스플래시 다음이 홈이다 — main이 이 값을 덮어쓴다', () {
       // 앱을 켤 때마다 로그인 버튼을 다시 누르게 하면 안 된다
       final container = ProviderContainer(
-        overrides: [initialRouteProvider.overrideWithValue(AppRoutes.home)],
+        overrides: [postSplashRouteProvider.overrideWithValue(AppRoutes.home)],
       );
       addTearDown(container.dispose);
       expect(
         container.read(appRouterProvider).configuration.routes,
         isNotEmpty,
       );
-      expect(container.read(initialRouteProvider), AppRoutes.home);
+      expect(container.read(postSplashRouteProvider), AppRoutes.home);
+      // 첫 화면은 여전히 스플래시다 — 목적지만 바뀐다
+      expect(container.read(initialRouteProvider), AppRoutes.splash);
     });
   });
 }
