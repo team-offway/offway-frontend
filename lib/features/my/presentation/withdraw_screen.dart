@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../auth/data/auth_repository.dart';
 import '../../home/presentation/home_screen.dart' show homeUserProvider;
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
@@ -151,8 +153,18 @@ class WithdrawScreen extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
-    // TODO(server): DELETE /users/me 가 배포되면 실제 탈퇴로 바꾼다 (core#275).
-    // 지금 부르면 404라 사용자에게 실패로 보인다
-    showAppToast(context, '회원탈퇴 기능은 준비 중이에요');
+    try {
+      await ref.read(authRepositoryProvider).withdraw();
+    } on ApiException catch (e) {
+      // 서버가 못 지웠는데 로그인 화면으로 보내면 탈퇴된 줄 알고 넘어간다
+      if (!context.mounted) return;
+      showAppToast(context, e.detail.isEmpty ? '탈퇴하지 못했어요' : e.detail);
+      return;
+    }
+    if (!context.mounted) return;
+
+    // 남은 화면이 지워진 데이터를 다시 읽지 않도록 처음부터 시작한다
+    context.go(AppRoutes.login);
+    showAppToast(context, '탈퇴가 완료됐어요', kind: AppToastKind.success);
   }
 }
