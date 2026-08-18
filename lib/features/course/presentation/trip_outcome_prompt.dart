@@ -6,9 +6,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_toast.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
-import '../../leave/data/leave_usages_provider.dart'
-    show leaveUsagesProvider, myLeaveProvider;
+import '../../leave/data/leave_usages_provider.dart' show invalidateLeaveData;
 import '../application/pending_trip_provider.dart';
 import '../data/course_repository.dart';
 import '../data/trip_outcome_snooze_storage.dart';
@@ -83,11 +81,9 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (!mounted) return;
 
     // 홈 최상단 '남은 연차'와 연차 화면을 즉시 고쳐 그린다 (시안 노트)
-    ref
-      ..invalidate(homeSnapshotProvider)
-      ..invalidate(myLeaveProvider)
-      ..invalidate(leaveUsagesProvider)
-      ..invalidate(pendingTripProvider);
+    invalidateLeaveData(ref);
+    // 답을 했으니 다시 물어보지 않는다
+    ref.invalidate(pendingTripProvider);
 
     // 안 갔다고 답하면 바뀐 게 없다 — 알릴 것도 없다
     if (!visited) return;
