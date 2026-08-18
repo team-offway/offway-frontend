@@ -13,9 +13,12 @@ import '../../home/presentation/home_screen.dart' show homeUserProvider;
 ///
 /// 실패하면 홈 값으로 돌아간다 — 이름을 못 부르는 것뿐이라 화면을 막을 일이
 /// 아니다.
-final currentUserProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
-  ref,
-) async {
+///
+/// **autoDispose를 쓰지 않는다.** 홈·마이가 서로 다른 탭이라 오갈 때마다
+/// 버려지고, 그때마다 `/users/me`를 다시 불러 이름과 연차에 로딩이 걸린다.
+/// 사용자 정보는 그 사이에 바뀌지 않는다 — 바뀌는 순간(로그인·로그아웃·
+/// 탈퇴·연차 저장)에 부르는 쪽이 무효화한다.
+final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final home = await ref.watch(homeUserProvider.future);
 
   final token = await ref.watch(secureStorageProvider).accessToken;

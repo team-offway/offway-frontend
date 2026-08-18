@@ -11,6 +11,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../application/current_user_provider.dart';
 import '../data/auth_repository.dart';
 import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
@@ -100,6 +102,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             profile: result.profile,
             authorizationCode: result.authorizationCode,
           );
+      // 이제 우리 토큰이 있다 — 로그인 전에 읽어 둔 '게스트' 값을 비워야
+      // 홈·마이가 진짜 이름을 다시 묻는다
+      ref
+        ..invalidate(currentUserProvider)
+        ..invalidate(homeSnapshotProvider);
+
       if (!mounted) return;
       // 이번에 계정이 만들어졌으면 잔여 연차를 받아야 홈이 채워진다.
       // 돌아온 사용자는 그 값이 이미 있어 홈으로 곧장 보낸다

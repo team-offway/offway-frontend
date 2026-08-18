@@ -13,6 +13,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/application/push_registration.dart';
 import '../../auth/application/current_user_provider.dart';
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
 /// 마이 — 프로필과 계정 관리 메뉴
 class MyScreen extends ConsumerWidget {
@@ -149,6 +150,12 @@ class MyScreen extends ConsumerWidget {
       showAppToast(context, '로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
+    // 다음 사람이 옛 이름으로 인사받지 않게 비운다 — autoDispose가 아니라
+    // 두면 그대로 남는다
+    ref
+      ..invalidate(currentUserProvider)
+      ..invalidate(homeSnapshotProvider);
+
     if (!context.mounted) return;
     context.go(AppRoutes.login);
   }
