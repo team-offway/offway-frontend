@@ -39,6 +39,9 @@ abstract final class AppRoutes {
   static const login = '/login';
   static const onboardingLeave = '/onboarding/leave';
   static const myLeave = '/leave';
+
+  /// "다녀오셨나요?" 알림을 눌렀을 때 — 도착하면 모달이 뜬다
+  static const myLeaveFromNotification = '/leave?from=notification';
   static const leaveRegister = '/leave/register';
   static const leaveUsages = '/leave/usages';
   static const home = '/';
@@ -185,7 +188,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.myLeave,
         name: 'myLeave',
-        builder: (context, state) => const MyLeaveScreen(),
+        // ?from=notification 이면 "다녀오셨나요?" 모달을 띄운다 — 그 알림을
+        // 눌러 들어온 경우다
+        builder: (context, state) => MyLeaveScreen(
+          fromNotification: state.uri.queryParameters['from'] == 'notification',
+        ),
       ),
       GoRoute(
         path: AppRoutes.leaveRegister,

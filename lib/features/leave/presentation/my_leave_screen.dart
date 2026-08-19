@@ -18,7 +18,14 @@ import 'widgets/leave_empty_view.dart';
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
 class MyLeaveScreen extends ConsumerStatefulWidget {
-  const MyLeaveScreen({super.key});
+  const MyLeaveScreen({super.key, this.fromNotification = false});
+
+  /// "다녀오셨나요?" 알림을 눌러 들어왔는지.
+  ///
+  /// 시안에서 이 모달이 뜨는 자리는 **홈 진입**과 **그 알림** 둘뿐이다.
+  /// 연차를 보러 그냥 들어온 사람에게까지 띄우면, 홈에서 '나중에 할게요'를
+  /// 눌러 미룬 사람이 연차 화면마다 같은 질문을 다시 받는다.
+  final bool fromNotification;
 
   @override
   ConsumerState<MyLeaveScreen> createState() => _MyLeaveScreenState();
@@ -35,9 +42,9 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 시안 노트: 내 연차 화면에서도 "다녀오셨나요?" 모달을 띄운다.
-    // 홈에서 미뤘어도 연차를 보러 들어왔다면 물어볼 자리가 맞다
-    watchTripOutcomePrompt();
+    // 알림을 눌러 들어온 경우에만 묻는다. 그 알림이 곧 질문이라 여기서
+    // 안 띄우면 눌러도 아무 일이 없다
+    if (widget.fromNotification) watchTripOutcomePrompt();
 
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
