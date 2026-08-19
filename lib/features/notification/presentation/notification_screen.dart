@@ -189,7 +189,7 @@ class _NotificationCell extends ConsumerWidget {
   /// 종류별로 갈 곳. 없으면 누르기만 하고 이동하지 않는다.
   String? get _destination => switch (item.type) {
     // 시안 흐름: 알림 → 내 연차. 그 화면이 "다녀오셨나요?" 모달을 띄운다
-    NotificationType.tripAfter => AppRoutes.myLeave,
+    NotificationType.tripAfter => AppRoutes.myLeaveFromNotification,
     // 내일 떠날 여행을 보러 간다. 코스가 지워졌으면 갈 곳이 없다
     NotificationType.tripTomorrow =>
       item.courseId == null
