@@ -26,15 +26,6 @@ final myLeaveProvider = FutureProvider.autoDispose<MyLeave>(
 
 /// 화면에 뿌릴 사용 내역.
 ///
-/// **아직 떠나지 않은 여행은 뺀다.** 서버가 코스 확정 즉시 연차를 깎으면서
-/// 내역 날짜에 여행 날짜를 넣어, D-10 여행이 '사용 내역'에 미리 들어앉는다.
-/// 다녀오지도 않은 여행이 "썼다"고 적혀 있으면 사용자는 잘못된 기록으로
-/// 읽는다 — 되돌리려 들거나, 남은 연차를 잘못 센다.
-///
-/// 서버에 차감 시점을 여행 종료 뒤로 옮겨 달라고 요청해 두었다
-/// (`docs/백엔드-요청-연차차감시점.md`). 그때가 오면 걸러질 항목이 없어져
-/// 이 필터는 저절로 무해해진다.
-///
 /// 서버 내역에는 `courseId`만 있고 코스 이름이 없다. 목록에 "정선 여행"처럼
 /// 보여줘야 하므로 내 코스 목록에서 이름을 찾아 이어붙인다.
 /// 코스를 못 불러와도 내역 자체는 보여준다.
@@ -42,12 +33,7 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
   ref,
 ) async {
   final leave = await ref.watch(myLeaveProvider.future);
-  // 직접 등록한 내역은 사용자가 스스로 쓴 날을 적은 것이라 미래여도 그대로 둔다.
-  // 앞당겨 깎이는 것은 코스 차감뿐이다
-  final usages = [
-    for (final u in leave.usages)
-      if (!(u.fromCourse && u.isUpcoming())) u,
-  ];
+  final usages = leave.usages;
   if (usages.every((u) => u.courseId == null)) return usages;
 
   try {
