@@ -1073,7 +1073,7 @@ void main() {
     expect(tester.widget<FilledButton>(next).onPressed, isNull);
 
     // 당일치기: 모달 없이 바로 완료
-    await tester.tap(find.text('당일치기'));
+    await tester.tap(find.text('당일치기 · 연차'));
     await tester.pump();
     expect(tester.widget<FilledButton>(next).onPressed, isNotNull);
 
@@ -1124,7 +1124,7 @@ void main() {
     await tester.tap(find.text('다음'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('당일치기'));
+    await tester.tap(find.text('당일치기 · 연차'));
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, '다음').last);
     await tester.pump();
