@@ -65,7 +65,7 @@ class PeriodStyleScreen extends ConsumerWidget {
                         children: [
                           _StyleCard(
                             iconAsset: 'assets/icons/ic_timer_bold.svg',
-                            title: '당일치기',
+                            title: '당일치기 · 연차',
                             subtitle: '짧게 다녀와요',
                             selected: draft.periodStyle == PeriodStyle.dayTrip,
                             onTap: () => ref
