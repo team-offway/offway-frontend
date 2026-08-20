@@ -193,7 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           SvgPicture.asset(
             'assets/icons/logo_wordmark.svg',
             height: 24,
-            semanticsLabel: 'OffWay',
+            semanticsLabel: 'Offway',
           ),
           const Spacer(),
           GestureDetector(
