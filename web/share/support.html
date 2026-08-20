@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>고객지원 · Offway</title>
+<style>
+  /* 공유 페이지(index.html)와 같은 토큰을 쓴다 — 두 페이지가 한 서비스로 보이게 */
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f8;
+    --ink: #171719;
+    --ink-2: rgba(46,47,51,.88);
+    --ink-3: rgba(55,56,60,.61);
+    --line: rgba(112,115,124,.16);
+    --brand: #3dc2ff;
+    --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+            "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131417; --surface: #1b1d21; --ink: #f2f0ec;
+      --ink-2: #c5c8cd; --ink-3: #8d9299; --line: #2d3036;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 72px;
+    background: var(--bg);
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 한국어는 어절 단위로 끊어야 읽기 좋다 — 영문에는 적용하지 않는다 */
+  [lang="ko"] { word-break: keep-all; }
+  main { max-width: 720px; margin: 0 auto; }
+
+  header { padding-bottom: 20px; border-bottom: 2px solid var(--ink); }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .wordmark {
+    font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+    color: var(--brand); margin: 0 0 12px;
+  }
+  h1 { font-size: 24px; font-weight: 700; color: var(--ink); margin: 0 0 6px; letter-spacing: -.02em; }
+  .effective { margin: 0; font-size: 14px; color: var(--ink-3); }
+
+  /* 언어 전환 */
+  .lang { display: flex; gap: 2px; padding: 2px; background: var(--surface);
+          border-radius: 999px; flex-shrink: 0; }
+  .lang button {
+    border: 0; background: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-3); padding: 6px 14px; border-radius: 999px;
+    transition: color .15s, background .15s;
+  }
+  .lang button[aria-selected="true"] { background: var(--brand); color: #fff; }
+  .lang button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  h2 {
+    font-size: 17px; font-weight: 700; color: var(--ink);
+    margin: 40px 0 12px; letter-spacing: -.01em;
+  }
+  h3 { font-size: 15px; font-weight: 650; color: var(--ink); margin: 24px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--ink); font-weight: 650; }
+  a { color: var(--brand); }
+
+  /* 표는 좁은 화면에서 가로로만 스크롤 — 페이지 전체가 흔들리지 않게 */
+  .scroll { overflow-x: auto; margin: 0 0 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 400px; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface); color: var(--ink); font-weight: 650; white-space: nowrap; }
+
+  footer {
+    margin-top: 56px; padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-3);
+  }
+
+  [hidden] { display: none !important; }
+</style>
+<body>
+<main>
+
+  <header>
+    <div class="top">
+      <div>
+        <p class="wordmark">offway</p>
+        <h1 data-ko="고객지원" data-en="Support">고객지원</h1>
+        <p class="effective" data-ko="문의 tigerbone@naver.com" data-en="Contact tigerbone@naver.com">문의 tigerbone@naver.com</p>
+      </div>
+      <div class="lang" role="tablist" aria-label="Language">
+        <button type="button" role="tab" data-lang="ko" aria-selected="true">한국어</button>
+        <button type="button" role="tab" data-lang="en" aria-selected="false">English</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="doc-ko" lang="ko">
+
+  <p style="margin-top:24px">
+    Offway를 쓰시다 막히는 것이 있으면 <a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a>으로
+    알려 주세요. 평일 기준 2일 안에 답을 드립니다.
+  </p>
+
+  <h2>자주 묻는 것</h2>
+
+  <h3>연차는 어떻게 계산되나요?</h3>
+  <p>
+    여행 기간 중 <strong>평일에서 공휴일을 뺀 날짜</strong>만 셉니다. 주말과 공휴일은 연차를 쓰지
+    않으므로 차감에서 빠집니다. 예를 들어 금요일부터 일요일까지 다녀오면 하루만 깎입니다.
+  </p>
+
+  <h3>연차는 언제 깎이나요?</h3>
+  <p>
+    코스를 담을 때가 아니라 <strong>여행을 다녀온 뒤</strong> 깎입니다. 여행이 끝나면 앱이
+    "다녀오셨나요?"라고 묻고, "네"라고 답하실 때 기록됩니다. 가지 않으셨다면 깎이지 않습니다.
+  </p>
+
+  <h3>연차 기록을 잘못 넣었어요.</h3>
+  <p>
+    마이 → 내 연차 → 사용 내역에서 지운 뒤 다시 등록해 주세요. 수정 기능은 준비 중입니다.
+  </p>
+
+  <h3>알림이 오지 않아요.</h3>
+  <p>
+    기기의 <strong>설정 &gt; Offway &gt; 알림</strong>이 켜져 있는지 확인해 주세요. 여행 전날
+    저녁에 안내 알림이 갑니다.
+  </p>
+
+  <h3>왜 이 지역들만 추천되나요?</h3>
+  <p>
+    Offway는 행정안전부가 지정한 <strong>인구감소지역 89곳</strong>을 다룹니다. 좋은 콘텐츠가
+    있어도 덜 알려진 곳들을 연차 안에서 닿을 수 있는 범위로 좁혀 알려 드립니다.
+  </p>
+
+  <h3>탈퇴하면 어떻게 되나요?</h3>
+  <p>
+    마이 → 회원탈퇴에서 하실 수 있습니다. 저장한 코스와 연차 기록이 함께 지워지며
+    <strong>되돌릴 수 없습니다</strong>. Apple로 로그인하셨다면 Apple 계정의 연결도 함께 끊깁니다.
+  </p>
+
+  <h2>문의하기</h2>
+  <p>
+    답이 없는 문제라면 아래로 알려 주세요. 어떤 기기를 쓰시는지, 어느 화면에서 생긴 일인지
+    함께 적어 주시면 빠르게 확인할 수 있습니다.
+  </p>
+  <p><a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a></p>
+
+  <p style="margin-top:32px">
+    <a href="/privacy">개인정보처리방침</a> · <a href="/terms">이용약관</a>
+  </p>
+
+  </section>
+
+  <section id="doc-en" lang="en" hidden>
+
+  <p style="margin-top:24px">
+    If anything gets in your way while using Offway, email us at
+    <a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a>. We reply within two business days.
+  </p>
+
+  <h2>Frequently asked</h2>
+
+  <h3>How is annual leave calculated?</h3>
+  <p>
+    Only <strong>weekdays minus public holidays</strong> within your trip are counted. Weekends and
+    holidays don't consume leave. A Friday-to-Sunday trip uses one day.
+  </p>
+
+  <h3>When is leave deducted?</h3>
+  <p>
+    Not when you save a course, but <strong>after the trip</strong>. Once it ends, the app asks
+    "Did you go?" and records it when you answer yes. Nothing is deducted if you didn't go.
+  </p>
+
+  <h3>I entered a leave record incorrectly.</h3>
+  <p>
+    Go to My → My Leave → usage history, delete it, and add it again. Editing is on the way.
+  </p>
+
+  <h3>I'm not receiving notifications.</h3>
+  <p>
+    Check that <strong>Settings &gt; Offway &gt; Notifications</strong> is enabled on your device.
+    A reminder is sent the evening before your trip.
+  </p>
+
+  <h3>Why only these regions?</h3>
+  <p>
+    Offway covers the <strong>89 population-declining regions</strong> designated by Korea's
+    Ministry of the Interior and Safety — places with good things to see that fewer people know about.
+  </p>
+
+  <h3>What happens when I delete my account?</h3>
+  <p>
+    You can do this from My → Delete account. Your saved courses and leave records are removed
+    and <strong>this cannot be undone</strong>. If you signed in with Apple, that connection is
+    revoked as well.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    If your question isn't answered here, let us know. Telling us your device and which screen
+    it happened on helps us look into it faster.
+  </p>
+  <p><a href="mailto:tigerbone@naver.com">tigerbone@naver.com</a></p>
+
+  <p style="margin-top:32px">
+    <a href="/privacy?lang=en">Privacy Policy</a> · <a href="/terms?lang=en">Terms of Service</a>
+  </p>
+
+  </section>
+
+</main>
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.lang button');
+    var docs = { ko: document.getElementById('doc-ko'), en: document.getElementById('doc-en') };
+    // 헤더·푸터처럼 문서 밖에 있는 문구는 속성으로 바꿔치운다
+    var swaps = document.querySelectorAll('[data-ko][data-en]');
+
+    function apply(lang) {
+      docs.ko.hidden = lang !== 'ko';
+      docs.en.hidden = lang !== 'en';
+      document.documentElement.lang = lang;
+      document.title = lang === 'en' ? 'Privacy Policy · Offway' : '개인정보처리방침 · Offway';
+      swaps.forEach(function (el) { el.textContent = el.dataset[lang]; });
+      buttons.forEach(function (b) {
+        b.setAttribute('aria-selected', String(b.dataset.lang === lang));
+      });
+      try { localStorage.setItem('offway-support-lang', lang); } catch (e) { /* 사파리 비공개 모드 */ }
+    }
+
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { apply(b.dataset.lang); });
+    });
+
+    // 우선순위: 지난 선택 → ?lang= → 브라우저 언어
+    var saved;
+    try { saved = localStorage.getItem('offway-support-lang'); } catch (e) { /* 무시 */ }
+    var param = new URLSearchParams(location.search).get('lang');
+    var guess = (navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en';
+    apply(saved || (param === 'en' || param === 'ko' ? param : null) || guess);
+  })();
+</script>
+</body>
+</html>
