@@ -30,7 +30,7 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'OffWay',
+      title: 'Offway',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

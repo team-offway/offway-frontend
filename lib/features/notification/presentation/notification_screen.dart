@@ -318,7 +318,7 @@ class _PermissionOff extends StatelessWidget {
     }
     if (opened || !context.mounted) return;
     // 열지 못하면 손으로 찾아가야 한다 — 어디로 갈지 알려준다
-    showAppToast(context, '설정 > OffWay > 알림에서 켤 수 있어요');
+    showAppToast(context, '설정 > Offway > 알림에서 켤 수 있어요');
   }
 
   @override

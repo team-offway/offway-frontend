@@ -345,7 +345,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('OffWay'), findsOneWidget); // 워드마크 로고
+    expect(find.bySemanticsLabel('Offway'), findsOneWidget); // 워드마크 로고
     expect(find.text('연차로 떠나는 로컬 여행'), findsOneWidget);
     expect(find.text('카카오로 시작하기'), findsOneWidget);
     expect(find.text('Apple로 시작하기'), findsOneWidget);

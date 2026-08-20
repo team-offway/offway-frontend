@@ -207,7 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     SvgPicture.asset(
                       'assets/icons/logo_wordmark_blue.svg',
                       height: 38,
-                      semanticsLabel: 'OffWay',
+                      semanticsLabel: 'Offway',
                     ),
                     const SizedBox(height: 10),
                     Text(

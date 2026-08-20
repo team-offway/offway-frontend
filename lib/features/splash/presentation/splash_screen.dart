@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
           'assets/icons/logo_wordmark_blue.svg',
           width: 126,
           height: 49,
-          semanticsLabel: 'OffWay',
+          semanticsLabel: 'Offway',
         ),
       ),
     );
