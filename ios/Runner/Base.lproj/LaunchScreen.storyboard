@@ -22,7 +22,10 @@
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="1a2-6s-vTC"/>
-                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="4X2-HB-R7a"/>
+                            <!-- 시안(402x874)에서 워드마크 중심이 세로 43.11% 지점이다. Flutter
+                                 스플래시(_wordmarkY)도 같은 비율로 두어 두 화면이 겹치게 한다 —
+                                 어긋나면 엔진이 뜨는 순간 로고가 튀어 두 번 뜬 것처럼 보인다 -->
+                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="bottom" multiplier="0.4311" id="4X2-HB-R7a"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -32,6 +35,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchImage" width="168" height="185"/>
+        <image name="LaunchImage" width="125" height="38"/>
     </resources>
 </document>
