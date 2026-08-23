@@ -22,19 +22,17 @@ void main() {
     return range;
   }
 
-  group('시작 요일 제한 — 주말에 닿을 수 있어야 고를 수 있다', () {
-    test('월·화·수는 처음부터 고를 수 없다', () {
-      // 3일을 다 써도 월화수·화수목·수목금 — 토·일에 닿지 못한다.
+  group('시작 요일 제한 — 주말과 한 범위로 묶일 수 있어야 고를 수 있다', () {
+    test('수는 처음부터 고를 수 없다', () {
+      // 수가 든 3일 구간은 월화수·화수목·수목금뿐이라 전부 평일이다.
       // 고르게 두면 완료가 잠긴 이유를 알 수 없다
-      const empty = WeekdayRange.empty();
-      expect(empty.canSelect(mon), isFalse);
-      expect(empty.canSelect(tue), isFalse);
-      expect(empty.canSelect(wed), isFalse);
+      expect(const WeekdayRange.empty().canSelect(wed), isFalse);
     });
 
-    test('목·금·토·일은 고를 수 있다', () {
+    test('수를 뺀 여섯 요일은 고를 수 있다', () {
+      // 월·화도 앞에 주말을 붙일 수 있다 — 토·일·월, 일·월·화
       const empty = WeekdayRange.empty();
-      for (final d in [thu, fri, sat, sun]) {
+      for (final d in [mon, tue, thu, fri, sat, sun]) {
         expect(empty.canSelect(d), isTrue, reason: '$d');
       }
     });
