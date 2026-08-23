@@ -72,12 +72,38 @@ class WeekdayRange {
   /// 억울하게 막힌다. 어느 자리에 놓든 주말에 닿지 못하는 요일은 수뿐이다 —
   /// 수가 든 3일 구간은 월화수·화수목·수목금뿐이라 전부 평일이다.
   ///
-  /// 하나라도 골랐으면 **앞뒤로 [maxDays] 안에 드는 요일**이 남는다.
-  /// 뒤로 이어붙일 수 있어야 월·화에서 시작한 사람이 토·일을 붙일 수 있다.
+  /// 하나라도 골랐으면 **앞뒤로 [maxDays] 안에 들면서, 누른 뒤에도 주말에
+  /// 닿을 길이 남는 요일**이 남는다. 뒤로 이어붙일 수 있어야 월·화에서
+  /// 시작한 사람이 토·일을 붙일 수 있다.
+  ///
+  /// 길이 막히는 경우를 함께 걸러낸다 — 월을 고른 뒤 수를 누르면 월·화·수가
+  /// 되는데, 주말이 없는 채로 상한을 다 써 완료할 수 없다. 고르고 나서야
+  /// 알게 되면 헛걸음이므로 누르기 전에 막는다.
   bool canSelect(int weekday) {
     if (start == null) return _canPairWithWeekend(weekday);
-    if (_offsetFromStart(weekday) < maxDays) return true;
-    return _backwardReach(weekday) != null;
+    // 이미 고른 범위 안이면 되돌리기(하루로 재시작)라 늘 열어 둔다
+    if (contains(weekday)) return true;
+
+    final forward = _offsetFromStart(weekday);
+    if (forward < maxDays) {
+      return _leadsToWeekend(start!, forward + 1);
+    }
+    final total = _backwardReach(weekday);
+    return total != null && _leadsToWeekend(weekday, total);
+  }
+
+  /// [first]에서 [length]일짜리 범위가 주말을 품거나, 상한이 남아 아직
+  /// 주말까지 늘릴 수 있는지
+  static bool _leadsToWeekend(int first, int length) {
+    for (var i = 0; i < maxDays; i++) {
+      // 이미 든 날이거나(i < length), 앞뒤로 더 붙일 수 있는 자리
+      if (_isWeekend(_wrap(first + i))) return true;
+    }
+    // 앞쪽으로 당겨 붙일 수 있는 만큼도 본다
+    for (var back = 1; back <= maxDays - length; back++) {
+      if (_isWeekend(_wrap(first - back + _weekLength))) return true;
+    }
+    return false;
   }
 
   /// [weekday]를 앞에 붙였을 때의 새 일수 — 상한을 넘으면 null.
