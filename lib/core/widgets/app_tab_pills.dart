@@ -67,6 +67,11 @@ class _AppTabPillsState extends State<AppTabPills> {
   /// 문턱을 넘겨 드래그로 판정됐는지. 넘기 전에는 탭으로 본다
   bool _dragged = false;
 
+  /// 잡고 있는 동안 알약이 부푼다. 손을 떼도 **착지를 마칠 때까지** 유지한다 —
+  /// 떼자마자 줄이면 부푼 채 미끄러지는 맛이 사라진다
+  bool _grabbing = false;
+  Timer? _landingTimer;
+
   double _startX = 0;
   double _anchorLeft = 0;
 
@@ -79,6 +84,16 @@ class _AppTabPillsState extends State<AppTabPills> {
     _startX = d.localPosition.dx;
     _anchorLeft = _dragLeft ?? _leftFor(activeIndex);
     _dragged = false;
+    _landingTimer?.cancel();
+    setState(() => _grabbing = true);
+  }
+
+  /// 착지가 끝나면 무광 알약으로 되돌린다 (웹 LANDING_MS = 480)
+  void _scheduleLanding() {
+    _landingTimer?.cancel();
+    _landingTimer = Timer(const Duration(milliseconds: 480), () {
+      if (mounted) setState(() => _grabbing = false);
+    });
   }
 
   void _onDragUpdate(DragUpdateDetails d) {
@@ -97,6 +112,7 @@ class _AppTabPillsState extends State<AppTabPills> {
   }
 
   void _onDragEnd() {
+    _scheduleLanding();
     if (!_dragged) {
       setState(() {
         _dragLeft = null;
@@ -113,6 +129,12 @@ class _AppTabPillsState extends State<AppTabPills> {
     if (AppTab.values[target] != widget.current) {
       widget.onTap?.call(AppTab.values[target]);
     }
+  }
+
+  @override
+  void dispose() {
+    _landingTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -141,86 +163,107 @@ class _AppTabPillsState extends State<AppTabPills> {
             //
             // 유리로 보이게 하는 마지막 한 겹은 테두리 안쪽 광택이다.
             // 바깥 그림자는 클립 밖에 둔다 — 안에 두면 함께 잘려 사라진다
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x29000000), // 16%
-                    offset: Offset(0, 6),
-                    blurRadius: 24,
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x29000000), // 16%
+                        offset: Offset(0, 6),
+                        blurRadius: 24,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    height: 58,
-                    width: barWidth,
-                    padding: const EdgeInsets.all(_barPadding),
-                    decoration: BoxDecoration(
-                      color: AppColors.staticWhite.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(999),
-                      boxShadow: [
-                        // 좌상단 하이라이트 · 우하단 반사 (web의 inset 2겹)
-                        BoxShadow(
-                          color: AppColors.staticWhite.withValues(alpha: 0.6),
-                          offset: const Offset(2, 2),
-                          blurRadius: 1,
-                          blurStyle: BlurStyle.inner,
-                        ),
-                        BoxShadow(
-                          color: AppColors.staticWhite.withValues(alpha: 0.4),
-                          offset: const Offset(-1, -1),
-                          blurRadius: 1,
-                          spreadRadius: 1,
-                          blurStyle: BlurStyle.inner,
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        if (index >= 0)
-                          _Indicator(
-                            index: index,
-                            dragLeft: _dragLeft,
-                            velocity: _velocity,
-                          ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final tab in AppTab.values) ...[
-                              if (tab != AppTab.values.first)
-                                const SizedBox(width: _tabGap),
-                              _Pill(
-                                tab: tab,
-                                active: tab == widget.current,
-                                onTap: widget.onTap == null
-                                    ? null
-                                    : () => widget.onTap!(tab),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        height: 58,
+                        width: barWidth,
+                        padding: const EdgeInsets.all(_barPadding),
+                        decoration: BoxDecoration(
+                          color: AppColors.staticWhite.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            // 좌상단 하이라이트 · 우하단 반사 (web의 inset 2겹)
+                            BoxShadow(
+                              color: AppColors.staticWhite.withValues(
+                                alpha: 0.6,
                               ),
-                            ],
+                              offset: const Offset(2, 2),
+                              blurRadius: 1,
+                              blurStyle: BlurStyle.inner,
+                            ),
+                            BoxShadow(
+                              color: AppColors.staticWhite.withValues(
+                                alpha: 0.4,
+                              ),
+                              offset: const Offset(-1, -1),
+                              blurRadius: 1,
+                              spreadRadius: 1,
+                              blurStyle: BlurStyle.inner,
+                            ),
                           ],
                         ),
-                        // 탭 위를 덮어 끌기만 가로챈다 — 세로 스크롤과 탭은
-                        // 그대로 아래로 흘려보내고, 문턱(12)을 넘겨야 끌린다
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onHorizontalDragStart: (d) =>
-                                _onDragStart(d, index),
-                            onHorizontalDragUpdate: _onDragUpdate,
-                            onHorizontalDragEnd: (_) => _onDragEnd(),
-                            onHorizontalDragCancel: _onDragEnd,
-                          ),
+                        child: Stack(
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (final tab in AppTab.values) ...[
+                                  if (tab != AppTab.values.first)
+                                    const SizedBox(width: _tabGap),
+                                  _Pill(
+                                    tab: tab,
+                                    active: tab == widget.current,
+                                    onTap: widget.onTap == null
+                                        ? null
+                                        : () => widget.onTap!(tab),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            // 탭 위를 덮어 끌기만 가로챈다 — 세로 스크롤과 탭은
+                            // 그대로 아래로 흘려보내고, 문턱(12)을 넘겨야 끌린다
+                            Positioned.fill(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onHorizontalDragStart: (d) =>
+                                    _onDragStart(d, index),
+                                onHorizontalDragUpdate: _onDragUpdate,
+                                onHorizontalDragEnd: (_) => _onDragEnd(),
+                                onHorizontalDragCancel: _onDragEnd,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+                // 알약은 클립 **밖**에 둔다. 안에 두면 부풀 때(1.25배)도,
+                // 양 끝 탭에서도 둥근 모서리에 눌려 찌그러진다 — 넘쳐 보이는
+                // 것이 맞다. 아이콘 위로 올라오는 것도 웹과 같다(z-10)
+                if (index >= 0)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Padding(
+                        padding: const EdgeInsets.all(_barPadding),
+                        child: _Indicator(
+                          index: index,
+                          dragLeft: _dragLeft,
+                          velocity: _velocity,
+                          grabbing: _grabbing,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -235,7 +278,12 @@ class _AppTabPillsState extends State<AppTabPills> {
 /// 밋밋한데, 진행 방향 쪽을 먼저 떠나보내면 이동 중에 알약이 늘어났다가
 /// 착지하며 오므라든다. 웹이 `left`/`right`에 서로 다른 delay를 주는 것과 같다.
 class _Indicator extends StatefulWidget {
-  const _Indicator({required this.index, this.dragLeft, this.velocity = 0});
+  const _Indicator({
+    required this.index,
+    this.dragLeft,
+    this.velocity = 0,
+    this.grabbing = false,
+  });
 
   final int index;
 
@@ -244,6 +292,9 @@ class _Indicator extends StatefulWidget {
 
   /// 손가락 속도 — 늘어남과 기울기의 세기
   final double velocity;
+
+  /// 잡고 있는 동안 부푼다 (웹 `scale-125`)
+  final bool grabbing;
 
   @override
   State<_Indicator> createState() => _IndicatorState();
@@ -282,52 +333,53 @@ class _IndicatorState extends State<_Indicator> {
     final speed = widget.velocity.abs();
     final scaleX = 1 + speed * 0.02;
     final scaleY = 1 - speed * 0.012;
+    // 잡으면 탭바 밖으로 넘칠 만큼 부푼다 — 손끝에 잡힌 덩어리로 읽힌다
+    final grab = widget.grabbing ? 1.25 : 1.0;
 
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          _AnimatedEdge(
-            value: left,
-            delay: dragging ? Duration.zero : leftDelay,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _AnimatedEdge(
+          value: left,
+          delay: dragging ? Duration.zero : leftDelay,
+          curve: curve,
+          duration: duration,
+          builder: (l) => _AnimatedEdge(
+            value: right,
+            delay: dragging ? Duration.zero : rightDelay,
             curve: curve,
             duration: duration,
-            builder: (l) => _AnimatedEdge(
-              value: right,
-              delay: dragging ? Duration.zero : rightDelay,
-              curve: curve,
-              duration: duration,
-              builder: (r) => Positioned(
-                left: l,
-                right: r,
-                top: 0,
-                bottom: 0,
-                child: AnimatedScale(
-                  duration: const Duration(milliseconds: 100),
-                  curve: Curves.easeOut,
-                  scale: 1,
-                  child: Transform(
-                    alignment: Alignment.center,
-                    // 끌려가듯 기우는 스큐 + 속도만큼의 스쿼시
-                    transform: Matrix4.identity()
-                      ..scaleByDouble(scaleX, scaleY, 1, 1)
-                      ..setEntry(0, 1, -widget.velocity * 0.006),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        // 팀 웹과 같은 검정 8%. 회색(Cool Neutral) 8%는 흰
-                        // 틴트 위에서 명도차가 11뿐이라 안 보였다 — 검정은 20
-                        color: AppColors.staticBlack.withValues(
-                          alpha: AppOpacity.o8,
-                        ),
-                        borderRadius: BorderRadius.circular(100),
+            builder: (r) => Positioned(
+              left: l,
+              right: r,
+              top: 0,
+              bottom: 0,
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                scale: grab,
+                child: Transform(
+                  alignment: Alignment.center,
+                  // 끌려가듯 기우는 스큐 + 속도만큼의 스쿼시
+                  transform: Matrix4.identity()
+                    ..scaleByDouble(scaleX, scaleY, 1, 1)
+                    ..setEntry(0, 1, -widget.velocity * 0.006),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      // 팀 웹과 같은 검정 8%. 회색(Cool Neutral) 8%는 흰
+                      // 틴트 위에서 명도차가 11뿐이라 안 보였다 — 검정은 20
+                      color: AppColors.staticBlack.withValues(
+                        alpha: AppOpacity.o8,
                       ),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
