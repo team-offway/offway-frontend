@@ -72,6 +72,7 @@ class RegionRecommendRepository {
     final h = minutes ~/ 60;
     final m = minutes % 60;
     final time = h == 0 ? '$m분' : (m == 0 ? '$h시간' : '$h시간 $m분');
-    return transport == 'TRANSIT' ? '대중교통 약 $time' : '차로 약 $time';
+    // 시안 문구: '자차 약 1시간 소요' — 수단을 먼저, 소요로 닫는다
+    return transport == 'TRANSIT' ? '대중교통 약 $time 소요' : '자차 약 $time 소요';
   }
 }

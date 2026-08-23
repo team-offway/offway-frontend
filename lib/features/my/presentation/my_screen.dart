@@ -33,16 +33,26 @@ class MyScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                '마이',
-                style: AppTypography.title3Bold.copyWith(
-                  color: AppColors.labelStrong,
+              // 시안 Bar는 높이 44 — 위아래 10을 뺀 24가 제목 몫이다.
+              // 24pt 글자를 줄높이 1.334로 그리면 32가 되어 8이 더 밀린다
+              child: SizedBox(
+                height: 24,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '마이',
+                    style: AppTypography.title3Bold.copyWith(
+                      color: AppColors.labelStrong,
+                      height: 1,
+                    ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 32),
             _buildProfile(user),
-            // 시안: 프로필과 메뉴 사이 82
+            // 시안: 인사말 끝에서 메뉴 첫 행까지 82.
+            // 행 간격 26은 _MenuRow가 아래쪽에만 달고 있어 여기서 겹치지 않는다
             const SizedBox(height: 82),
             // 로그인 화면의 동의 문구와 같은 순서로 둔다
             _MenuRow(
@@ -127,7 +137,9 @@ class MyScreen extends ConsumerWidget {
     // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
     final opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
     if (!opened && context.mounted) {
-      showAppToast(context, '페이지를 열지 못했어요');
+      // 문서를 못 연 것은 되돌릴 수 있는 일이라 주의(삼각형)로 알린다 —
+      // 시안도 Triangle Exclamation이다
+      showAppToast(context, '페이지를 열지 못했어요.', kind: AppToastKind.cautionary);
     }
   }
 
@@ -173,26 +185,32 @@ class _MenuRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        // 시안: 좌우 20 · 행 높이 26에 위아래 13씩이 붙어 행 간격 26이 된다
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: AppTypography.headline1Medium.copyWith(
-                  color: AppColors.labelNeutral,
+        // 시안: 좌우 20 · 행 높이 26 · 행 사이 26.
+        // 간격을 아래에만 두어 첫 행이 프로필과의 82를 밀어내지 않게 한다
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 26),
+        // Pretendard 글리프가 줄높이 26보다 조금 커서 그냥 두면 행마다
+        // 1pt 남짓 새고, 네 행을 지나며 시안과 눈에 띄게 벌어진다
+        child: SizedBox(
+          height: 26,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTypography.headline1Medium.copyWith(
+                    color: AppColors.labelNeutral,
+                  ),
                 ),
               ),
-            ),
-            // DS 쉐브론(Tight)은 12×24 비율이다 — 24로 두면 가로로 늘어난다.
-            // 에셋이 Label/Alternative를 품고 있어 색을 덧입히지 않는다
-            SvgPicture.asset(
-              'assets/icons/ic_chevron_right.svg',
-              width: 12,
-              height: 24,
-            ),
-          ],
+              // DS 쉐브론(Tight)은 12×24 비율이다 — 24로 두면 가로로 늘어난다.
+              // 에셋이 Label/Alternative를 품고 있어 색을 덧입히지 않는다
+              SvgPicture.asset(
+                'assets/icons/ic_chevron_right.svg',
+                width: 12,
+                height: 24,
+              ),
+            ],
+          ),
         ),
       ),
     );

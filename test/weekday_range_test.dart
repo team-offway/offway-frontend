@@ -22,20 +22,58 @@ void main() {
     return range;
   }
 
-  group('시작 요일 제한 — 주말에 닿을 수 있어야 고를 수 있다', () {
-    test('월·화·수는 처음부터 고를 수 없다', () {
-      // 3일을 다 써도 월화수·화수목·수목금 — 토·일에 닿지 못한다.
+  group('시작 요일 제한 — 주말과 한 범위로 묶일 수 있어야 고를 수 있다', () {
+    test('수는 처음부터 고를 수 없다', () {
+      // 수가 든 3일 구간은 월화수·화수목·수목금뿐이라 전부 평일이다.
       // 고르게 두면 완료가 잠긴 이유를 알 수 없다
-      const empty = WeekdayRange.empty();
-      expect(empty.canSelect(mon), isFalse);
-      expect(empty.canSelect(tue), isFalse);
-      expect(empty.canSelect(wed), isFalse);
+      expect(const WeekdayRange.empty().canSelect(wed), isFalse);
     });
 
-    test('목·금·토·일은 고를 수 있다', () {
+    test('수를 뺀 여섯 요일은 고를 수 있다', () {
+      // 월·화도 앞에 주말을 붙일 수 있다 — 토·일·월, 일·월·화
       const empty = WeekdayRange.empty();
-      for (final d in [thu, fri, sat, sun]) {
+      for (final d in [mon, tue, thu, fri, sat, sun]) {
         expect(empty.canSelect(d), isTrue, reason: '$d');
+      }
+    });
+
+    test('월을 고른 뒤 수는 막힌다 — 월·화·수는 완료할 수 없다', () {
+      // 주말 없이 상한(3일)을 다 써 버려 더 늘릴 수도, 완료할 수도 없다.
+      // 고르고 나서야 알게 되면 헛걸음이라 누르기 전에 막는다
+      final monday = const WeekdayRange.empty().toggle(mon);
+      expect(monday.canSelect(wed), isFalse);
+    });
+
+    test('월을 고른 뒤 화·일로 이어 일·월·화를 만들 수 있다', () {
+      // 앞 케이스를 막는다고 이쪽까지 닫히면 월에서 시작할 길이 없어진다
+      final range = const WeekdayRange.empty().toggle(mon).toggle(tue);
+      expect(range.canSelect(sun), isTrue);
+      final done = range.toggle(sun);
+      expect(done.days, 3);
+      expect(done.start, sun); // 일·월·화
+      expect(done.canConfirm, isTrue);
+    });
+
+    test('어떤 선택도 막다른 길로 가지 않는다', () {
+      // 완료도 못 하고 더 넓히지도 못하는 상태가 하나라도 있으면 안 된다
+      for (var first = mon; first <= sun; first++) {
+        const empty = WeekdayRange.empty();
+        if (!empty.canSelect(first)) continue;
+        final one = empty.toggle(first);
+        for (var next = mon; next <= sun; next++) {
+          if (!one.canSelect(next)) continue;
+          final two = one.toggle(next);
+          if (two.days < WeekdayRange.minDays) continue;
+          final canGrow = [
+            for (var d = mon; d <= sun; d++)
+              if (!two.contains(d) && two.canSelect(d)) d,
+          ].isNotEmpty;
+          expect(
+            two.canConfirm || canGrow,
+            isTrue,
+            reason: '$first → $next 에서 갇힌다',
+          );
+        }
       }
     });
 

@@ -11,6 +11,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
+import '../../../core/widgets/place_thumbnail.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -309,10 +310,12 @@ class _SortChip extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 3),
-            const Icon(
-              Icons.arrow_drop_down,
-              size: 14,
-              color: AppColors.labelAlternative,
+            // DS Caret Down — Material 기본 삼각형(arrow_drop_down)은 더 크고
+            // 뭉툭해 시안과 다르다. 에셋이 Label/Alternative를 품고 있다
+            SvgPicture.asset(
+              'assets/icons/ic_caret_down.svg',
+              width: 14,
+              height: 14,
             ),
           ],
         ),
@@ -349,18 +352,18 @@ class _CandidateCard extends ConsumerWidget {
             aspectRatio: 16 / 9,
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.backgroundNormalAlternative,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.lineNormalAlternative),
               ),
               clipBehavior: Clip.antiAlias,
-              child: imageUrl == null
-                  ? null
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.expand(),
-                    ),
+              // 사진이 없거나 죽어 있으면 시안처럼 자리 아이콘을 남긴다
+              child: PlaceThumbnail(
+                imageUrl: imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                radius: 12,
+                iconSize: 64,
+              ),
             ),
           ),
           const SizedBox(height: 8),
