@@ -65,8 +65,11 @@ class RegionCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
+              // saveLayer 를 써서 모서리를 부드럽게 자른다. 기본 antiAlias 는
+              // 사진처럼 대비가 큰 가장자리에서 계단이 비친다
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAliasWithSaveLayer,
                 child: _buildImage(),
               ),
               IgnorePointer(
