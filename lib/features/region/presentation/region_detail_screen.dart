@@ -8,20 +8,17 @@ import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
-import '../data/region_places_repository.dart';
+import '../data/region_detail_repository.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../../mock/mock_data_source.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
-/// 지역 상세.
+/// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
 ///
-/// 지역 상세 전용 API는 아직 없다. 두 갈래로 채운다.
-/// - mock에 있는 지역(정선·영월 등): 소개글·사진까지 갖춘 mock을 그대로 쓴다
-/// - 서버 89개 지역: 홈 카드 정보 + 장소 목록(`/regions/{id}/places`)으로
-///   같은 형태를 만들어 준다. 소개글·사진은 없어 그 칸은 비워둔다
+/// 예전에는 mock과 홈 카드, 장소 목록 셋을 섞었다. 그 조합으로 만든 장소에는
+/// 사진이 없어 시안의 카드가 회색 판으로 남았다.
+
 /// 매력 포인트 장소 개수 — 시안 노트: 최소 2 ~ 최대 10
 const kMaxHighlightSpots = 10;
 
@@ -31,53 +28,36 @@ const _spotCardHeight = 220.0;
 
 final regionDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, regionId) async {
-      final all = await MockDataSource.allRegions();
+      final data = await ref
+          .watch(regionDetailRepositoryProvider)
+          .detail(regionId);
 
-      Map<String, dynamic>? findBy(String key) {
-        for (final r in all) {
-          if (r['id'] == key || r['name'] == key) return r;
-        }
-        return null;
-      }
+      // 서버는 name에 시군구와 시도를 이미 합쳐 준다("동구 · 부산광역시")
+      final benefit = data['benefit'] as Map<String, dynamic>?;
+      final spots =
+          (data['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
+          const [];
 
-      final direct = findBy(regionId);
-      if (direct != null) return direct;
-
-      // 서버 지역 — 홈 카드에서 이름·이미지를 얻고 장소로 매력 포인트를 채운다.
-      // 조회가 실패하면 그대로 던진다 — 화면이 재시도 가능한 에러로 받는다.
-      // null은 '그런 지역이 없다'는 뜻으로만 쓴다
-      final snapshot = await ref.watch(homeSnapshotProvider.future);
-      Map<String, dynamic>? card;
-      for (final r in snapshot.regions) {
-        if (r['id'] == regionId) {
-          card = r;
-          break;
-        }
-      }
-      if (card == null) return null;
-
-      // mock에 같은 이름이 있으면 소개글까지 갖춘 그쪽이 낫다
-      final byName = findBy(card['name'] as String? ?? '');
-      if (byName != null) return byName;
-
-      final sights = await ref.watch(regionSightsProvider(regionId).future);
       return {
         'id': regionId,
-        'name': card['name'],
-        'sido': card['sido'],
-        if (card['benefitBadge'] != null) 'benefitBadge': card['benefitBadge'],
-        if (card['benefitPolicyId'] != null)
-          'benefitPolicyId': card['benefitPolicyId'],
-        // 대표 사진은 홈 카드 이미지 한 장뿐이다
-        'photos': [if (card['imageUrl'] case final String url) url],
-        // 인허가 데이터에는 사진·소개가 없어 이름과 분류만 채운다.
-        // id를 함께 실어 탭하면 장소 상세로 갈 수 있게 한다
+        'name': data['name'],
+        if (benefit?['text'] != null) 'benefitBadge': benefit!['text'],
+        if (benefit?['policyId'] != null)
+          'benefitPolicyId': benefit!['policyId'],
+        'photos': (data['photos'] as List?)?.cast<String>() ?? const <String>[],
+        // 서버가 그 지역에 실제로 있는 것의 이름으로 만든 한 줄 문장이다(core #140).
+        // 문단이 아니라 한 줄이라 펼치기 chevron은 쓸 자리가 없다
+        if ((data['overview'] as String?)?.isNotEmpty ?? false)
+          'story': data['overview'],
+        // 사진 없는 장소와 상한(10)은 서버가 이미 처리해 준다 — 앱에서 또
+        // 자르면 세는 쪽과 그리는 쪽이 갈린다
         'highlightSpots': [
-          for (final p in sights.take(kMaxHighlightSpots))
+          for (final s in spots.take(kMaxHighlightSpots))
             {
-              'name': p['name'],
-              'caption': p['categoryLabel'] ?? '',
-              if (p['id'] != null) 'poiContentId': p['id'],
+              'name': s['name'],
+              'caption': s['catchphrase'] ?? '',
+              if (s['imageUrl'] != null) 'imageUrl': s['imageUrl'],
+              if (s['poiContentId'] != null) 'poiContentId': s['poiContentId'],
             },
         ],
       };
@@ -117,8 +97,6 @@ class RegionDetailScreen extends ConsumerWidget {
           error: (e, _) => AppErrorView(
             onRetry: () => ref.invalidate(regionDetailProvider(regionId)),
           ),
-          // mock에 없는 지역(서버 89곳)은 소개글이 없다 —
-          // 대신 서버가 주는 관광명소 목록으로 화면을 채운다
           data: (data) => data == null
               ? const Center(
                   child: AppEmptyView(
@@ -158,7 +136,8 @@ class RegionDetailScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${region['name']} · ${region['sido']}',
+                // 서버가 "동구 · 부산광역시" 형태로 합쳐 준다
+                region['name'] as String? ?? '',
                 style: const TextStyle(
                   fontSize: 21,
                   fontWeight: FontWeight.w700,
@@ -212,7 +191,10 @@ class RegionDetailScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
-              '${region['name']} 매력 포인트 장소',
+              // 제목에는 시군구만 넣는다 — 서버 name은 "정선군 · 강원"처럼
+              // 시도까지 붙어 있어 그대로 쓰면 '… 강원 매력 포인트 장소'가 된다
+              '${(region['name'] as String? ?? '').split(' · ').first}'
+              ' 매력 포인트 장소',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -342,8 +324,8 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
 
 /// 매력 포인트 장소 카드 — 시안 실측 190×220, 반경 12.
 ///
-/// 탭하면 장소 상세로 간다. 인허가 데이터에는 사진이 없어 회색 판만 남는
-/// 경우가 많은데, 그래도 이름은 읽혀야 하므로 아래쪽을 어둡게 깐다.
+/// 탭하면 장소 상세로 간다. 사진 위에 이름을 얹으므로 밝은 사진에서도
+/// 글자가 읽히도록 아래쪽을 어둡게 깐다.
 class _SpotCard extends StatelessWidget {
   const _SpotCard({required this.spot, required this.regionName});
 

@@ -26,6 +26,7 @@ import 'package:offway/features/notification/data/notification_repository.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
 import 'package:offway/features/region/data/region_list_repository.dart';
+import 'package:offway/features/region/data/region_detail_repository.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
 import 'package:offway/features/region/presentation/widgets/leave_pick_card.dart';
 import 'package:offway/mock/mock_data_source.dart';
@@ -85,6 +86,39 @@ class _FakeLeaveRepository extends LeaveRepository {
 
 /// 지역 목록 더보기 — mock 지역을 한 페이지로 돌려준다.
 /// 실제로는 서버가 89곳을 페이지로 끊어 주지만, 화면 검증에는 한 장이면 된다
+/// 지역 상세 — mock 지역을 서버 응답 형태(core #307)로 돌려준다.
+class _FakeRegionDetailRepository extends RegionDetailRepository {
+  _FakeRegionDetailRepository() : super(Dio());
+
+  @override
+  Future<Map<String, dynamic>> detail(String regionId) async {
+    final all = await MockDataSource.allRegions();
+    final r = all.firstWhere(
+      (e) => e['id'] == regionId || e['name'] == regionId,
+      orElse: () => const <String, dynamic>{},
+    );
+    return {
+      'regionId': regionId,
+      'name': '${r['name'] ?? regionId} \u00b7 ${r['sido'] ?? ''}',
+      'overview': r['story'],
+      'photos': (r['photos'] as List?)?.cast<String>() ?? const <String>[],
+      if (r['benefitBadge'] != null)
+        'benefit': {'text': r['benefitBadge'], 'policyId': 1},
+      'highlightSpots': [
+        for (final s
+            in (r['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
+                const [])
+          {
+            'poiContentId': s['poiContentId'],
+            'name': s['name'],
+            'imageUrl': s['imageUrl'],
+            'catchphrase': s['caption'],
+          },
+      ],
+    };
+  }
+}
+
 class _FakeRegionListRepository extends RegionListRepository {
   _FakeRegionListRepository() : super(Dio());
 
@@ -324,6 +358,9 @@ final _serverOverrides = [
   ),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
   regionListRepositoryProvider.overrideWithValue(_FakeRegionListRepository()),
+  regionDetailRepositoryProvider.overrideWithValue(
+    _FakeRegionDetailRepository(),
+  ),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
   regionRecommendRepositoryProvider.overrideWithValue(
     _FakeRegionRecommendRepository(),
