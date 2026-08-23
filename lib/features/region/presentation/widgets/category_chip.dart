@@ -48,7 +48,11 @@ class CategoryChip extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: AppColors.backgroundNormalAlternative,
+              // 고른 칩은 배경을 비우고 테두리로만 표시한다(시안). 회색을
+              // 깔면 안 고른 칩과 바탕이 같아 무엇이 켜졌는지 흐려진다
+              color: selected
+                  ? AppColors.backgroundNormal
+                  : AppColors.backgroundNormalAlternative,
               borderRadius: BorderRadius.circular(14),
               border: selected
                   ? Border.all(color: AppColors.primaryNormal, width: 1.5)
