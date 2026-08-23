@@ -8,7 +8,6 @@ import '../../../core/config/app_config.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
-import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/application/push_registration.dart';
@@ -70,14 +69,6 @@ class MyScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: AppTabPills(
-        current: AppTab.my,
-        onTap: (tab) {
-          // 탭끼리는 형제 화면이므로 스택을 쌓지 않고 교체한다
-          if (tab == AppTab.home) context.go(AppRoutes.home);
-          if (tab == AppTab.myCourse) context.go(AppRoutes.myCourses);
-        },
       ),
     );
   }

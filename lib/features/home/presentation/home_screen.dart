@@ -7,7 +7,6 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_tab_pills.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../../notification/application/notification_provider.dart'
@@ -184,14 +183,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             _buildLeavePicks(regions),
           ],
         ),
-      ),
-      bottomNavigationBar: AppTabPills(
-        current: AppTab.home,
-        onTap: (tab) {
-          // 탭끼리는 형제 화면이므로 스택을 쌓지 않고 교체한다
-          if (tab == AppTab.myCourse) context.go(AppRoutes.myCourses);
-          if (tab == AppTab.my) context.go(AppRoutes.my);
-        },
       ),
     );
   }
