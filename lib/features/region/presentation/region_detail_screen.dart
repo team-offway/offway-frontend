@@ -372,6 +372,9 @@ class _SpotCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
+        // 사진처럼 대비가 큰 가장자리는 기본 antiAlias 로 자르면
+        // 모서리에 계단이 비친다
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: SizedBox(
           width: _spotCardWidth,
           height: _spotCardHeight,
