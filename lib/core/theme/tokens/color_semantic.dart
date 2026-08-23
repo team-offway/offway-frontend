@@ -89,8 +89,8 @@ abstract final class AppColors {
   static const staticBlack = AppPalette.common0;
 
   // ── Material · 오버레이 ─────────────────────────────────────────────
-  /// 모달 뒤를 덮는 딤 (Cool Neutral/10 · 52%)
-  static const materialDimmer = Color(0x85171719);
+  /// 모달 뒤를 덮는 딤 (Cool Neutral/10 · 60%)
+  static const materialDimmer = Color(0x99171719);
 
   // ── Initial · 테마 전환 전 초기값 ───────────────────────────────────
   /// DS 내부용. 화면에서는 [staticBlack]·[staticWhite]를 쓴다.

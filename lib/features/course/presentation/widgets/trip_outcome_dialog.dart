@@ -79,8 +79,10 @@ class _TripOutcomeDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            // 시안: 가로 28 · 세로 42
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 42),
+            // 시안: 가로 28 · 위 42. 아래는 42가 아니라 17이다 —
+            // Actions(y=205)가 Information(높이 230) 안으로 25 파고든다.
+            // 42로 두면 모달이 시안(257)보다 25 높아진다
+            padding: const EdgeInsets.fromLTRB(28, 42, 28, 17),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +121,7 @@ class _TripOutcomeDialog extends StatelessWidget {
             ),
           ),
           Padding(
-            // 위 여백 없음 — 본문 블록의 아래 42가 곧 버튼과의 간격이다.
+            // 위 여백 없음 — 본문 블록의 아래 17이 곧 버튼과의 간격이다.
             // 우측 20 = 시안 28 − 버튼이 자체로 가진 좌우 여백 8
             padding: const EdgeInsets.fromLTRB(28, 0, 20, 20),
             child: Row(
