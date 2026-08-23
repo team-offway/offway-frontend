@@ -145,7 +145,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 children: [
                   Text(
                     '이번달 추천 여행지',
-                    style: AppTypography.heading1Bold.copyWith(
+                    // 시안은 Headline 1/Bold(18) — heading1Bold(22)와 이름이 한 글자
+                    // 차이라 잘못 집기 쉽다
+                    style: AppTypography.headline1Bold.copyWith(
                       color: AppColors.labelNormal,
                     ),
                   ),
@@ -423,7 +425,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             '이번 연차엔 여기 어때요?',
-            style: AppTypography.heading1Bold.copyWith(
+            style: AppTypography.headline1Bold.copyWith(
               color: AppColors.labelNormal,
             ),
           ),

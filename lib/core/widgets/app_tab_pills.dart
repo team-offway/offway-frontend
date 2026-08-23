@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -31,33 +33,42 @@ class AppTabPills extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              height: 58,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                // 스크롤 콘텐츠가 아래로 지나가며 비치는 반투명 배경
-                color: AppColors.staticWhite.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    offset: Offset(0, 4),
-                    blurRadius: 16,
+            // 시안의 배경은 28% 흰색이다 — 그 정도로 투명한 것은 뒤가 흐릿하게
+            // 비치는 것을 전제하기 때문이다. 블러 없이 색만 옅게 하면 아래를
+            // 지나는 글자가 그대로 비쳐 탭 라벨을 읽기 어렵다
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: 58,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.staticWhite.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14000000),
+                        offset: Offset(0, 4),
+                        blurRadius: 16,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final tab in AppTab.values) ...[
-                    if (tab != AppTab.values.first) const SizedBox(width: 6),
-                    _Pill(
-                      tab: tab,
-                      active: tab == current,
-                      onTap: onTap == null ? null : () => onTap!(tab),
-                    ),
-                  ],
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final tab in AppTab.values) ...[
+                        if (tab != AppTab.values.first)
+                          const SizedBox(width: 6),
+                        _Pill(
+                          tab: tab,
+                          active: tab == current,
+                          onTap: onTap == null ? null : () => onTap!(tab),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
