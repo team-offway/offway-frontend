@@ -441,7 +441,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                   height: 48,
                 ),
               ),
-              const SizedBox(height: 20),
+              // 시안: 핀(48) 끝에서 헤드라인까지 16
+              const SizedBox(height: 16),
               _buildHeadline(course, durationDays),
               const SizedBox(height: 8),
               Text(
@@ -471,25 +472,53 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               CoursePlaceList(
                 places: places,
                 regionName: course['regionName'] as String? ?? widget.regionId,
-                onTapPlace: _openPlaceDetail,
                 // 담기 전에도 장소를 눌러 볼 수 있어야 한다. '추천 …' 문구가
                 // 붙어 있어 눌러지는 것처럼 보이는데 아무 일도 없으면 고장으로
                 // 읽힌다. 담은 뒤 화면은 운영시간 시트를 먼저 띄우지만, 여기는
                 // 여행 날짜가 없어 그 시트에 담을 내용이 없다 — 바로 상세로 간다
+                onTapPlace: _openPlaceDetail,
               ),
               // 안내 문구·버튼은 화면에 고정하지 않고 목록 끝에 따라온다 —
               // 고정하면 늘 떠 있어 코스를 보는 화면을 좁힌다
-              const SizedBox(height: 24),
-              Text(
-                '추천 코스를 내 코스에 담으면\n언제든 확인이 가능해요!',
-                textAlign: TextAlign.center,
-                style: AppTypography.label1ReadingMedium.copyWith(
-                  color: AppColors.labelAlternative,
-                ),
-              ),
+              // 시안: 장소 목록 끝에서 유도 블록까지 50
+              const SizedBox(height: 50),
+              _buildSavePrompt(),
               const SizedBox(height: 16),
               _buildActionArea(course),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 목록 끝에서 담기를 권하는 블록 (시안 O-09).
+  ///
+  /// 예전에는 버튼 바로 위에 한 줄 캡션만 뒀는데, 코스를 다 훑고 내려온
+  /// 자리라 "그래서 뭘 하면 되나"가 약했다. 아이콘과 물음으로 한 번 끊는다
+  Widget _buildSavePrompt() {
+    return Column(
+      children: [
+        SvgPicture.asset(
+          'assets/icons/ic_location_tick.svg',
+          width: 48,
+          height: 48,
+        ),
+        // 시안: 아이콘 끝에서 제목까지 24
+        const SizedBox(height: 24),
+        Text(
+          '이 코스로 떠나볼까요?',
+          textAlign: TextAlign.center,
+          style: AppTypography.headline2Bold.copyWith(
+            color: AppColors.labelStrong,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '내 코스에 담아 언제든 다시 확인할 수 있어요.',
+          textAlign: TextAlign.center,
+          style: AppTypography.body2NormalMedium.copyWith(
+            color: AppColors.labelAlternative,
           ),
         ),
       ],

@@ -1209,7 +1209,16 @@ void main() {
     // 담기 전에도 장소를 눌러 상세를 볼 수 있어야 한다.
     // '추천 …' 문구가 붙어 눌러지는 것처럼 보이는데 아무 일도 없으면 고장으로
     // 읽힌다 — 예전에는 담은 뒤 화면만 탭을 받았다
-    await tester.tap(find.text('가리왕산자연휴양림'));
+    // 목록 끝까지 스크롤한 상태라 첫 장소는 화면 위로 벗어나 있다.
+    // ListView는 벗어난 항목도 트리에 남겨 finder는 찾지만 탭은 닿지 않으므로
+    // scrollUntilVisible이 '이미 보인다'고 보고 움직이지 않는다 — 직접 내린다
+    final place = find.text('가리왕산자연휴양림');
+    final list = find.byType(Scrollable).last;
+    for (var i = 0; i < 8 && tester.getCenter(place).dy < 0; i++) {
+      await tester.drag(list, const Offset(0, 200));
+      await tester.pump();
+    }
+    await tester.tap(place);
     await tester.pumpAndSettle();
     expect(find.byType(PoiDetailScreen), findsOneWidget);
   });
