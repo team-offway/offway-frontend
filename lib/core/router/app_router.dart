@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,6 +30,7 @@ import '../../features/region/presentation/region_detail_screen.dart';
 import '../../features/region/presentation/region_list_screen.dart';
 import '../../features/onboarding/presentation/onboarding_intro_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../widgets/app_tab_pills.dart';
 
 abstract final class AppRoutes {
   static const splash = '/splash';
@@ -162,6 +163,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: ref.watch(initialRouteProvider),
     routes: [
+      // 홈·내 코스·마이는 탭바를 함께 쓴다.
+      //
+      // **탭바를 라우트 밖에 한 번만 둔다.** 화면마다 만들면 탭을 옮길 때
+      // 위젯이 파괴되고 새로 생겨, 알약이 애니메이션할 이전 위치를 잃는다 —
+      // 이동 연출이 통째로 사라진다.
+      ShellRoute(
+        // 셸도 전환 없이 얹는다 — 기본 MaterialPage 를 쓰면 셸이 들어올 때
+        // 한 번 밀려들어와 '탭 전환에 슬라이드가 없다'는 약속이 깨진다
+        pageBuilder: (context, state, child) => _noTransitionPage(
+          _TabScaffold(location: state.uri.path, child: child),
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            name: 'home',
+            pageBuilder: (context, state) =>
+                _noTransitionPage(const HomeScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.myCourses,
+            name: 'myCourses',
+            pageBuilder: (context, state) =>
+                _noTransitionPage(const MyCoursesScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.my,
+            name: 'my',
+            pageBuilder: (context, state) =>
+                _noTransitionPage(const MyScreen()),
+          ),
+        ],
+      ),
       GoRoute(
         path: AppRoutes.splash,
         name: 'splash',
@@ -218,11 +251,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NotificationScreen(),
       ),
       GoRoute(
-        path: AppRoutes.home,
-        name: 'home',
-        pageBuilder: (context, state) => _noTransitionPage(const HomeScreen()),
-      ),
-      GoRoute(
         path: AppRoutes.wizardDateGate,
         name: 'wizardDateGate',
         builder: (context, state) => const DateGateScreen(),
@@ -252,12 +280,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.myCourses,
-        name: 'myCourses',
-        pageBuilder: (context, state) =>
-            _noTransitionPage(const MyCoursesScreen()),
-      ),
       // 더 구체적인 /schedule 경로를 :savedId 보다 먼저 등록한다
       GoRoute(
         path: AppRoutes.courseSchedule,
@@ -280,11 +302,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           name: state.uri.queryParameters['name'] ?? '',
           regionName: state.uri.queryParameters['region'],
         ),
-      ),
-      GoRoute(
-        path: AppRoutes.my,
-        name: 'my',
-        pageBuilder: (context, state) => _noTransitionPage(const MyScreen()),
       ),
       GoRoute(
         path: AppRoutes.withdraw,
@@ -332,3 +349,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// 탭 셋(홈·내 코스·마이)이 함께 쓰는 껍데기.
+///
+/// 탭바를 여기 한 번만 두어 화면이 바뀌어도 살아남게 한다 — 그래야 알약이
+/// 이전 자리에서 새 자리로 미끄러진다. 화면마다 두면 매번 새로 생겨
+/// 이미 도착한 상태로 그려진다.
+class _TabScaffold extends StatelessWidget {
+  const _TabScaffold({required this.location, required this.child});
+
+  /// 지금 열린 경로 — 어느 탭을 활성으로 그릴지 이 값이 정한다
+  final String location;
+  final Widget child;
+
+  AppTab? get _current => switch (location) {
+    AppRoutes.home => AppTab.home,
+    AppRoutes.myCourses => AppTab.myCourse,
+    AppRoutes.my => AppTab.my,
+    _ => null,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      // 콘텐츠가 탭바 뒤로 지나가야 유리 너머로 비친다
+      extendBody: true,
+      body: child,
+      bottomNavigationBar: AppTabPills(
+        current: _current,
+        onTap: (tab) {
+          final path = switch (tab) {
+            AppTab.home => AppRoutes.home,
+            AppTab.myCourse => AppRoutes.myCourses,
+            AppTab.my => AppRoutes.my,
+          };
+          if (path != location) context.go(path);
+        },
+      ),
+    );
+  }
+}

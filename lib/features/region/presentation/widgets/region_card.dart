@@ -55,16 +55,38 @@ class RegionCard extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // DS Thumbnail: 4:3 고정비, radius 12, 헤어라인 보더
+        // DS Thumbnail: 4:3 고정비, radius 12, 헤어라인 보더.
+        //
+        // 보더를 Container에 두고 clipBehavior로 자르면 자식이 보더 '안쪽'으로
+        // 잘려 모서리에 계단이 남는다(QA: 카드 라운드가 깨져 보여요).
+        // 시안대로 사진을 먼저 둥글게 자르고 그 위에 선을 덮는다
         AspectRatio(
           aspectRatio: 4 / 3,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.lineNormalAlternative),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: _buildImage(),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 사진은 테두리 **안쪽**까지만 그린다.
+              //
+              // 바깥 곡률 12로 자르고 그 위에 1px 선을 덮으면, 선이 안쪽으로
+              // 그려져 실효 곡률이 11이 된다. 그 1px 어긋난 자리에 사진이
+              // 비쳐 모서리가 계단처럼 보인다. 안쪽 곡률(11)로 잘라 덮는다
+              Padding(
+                padding: const EdgeInsets.all(1),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  child: _buildImage(),
+                ),
+              ),
+              IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.lineNormalAlternative),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 6),

@@ -42,22 +42,27 @@ class PlaceThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = width ?? size;
     final h = height ?? size;
+    final content = Container(
+      width: w,
+      height: h,
+      color: background ?? AppColors.backgroundNormalAlternative,
+      child: imageUrl == null
+          ? _placeholder(w, h)
+          : Image.network(
+              imageUrl!,
+              fit: BoxFit.cover,
+              // 주소가 살아 있어도 서버가 죽어 있을 수 있다 — 빈 칸으로
+              // 두면 왜 비었는지 알 수 없으니 자리 아이콘으로 되돌린다
+              errorBuilder: (_, _, _) => _placeholder(w, h),
+            ),
+    );
+    // radius 0이면 자를 것이 없다. 그래도 ClipRRect를 두면 바깥에서 둥글게
+    // 자르는 카드와 겹쳐 안티앨리어싱이 두 번 걸리고, 모서리에 계단이 남는다
+    if (radius == 0) return content;
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: Container(
-        width: w,
-        height: h,
-        color: background ?? AppColors.backgroundNormalAlternative,
-        child: imageUrl == null
-            ? _placeholder(w, h)
-            : Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                // 주소가 살아 있어도 서버가 죽어 있을 수 있다 — 빈 칸으로
-                // 두면 왜 비었는지 알 수 없으니 자리 아이콘으로 되돌린다
-                errorBuilder: (_, _, _) => _placeholder(w, h),
-              ),
-      ),
+      clipBehavior: Clip.antiAliasWithSaveLayer,
+      child: content,
     );
   }
 

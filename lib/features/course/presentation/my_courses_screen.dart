@@ -7,7 +7,6 @@ import '../../../core/constants/trip_constants.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../data/course_repository.dart';
 
@@ -86,14 +85,6 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: AppTabPills(
-        current: AppTab.myCourse,
-        onTap: (tab) {
-          // 탭끼리는 형제 화면이므로 스택을 쌓지 않고 교체한다
-          if (tab == AppTab.home) context.go(AppRoutes.home);
-          if (tab == AppTab.my) context.go(AppRoutes.my);
-        },
       ),
     );
   }
