@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/widgets/place_thumbnail.dart';
 
 /// 홈 '이번 연차엔 여기 어때요?' 카드 — 사진 한 장에 지역명만 얹는다.
 ///
@@ -36,15 +37,13 @@ class LeavePickCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Container(
-                color: AppColors.backgroundNormalAlternative,
-                child: imageUrl == null
-                    ? null
-                    : Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const SizedBox.expand(),
-                      ),
+              // 사진이 없거나 죽어 있으면 자리 아이콘을 남긴다
+              PlaceThumbnail(
+                imageUrl: imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                radius: 0,
+                iconSize: 48,
               ),
               // 사진이 밝아도 글자가 읽히게 아래쪽만 어둡게 깐다.
               // 위가 아니라 아래인 건 글자가 아래에 놓이기 때문

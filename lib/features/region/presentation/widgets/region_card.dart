@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/widgets/place_thumbnail.dart';
 import '../../../policy/presentation/policy_detail_sheet.dart';
 
 /// 지역 카드 표시 형태
@@ -133,15 +134,14 @@ class RegionCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(
-          color: AppColors.backgroundNormalAlternative,
-          child: imageUrl == null
-              ? null
-              : Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.expand(),
-                ),
+        // 사진이 없거나 죽어 있으면 자리 아이콘을 남긴다 — 빈 회색 칸으로
+        // 두면 아직 불러오는 중인지 없는 것인지 구분되지 않는다
+        PlaceThumbnail(
+          imageUrl: imageUrl,
+          width: double.infinity,
+          height: double.infinity,
+          radius: 0,
+          iconSize: 48,
         ),
         // DS Thumbnail Overlay — 밝은 사진 위에서도 글자가 읽히도록
         // 위쪽에만 검정을 35%까지 깔고 아래로 사라지게 한다
