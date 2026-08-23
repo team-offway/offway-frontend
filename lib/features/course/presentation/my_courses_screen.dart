@@ -8,6 +8,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tab_pills.dart';
+import '../../../core/widgets/place_thumbnail.dart';
 import '../data/course_repository.dart';
 
 /// 내 코스 목록 (`GET /courses?scope=`) — 정렬·범위는 서버가 맡는다.
@@ -302,24 +303,12 @@ class _CourseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 198,
-              width: double.infinity,
-              color: AppColors.fillNormal,
-              child: imageUrl == null
-                  ? Icon(
-                      Icons.image_outlined,
-                      size: 48,
-                      color: AppColors.labelAssistive,
-                    )
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.expand(),
-                    ),
-            ),
+          PlaceThumbnail(
+            imageUrl: imageUrl,
+            width: double.infinity,
+            height: 198,
+            background: AppColors.fillNormal,
+            iconSize: 48,
           ),
           const SizedBox(height: 12),
           if (_badge(start, end) case final (String, Color) badge) ...[
