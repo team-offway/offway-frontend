@@ -33,40 +33,65 @@ class AppTabPills extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 시안의 배경은 28% 흰색이다 — 그 정도로 투명한 것은 뒤가 흐릿하게
-            // 비치는 것을 전제하기 때문이다. 블러 없이 색만 옅게 하면 아래를
-            // 지나는 글자가 그대로 비쳐 탭 라벨을 읽기 어렵다
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  height: 58,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.staticWhite.withValues(alpha: 0.28),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x14000000),
-                        offset: Offset(0, 4),
-                        blurRadius: 16,
-                      ),
-                    ],
+            // 리퀴드 글래스 — 팀 웹(18th-team3-client `liquid-glass`)과 값을 맞춘다.
+            //
+            // 유리로 보이게 하는 것은 블러가 아니라 **테두리 안쪽 광택**이다.
+            // 그것 없이 블러만 세게 주면 뒤가 뭉개진 반투명 판이 될 뿐이다.
+            // 그래서 블러는 오히려 옅게(3) 두어 뒤가 비치게 한다.
+            //
+            // 바깥 그림자는 클립 밖에 둔다 — 안에 두면 함께 잘려 사라진다
+            DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x29000000), // 16%
+                    offset: Offset(0, 6),
+                    blurRadius: 24,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final tab in AppTab.values) ...[
-                        if (tab != AppTab.values.first)
-                          const SizedBox(width: 6),
-                        _Pill(
-                          tab: tab,
-                          active: tab == current,
-                          onTap: onTap == null ? null : () => onTap!(tab),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                  child: Container(
+                    height: 58,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.staticWhite.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        // 좌상단 하이라이트 · 우하단 반사 (web의 inset 2겹)
+                        BoxShadow(
+                          color: AppColors.staticWhite.withValues(alpha: 0.6),
+                          offset: const Offset(2, 2),
+                          blurRadius: 1,
+                          blurStyle: BlurStyle.inner,
+                        ),
+                        BoxShadow(
+                          color: AppColors.staticWhite.withValues(alpha: 0.4),
+                          offset: const Offset(-1, -1),
+                          blurRadius: 1,
+                          spreadRadius: 1,
+                          blurStyle: BlurStyle.inner,
                         ),
                       ],
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final tab in AppTab.values) ...[
+                          if (tab != AppTab.values.first)
+                            const SizedBox(width: 6),
+                          _Pill(
+                            tab: tab,
+                            active: tab == current,
+                            onTap: onTap == null ? null : () => onTap!(tab),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -95,7 +120,11 @@ class _Pill extends StatelessWidget {
         width: 72,
         height: double.infinity,
         decoration: BoxDecoration(
-          color: active ? AppColors.lineNormalAlternative : Colors.transparent,
+          // 팀 웹과 같은 검정 8%. 회색(Cool Neutral) 8%는 흰 틴트 위에서
+          // 명도차가 11밖에 안 나 활성 탭이 눈에 띄지 않았다 — 검정은 20이다
+          color: active
+              ? AppColors.staticBlack.withValues(alpha: AppOpacity.o8)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
         ),
         child: Column(
