@@ -180,7 +180,7 @@ class PeriodStyleScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setSheetState) => _SheetScaffold(
             title: '언제 떠날까요?',
-            subtitle: '이어지는 최대 ${WeekdayRange.maxDays}일까지 선택할 수 있어요',
+            subtitle: '주말을 포함한 최대 ${WeekdayRange.maxDays}일까지 선택할 수 있어요',
             confirmEnabled: range.canConfirm,
             onConfirm: () {
               ref

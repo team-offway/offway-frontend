@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
 import '../data/region_places_repository.dart';
 import '../../../core/router/app_router.dart';
@@ -90,7 +91,6 @@ class RegionDetailScreen extends ConsumerWidget {
 
   // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
   static const _labelNormal = Color(0xFF171719);
-  static const _imagePlaceholder = Color(0xFFC5C8CE);
   // 혜택 뱃지 — 시안 Badge와 같은 브랜드색 8% 배경 + 브랜드색 글자.
   // 예전에는 다른 파랑(#3182F6)을 쓰고 있어 카드 뱃지와 색이 달랐다
   static final _badgeBg = AppColors.primaryNormal.withValues(
@@ -289,17 +289,23 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
             children: [
               Positioned.fill(
                 child: total == 0
-                    ? Container(color: RegionDetailScreen._imagePlaceholder)
+                    ? const PlaceThumbnail(
+                        imageUrl: null,
+                        width: double.infinity,
+                        height: double.infinity,
+                        radius: 0,
+                        iconSize: 64,
+                      )
                     : PageView.builder(
                         controller: _controller,
                         itemCount: total,
                         onPageChanged: (i) => setState(() => _index = i),
-                        itemBuilder: (context, i) => Image.network(
-                          widget.photos[i],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            color: RegionDetailScreen._imagePlaceholder,
-                          ),
+                        itemBuilder: (context, i) => PlaceThumbnail(
+                          imageUrl: widget.photos[i],
+                          width: double.infinity,
+                          height: double.infinity,
+                          radius: 0,
+                          iconSize: 64,
                         ),
                       ),
               ),
@@ -373,14 +379,14 @@ class _SpotCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Container(
-                color: RegionDetailScreen._imagePlaceholder,
-                child: imageUrl == null
-                    ? null
-                    : Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const SizedBox.expand(),
-                      ),
+                color: AppColors.backgroundNormalAlternative,
+                child: PlaceThumbnail(
+                  imageUrl: imageUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  radius: 0,
+                  iconSize: 48,
+                ),
               ),
               Positioned(
                 left: 0,

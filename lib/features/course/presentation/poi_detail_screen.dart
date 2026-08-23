@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/place_thumbnail.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
 import 'widgets/expandable_description.dart';
@@ -135,26 +136,13 @@ class _Body extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 대표 이미지 — TourAPI 이미지가 없으면 옅은 자리로 대체
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  // 시안 썸네일 높이
-                  height: 226,
-                  width: double.infinity,
-                  color: AppColors.backgroundNormalAlternative,
-                  child: imageUrl == null
-                      ? Icon(
-                          Icons.image_outlined,
-                          size: 48,
-                          color: AppColors.labelAssistive,
-                        )
-                      : Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const SizedBox.expand(),
-                        ),
-                ),
+              // 대표 이미지 — TourAPI 이미지가 없거나 죽어 있으면 옅은 자리로 대체
+              PlaceThumbnail(
+                imageUrl: imageUrl,
+                width: double.infinity,
+                // 시안 썸네일 높이
+                height: 226,
+                iconSize: 48,
               ),
               const SizedBox(height: 16),
               // 지자체가 이 장소에 붙인 혜택. 없는 장소가 더 많아 있을 때만 그린다
