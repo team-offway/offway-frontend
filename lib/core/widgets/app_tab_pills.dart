@@ -28,16 +28,21 @@ const _tabStep = _tabWidth + _tabGap;
 const _slideDuration = Duration(milliseconds: 400);
 
 /// 앞/뒤 모서리가 어긋나 출발하는 간격 — 이 차이가 알약을 늘어나 보이게 한다
-const _staggerDuration = Duration(milliseconds: 80);
+const _staggerDuration = Duration(milliseconds: 55);
 
 /// 목표를 7%쯤 지나쳤다 돌아오는 약한 스프링.
 /// 팀 웹(18th-team3-client)의 `SLIDE_EASE`와 오버슈트를 맞춘 값이다 —
 /// [Curves.easeOutBack]은 10%를 넘겨 탭바에는 과하다
-const _slideEase = Cubic(0.25, 1.0, 0.5, 1.2);
+/// stagger 때문에 두 모서리가 시차를 두고 각각 지나쳐 실제 오버슈트는
+/// 이 값보다 커진다 — 7%로 두면 화면에서는 20pt를 넘겨 튕겨나간 것처럼 보인다
+const _slideEase = Cubic(0.25, 1.0, 0.5, 1.08);
 
-/// 손을 뗐을 때 튕겨 붙는 강한 스프링 — 웹 `SPRING_EASE`(오버슈트 36%)에 맞췄다.
-/// 짧은 거리를 스냅할 때만 쓴다. 긴 이동에 쓰면 과하게 출렁인다
-const _snapEase = Cubic(0.25, 1.65, 0.5, 1.55);
+/// 손을 뗐을 때 튕겨 붙는 스프링.
+///
+/// 웹 `SPRING_EASE`는 오버슈트가 36%인데, 그건 손가락이 이미 목표 근처까지
+/// 끌어다 놓은 **몇 픽셀짜리** 스냅에 쓰는 값이다. 한 칸(78)을 그 값으로
+/// 옮기면 28pt를 지나쳤다 돌아와 튕겨나간 것처럼 보인다. 18%로 낮춘다
+const _snapEase = Cubic(0.25, 1.0, 0.5, 1.15);
 
 /// 이만큼 끌면 탭이 아니라 드래그로 본다 — 손떨림이 드래그로 빠지지 않을 만큼
 const _dragThreshold = 12.0;
@@ -128,6 +133,17 @@ class _AppTabPillsState extends State<AppTabPills> {
     });
     if (AppTab.values[target] != widget.current) {
       widget.onTap?.call(AppTab.values[target]);
+    }
+  }
+
+  @override
+  void didUpdateWidget(AppTabPills old) {
+    super.didUpdateWidget(old);
+    // 탭을 눌러 옮길 때도 부푼 채 미끄러진다 — 끌 때만 부풀면 두 조작의
+    // 느낌이 갈린다. 착지를 마치면 480ms 뒤 무광으로 돌아온다
+    if (widget.current != old.current && widget.current != null) {
+      _grabbing = true;
+      _scheduleLanding();
     }
   }
 
@@ -311,8 +327,13 @@ class _IndicatorState extends State<_Indicator> {
   void didUpdateWidget(_Indicator old) {
     super.didUpdateWidget(old);
     if (widget.index != old.index) _forward = widget.index > old.index;
-    if (old.dragLeft != null && widget.dragLeft == null) _snapping = true;
-    if (widget.dragLeft != null) _snapping = false;
+    // 스냅은 손을 뗀 **그 한 번**만이다. 켜둔 채 두면 그 뒤 모든 탭 이동에
+    // 36% 오버슈트가 걸려 알약이 목표를 한참 지나쳤다 돌아온다
+    if (old.dragLeft != null && widget.dragLeft == null) {
+      _snapping = true;
+    } else if (widget.index != old.index || widget.dragLeft != null) {
+      _snapping = false;
+    }
   }
 
   @override
