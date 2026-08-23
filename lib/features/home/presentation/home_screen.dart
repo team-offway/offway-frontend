@@ -27,8 +27,16 @@ final homeSnapshotProvider = FutureProvider<HomeSnapshot>(
 final homeUserProvider = FutureProvider<Map<String, dynamic>>(
   (ref) async => (await ref.watch(homeSnapshotProvider.future)).user,
 );
+
+/// '이번 연차엔 여기 어때요?' — 지역 카드
 final homeRegionsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) async => (await ref.watch(homeSnapshotProvider.future)).regions,
+);
+
+/// '이번달 추천 여행지' — 장소 카드 (core #305).
+/// 배치가 채우기 전에는 비어 온다 — 그때는 섹션을 통째로 접는다
+final homePlacesProvider = FutureProvider<List<Map<String, dynamic>>>(
+  (ref) async => (await ref.watch(homeSnapshotProvider.future)).places,
 );
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
@@ -97,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // 덮은 값을 쓴다
     final user = ref.watch(currentUserProvider);
     final regions = ref.watch(homeRegionsProvider);
+    final places = ref.watch(homePlacesProvider);
 
     // 연차를 등록하지 않았으면 온보딩으로 돌려보낸다.
     //
@@ -168,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const SizedBox(height: 16),
             _buildCategoryRow(),
             const SizedBox(height: 16),
-            _buildRegionCards(regions),
+            _buildRegionCards(places, fallback: regions),
             const SizedBox(height: _sectionGap),
             _buildLeavePicks(regions),
           ],
@@ -444,7 +453,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildRegionCards(AsyncValue<List<Map<String, dynamic>>> regions) {
+  /// '이번달 추천 여행지' — 장소 카드를 그린다.
+  ///
+  /// [fallback]은 장소 배치가 아직 안 돈 동안 쓰는 지역 카드다. 시안은 장소를
+  /// 원하지만 빈 섹션보다는 낫고, 서버가 채우는 대로 저절로 갈아탄다
+  Widget _buildRegionCards(
+    AsyncValue<List<Map<String, dynamic>>> regions, {
+    AsyncValue<List<Map<String, dynamic>>>? fallback,
+  }) {
     // 로딩·에러·빈 상태는 자리만 잡아두면 되므로 높이를 고정한다.
     // 카드가 들어오면 높이를 카드에 맡긴다 — 고정하면 카드 내용보다 커져
     // 뱃지 아래에 빈 영역이 남고 다음 섹션이 그만큼 밀려 내려간다
@@ -476,7 +492,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ),
-      data: (all) {
+      data: (served) {
+        // 장소 배치(core #305)가 아직 안 돈 지역이 있다. 그럴 때 빈 칸을
+        // 두느니 예전처럼 지역 카드를 보여준다 — 배치가 채우면 저절로 바뀐다
+        final all = served.isEmpty ? (fallback?.value ?? served) : served;
         final list = _filter(all);
         if (list.isEmpty) {
           return SizedBox(

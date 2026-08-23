@@ -13,14 +13,26 @@ class HomeSnapshot {
   const HomeSnapshot({
     required this.user,
     required this.regions,
+    this.places = const [],
     this.filters = const [],
   });
 
   /// `{nickname, remainingLeaveDays(double?)}`
   final Map<String, dynamic> user;
 
+  /// **'이번 연차엔 여기 어때요?'** 섹션 — 지역 카드.
   /// RegionCard가 읽는 형태 (name·sido·benefitBadge·categoryCounts…)
   final List<Map<String, dynamic>> regions;
+
+  /// **'이번달 추천 여행지'** 섹션 — 장소 카드 (core #305).
+  ///
+  /// 예전에는 이 자리에도 [regions]를 썼다. 시안의 제목은 장소명인데 지역만
+  /// 있어 오버레이와 제목에 같은 이름이 두 번 보였고, 칩을 눌러도 지역은
+  /// 네 갈래를 다 가져 목록이 그대로였다.
+  ///
+  /// 부제를 만들 재료가 없는 장소가 있어 `subtitle`은 빈 채로 온다 —
+  /// 지어내지 않고 그 줄을 접는 것이 서버와의 약속이다.
+  final List<Map<String, dynamic>> places;
 
   /// 카테고리 칩 `[{key, label}]` — 구성·순서를 서버가 정한다
   final List<Map<String, dynamic>> filters;
@@ -39,6 +51,8 @@ class HomeRepository {
       final user = data['user'] as Map<String, dynamic>;
       final regions = (data['recommendedRegions'] as List)
           .cast<Map<String, dynamic>>();
+      final filters = ((data['filters'] as List?) ?? const [])
+          .cast<Map<String, dynamic>>();
       return HomeSnapshot(
         user: {
           'nickname': user['name'],
@@ -48,8 +62,11 @@ class HomeRepository {
           'profileImageUrl': ?user['profileImageUrl'],
         },
         regions: regions.map(_toRegionCardMap).toList(),
-        filters: ((data['filters'] as List?) ?? const [])
-            .cast<Map<String, dynamic>>(),
+        places: ((data['recommendedPlaces'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map((p) => toPlaceCardMap(p, filters: filters))
+            .toList(),
+        filters: filters,
       );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
@@ -58,6 +75,40 @@ class HomeRepository {
 
   Map<String, dynamic> _toRegionCardMap(Map<String, dynamic> card) =>
       toRegionCardMap(card);
+}
+
+/// 서버 장소 카드 → 화면(RegionCard)이 읽는 형태 (core #305).
+///
+/// 지역 카드와 같은 위젯을 쓰므로 키를 맞춰 넣는다. 다른 점은 셋이다 —
+/// 제목이 장소명이고, 오버레이에 지역명이 오고, 한 줄 소개가 붙는다.
+///
+/// 칩 필터가 한글 라벨로 거르는데 장소는 `kind`(SIGHT…)를 주므로
+/// [filters]에서 짝을 찾아 [RegionCard]가 읽는 `categoryCounts`로 편다.
+/// 서버가 라벨을 정하므로 앱에 한글을 박아두지 않는다.
+Map<String, dynamic> toPlaceCardMap(
+  Map<String, dynamic> card, {
+  List<Map<String, dynamic>> filters = const [],
+}) {
+  final benefit = card['benefit'] as Map<String, dynamic>?;
+  final kind = card['kind'] as String?;
+  final label = filters
+      .where((f) => f['key'] == kind)
+      .map((f) => f['label'] as String?)
+      .firstOrNull;
+  return {
+    'id': card['poiContentId']?.toString() ?? '',
+    'placeName': card['name'],
+    // 오버레이가 '시군구 · 시도'를 조립하는데 장소는 시군구만 온다.
+    // sido를 비워 두면 가운뎃점만 남으므로 이름 한 덩어리로 넣는다
+    'name': card['regionName'],
+    'sido': '',
+    'imageUrl': card['imageUrl'],
+    if ((card['subtitle'] as String?)?.isNotEmpty ?? false)
+      'description': card['subtitle'],
+    if (benefit != null) 'benefitBadge': benefit['text'],
+    if (benefit != null) 'benefitPolicyId': benefit['policyId'],
+    if (label != null) 'categoryCounts': {label: 1},
+  };
 }
 
 /// 서버 카드 → 화면(RegionCard)이 읽는 형태.

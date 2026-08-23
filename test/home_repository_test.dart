@@ -87,6 +87,88 @@ void main() {
     expect(region.containsKey('benefitBadge'), isFalse);
     expect(region['imageUrl'], isNull);
   });
+
+  group("'이번달 추천 여행지' 장소 카드 (core #305)", () {
+    const filters = [
+      {'key': 'ALL', 'label': '전체'},
+      {'key': 'SIGHT', 'label': '관광지'},
+      {'key': 'STAY', 'label': '숙박'},
+      {'key': 'FOOD', 'label': '맛집'},
+    ];
+
+    test('서버 PlaceCard를 카드가 읽는 형태로 옮긴다', () {
+      final card = toPlaceCardMap(const {
+        'poiContentId': '126508',
+        'name': '삼탄아트마인',
+        'imageUrl': 'http://tong.visitkorea.or.kr/a.jpg',
+        'kind': 'SIGHT',
+        'regionName': '정선군',
+        'subtitle': '폐광촌에서 다시 태어난 마을',
+        'benefit': {'text': '입장료 50% 할인', 'policyId': 7},
+      }, filters: filters);
+
+      // 제목은 장소명, 오버레이는 지역명 — 예전에는 둘 다 지역이라 겹쳤다
+      expect(card['placeName'], '삼탄아트마인');
+      expect(card['name'], '정선군');
+      expect(card['description'], '폐광촌에서 다시 태어난 마을');
+      // 카드 탭이 장소 상세로 가려면 id가 poiContentId여야 한다
+      expect(card['id'], '126508');
+      expect(card['benefitBadge'], '입장료 50% 할인');
+    });
+
+    test('칩 필터가 거를 수 있게 kind를 한글 라벨로 편다', () {
+      // 필터는 label로 거르는데 서버는 kind(SIGHT…)를 준다.
+      // 라벨을 앱에 박아두지 않고 서버 filters에서 짝을 찾는다
+      final stay = toPlaceCardMap(const {
+        'poiContentId': '1',
+        'name': '게스트하우스',
+        'kind': 'STAY',
+        'regionName': '정선군',
+      }, filters: filters);
+      expect(stay['categoryCounts'], {'숙박': 1});
+    });
+
+    test('모르는 kind면 카테고리를 비운다 — 지어내지 않는다', () {
+      final unknown = toPlaceCardMap(const {
+        'poiContentId': '1',
+        'name': 'x',
+        'kind': 'LEISURE',
+        'regionName': '정선군',
+      }, filters: filters);
+      expect(unknown.containsKey('categoryCounts'), isFalse);
+    });
+
+    test('부제가 없으면 키를 넣지 않아 카드가 그 줄을 접는다', () {
+      // 숙박 61%·체험 60%만 부제가 온다. 서버가 지어내지 않고 비워 보낸다
+      final noSubtitle = toPlaceCardMap(const {
+        'poiContentId': '1',
+        'name': 'x',
+        'kind': 'STAY',
+        'regionName': '정선군',
+        'subtitle': null,
+      }, filters: filters);
+      expect(noSubtitle.containsKey('description'), isFalse);
+
+      final empty = toPlaceCardMap(const {
+        'poiContentId': '1',
+        'name': 'x',
+        'kind': 'STAY',
+        'regionName': '정선군',
+        'subtitle': '',
+      }, filters: filters);
+      expect(empty.containsKey('description'), isFalse);
+    });
+
+    test('장소는 시도가 없어 오버레이에 가운뎃점이 남지 않는다', () {
+      final card = toPlaceCardMap(const {
+        'poiContentId': '1',
+        'name': 'x',
+        'kind': 'SIGHT',
+        'regionName': '정선군',
+      }, filters: filters);
+      expect(card['sido'], '');
+    });
+  });
 }
 
 /// 무슨 요청이든 준비된 바디로 답하는 어댑터 — 네트워크 없이 변환만 검증한다

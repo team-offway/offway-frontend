@@ -50,6 +50,8 @@ class RegionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // 혜택 뱃지를 눌러 열 정책 — 없으면 뱃지는 그냥 표시만 된다
     final policyId = region['benefitPolicyId'] as int?;
+    // 장소 카드(홈 위 섹션)면 이름이 들어 있다. 지역 카드는 null이다
+    final placeName = region['placeName'] as String?;
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -66,27 +68,30 @@ class RegionCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        // TODO(server): 시안의 제목은 장소명('삼탄아트마인')인데 홈 API는
-        // 지역만 내려준다 — placeName이 실리면 지역명 대신 그걸 쓴다.
-        // 그때까지는 오버레이와 같은 지역명이 두 번 보인다
+        // 홈 위 섹션은 장소('삼탄아트마인'), 목록·아래 섹션은 지역이다.
+        // 장소 카드는 사진 오버레이에 지역명이 따로 있어 여기서 겹치지 않는다
         Text(
-          (region['placeName'] as String?) ??
-              '${region['name']} · ${region['sido']}',
+          (region['placeName'] as String?) ?? _regionLabel(region),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.body2NormalBold.copyWith(
             color: AppColors.labelNormal,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          (region['description'] as String?) ?? '',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.label2Medium.copyWith(
-            color: AppColors.labelAlternative,
+        // 부제를 만들 재료가 없는 장소가 있다(core #305 — 숙박 61%·체험 60%).
+        // 서버가 지어내지 않고 비워 보내므로 앱은 그 줄을 접는다
+        if (region['description'] case final String desc
+            when desc.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            desc,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.label2Medium.copyWith(
+              color: AppColors.labelAlternative,
+            ),
           ),
-        ),
+        ],
         if (region['benefitBadge'] case final String badge) ...[
           const SizedBox(height: 6),
           // 뱃지를 누르면 혜택 상세가 열린다 — 카드 전체 탭(지역 상세)보다
@@ -121,8 +126,17 @@ class RegionCard extends StatelessWidget {
     );
 
     return GestureDetector(
-      onTap: () =>
-          context.push(AppRoutes.regionDetailPath(region['id'] as String)),
+      // 장소 카드의 id는 지역이 아니라 poiContentId다 — 지역 상세로 보내면
+      // 엉뚱한 지역이 열린다. 장소면 장소 상세로 간다
+      onTap: () => context.push(
+        placeName == null
+            ? AppRoutes.regionDetailPath(region['id'] as String)
+            : AppRoutes.poiDetailPath(
+                region['id'] as String,
+                name: placeName,
+                regionName: region['name'] as String?,
+              ),
+      ),
       child: style == RegionCardStyle.boxed
           ? SizedBox(width: boxedWidth, child: content)
           : content,
@@ -162,7 +176,7 @@ class RegionCard extends StatelessWidget {
               ),
             ),
             child: Text(
-              '${region['name']} · ${region['sido']}',
+              _regionLabel(region),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.caption1Regular.copyWith(
@@ -248,4 +262,11 @@ class _Block extends StatelessWidget {
       ),
     );
   }
+}
+
+/// '시군구 · 시도' — 장소 카드는 시도가 없어 가운뎃점만 남으므로 붙이지 않는다
+String _regionLabel(Map<String, dynamic> region) {
+  final name = region['name'] as String? ?? '';
+  final sido = region['sido'] as String? ?? '';
+  return sido.isEmpty ? name : '$name · $sido';
 }
