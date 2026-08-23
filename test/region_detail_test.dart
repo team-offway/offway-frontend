@@ -24,8 +24,8 @@ void main() {
           regionDetailProvider('정선').overrideWith(
             (ref) async => {
               'id': '정선',
-              'name': '정선',
-              'sido': '강원',
+              // 서버가 시군구·시도를 합쳐 준다 (core #307)
+              'name': '정선 · 강원',
               'headline': '🏔️ 폐광촌에서 예술마을로',
               'story': ?story,
               'benefitBadge': '숙박 할인',
