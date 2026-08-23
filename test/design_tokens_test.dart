@@ -63,7 +63,7 @@ void main() {
     });
 
     test('Material · Static · Initial', () {
-      expect(AppColors.materialDimmer, const Color(0x85171719)); // CN10 · 52%
+      expect(AppColors.materialDimmer, const Color(0x99171719)); // CN10 · 60%
       expect(AppColors.staticWhite, const Color(0xFFFFFFFF));
       expect(AppColors.staticBlack, const Color(0xFF000000));
       expect(AppColors.initialBlack, const Color(0xFF000000));
