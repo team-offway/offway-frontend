@@ -9,6 +9,7 @@ import 'package:offway/app/app.dart';
 import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/router/app_router.dart';
+import 'package:offway/core/widgets/trip_date_range_picker.dart';
 import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/auth/data/google_auth_service.dart';
@@ -1280,8 +1281,23 @@ void main() {
     final done = find.widgetWithText(FilledButton, '선택 완료');
     expect(tester.widget<FilledButton>(done).onPressed, isNull); // 날짜 전엔 비활성
 
-    // 오늘을 시작일로 고르면 코스 길이(3일)만큼 범위가 완성된다
-    await tester.tap(find.text('${DateTime.now().day}').first);
+    // 오늘을 시작일로 고르면 코스 길이(3일)만큼 범위가 완성된다.
+    //
+    // 달 끝자락이면 그 주가 달력 영역 밖으로 밀린다. ListView는 잘린 칸도
+    // 트리에 남겨 finder는 찾지만 탭은 닿지 않으므로, 달력 안에 완전히
+    // 들어올 때까지 끌어올린다. 오늘이 몇째 주냐에 따라 갈리면 안 된다
+    final today = find.text('${DateTime.now().day}').first;
+    final calendar = find.descendant(
+      of: find.byType(TripDateRangePicker),
+      matching: find.byType(Scrollable),
+    );
+    for (var i = 0; i < 6; i++) {
+      final area = tester.getRect(find.byType(TripDateRangePicker));
+      if (area.contains(tester.getCenter(today))) break;
+      await tester.drag(calendar, const Offset(0, -80));
+      await tester.pump();
+    }
+    await tester.tap(today);
     await tester.pump();
     expect(tester.widget<FilledButton>(done).onPressed, isNotNull);
     await tester.tap(done);

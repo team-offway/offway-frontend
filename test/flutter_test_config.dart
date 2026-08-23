@@ -25,5 +25,18 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   }
   await loader.load();
 
+  // app_links는 네이티브가 없으면 스트림을 열 때 MissingPluginException을
+  // 던지고, 그게 테스트 실패로 잡힌다. 딥링크는 위젯 테스트의 관심사가
+  // 아니므로 listen 요청에 빈 응답을 돌려주고 넘어간다.
+  //
+  // setMockStreamHandler는 테스트 안에서만 부를 수 있어(addTearDown을 쓴다)
+  // 여기서는 채널 메시지를 직접 받는다
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler(
+        'com.llfbandit.app_links/events',
+        (message) async =>
+            const StandardMethodCodec().encodeSuccessEnvelope(null),
+      );
+
   await testMain();
 }
