@@ -14,12 +14,11 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
 
-/// 지역 상세.
+/// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
 ///
-/// 지역 상세 전용 API는 아직 없다. 두 갈래로 채운다.
-/// - mock에 있는 지역(정선·영월 등): 소개글·사진까지 갖춘 mock을 그대로 쓴다
-/// - 서버 89개 지역: 홈 카드 정보 + 장소 목록(`/regions/{id}/places`)으로
-///   같은 형태를 만들어 준다. 소개글·사진은 없어 그 칸은 비워둔다
+/// 예전에는 mock과 홈 카드, 장소 목록 셋을 섞었다. 그 조합으로 만든 장소에는
+/// 사진이 없어 시안의 카드가 회색 판으로 남았다.
+
 /// 매력 포인트 장소 개수 — 시안 노트: 최소 2 ~ 최대 10
 const kMaxHighlightSpots = 10;
 
@@ -98,8 +97,6 @@ class RegionDetailScreen extends ConsumerWidget {
           error: (e, _) => AppErrorView(
             onRetry: () => ref.invalidate(regionDetailProvider(regionId)),
           ),
-          // mock에 없는 지역(서버 89곳)은 소개글이 없다 —
-          // 대신 서버가 주는 관광명소 목록으로 화면을 채운다
           data: (data) => data == null
               ? const Center(
                   child: AppEmptyView(
@@ -327,8 +324,8 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
 
 /// 매력 포인트 장소 카드 — 시안 실측 190×220, 반경 12.
 ///
-/// 탭하면 장소 상세로 간다. 인허가 데이터에는 사진이 없어 회색 판만 남는
-/// 경우가 많은데, 그래도 이름은 읽혀야 하므로 아래쪽을 어둡게 깐다.
+/// 탭하면 장소 상세로 간다. 사진 위에 이름을 얹으므로 밝은 사진에서도
+/// 글자가 읽히도록 아래쪽을 어둡게 깐다.
 class _SpotCard extends StatelessWidget {
   const _SpotCard({required this.spot, required this.regionName});
 
