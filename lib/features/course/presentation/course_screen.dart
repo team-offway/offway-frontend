@@ -361,6 +361,21 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
+  /// 코스의 장소를 눌렀을 때 — 장소 상세로 보낸다.
+  ///
+  /// 서버 코스에는 늘 [poiContentId]가 실린다. mock 코스에는 없어 개발 중에만
+  /// 비는데, 조용히 넘어가면 왜 안 열리는지 알 수 없으므로 알려준다
+  void _openPlaceDetail(Map<String, dynamic> place) {
+    final contentId = place['poiContentId'] as String?;
+    if (contentId == null || contentId.isEmpty) {
+      showAppToast(context, '이 장소는 상세 정보가 아직 없어요');
+      return;
+    }
+    context.push(
+      AppRoutes.poiDetailPath(contentId, name: place['name'] as String? ?? ''),
+    );
+  }
+
   Widget _buildBody(Map<String, dynamic> course) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     final durationDays = course['durationDays'] as int;
@@ -456,6 +471,11 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               CoursePlaceList(
                 places: places,
                 regionName: course['regionName'] as String? ?? widget.regionId,
+                onTapPlace: _openPlaceDetail,
+                // 담기 전에도 장소를 눌러 볼 수 있어야 한다. '추천 …' 문구가
+                // 붙어 있어 눌러지는 것처럼 보이는데 아무 일도 없으면 고장으로
+                // 읽힌다. 담은 뒤 화면은 운영시간 시트를 먼저 띄우지만, 여기는
+                // 여행 날짜가 없어 그 시트에 담을 내용이 없다 — 바로 상세로 간다
               ),
               // 안내 문구·버튼은 화면에 고정하지 않고 목록 끝에 따라온다 —
               // 고정하면 늘 떠 있어 코스를 보는 화면을 좁힌다

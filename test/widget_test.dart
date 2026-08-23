@@ -14,6 +14,7 @@ import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/auth/data/google_auth_service.dart';
 import 'package:offway/features/course/data/course_repository.dart';
+import 'package:offway/features/course/presentation/poi_detail_screen.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
@@ -1204,6 +1205,13 @@ void main() {
     );
     expect(find.text('가리왕산자연휴양림'), findsOneWidget); // mock 실데이터 코스
     expect(find.text('Day 1'), findsNothing); // 당일치기는 Day 탭 없음
+
+    // 담기 전에도 장소를 눌러 상세를 볼 수 있어야 한다.
+    // '추천 …' 문구가 붙어 눌러지는 것처럼 보이는데 아무 일도 없으면 고장으로
+    // 읽힌다 — 예전에는 담은 뒤 화면만 탭을 받았다
+    await tester.tap(find.text('가리왕산자연휴양림'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PoiDetailScreen), findsOneWidget);
   });
 
   testWidgets('2박3일 코스는 Day 탭으로 일자별 장소를 전환한다', (tester) async {
