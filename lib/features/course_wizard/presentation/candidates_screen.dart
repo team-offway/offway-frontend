@@ -309,10 +309,12 @@ class _SortChip extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 3),
-            const Icon(
-              Icons.arrow_drop_down,
-              size: 14,
-              color: AppColors.labelAlternative,
+            // DS Caret Down — Material 기본 삼각형(arrow_drop_down)은 더 크고
+            // 뭉툭해 시안과 다르다. 에셋이 Label/Alternative를 품고 있다
+            SvgPicture.asset(
+              'assets/icons/ic_caret_down.svg',
+              width: 14,
+              height: 14,
             ),
           ],
         ),
