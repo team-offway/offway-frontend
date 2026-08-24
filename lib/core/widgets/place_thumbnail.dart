@@ -58,6 +58,11 @@ class PlaceThumbnail extends StatelessWidget {
                 // 디코드해 메모리·디코드 시간을 줄인다 — 152pt 카드에
                 // 원본 해상도 그대로 올릴 이유가 없다
                 memCacheWidth: decodeWidthFor(context, constraints.maxWidth),
+                // 기본 0.5초 페이드인을 끈다 — 디스크 캐시에서 바로 왔는데도
+                // 스르륵 나타나 오히려 느려 보인다. 예전처럼 준비되는 즉시 뜬다
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                placeholderFadeInDuration: Duration.zero,
                 // 주소가 살아 있어도 서버가 죽어 있을 수 있다 — 빈 칸으로
                 // 두면 왜 비었는지 알 수 없으니 자리 아이콘으로 되돌린다
                 errorWidget: (_, _, _) => _placeholder(w, h),

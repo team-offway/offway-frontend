@@ -109,6 +109,10 @@ class MyScreen extends ConsumerWidget {
                     fit: BoxFit.cover,
                     // 소셜 프로필 원본은 크다 — 76pt 원에 맞춰 디코드
                     memCacheWidth: PlaceThumbnail.decodeWidthFor(context, 76),
+                    // 페이드 없이 즉시 — PlaceThumbnail과 같은 이유
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    placeholderFadeInDuration: Duration.zero,
                     errorWidget: (_, _, _) => _defaultAvatar,
                     placeholder: (_, _) => _defaultAvatar,
                   ),

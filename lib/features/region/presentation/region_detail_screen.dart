@@ -365,6 +365,10 @@ class _SpotCard extends StatelessWidget {
                     context,
                     _spotCardWidth,
                   ),
+                  // 페이드 없이 즉시 — PlaceThumbnail과 같은 이유
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  placeholderFadeInDuration: Duration.zero,
                   // 받는 동안은 스켈레톤만 둔다
                   placeholder: (_, _) => const _SpotFallback(showIcon: false),
                   errorWidget: (_, _, _) => const _SpotFallback(),
