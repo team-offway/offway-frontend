@@ -29,7 +29,7 @@
 | 라우팅 | go_router |
 | HTTP 클라이언트 | dio (JWT Auth 인터셉터 포함) |
 | 토큰 저장 | flutter_secure_storage (iOS Keychain) |
-| 모델/직렬화 | freezed + json_serializable |
+| 모델/직렬화 | `Map<String, dynamic>` + 수동 `fromJson` (코드 생성 없음) |
 | 지도 | flutter_naver_map (Dynamic Map) |
 | 소셜 로그인 | kakao_flutter_sdk_user, sign_in_with_apple, google_sign_in |
 | 공유 | kakao_flutter_sdk_share (카카오톡 공유 카드) |
@@ -108,13 +108,6 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 | `/privacy` · `/terms` | 개인정보처리방침 · 이용약관 (한국어·영문) |
 
 백엔드가 HTTP만 받아 브라우저가 혼합 콘텐츠로 막으므로, `web/share/api/*.js`가 같은 출처에서 받아 서버끼리 통신합니다.
-
-## 코드 생성 (freezed / json_serializable)
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-dart run build_runner watch --delete-conflicting-outputs   # 개발 중 자동 감지
-```
 
 ## 테스트 / 린트
 

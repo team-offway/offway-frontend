@@ -207,9 +207,6 @@ class _FakeCourseRepository extends CourseRepository {
     Map<String, dynamic> savePayload,
   ) async => (courseId: 1, shareToken: 'test-token');
 
-  @override
-  Future<void> deductLeave(int courseId) async {}
-
   /// 물어볼 지난 여행은 없다 — 홈에 들어설 때마다 "다녀오셨나요?" 모달이
   /// 뜨면 다른 테스트가 전부 그 모달에 가려 막힌다.
   /// 모달 자체는 trip_outcome_dialog_test.dart가 따로 확인한다

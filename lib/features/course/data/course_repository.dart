@@ -192,21 +192,6 @@ class CourseRepository {
     }
   }
 
-  /// 확정한 코스의 연차를 차감한다 (`POST /courses/{id}/leave-deduction`).
-  ///
-  /// 날짜 있는 코스만 가능하고 멱등이다(중복 호출해도 한 번만 차감).
-  /// 코스를 삭제하면 서버가 차감을 알아서 되돌린다 — 취소 호출은 필요 없다.
-  Future<void> deductLeave(int courseId) async {
-    try {
-      await _dio.post<dynamic>(
-        '/api/v1/courses/$courseId/leave-deduction',
-        data: const <String, dynamic>{},
-      );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
-  }
-
   /// 코스는 두고 차감한 연차만 되돌린다 (`DELETE /courses/{id}/leave-deduction`).
   ///
   /// 서버가 그 코스에 묶인 사용 내역 행을 지우므로 잔여 연차가 복구되고,

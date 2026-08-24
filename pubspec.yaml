@@ -14,12 +14,9 @@ dependencies:
   flutter_riverpod: ^3.3.2
   flutter_secure_storage: ^10.3.1
   flutter_svg: ^2.3.0
-  freezed_annotation: ^3.1.0
   gal: ^2.3.2
   geolocator: ^14.0.2
   go_router: ^17.3.0
-  intl: ^0.20.3
-  json_annotation: ^4.9.0
   kakao_flutter_sdk_user: ^2.0.0+1
   # 카카오톡으로 코스 링크 보내기 (share)
   kakao_flutter_sdk_share: ^2.0.0+1
@@ -37,9 +34,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.15.1
-  json_serializable: ^6.11.2
-  freezed: ^3.2.3
   flutter_secure_storage_platform_interface: ^2.0.2
   flutter_launcher_icons: ^0.14.4
 

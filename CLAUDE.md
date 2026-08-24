@@ -31,7 +31,6 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar  # 특정 화면부터 
 flutter analyze                                      # 정적 분석
 flutter test                                         # 테스트
 dart format .                                        # 포맷
-dart run build_runner build --delete-conflicting-outputs  # freezed/json 코드 생성
 ```
 
 ## 구조
@@ -122,7 +121,7 @@ grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/pr
 
 ## 주의사항
 
-- 로컬 Flutter 3.38.4(Dart 3.10.3) 제약으로 `json_annotation`은 ^4.9.0 핀, `riverpod_lint` 미설치 (freezed 3.x와 충돌). Flutter 업그레이드 시 함께 갱신할 것
+- **코드 생성(freezed·json_serializable·build_runner)은 쓰지 않는다** — 모델이 전부 `Map<String, dynamic>` 기반이라 2026-08-25에 의존성째 걷어냈다. 다시 들이려면 리포지토리 계층부터 모델로 바꾸는 결정이 먼저다. `riverpod_lint`는 미도입(예전엔 freezed 3.x와 충돌해 못 넣었고, 지금은 그 제약이 없다)
 - 번들 ID: `com.nth.offway`, 서명 팀: `AWV8LRP46J` (유료 Apple Developer)
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 열 것 (`.xcodeproj` 아님)
 - 레포가 **public**이므로 시크릿·인증서·키스토어 등 민감 파일 커밋 금지
