@@ -146,7 +146,9 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('삼탄아트마인'), findsOneWidget);
+      // 사진이 없는 장소에는 이름을 얹지 않는다(QA-3) — 가이드가 그 자리를
+      // 스켈레톤과 아이콘으로만 둔다. 섹션 제목이 떴으면 카드도 그려진 것이다
+      expect(find.text('삼탄아트마인'), findsNothing);
     });
 
     testWidgets('장소가 없으면 그 칸을 통째로 접는다', (tester) async {

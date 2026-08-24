@@ -11,7 +11,6 @@ import '../../course/presentation/widgets/expandable_description.dart';
 import '../data/region_detail_repository.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_tab_pills.dart';
 import '../../../core/widgets/app_back_button.dart';
 
 /// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
@@ -108,14 +107,8 @@ class RegionDetailScreen extends ConsumerWidget {
               : _buildBody(context, data),
         ),
       ),
-      bottomNavigationBar: AppTabPills(
-        current: null,
-        onTap: (tab) => switch (tab) {
-          AppTab.home => context.go(AppRoutes.home),
-          AppTab.myCourse => context.go(AppRoutes.myCourses),
-          AppTab.my => context.go(AppRoutes.my),
-        },
-      ),
+      // 가이드에 이 화면은 하단 탭이 없다 — 상세는 뒤로가기로 돌아가는
+      // 화면이라 탭이 떠 있으면 어느 탭 소속인지부터 헷갈린다
     );
   }
 
@@ -138,29 +131,24 @@ class RegionDetailScreen extends ConsumerWidget {
               Text(
                 // 서버가 "동구 · 부산광역시" 형태로 합쳐 준다
                 region['name'] as String? ?? '',
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  color: _labelNormal,
-                  letterSpacing: -0.8,
-                ),
+                // 가이드는 Heading 1/Bold(22·w600)다 — w700로 두면 더 두껍게 보인다
+                style: AppTypography.heading1Bold.copyWith(color: _labelNormal),
               ),
               if (benefit != null) ...[
-                const SizedBox(height: 5),
+                const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 8,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: _badgeBg,
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     benefit,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    // 가이드는 Label 2/Medium(13·w500)이다 — w600은 더 두껍다
+                    style: AppTypography.label2Medium.copyWith(
                       color: _badgeText,
                     ),
                   ),
@@ -195,11 +183,8 @@ class RegionDetailScreen extends ConsumerWidget {
               // 시도까지 붙어 있어 그대로 쓰면 '… 강원 매력 포인트 장소'가 된다
               '${(region['name'] as String? ?? '').split(' · ').first}'
               ' 매력 포인트 장소',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: _labelNormal,
-              ),
+              // 가이드는 Headline 1/Bold(18)다
+              style: AppTypography.headline1Bold.copyWith(color: _labelNormal),
             ),
           ),
           const SizedBox(height: 14),
@@ -227,7 +212,9 @@ class RegionDetailScreen extends ConsumerWidget {
 
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      // 버튼(44)이 아이콘(12)보다 넓어 좌측 여백을 줄여야 잉크가 다른
+      // 화면들과 같은 자리(x=22)에 온다 — h14·v8은 오른쪽·아래로 밀렸었다
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         // 시안에는 뒤로가기만 있다. 공유 버튼이 있었으나 누르면 아무 일도
         // 일어나지 않아 고장난 것처럼 보였다 — 정책이 정해지면 시안과 함께
@@ -360,49 +347,96 @@ class _SpotCard extends StatelessWidget {
         child: SizedBox(
           width: _spotCardWidth,
           height: _spotCardHeight,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Container(
-                color: AppColors.backgroundNormalAlternative,
-                child: PlaceThumbnail(
-                  imageUrl: imageUrl,
-                  width: double.infinity,
-                  height: double.infinity,
-                  radius: 0,
-                  iconSize: 48,
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(18, 30, 18, 18),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [Color(0xCC000000), Colors.transparent],
-                    ),
-                  ),
-                  child: Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      height: 1.467,
-                      shadows: [
-                        Shadow(blurRadius: 12, color: Color(0x29000000)),
+          // 그라데이션과 이름은 **사진이 실제로 뜬 뒤에만** 얹는다.
+          //
+          // 예전에는 늘 깔려 있어서, 사진이 없거나 로딩에 실패하면 회색 자리
+          // 위에 검정 띠만 남았다(QA). 가이드는 그 경우를 스켈레톤(로딩)과
+          // 아이콘(실패)으로만 둔다 — 이름 없이.
+          child: imageUrl == null
+              ? const _SpotFallback()
+              : Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  // 아직 첫 프레임이 없으면 로딩 중 — 스켈레톤만 둔다
+                  frameBuilder: (context, child, frame, syncLoaded) {
+                    if (frame == null && !syncLoaded) {
+                      return const _SpotFallback(showIcon: false);
+                    }
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        child,
+                        _SpotNameOverlay(name: name),
                       ],
-                    ),
-                  ),
+                    );
+                  },
+                  errorBuilder: (_, _, _) => const _SpotFallback(),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 사진이 없을 때의 자리 — 가이드의 Skeleton(5% 회색) 위 이미지 아이콘.
+/// 로딩 중에는 [showIcon]을 꺼 스켈레톤만 남긴다
+class _SpotFallback extends StatelessWidget {
+  const _SpotFallback({this.showIcon = true});
+
+  final bool showIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.fillAlternative,
+      alignment: Alignment.center,
+      child: showIcon
+          ? SvgPicture.asset(
+              'assets/icons/ic_image.svg',
+              // 가이드 실측 36
+              width: 36,
+              height: 36,
+              colorFilter: const ColorFilter.mode(
+                AppColors.labelDisable,
+                BlendMode.srcIn,
               ),
-            ],
+            )
+          : null,
+    );
+  }
+}
+
+/// 사진 위에 얹는 장소명 — 흰 글자가 묻히지 않게 아래를 어둡게 깐다
+class _SpotNameOverlay extends StatelessWidget {
+  const _SpotNameOverlay({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 30, 18, 18),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [Color(0xCC000000), Colors.transparent],
+          ),
+        ),
+        child: Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            height: 1.467,
+            shadows: [Shadow(blurRadius: 12, color: Color(0x29000000))],
           ),
         ),
       ),
