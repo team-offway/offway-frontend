@@ -7,15 +7,21 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_empty_view.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../../home/presentation/home_screen.dart'
+    show homePlacesProvider, homeSnapshotProvider;
 import '../data/region_list_repository.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
 
 /// 이번달 추천 여행지 — 카테고리 필터 + 2열 그리드.
 ///
-/// 목록 API(`GET /regions`)로 인구감소지역 89곳을 페이지로 받아 온다.
-/// 예전에는 홈 응답(상위 6곳)을 재사용해 6곳만 보였다.
+/// 홈 위 섹션의 더보기다. 그 섹션이 **장소 카드**(core #305, `recommendedPlaces`)
+/// 이므로 여기도 같은 장소들을 전부 편다 — 홈은 가로로 잘려 몇 장만 보이고,
+/// 서버에 별도의 장소 목록 API는 없어 홈 응답이 곧 전체다(지역 6곳 ×
+/// 카테고리별 2곳). 칩 필터는 홈과 같은 규칙으로 앱에서 거른다.
+///
+/// 장소 배치가 아직 안 돌아 홈이 지역 카드로 폴백하는 동안에는 여기도
+/// 예전처럼 지역 목록 API(`GET /regions`, 89곳 페이지)를 탄다.
 class RegionListScreen extends ConsumerStatefulWidget {
   const RegionListScreen({super.key});
 
@@ -45,8 +51,12 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    _load(reset: true);
+    // 지역 목록은 장소가 비어 폴백할 때만 부른다 — build가 정한다
   }
+
+  /// 장소 카드가 있어 그걸 쓰는 중인지. 폴백(지역 목록)일 때만 서버를 다시 부른다
+  bool get _usingPlaces =>
+      ref.read(homePlacesProvider).value?.isNotEmpty ?? false;
 
   @override
   void dispose() {
@@ -96,8 +106,8 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   void _selectCategory(Map<String, dynamic> filter) {
     if (_selected?['key'] == filter['key']) return;
     setState(() => _selected = Map<String, dynamic>.from(filter));
-    // 카테고리가 바뀌면 서버가 다시 걸러 준다
-    _load(reset: true);
+    // 장소는 앱이 거른다. 지역 목록(폴백)만 서버가 다시 걸러 준다
+    if (!_usingPlaces) _load(reset: true);
   }
 
   @override
@@ -129,8 +139,36 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   }
 
   Widget _buildBody(double cardExtent) {
+    final places = ref.watch(homePlacesProvider);
+    // 홈이 아직 장소를 읽는 중이면 폴백 여부도 모른다 — 자리만 잡아둔다
+    if (places.isLoading && places.value == null) {
+      return _buildGrid(
+        cardExtent,
+        itemCount: _skeletonCardCount,
+        builder: (_, _) =>
+            const RegionCardSkeleton(style: RegionCardStyle.plain),
+      );
+    }
+    if (places.value case final List<Map<String, dynamic>> served
+        when served.isNotEmpty) {
+      final list = filterCardsByCategory(served, _selected);
+      if (list.isEmpty) return _buildEmpty();
+      return _buildGrid(
+        cardExtent,
+        itemCount: list.length,
+        builder: (context, i) =>
+            RegionCard(region: list[i], style: RegionCardStyle.plain),
+      );
+    }
+
+    // 장소가 비었다(배치 전) — 지역 목록으로 폴백. 첫 진입이면 지금 부른다
+    if (_regions.isEmpty && !_loading && _error == null && _hasMore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load(reset: true);
+      });
+    }
     // 스피너 대신 카드가 들어올 자리를 미리 잡아둔다
-    if (_isFirstLoad) {
+    if (_isFirstLoad || (_regions.isEmpty && _error == null)) {
       return _buildGrid(
         cardExtent,
         itemCount: _skeletonCardCount,
