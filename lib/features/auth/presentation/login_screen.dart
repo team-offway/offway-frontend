@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../../notification/application/push_registration.dart';
 import '../application/current_user_provider.dart';
 import '../data/auth_repository.dart';
 import '../data/google_auth_service.dart';
@@ -107,6 +110,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref
         ..invalidate(currentUserProvider)
         ..invalidate(homeSnapshotProvider);
+      // 이 기기를 이 계정 앞으로 등록한다. 앱 시작 때 돌았던 등록은 로그인
+      // 전이라 건너뛰었고(`/devices`는 Bearer 전용), 로그아웃이 등록을
+      // 풀어 두기도 했다 — 여기서 다시 잡지 않으면 다음 앱 실행까지
+      // 푸시가 오지 않는다. 기다리지 않는다: 권한·토큰 조회가 몇 초 걸린다
+      unawaited(ref.read(pushRegistrationProvider).start());
 
       if (!mounted) return;
       // 이번에 계정이 만들어졌으면 잔여 연차를 받아야 홈이 채워진다.
