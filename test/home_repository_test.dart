@@ -204,7 +204,12 @@ void main() {
       // 서버 계약은 "장소의 regionId는 지역 목록 중 하나와 일치"지만,
       // regionId가 없는 옛 응답이나 계약이 깨진 응답에도 틀리게 붙이지 않는다
       for (final place in const [
-        {'poiContentId': '1', 'name': 'x', 'kind': 'SIGHT', 'regionName': '정선군'},
+        {
+          'poiContentId': '1',
+          'name': 'x',
+          'kind': 'SIGHT',
+          'regionName': '정선군',
+        },
         {
           'poiContentId': '1',
           'name': 'x',
