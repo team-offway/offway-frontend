@@ -104,9 +104,12 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   /// `연차 3일을 사용해 10일 남았어요.`
   ///
+  /// 깎은 연차가 없으면(주말·공휴일만 다녀온 여행) 아예 말하지 않는다 —
+  /// 모달이 차감 안내를 접은 것과 같은 이유로, '0일을 사용'은 헛말이다.
   /// 서버가 남은 연차를 안 주면(연차를 설정한 적 없는 사용자) 뒷말을 뺀다 —
   /// '0일 남았어요'로 잘못 말하느니 쓴 만큼만 알린다.
-  String _deductionDetail(double used, double? remaining) {
+  String? _deductionDetail(double used, double? remaining) {
+    if (used <= 0) return null;
     final spent = '연차 ${formatLeaveDays(used)}일을 사용';
     if (remaining == null) return '$spent했어요.';
     return '$spent해 ${formatLeaveDays(remaining)}일 남았어요.';

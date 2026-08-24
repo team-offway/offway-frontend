@@ -127,4 +127,35 @@ void main() {
     // '1.5일'이지 '2일'이 아니다
     expect(find.text('다녀오셨다면 연차 1.5일을 차감할게요.'), findsOneWidget);
   });
+
+  testWidgets('차감할 연차가 없으면 차감 안내를 접는다 — 시안 1207-40034', (tester) async {
+    // 주말만 다녀온 여행 — "연차 0일을 차감할게요"는 안내가 아니라 헛말이다
+    final weekendTrip = PendingTrip.tryParse(const {
+      'courseId': 14,
+      'regionName': '정선군',
+      'travelDate': '2026-07-25',
+      'travelEndDate': '2026-07-26',
+      'consumedLeaveDays': 0.0,
+    })!;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showTripOutcomeDialog(context, trip: weekendTrip),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+
+    // 제목·날짜·버튼은 그대로, 차감 문장만 없다
+    expect(find.text('정선 여행, 다녀오셨나요?'), findsOneWidget);
+    expect(find.text('7.25(토) – 7.26(일) · 1박 2일'), findsOneWidget);
+    expect(find.textContaining('차감할게요'), findsNothing);
+    expect(find.text('네, 다녀왔어요'), findsOneWidget);
+  });
 }

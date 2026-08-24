@@ -69,6 +69,9 @@ class _TripOutcomeDialog extends StatelessWidget {
   }
 
   Widget _buildCard(BuildContext context) {
+    // 주말·공휴일만 다녀와 깎을 연차가 없는 여행은 차감 안내를 접는다 —
+    // "연차 0일을 차감할게요"는 안내가 아니라 헛말이다 (시안 1207-40034 변형)
+    final deductsLeave = trip.consumedLeaveDays > 0;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.backgroundElevated,
@@ -81,8 +84,10 @@ class _TripOutcomeDialog extends StatelessWidget {
           Padding(
             // 시안: 가로 28 · 위 42. 아래는 42가 아니라 17이다 —
             // Actions(y=205)가 Information(높이 230) 안으로 25 파고든다.
-            // 42로 두면 모달이 시안(257)보다 25 높아진다
-            padding: const EdgeInsets.fromLTRB(28, 42, 28, 17),
+            // 42로 두면 모달이 시안(257)보다 25 높아진다.
+            // 차감 문구가 없는 변형은 날짜~버튼이 25다 (Actions y=175,
+            // 날짜 글자 끝 y=150)
+            padding: EdgeInsets.fromLTRB(28, 42, 28, deductsLeave ? 17 : 25),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,15 +113,17 @@ class _TripOutcomeDialog extends StatelessWidget {
                     color: AppColors.primaryNormal,
                   ),
                 ),
-                // 시안: 날짜~본문 16
-                const SizedBox(height: 16),
-                Text(
-                  '다녀오셨다면 연차 '
-                  '${formatLeaveDays(trip.consumedLeaveDays)}일을 차감할게요.',
-                  style: AppTypography.body2NormalMedium.copyWith(
-                    color: AppColors.labelAlternative,
+                if (deductsLeave) ...[
+                  // 시안: 날짜~본문 16
+                  const SizedBox(height: 16),
+                  Text(
+                    '다녀오셨다면 연차 '
+                    '${formatLeaveDays(trip.consumedLeaveDays)}일을 차감할게요.',
+                    style: AppTypography.body2NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
