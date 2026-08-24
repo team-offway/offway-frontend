@@ -45,6 +45,27 @@ void main() {
     }
   });
 
+  testWidgets('설명은 두 줄까지 보여준다 — 한 줄로 자르면 문장이 끊긴다', (tester) async {
+    const region = {
+      'id': '정선',
+      'name': '정선',
+      'sido': '강원',
+      'description': '폐광촌에서 다시 태어난 마을 폐광촌에서 다시 태어난 마을',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Center(child: RegionCard(region: region)),
+      ),
+    );
+
+    final desc = tester.widget<Text>(
+      find.text('폐광촌에서 다시 태어난 마을 폐광촌에서 다시 태어난 마을'),
+    );
+    expect(desc.maxLines, 2);
+    expect(desc.overflow, TextOverflow.ellipsis);
+  });
+
   testWidgets('스켈레톤은 실제 카드와 같은 높이를 차지한다', (tester) async {
     // 높이가 어긋나면 데이터가 도착하는 순간 화면이 튄다.
     const region = {

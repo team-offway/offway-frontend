@@ -30,8 +30,12 @@ class RegionCard extends StatelessWidget {
   /// 홈 가로 리스트에서 쓰는 고정 폭
   static const boxedWidth = 152.0;
 
-  /// 텍스트·뱃지 영역의 기본 높이 (제목·설명 각 1줄 + 뱃지 + 간격)
-  static const _textAreaHeight = 84.0;
+  /// 텍스트·뱃지 영역의 기본 높이 (제목 1줄 + 설명 2줄 + 뱃지 + 간격).
+  ///
+  /// 설명은 두 줄까지 보여준다(시안) — 한 줄(18)을 더 잡아 둔다. 설명이
+  /// 한 줄이거나 없는 카드는 그만큼 아래가 비지만, 가로 목록·그리드는
+  /// 셀 높이가 하나라 가장 긴 경우에 맞춰야 옆 카드와 줄이 맞는다
+  static const _textAreaHeight = 102.0;
 
   /// 그리드가 이 카드를 담을 때 필요한 셀 높이.
   /// 카드 구성이 바뀌면 이 공식만 고치면 되도록 카드 옆에 둔다.
@@ -107,7 +111,9 @@ class RegionCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             desc,
-            maxLines: 1,
+            // 시안: 설명은 두 줄까지 — 한 줄로 자르면 '폐광촌에서 다시 태어난…'
+            // 처럼 문장이 끊긴다
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.label2Medium.copyWith(
               color: AppColors.labelAlternative,
@@ -246,9 +252,14 @@ class RegionCardSkeleton extends StatelessWidget {
         // 제목 한 줄 — 카드에서 body2NormalBold 1줄이 차지하는 높이
         const _Block(width: double.infinity, height: 22),
         const SizedBox(height: 4),
-        // 설명 한 줄 — 실제 문구처럼 제목보다 살짝 짧게 둔다
+        // 설명 두 줄 — 실제 문구처럼 첫 줄은 길고 둘째 줄은 짧게 둔다
         const FractionallySizedBox(
           widthFactor: 0.82,
+          alignment: Alignment.centerLeft,
+          child: _Block(height: 18),
+        ),
+        const FractionallySizedBox(
+          widthFactor: 0.55,
           alignment: Alignment.centerLeft,
           child: _Block(height: 18),
         ),
