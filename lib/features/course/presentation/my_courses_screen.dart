@@ -302,16 +302,21 @@ class _CourseCard extends StatelessWidget {
             iconSize: 48,
           ),
           const SizedBox(height: 12),
-          if (_badge(start, end) case final (String, Color) badge) ...[
+          if (_badge(
+                start,
+                end,
+                visited: course['leaveDeducted'] as bool? ?? false,
+              )
+              case final badge?) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                color: badge.$2.withValues(alpha: AppOpacity.o8),
+                color: badge.bg,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                badge.$1,
-                style: AppTypography.label2Bold.copyWith(color: badge.$2),
+                badge.label,
+                style: AppTypography.label2Bold.copyWith(color: badge.fg),
               ),
             ),
             const SizedBox(height: 8),
@@ -336,12 +341,52 @@ class _CourseCard extends StatelessWidget {
     );
   }
 
-  /// 끝난 여행은 초록 '여행완료', 다가오는 여행은 파란 D-day. 날짜 없으면 없음
-  (String, Color)? _badge(DateTime? start, DateTime? end) {
-    if (start == null || end == null) return null;
-    final today = DateUtils.dateOnly(DateTime.now());
-    if (end.isBefore(today)) return ('여행완료', AppColors.statusPositive);
-    final n = calendarDaysBetween(today, start);
-    return (n > 0 ? 'D-$n' : 'D-DAY', AppColors.primaryNormal);
+  ({String label, Color fg, Color bg})? _badge(
+    DateTime? start,
+    DateTime? end, {
+    required bool visited,
+  }) => courseCardBadge(
+    start,
+    end,
+    visited: visited,
+    today: DateUtils.dateOnly(DateTime.now()),
+  );
+}
+
+/// 내 코스 카드의 상태 뱃지. 다가오는 여행은 파란 D-day, 날짜 없으면 없음.
+///
+/// 끝난 여행은 날짜만으로 '여행완료'라 부르지 않는다 — **모달에서
+/// 다녀왔다고 답해 연차가 차감된 여행만**([visited]) 초록 '여행완료'고,
+/// 아직 답하지 않았거나(모달 무시) 안 갔다고 한 여행은 '미방문'이다.
+/// 미방문 코스라도 날짜를 미래로 옮기면 이 분기가 다시 D-day를 낸다.
+///
+/// 미방문만 배경이 글자색 8%가 아니다 — 시안(1207-39864)이 글자
+/// Label/Alternative에 배경 Fill/Normal(#70737C 8%)을 쓴다.
+({String label, Color fg, Color bg})? courseCardBadge(
+  DateTime? start,
+  DateTime? end, {
+  required bool visited,
+  required DateTime today,
+}) {
+  if (start == null || end == null) return null;
+  if (end.isBefore(today)) {
+    if (visited) {
+      return (
+        label: '여행완료',
+        fg: AppColors.statusPositive,
+        bg: AppColors.statusPositive.withValues(alpha: AppOpacity.o8),
+      );
+    }
+    return (
+      label: '미방문',
+      fg: AppColors.labelAlternative,
+      bg: AppColors.fillNormal,
+    );
   }
+  final n = calendarDaysBetween(today, start);
+  return (
+    label: n > 0 ? 'D-$n' : 'D-DAY',
+    fg: AppColors.primaryNormal,
+    bg: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
+  );
 }

@@ -280,7 +280,8 @@
       "confirmed": true,
       "startDate": "2026-07-20",
       "endDate": "2026-07-22",
-      "thumbnailUrl": null
+      "thumbnailUrl": null,
+      "leaveDeducted": true
     },
     {
       "id": "saved-yeongwol-day",

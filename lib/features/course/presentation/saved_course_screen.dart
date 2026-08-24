@@ -154,7 +154,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       ),
                     if (start != null && end != null && dDay != null) ...[
                       const SizedBox(height: 16),
-                      _buildBadges(start, end, dDay),
+                      _buildBadges(
+                        start,
+                        end,
+                        dDay,
+                        visited: saved['leaveDeducted'] as bool? ?? false,
+                      ),
                     ],
                     const SizedBox(height: 28),
                     _buildMap(places),
@@ -368,7 +373,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     );
   }
 
-  Widget _buildBadges(DateTime start, DateTime end, int dDay) {
+  Widget _buildBadges(
+    DateTime start,
+    DateTime end,
+    int dDay, {
+    required bool visited,
+  }) {
     // 서버가 평일−공휴일로 계산 (실패 시 provider가 로컬 근사로 폴백)
     final consumed = ref
         .watch(tripConsumedLeaveProvider((start: start, end: end)))
@@ -383,10 +393,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           const SizedBox(width: 8),
         ],
         _Badge(
+          // 목록 카드와 같은 규칙 — 날짜가 지났다고 '여행완료'가 아니라,
+          // 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'
           label: switch (dDay) {
             0 => 'D-DAY',
             > 0 => 'D-$dDay',
-            _ => '여행완료',
+            _ => visited ? '여행완료' : '미방문',
           },
         ),
       ],
