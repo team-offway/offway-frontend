@@ -386,8 +386,6 @@ class LeaveUsageCard extends StatelessWidget {
                           ],
                         )
                       else ...[
-                        // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
-                        // (서버 요청에 memo 필드가 따로 없다)
                         if (reasonOf(usage.reason) case final String reason)
                           Text(
                             reason,
@@ -395,7 +393,7 @@ class LeaveUsageCard extends StatelessWidget {
                               color: AppColors.labelNeutral,
                             ),
                           ),
-                        if (memoOf(usage.reason) case final String memo) ...[
+                        if (memoOf(usage) case final String memo) ...[
                           const SizedBox(height: 2),
                           Text(
                             memo,
@@ -471,11 +469,15 @@ class CourseDetailButton extends StatelessWidget {
   }
 }
 
-/// 서버는 사유 하나만 받으므로 등록 시 '사유 · 상세'로 합쳐 보낸다.
-/// 보여줄 때는 다시 갈라 시안대로 두 줄로 만든다.
+/// 카드에 두 줄로 보여줄 사유와 메모.
+///
+/// 지금은 서버가 `reason`·`memo`를 따로 준다(core #323). 그 전에 등록된
+/// 내역은 memo 자리가 없어 `reason`에 '사유 · 메모'로 합쳐 저장돼 있다 —
+/// 그 행들은 여전히 가운뎃점으로 되나눠야 시안대로 두 줄이 된다.
 String? reasonOf(String? raw) => raw?.split(' · ').first;
-String? memoOf(String? raw) {
-  final parts = raw?.split(' · ');
+String? memoOf(LeaveUsage usage) {
+  if (usage.memo case final String memo when memo.isNotEmpty) return memo;
+  final parts = usage.reason?.split(' · ');
   return (parts != null && parts.length > 1)
       ? parts.sublist(1).join(' · ')
       : null;

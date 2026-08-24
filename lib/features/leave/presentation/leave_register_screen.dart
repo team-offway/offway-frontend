@@ -128,18 +128,21 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
 
     setState(() => _submitting = true);
     try {
-      // TODO(server): 여러 날을 고르면 날짜별로 나눠 보내야 하는지 확인 필요.
-      // 지금은 시작일에 전체 차감 일수를 한 번에 기록한다
+      // 여러 날을 골라도 시작일에 전체 차감 일수를 한 건으로 기록한다 —
+      // 내역에 한 줄로 남아 읽기 쉽다. 서버는 한 요청에 여러 날을 싣는
+      // 계약을 두지 않았고(core #323), 날짜별로 쪼개려면 하루씩 따로 보내면
+      // 된다. 반차가 섞인 일수를 날짜에 배분할 규칙이 없어 쪼개지 않는다
       //
-      // TODO(server): 서버 요청에 memo 필드가 없다(usedOn·days·reason·courseId만).
-      // 상세 사유를 버리지 않도록 reason 뒤에 붙여 보낸다 — 필드가 생기면 분리한다
+      // 사유(칩)와 상세 메모는 서버가 따로 저장한다(core #323). 예전에는
+      // memo 자리가 없어 '사유 · 메모'로 합쳐 보냈다
       final memo = _memo.text.trim();
       await ref
           .read(leaveRepositoryProvider)
           .addUsage(
             usedOn: range.start,
             days: days,
-            reason: memo.isEmpty ? _reason : '$_reason · $memo',
+            reason: _reason,
+            memo: memo.isEmpty ? null : memo,
           );
       if (!mounted) return;
       // 잔여 연차가 줄었으니 홈·내 연차가 새 값을 읽게 한다

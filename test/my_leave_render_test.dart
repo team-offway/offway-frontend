@@ -31,11 +31,14 @@ void main() {
                 days: 1,
                 reason: '개인 사유 · 코로나에 걸렸음 콜록콜ㄱ록 아이고',
               ),
+              // 서버가 memo를 따로 주는 새 내역(core #323) — 위 1번은 그 전에
+              // '사유 · 메모'로 합쳐 저장된 옛 내역이다. 둘 다 두 줄이어야 한다
               LeaveUsage(
                 id: 2,
                 usedOn: DateTime(2026, 6, 12),
                 days: 1,
-                reason: '개인 사유 · 청춘! 이는 듣기만 하여도 가슴이 설레는 말이다.',
+                reason: '개인 사유',
+                memo: '청춘! 이는 듣기만 하여도 가슴이 설레는 말이다.',
               ),
               LeaveUsage(
                 id: 3,
@@ -68,6 +71,10 @@ void main() {
     expect(find.text('2026.06.12(금)'), findsNWidgets(3));
     expect(find.text('정선 여행'), findsOneWidget);
     expect(find.text('-1일'), findsNWidgets(3));
+    // 옛 내역(합쳐 저장)도 새 내역(memo 분리)도 사유·메모 두 줄로 갈라진다
+    expect(find.text('개인 사유'), findsNWidgets(2));
+    expect(find.text('코로나에 걸렸음 콜록콜ㄱ록 아이고'), findsOneWidget);
+    expect(find.text('청춘! 이는 듣기만 하여도 가슴이 설레는 말이다.'), findsOneWidget);
   });
 
   testWidgets('취소 내역(음수)은 부호가 겹치지 않고 +로 보인다', (tester) async {

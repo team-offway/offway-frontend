@@ -16,14 +16,21 @@ class _FakeLeaveRepository implements LeaveRepository {
   final bool fail;
   bool called = false;
 
+  /// 마지막 등록 요청의 사유·메모 — 합쳐 보내지 않고 따로 가는지 본다
+  String? sentReason;
+  String? sentMemo;
+
   @override
   Future<void> addUsage({
     required DateTime usedOn,
     required double days,
     String? reason,
+    String? memo,
     int? courseId,
   }) async {
     called = true;
+    sentReason = reason;
+    sentMemo = memo;
     if (fail) throw ApiException(status: 400, code: 'X', detail: '');
   }
 
@@ -148,11 +155,22 @@ void main() {
     await tester.pumpAndSettle();
 
     await _pickOneDay(tester);
+    // 상세 메모 칸(50자 제한인 TextField)에 적는다 — 사유 칩은 기본값 '여행'.
+    // 차감 일수 칸도 TextField라 순서로 집으면 그쪽을 건드린다
+    await tester.enterText(
+      find.byWidgetPredicate((w) => w is TextField && w.maxLength == 50),
+      '제주 갈 예정',
+    );
+    await tester.pump();
     await tester.tap(find.text('등록하기'));
     await tester.pump();
     await tester.pump();
 
     expect(repo.called, isTrue);
+    // 사유와 메모는 따로 간다(core #323) — 예전처럼 '여행 · 제주 갈 예정'으로
+    // 합치지 않는다
+    expect(repo.sentReason, '여행');
+    expect(repo.sentMemo, '제주 갈 예정');
     expect(find.text('등록 완료! 남은 연차를 확인해보세요.'), findsOneWidget);
 
     // 뒤에 있던 내 연차 화면이 다시 드러난다

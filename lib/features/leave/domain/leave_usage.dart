@@ -8,6 +8,7 @@ class LeaveUsage {
     required this.usedOn,
     required this.days,
     this.reason,
+    this.memo,
     this.courseId,
     this.courseName,
   });
@@ -18,7 +19,13 @@ class LeaveUsage {
 
   /// 증감 — 사용은 양수, 되돌림은 음수
   final double days;
+
+  /// 한 줄 사유 (칩 라벨 — 여행·개인 사유·…)
   final String? reason;
+
+  /// 풀어 쓰는 상세 메모 (core #323). 코스 확정 내역에는 없다 —
+  /// 그 행은 서버가 만들어 채울 사람이 없다
+  final String? memo;
 
   /// 코스에서 차감된 건이면 그 코스 id
   final int? courseId;
@@ -34,6 +41,7 @@ class LeaveUsage {
     usedOn: usedOn,
     days: days,
     reason: reason,
+    memo: memo,
     courseId: courseId,
     courseName: courseName ?? this.courseName,
   );
@@ -43,6 +51,7 @@ class LeaveUsage {
     usedOn: DateTime.parse(json['usedOn'] as String),
     days: (json['days'] as num).toDouble(),
     reason: json['reason'] as String?,
+    memo: json['memo'] as String?,
     courseId: (json['courseId'] as num?)?.toInt(),
   );
 }
