@@ -128,11 +128,14 @@ class LeaveRepository {
   /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
   ///
   /// [days]는 0.25 단위이고, 사용이면 양수·취소면 음수다.
+  /// [reason]은 한 줄 사유(100자), [memo]는 풀어 쓰는 상세(500자, core #323)
+  /// — 서버가 따로 저장하며 넘치면 400 대신 잘라 둔다.
   /// [courseId]는 코스에서 차감할 때만 넣는다.
   Future<void> addUsage({
     required DateTime usedOn,
     required double days,
     String? reason,
+    String? memo,
     int? courseId,
   }) async {
     try {
@@ -142,6 +145,7 @@ class LeaveRepository {
           'usedOn': _isoDate(usedOn),
           'days': days,
           if (reason != null && reason.isNotEmpty) 'reason': reason,
+          if (memo != null && memo.isNotEmpty) 'memo': memo,
           'courseId': ?courseId,
         },
       );

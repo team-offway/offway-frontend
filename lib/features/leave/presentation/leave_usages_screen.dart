@@ -458,7 +458,6 @@ class _UsageCard extends StatelessWidget {
                           ],
                         )
                       else ...[
-                        // 등록할 때 '사유 · 상세'로 합쳐 보내므로 여기서 되나눈다
                         if (reasonOf(usage.reason) case final String reason)
                           Text(
                             reason,
@@ -466,7 +465,7 @@ class _UsageCard extends StatelessWidget {
                               color: AppColors.labelNeutral,
                             ),
                           ),
-                        if (memoOf(usage.reason) case final String memo) ...[
+                        if (memoOf(usage) case final String memo) ...[
                           const SizedBox(height: 2),
                           Text(
                             memo,

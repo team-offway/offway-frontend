@@ -24,6 +24,7 @@ class _FakeRepository extends LeaveRepository {
     required DateTime usedOn,
     required double days,
     String? reason,
+    String? memo,
     int? courseId,
   }) async {
     remaining -= days;
