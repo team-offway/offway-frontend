@@ -299,6 +299,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 이미지에 넣을 사용 연차 — 날짜가 없으면 계산할 수 없다
   double? _consumedLeave(Map<String, dynamic> saved) {
+    // 차감한 코스면 서버가 확정한 실제 차감량이 상세에 실려 온다(core #322)
+    if (saved['consumedLeaveDays'] case final double days) return days;
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
     if (start == null || end == null) return null;
@@ -497,7 +499,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     if (!mounted) return;
     switch (action) {
       case 'reschedule':
-        // TODO(server): 저장 코스 날짜 수정 API가 생기면 결과를 반영한다
         await context.push(AppRoutes.courseSchedulePath(widget.savedId));
         // 일정 화면에서 날짜가 바뀌었을 수 있으니 상세를 다시 불러온다
         ref.invalidate(savedCourseDetailProvider(widget.savedId));

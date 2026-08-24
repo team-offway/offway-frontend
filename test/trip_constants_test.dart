@@ -24,6 +24,41 @@ void main() {
       // 2026-07-30(목) ~ 2026-08-03(월): 목·금·월 = 3일
       expect(leaveDaysBetween(DateTime(2026, 7, 30), DateTime(2026, 8, 3)), 3);
     });
+
+    test('공휴일 목록을 주면 평일이어도 빼놓는다 (core #322)', () {
+      // 2026-10-09 한글날은 금요일 — 주말만 거르면 하루 깎이지만 실제로는 0
+      final holidays = {DateTime(2026, 10, 9)};
+      expect(
+        leaveDaysBetween(
+          DateTime(2026, 10, 9),
+          DateTime(2026, 10, 9),
+          holidays: holidays,
+        ),
+        0,
+      );
+      // 목(10/8)~일(10/11): 목만 평일로 남는다
+      expect(
+        leaveDaysBetween(
+          DateTime(2026, 10, 8),
+          DateTime(2026, 10, 11),
+          holidays: holidays,
+        ),
+        1,
+      );
+    });
+
+    test('주말과 겹치는 공휴일은 이중으로 빠지지 않는다', () {
+      // 2026-08-15 광복절은 토요일 — 있으나 없으나 같은 값이어야 한다
+      final holidays = {DateTime(2026, 8, 15)};
+      expect(
+        leaveDaysBetween(
+          DateTime(2026, 8, 14),
+          DateTime(2026, 8, 16),
+          holidays: holidays,
+        ),
+        1, // 금요일 하루
+      );
+    });
   });
 
   group('calendarDaysBetween', () {

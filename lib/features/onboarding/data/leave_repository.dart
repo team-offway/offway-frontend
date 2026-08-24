@@ -10,6 +10,38 @@ final leaveRepositoryProvider = Provider<LeaveRepository>(
   (ref) => LeaveRepository(ref.watch(dioProvider)),
 );
 
+/// 한 해의 공휴일 (core #322) — 세션 동안 캐시한다(공휴일은 바뀌지 않는다).
+///
+/// 서버는 지난해~내년만 답한다(그 밖은 400 — 외부 특일정보 한도 보호).
+/// 앱의 여행 범위도 그 안이라 부딪힐 일이 없다.
+final holidaysProvider = FutureProvider.family<Set<DateTime>, int>(
+  (ref, year) => ref.watch(leaveRepositoryProvider).holidays(year),
+  // Riverpod 3 기본은 실패 시 지수 백오프 재시도라 `.future`가 몇십 초를
+  // 물고 있는다 — 이 값은 폴백 계산의 재료라, 기다리느니 비우고 넘어간다
+  retry: (retryCount, error) => null,
+);
+
+/// [from]~[to]가 걸치는 해들의 공휴일 합집합.
+///
+/// 조회가 실패한 해는 그냥 비운다 — 이 값은 available-time 실패 시의
+/// **폴백 계산**에 쓰이므로, 여기서 또 던지면 폴백 자체가 사라진다.
+/// 비면 예전처럼 주말만 거른 값으로 물러날 뿐이다.
+Future<Set<DateTime>> holidaysBetween(
+  Ref ref,
+  DateTime from,
+  DateTime to,
+) async {
+  final result = <DateTime>{};
+  for (var year = from.year; year <= to.year; year++) {
+    try {
+      result.addAll(await ref.read(holidaysProvider(year).future));
+    } catch (_) {
+      // 한 해가 실패해도 나머지 해는 살린다
+    }
+  }
+  return result;
+}
+
 /// 가용시간 계산 결과 — 확정된 여행 기간과 그에 따른 연차 소모·도달 한계.
 typedef AvailableTime = ({
   DateTime startDate,
@@ -24,6 +56,29 @@ class LeaveRepository {
   LeaveRepository(this._dio);
 
   final Dio _dio;
+
+  /// 한 해의 공휴일 목록 (`GET /holidays?year=`, core #322).
+  ///
+  /// 서버가 요청한 연도를 응답에 되싣는다 — 어긋난 값을 캐시하면 다른
+  /// 해의 공휴일로 연차를 계산하게 되므로 여기서 걸러 던진다.
+  Future<Set<DateTime>> holidays(int year) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/v1/holidays',
+        queryParameters: {'year': year},
+      );
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      if ((data['year'] as num?)?.toInt() != year) {
+        throw const FormatException('공휴일 응답의 연도가 요청과 다르다');
+      }
+      return {
+        for (final date in (data['dates'] as List? ?? const []))
+          DateTime.parse(date as String),
+      };
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
 
   /// 총 연차를 서버에 저장하고 남은 연차를 돌려받는다 (온보딩 입력).
   Future<double> updateTotalDays(double totalDays) async {

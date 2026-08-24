@@ -178,41 +178,17 @@ class CourseRepository {
   savedCourseDetail(String courseId) async {
     try {
       final id = int.parse(courseId);
-      // 상세 응답에는 차감 여부가 없어 목록 요약에서 찾아 채운다. 두 요청은
-      // 서로를 기다릴 이유가 없어 함께 띄운다 — 화면이 그만큼 빨리 뜬다.
-      //
-      // `.wait`는 쓰지 않는다. 상세가 404를 던지면 ParallelWaitError로 감싸여
-      // 아래 `on ApiException`이 잡지 못한다.
-      // TODO(server): CourseResponse에 leaveDeducted가 실리면 걷어낼 것
-      final summaryFuture = _findSummary(id);
+      // 예전에는 상세에 차감 여부가 없어 목록 요약을 병행 조회해 채웠다.
+      // 서버가 상세에 leaveDeducted·consumedLeaveDays를 실으면서(core #322)
+      // 요청 한 번으로 끝난다
       final data = await _fetchCourse(id);
-      final found = await summaryFuture;
       return (
-        saved: _toSavedCardMap(found ?? _summaryFromDetail(data), data),
+        saved: _toSavedCardMap(_summaryFromDetail(data), data),
         course: _toCourseMap(data),
       );
     } on ApiException catch (e) {
       if (e.status == 404) return null;
       rethrow;
-    }
-  }
-
-  /// 목록에서 이 코스의 요약을 찾는다 — 못 찾으면 null
-  Future<Map<String, dynamic>?> _findSummary(int courseId) async {
-    try {
-      final response = await _dio.get<dynamic>(
-        '/api/v1/courses',
-        queryParameters: const {'scope': 'ALL'},
-      );
-      return (ApiEnvelope.unwrap(response) as List)
-          .cast<Map<String, dynamic>>()
-          .where((s) => (s['courseId'] as num).toInt() == courseId)
-          .firstOrNull;
-    } on DioException {
-      return null; // 보조 정보라 실패해도 상세는 그대로 보여준다
-    } on ApiException {
-      // 공통 래퍼가 실패로 와도 마찬가지 — 상세를 막지 않는다
-      return null;
     }
   }
 
@@ -524,6 +500,9 @@ class CourseRepository {
       'confirmed': travelDate != null,
       // 연차를 이미 깎았는지 — 차감 액션 노출 여부를 이 값이 정한다
       'leaveDeducted': summary['leaveDeducted'] as bool? ?? false,
+      // 실제 차감량(core #322) — 상세에만 실려 온다. 있으면 화면이
+      // available-time을 다시 부르지 않고 이 값을 그린다
+      'consumedLeaveDays': ?(summary['consumedLeaveDays'] as num?)?.toDouble(),
       // 공유 링크를 만들 토큰. 상세·목록 어느 쪽에서 왔든 실려 있다
       'shareToken': (detail?['shareToken'] ?? summary['shareToken']) as String?,
       'startDate': ?travelDate,
@@ -544,6 +523,11 @@ class CourseRepository {
     'regionId': detail['regionId'],
     'travelDate': detail['travelDate'],
     'travelDays': detail['travelDays'],
+    // 상세가 스스로 답한다(core #322) — 소유자 경로에만 실리고 공유
+    // 링크 응답에는 없다. 없으면 _toSavedCardMap이 false로 접는다
+    'leaveDeducted': detail['leaveDeducted'],
+    // null은 '차감한 적 없음' — 0(확정했지만 깎을 평일 없음)과 다르다
+    'consumedLeaveDays': detail['consumedLeaveDays'],
   };
 
   /// 첫날 첫 장소 이미지 — 요약에 대표 이미지가 없을 때의 폴백

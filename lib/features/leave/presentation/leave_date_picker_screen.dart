@@ -10,7 +10,7 @@ import '../../../core/widgets/trip_date_range_picker.dart';
 import '../../onboarding/data/leave_repository.dart';
 
 /// 고른 기간이 연차를 며칠 깎는지 — 서버가 평일−공휴일로 계산한다.
-/// 서버가 안 되면 주말만 빼는 로컬 근사로 폴백한다.
+/// 서버가 안 되면 공휴일 목록(core #322)을 끼운 로컬 계산으로 폴백한다.
 final _consumedLeaveProvider = FutureProvider.autoDispose
     .family<double, ({DateTime start, DateTime end})>((ref, range) async {
       try {
@@ -23,7 +23,12 @@ final _consumedLeaveProvider = FutureProvider.autoDispose
             );
         return result.consumedLeaveDays;
       } on ApiException {
-        return leaveDaysBetween(range.start, range.end).toDouble();
+        final holidays = await holidaysBetween(ref, range.start, range.end);
+        return leaveDaysBetween(
+          range.start,
+          range.end,
+          holidays: holidays,
+        ).toDouble();
       }
     });
 

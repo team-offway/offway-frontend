@@ -82,6 +82,15 @@ class _FakeLeaveRepository extends LeaveRepository {
     code: 'TEST',
     detail: '테스트에는 서버가 없어요',
   );
+
+  /// 공휴일 조회도 실패로 친다 — 폴백이 주말만 거른 값으로 물러난다.
+  /// 물려받은 구현을 그대로 두면 진짜 HTTP를 타서 타이머가 남는다
+  @override
+  Future<Set<DateTime>> holidays(int year) async => throw const ApiException(
+    status: 0,
+    code: 'TEST',
+    detail: '테스트에는 서버가 없어요',
+  );
 }
 
 /// 지역 목록 더보기 — mock 지역을 한 페이지로 돌려준다.
