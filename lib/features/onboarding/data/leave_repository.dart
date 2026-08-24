@@ -19,7 +19,7 @@ typedef AvailableTime = ({
   int maxReachMinutes,
 });
 
-/// 연차 API (`/api/v1/leaves`). 게스트 식별은 인터셉터의 X-Guest-Id가 맡는다.
+/// 연차 API (`/api/v1/leaves`). 사용자 식별은 인터셉터가 싣는 JWT가 맡는다.
 class LeaveRepository {
   LeaveRepository(this._dio);
 

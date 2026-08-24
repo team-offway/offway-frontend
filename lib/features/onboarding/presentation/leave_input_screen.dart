@@ -110,7 +110,7 @@ class _LeaveInputScreenState extends ConsumerState<LeaveInputScreen> {
     // 요청 시작 시점 값을 고정한다 — 도중에 화면 값이 바뀌어도 저장값과 어긋나지 않게
     final days = _days;
     try {
-      // 게스트(X-Guest-Id) 앞으로 총 연차를 저장한다 — 홈이 이 값을 읽는다
+      // 로그인한 사용자 앞으로 총 연차를 저장한다 — 홈이 이 값을 읽는다
       await ref.read(leaveRepositoryProvider).updateTotalDays(days);
       // 홈이 이미 캐시를 갖고 있으면 옛 연차가 보이므로 다시 불러오게 한다.
       // **새 값을 받고 나서 옮긴다** — invalidate는 다시 읽으라는 표시일

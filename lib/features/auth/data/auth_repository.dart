@@ -203,8 +203,7 @@ class AuthRepository {
   /// **로그아웃과 달리 실패를 삼키지 않는다.** 서버가 못 지웠는데 앱만
   /// 로그인 화면으로 보내면, 사용자는 탈퇴된 줄 알지만 데이터는 그대로다.
   ///
-  /// 성공하면 게스트 ID까지 비운다 — 남겨두면 서버에서 지운 데이터를 옛
-  /// 게스트 ID로 다시 만들어 탈퇴한 흔적이 따라온다.
+  /// 성공하면 토큰을 비운다. 데이터는 서버가 사용자 단위로 지운다(core #320).
   Future<void> withdraw() async {
     try {
       await _dio.delete<dynamic>('/api/v1/users/me');
@@ -214,7 +213,7 @@ class AuthRepository {
       // 서명 검증은 통과하지만 계정이 없는 창이다
       throw ApiEnvelope.toApiException(e);
     }
-    await _storage.clearAll();
+    await _storage.clear();
   }
 }
 

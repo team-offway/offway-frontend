@@ -10,19 +10,12 @@ import 'package:offway/features/auth/data/auth_repository.dart';
 class _MemoryStorage implements TokenStorage {
   String? access;
   String? refresh;
-  String? guest;
 
   @override
   Future<String?> get accessToken async => access;
 
   @override
   Future<String?> get refreshToken async => refresh;
-
-  @override
-  Future<String?> get guestId async => guest;
-
-  @override
-  Future<void> saveGuestId(String id) async => guest = id;
 
   @override
   Future<void> saveTokens({

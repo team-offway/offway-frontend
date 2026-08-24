@@ -11,7 +11,7 @@ final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
 );
 
-/// 코스 API (`/api/v1/courses`). 소유 식별은 인터셉터의 X-Guest-Id가 맡는다.
+/// 코스 API (`/api/v1/courses`). 소유 식별은 인터셉터가 싣는 JWT가 맡는다.
 class CourseRepository {
   CourseRepository(this._dio);
 
