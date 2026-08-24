@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/secure_storage.dart';
 import '../data/device_repository.dart';
 
 final pushRegistrationProvider = Provider<PushRegistration>(
@@ -47,10 +48,14 @@ class PushRegistration {
     }
   }
 
-  /// 앱이 뜬 뒤 한 번 부른다.
+  /// 앱이 뜬 뒤와 로그인 직후에 부른다.
   ///
   /// 권한을 묻고, 받은 토큰을 등록하고, 갱신을 구독한다. 토큰은 서버가
   /// 몇 번을 받아도 한 행만 두므로 매번 보내도 된다.
+  ///
+  /// 등록 자체는 로그인이 있어야 한다(`/devices`는 Bearer 전용, core #320).
+  /// 앱 시작이 로그인 화면이었다면 여기서는 권한·구독만 잡히고 등록은
+  /// 건너뛴다 — 로그인이 끝나면 [LoginScreen]이 다시 부른다.
   Future<void> start() async {
     _stopped = false;
     try {
@@ -84,6 +89,13 @@ class PushRegistration {
   Future<void> _register(String token) async {
     if (_stopped) return;
     try {
+      // 로그인 전에는 부르지 않는다 — JWT 없이 가면 403만 남고, 서버는
+      // 기기를 누구 것으로 둘지 알 수 없다. 토큰 갱신 이벤트가 로그아웃
+      // 상태에서 와도 같다
+      if (await _ref.read(secureStorageProvider).accessToken == null) {
+        debugPrint('로그인 전이라 기기를 등록하지 않는다');
+        return;
+      }
       await _ref.read(deviceRepositoryProvider).register(token);
     } on Object catch (e) {
       debugPrint('기기 등록 실패: $e');

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -110,9 +109,6 @@ class AuthInterceptor extends Interceptor {
       ? null
       : 'Basic ${base64Encode(utf8.encode('${AppConfig.basicAuthUser}:${AppConfig.basicAuthPass}'))}';
 
-  /// Keychain 왕복을 요청마다 하지 않도록 한 번 읽으면 잡아둔다
-  String? _cachedGuestId;
-
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -128,11 +124,9 @@ class AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = _basicCredential;
     }
 
-    // 비회원 식별자(#34) — 서버가 연차·저장 코스를 이 값에 묶는다.
-    // 소셜 로그인(#93)이 붙기 전까지는 이 헤더가 곧 "누구인지"다.
-    options.headers['X-Guest-Id'] = _cachedGuestId ??=
-        await _loadOrCreateGuestId(storage);
-
+    // 소유자는 JWT가 정한다(core #320). 예전에는 X-Guest-Id 헤더를 함께
+    // 실어 서버가 그 값으로 연차·코스를 묶었는데, 인증 안 된 값이라
+    // 남의 키를 실어 보내면 남의 데이터가 지워지는 구멍이었다
     handler.next(options);
   }
 
@@ -179,21 +173,4 @@ class AuthInterceptor extends Interceptor {
 
   /// 재시도한 요청임을 표시 — 두 번 이상 되풀이하지 않게 막는다
   static const _retriedKey = 'authRetried';
-
-  Future<String> _loadOrCreateGuestId(TokenStorage storage) async {
-    final existing = await storage.guestId;
-    if (existing != null) return existing;
-    final created = _randomId();
-    await storage.saveGuestId(created);
-    return created;
-  }
-
-  /// 128비트 난수 hex — 충돌 걱정 없는 익명 식별자면 충분해 uuid 패키지를 들이지 않는다
-  static String _randomId() {
-    final rng = Random.secure();
-    return List.generate(
-      16,
-      (_) => rng.nextInt(256).toRadixString(16).padLeft(2, '0'),
-    ).join();
-  }
 }

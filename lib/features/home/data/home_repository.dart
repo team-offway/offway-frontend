@@ -38,7 +38,7 @@ class HomeSnapshot {
   final List<Map<String, dynamic>> filters;
 }
 
-/// 홈 API. 게스트 식별은 인터셉터의 X-Guest-Id가 맡는다.
+/// 홈 API. 사용자 식별은 인터셉터가 싣는 JWT가 맡는다.
 class HomeRepository {
   HomeRepository(this._dio);
 
