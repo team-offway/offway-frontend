@@ -20,6 +20,19 @@ const kSkipAuthKey = 'skipAuth';
 bool shouldSkipAuth(RequestOptions options) =>
     options.extra[kSkipAuthKey] == true;
 
+/// 이 요청은 **JWT는 싣되, 401을 맞아도 재발급하지 말라**는 표시 (`Options.extra`).
+///
+/// 로그아웃이 쓴다. 서버가 refresh 토큰을 폐기하려면 Bearer로 누구인지
+/// 알아야 하는데, [kSkipAuthKey]는 헤더 자체를 빼 버려 요청이 컨트롤러에
+/// 닿지 못했다(#142 — 로그아웃해도 refresh 토큰이 60일 살아 있었다).
+/// 반면 만료된 토큰으로 로그아웃하면 401인데, 그걸 재발급 실패로 읽어
+/// '세션이 만료됐어요'를 띄우면 스스로 나간 사람에게 틀린 안내다 —
+/// 그 한 가지만 막는다.
+const kSkipRefreshKey = 'skipRefresh';
+
+bool shouldSkipRefresh(RequestOptions options) =>
+    options.extra[kSkipRefreshKey] == true;
+
 /// 만료된 액세스 토큰을 되살리는 방법.
 ///
 /// 되살렸으면 true. 이 파일이 인증 기능(features/auth)을 직접 참조하면
@@ -133,9 +146,11 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final options = err.requestOptions;
-    // 재발급 요청이 401이면 리프레시도 죽은 것 — 다시 재발급하면 무한 루프다
+    // 재발급 요청이 401이면 리프레시도 죽은 것 — 다시 재발급하면 무한 루프다.
+    // 로그아웃(kSkipRefreshKey)도 여기서 빠진다 — 이미 못 쓰는 세션이다
     if (err.response?.statusCode != 401 ||
         shouldSkipAuth(options) ||
+        shouldSkipRefresh(options) ||
         options.extra[_retriedKey] == true) {
       return handler.next(err);
     }

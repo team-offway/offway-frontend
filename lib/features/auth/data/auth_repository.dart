@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
@@ -165,13 +166,21 @@ class AuthRepository {
     try {
       await _dio.post<dynamic>(
         '/api/v1/auth/logout',
-        // 만료된 토큰으로 로그아웃하면 서버가 401을 준다. 인터셉터가 그걸
-        // 보면 재발급을 시도하고, 실패 시 '세션이 만료됐어요'를 띄운다 —
-        // 스스로 로그아웃한 사람에게는 틀린 안내다
-        options: Options(extra: {kSkipAuthKey: true}),
+        // Bearer는 실어야 한다 — 서버가 그 사용자의 refresh 토큰을 폐기하려면
+        // 누구인지 알아야 한다. 예전에 kSkipAuthKey로 헤더째 뺐더니 요청이
+        // 컨트롤러에 닿지 못해 로그아웃 뒤에도 refresh가 60일 살아 있었다(#142).
+        // 다만 만료된 토큰이면 401인데, 그걸 재발급 실패로 읽어 '세션이
+        // 만료됐어요'를 띄우면 스스로 나간 사람에게 틀린 안내다 — 재발급만 끈다
+        options: Options(extra: {kSkipRefreshKey: true}),
       );
-    } on DioException {
-      // 무시 — 아래에서 로컬을 비우는 것이 사용자가 기대하는 결과다
+    } on DioException catch (e) {
+      // 로컬은 아래에서 어차피 비운다 — 그게 사용자가 기대하는 결과다.
+      // 다만 서버 폐기가 실패한 사실은 남긴다. 성공과 같은 모양으로 삼키면
+      // refresh 토큰이 살아 있어도 아무 데도 드러나지 않는다
+      debugPrint(
+        '로그아웃: 서버 refresh 폐기 실패 '
+        '(${e.response?.statusCode ?? e.type}) — 로컬만 비운다',
+      );
     }
     await _storage.clear();
   }

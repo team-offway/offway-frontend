@@ -51,6 +51,9 @@ class _StubAdapter implements HttpClientAdapter {
   final ResponseBody Function(RequestOptions options) respond;
   final calls = <String>[];
 
+  /// 실제로 실린 Authorization 헤더 — 요청 순서대로
+  final authorizations = <String?>[];
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -58,6 +61,7 @@ class _StubAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     calls.add(options.path);
+    authorizations.add(options.headers['Authorization'] as String?);
     return respond(options);
   }
 
@@ -222,6 +226,58 @@ void main() {
       );
       // 재시도하지 않았다 — 되살릴 방법이 없으면 되풀이가 무의미하다
       expect(adapter.calls, hasLength(1));
+    });
+  });
+
+  group('로그아웃', () {
+    test('Bearer를 실어 서버의 refresh 폐기에 닿는다 (#142)', () async {
+      // 예전에는 kSkipAuthKey가 헤더 자체를 빼 버려 Basic(403)이나
+      // 무헤더(401)로 컨트롤러에 닿지 못했다 — refresh 토큰이 60일 살아 있었다
+      final storage = _MemoryStorage()
+        ..access = 'live'
+        ..refresh = 'live-refresh';
+      final adapter = _StubAdapter((_) => _json(200, {}));
+      final container = ProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(storage)],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      await AuthRepository(dio, storage).logout();
+
+      expect(adapter.calls, ['/api/v1/auth/logout']);
+      expect(adapter.authorizations.single, 'Bearer live');
+      // 서버 폐기와 별개로 로컬은 비운다
+      expect(storage.access, isNull);
+      expect(storage.refresh, isNull);
+    });
+
+    test('만료된 토큰이면 401을 맞아도 재발급·만료 신호 없이 로컬만 비운다', () async {
+      // 이미 못 쓰는 세션이다. 재발급을 돌리면 스스로 나간 사람에게
+      // '세션이 만료됐어요'가 뜬다
+      final storage = _MemoryStorage()..access = 'expired';
+      final adapter = _StubAdapter((_) => _json(401, {}));
+      var refreshAttempted = false;
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              refreshAttempted = true;
+              return false;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      await AuthRepository(dio, storage).logout();
+
+      expect(refreshAttempted, isFalse);
+      expect(container.read(sessionExpiredProvider), isFalse);
+      expect(adapter.calls, hasLength(1), reason: '재시도 없음');
+      expect(storage.access, isNull);
     });
   });
 
