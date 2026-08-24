@@ -11,6 +11,7 @@ import '../application/pending_trip_provider.dart';
 import '../data/course_repository.dart';
 import '../data/trip_outcome_snooze_storage.dart';
 import '../domain/pending_trip.dart';
+import 'my_courses_screen.dart' show savedCoursesProvider;
 import 'widgets/trip_outcome_dialog.dart';
 
 /// "다녀오셨나요?" 모달을 화면에 붙인다.
@@ -84,6 +85,9 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     invalidateLeaveData(ref);
     // 답을 했으니 다시 물어보지 않는다
     ref.invalidate(pendingTripProvider);
+    // 내 코스 카드의 여행완료·미방문 칩이 이 답(leaveDeducted)으로 갈리므로
+    // 목록도 다시 읽는다
+    ref.invalidate(savedCoursesProvider);
 
     // 안 갔다고 답하면 바뀐 게 없다 — 알릴 것도 없다
     if (!visited) return;
