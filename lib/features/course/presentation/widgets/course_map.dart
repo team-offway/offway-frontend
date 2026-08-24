@@ -90,10 +90,10 @@ class CourseMap extends StatelessWidget {
             position: NLatLng(p['mapy'] as double, p['mapx'] as double),
             // icon이 null이면 네이버 기본 핀 — 거기에 브랜드색만 입힌다
             icon: icon,
-            // 브랜드 하늘색(Primary/Normal) — 마커용 _placeColor(#18D2FE)는
-            // 기본 핀에 입히면 너무 밝아 뜬다
+            // 브랜드 하늘색 진한 단계(Primary/Strong · '추천' 글자색과 같다).
+            // Normal(#3DC2FF)은 마커용 색과 거의 같아 바꾼 티가 안 났다
             iconTintColor: single
-                ? AppColors.primaryNormal
+                ? AppColors.primaryStrong
                 : Colors.transparent,
             caption: NOverlayCaption(
               text: single ? '${p['name']}' : '${i + 1}. ${p['name']}',
