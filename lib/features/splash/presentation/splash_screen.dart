@@ -34,6 +34,11 @@ class _SplashScreenState extends State<SplashScreen> {
   /// 제약 multiplier. 한쪽만 바꾸면 두 화면이 어긋나 로고가 튄다.
   static const _wordmarkY = 0.4311;
 
+  /// 로고 크기 — 네이티브 런치스크린의 LaunchImage(125x38pt)와 같아야 한다.
+  /// 1pt만 달라도 엔진이 뜨는 순간 로고가 씰룩인다 (#131)
+  static const _logoWidth = 125.0;
+  static const _logoHeight = 38.0;
+
   Timer? _timer;
 
   @override
@@ -61,17 +66,24 @@ class _SplashScreenState extends State<SplashScreen> {
       // 네이티브 런치스크린(LaunchScreen.storyboard)과 같은 자리에 그린다. iOS가
       // 먼저 띄우는 그 화면은 없앨 수 없으므로, 위치가 어긋나면 엔진이 뜨는 순간
       // 로고가 튀어 스플래시가 두 번 뜬 것처럼 보인다.
-      body: Align(
-        // 시안(402x874)에서 워드마크 중심이 세로 28.9% 지점.
-        // Alignment.y는 -1(위)~1(아래)이므로 0.289*2-1 로 환산한다
-        alignment: const Alignment(0, _wordmarkY * 2 - 1),
-        // 폭만 준다. 시안의 텍스트 박스는 126x49지만 49는 행간을 포함한 높이라
-        // 로고 잉크(125x38)와 비율이 다르다. 높이까지 주면 49에 맞춰 늘어나
-        // 폭이 161pt가 된다 — 시안보다 1.29배 크다.
-        child: SvgPicture.asset(
-          'assets/icons/logo_wordmark_blue.svg',
-          width: 126,
-          semanticsLabel: 'Offway',
+      // Alignment로 43.11%를 주면 안 된다 — Alignment는 화면이 아니라
+      // (화면 - 로고 높이) 안에서 비율을 잡아 로고가 네이티브보다 2.6pt 위에
+      // 놓이고, 엔진이 뜨는 순간 로고가 위로 튄다 (#131).
+      // 네이티브처럼 '로고 중심 = 화면 높이 x 43.11%'를 직접 계산한다
+      body: LayoutBuilder(
+        builder: (context, constraints) => Padding(
+          padding: EdgeInsets.only(
+            top: constraints.maxHeight * _wordmarkY - _logoHeight / 2,
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SvgPicture.asset(
+              'assets/icons/logo_wordmark_blue.svg',
+              width: _logoWidth,
+              height: _logoHeight,
+              semanticsLabel: 'Offway',
+            ),
+          ),
         ),
       ),
     );

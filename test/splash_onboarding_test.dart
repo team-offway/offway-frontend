@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
@@ -48,6 +49,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1300));
       await tester.pumpAndSettle();
       expect(find.text('오프웨이에선'), findsOneWidget);
+    });
+
+    testWidgets('로고가 네이티브 런치스크린과 같은 자리·크기다', (tester) async {
+      await tester.pumpWidget(appWith(initial: AppRoutes.splash));
+      await tester.pump();
+
+      // 네이티브(LaunchScreen.storyboard): 125x38pt 로고의 **중심**이 화면
+      // 높이의 43.11% 지점. 어긋나면 엔진이 뜨는 순간 로고가 튄다 (#131).
+      // Alignment는 (화면-로고) 안에서 비율을 잡아 2.6pt 위로 어긋났었다
+      final logo = tester.getRect(find.byType(SvgPicture));
+      final screen = tester.getSize(find.byType(Scaffold));
+      expect(logo.width, 125);
+      expect(logo.height, 38);
+      expect(logo.center.dy, moreOrLessEquals(screen.height * 0.4311));
     });
 
     testWidgets('머물기 전에 화면을 벗어나도 터지지 않는다', (tester) async {
