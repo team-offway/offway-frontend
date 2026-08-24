@@ -13,6 +13,12 @@ import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../course/application/pending_trip_provider.dart';
+import '../../course/data/course_repository.dart';
+import '../../course/presentation/my_courses_screen.dart'
+    show savedCoursesProvider;
+import '../../course/presentation/saved_course_screen.dart'
+    show savedCourseDetailProvider;
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import '../../onboarding/data/leave_repository.dart';
@@ -223,28 +229,42 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   Future<void> _confirmDelete(List<LeaveUsage> usages) async {
     // 회원탈퇴·로그아웃과 같은 DS 모달을 쓴다. Material AlertDialog는 폭·여백·
     // 버튼 배치가 시안과 달라 이 화면만 다르게 보였다
-    final confirmed = await showAppConfirmDialog(
-      context,
-      title: '사용 내역을 삭제할까요?',
-      message: '삭제하면 차감된 연차가 복구돼요.',
-      confirmLabel: '삭제하기',
-    );
-    if (!mounted || confirmed != true) return;
-
     final picked = [
       for (final i in _selected)
         if (i < usages.length) usages[i],
     ];
+    final hasCourseUsage = picked.any((u) => u.fromCourse);
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: '사용 내역을 삭제할까요?',
+      // 코스 건은 코스의 차감 자체를 되돌리므로 그 코스가 '미방문'으로 바뀐다
+      // — 연차만 돌아오는 게 아니라는 걸 미리 말해 준다
+      message: hasCourseUsage
+          ? '삭제하면 차감된 연차가 복구되고, 연결된 코스는 미방문으로 바뀌어요.'
+          : '삭제하면 차감된 연차가 복구돼요.',
+      confirmLabel: '삭제하기',
+    );
+    if (!mounted || confirmed != true) return;
     _exitSelecting();
 
-    // 한 건이 막혀도(코스 확정 건은 409) 나머지는 지운다 —
+    // 한 건이 막혀도 나머지는 지운다 —
     // 중간에 멈추면 사용자는 무엇이 지워졌는지 알 수 없다
     final repo = ref.read(leaveRepositoryProvider);
+    final courseRepo = ref.read(courseRepositoryProvider);
     var deleted = 0;
+    final cancelledCourseIds = <int>[];
     String? failure;
     for (final usage in picked) {
       try {
-        await repo.deleteUsage(usage.id);
+        if (usage.courseId case final int courseId) {
+          // 코스 건은 내역 삭제 API가 409로 막는다(코스 확정으로 생긴 행).
+          // 대신 코스의 차감 취소를 불러 같은 결과를 낸다 — 서버가 이 행을
+          // 지우고 잔여 연차를 되돌리며, 코스는 '미방문'으로 돌아간다
+          await courseRepo.cancelLeaveDeduction(courseId);
+          cancelledCourseIds.add(courseId);
+        } else {
+          await repo.deleteUsage(usage.id);
+        }
         deleted++;
       } on ApiException catch (e) {
         failure ??= e.detail.isEmpty ? '삭제하지 못했어요' : e.detail;
@@ -253,6 +273,16 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     if (!mounted) return;
     // 지운 만큼 잔여 연차가 늘었다 — 홈도 함께 다시 읽는다
     if (deleted > 0) invalidateLeaveData(ref);
+    // 차감을 되돌린 코스는 카드 칩(여행완료 → 미방문)이 바뀐다
+    if (cancelledCourseIds.isNotEmpty) {
+      ref.invalidate(savedCoursesProvider);
+      for (final id in cancelledCourseIds) {
+        ref.invalidate(savedCourseDetailProvider('$id'));
+      }
+      // 서버가 취소 시 답변 기록까지 지우면(core #327) 그 코스가 다시
+      // '물어볼 여행'이 된다 — 홈이 캐시를 들고 있지 않게 미리 비운다
+      ref.invalidate(pendingTripProvider);
+    }
     // 막힌 게 있으면 그 이유를 알려준다 — 코스 화면으로 갈 수 있게
     if (failure case final String message) {
       showAppToast(context, message);

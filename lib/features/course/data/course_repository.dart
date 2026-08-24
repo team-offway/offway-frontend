@@ -207,6 +207,23 @@ class CourseRepository {
     }
   }
 
+  /// 코스는 두고 차감한 연차만 되돌린다 (`DELETE /courses/{id}/leave-deduction`).
+  ///
+  /// 서버가 그 코스에 묶인 사용 내역 행을 지우므로 잔여 연차가 복구되고,
+  /// 차감 여부(`leaveDeducted`)는 내역 유무로 판정되어 카드가 다시
+  /// '미방문'(날짜가 지났으면)으로 돌아간다. 차감된 적이 없어도 200이다.
+  ///
+  /// 연차 사용 내역에서 코스 건을 지울 때 쓴다 — 내역 삭제 API는 코스 건을
+  /// 409로 막는다(core #268). "코스에서 취소해 달라"고 떠넘기지 않고 여기서
+  /// 대신 불러 준다.
+  Future<void> cancelLeaveDeduction(int courseId) async {
+    try {
+      await _dio.delete<dynamic>('/api/v1/courses/$courseId/leave-deduction');
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 홈에서 물어볼 지난 여행 (`GET /courses/pending-trips`).
   ///
   /// 끝났고(종료일 < 오늘) 아직 답하지 않은 코스만 온다. 모달을 그리는 데

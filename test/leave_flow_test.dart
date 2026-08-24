@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
@@ -365,6 +366,67 @@ void main() {
     // 삭제 모드는 빠져나온다
     expect(find.widgetWithText(FilledButton, '삭제하기'), findsNothing);
   });
+
+  testWidgets('삭제 모드: 코스 건은 내역 삭제 대신 코스의 차감 취소가 나간다', (tester) async {
+    // 내역 삭제 API는 코스 확정 건을 409로 막는다. 사용자에게 "코스에서
+    // 취소해 달라"고 떠넘기는 대신, 앱이 그 코스의 차감 취소를 불러 같은
+    // 결과(내역 삭제·연차 복구)를 내고 코스는 '미방문'으로 돌아간다
+    final deletedIds = <int>[];
+    final cancelledCourseIds = <int>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
+          leaveRepositoryProvider.overrideWithValue(
+            _RecordingLeaveRepository(deletedIds),
+          ),
+          courseRepositoryProvider.overrideWithValue(
+            _RecordingCourseRepository(cancelledCourseIds),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사용 내역 삭제'));
+    await tester.pumpAndSettle();
+
+    // 코스 건(정선 여행, courseId 7)을 고른다
+    await tester.tap(find.text('정선 여행'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '삭제하기'));
+    await tester.pumpAndSettle();
+
+    // 연차만 돌아오는 게 아니라 코스 상태도 바뀐다는 걸 모달이 미리 말한다
+    expect(find.text('삭제하면 차감된 연차가 복구되고, 연결된 코스는 미방문으로 바뀌어요.'), findsOneWidget);
+    await tester.tap(
+      find.descendant(of: find.byType(Dialog), matching: find.text('삭제하기')),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // 내역 삭제(409로 막힐 경로)가 아니라 코스 차감 취소로 간다
+    expect(deletedIds, isEmpty);
+    expect(cancelledCourseIds, [7]);
+  });
+}
+
+/// 코스 차감 취소 요청만 기록하는 대역
+class _RecordingCourseRepository implements CourseRepository {
+  _RecordingCourseRepository(this.cancelledCourseIds);
+
+  final List<int> cancelledCourseIds;
+
+  @override
+  Future<void> cancelLeaveDeduction(int courseId) async {
+    cancelledCourseIds.add(courseId);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// 차감 일수 계산은 실패로 친다 — 화면이 로컬 근사로 폴백해 바로 확정할 수 있다
