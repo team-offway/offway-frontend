@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/network/image_cache.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -359,6 +361,7 @@ class _SpotCard extends StatelessWidget {
               ? const _SpotFallback()
               : CachedNetworkImage(
                   imageUrl: imageUrl,
+                  cacheManager: appImageCacheManager,
                   fit: BoxFit.cover,
                   // 디스크 캐시 + 카드 폭까지만 디코드 (PlaceThumbnail과 같은 이유)
                   memCacheWidth: PlaceThumbnail.decodeWidthFor(
@@ -372,11 +375,22 @@ class _SpotCard extends StatelessWidget {
                   // 받는 동안은 스켈레톤만 둔다
                   placeholder: (_, _) => const _SpotFallback(showIcon: false),
                   errorWidget: (_, _, _) => const _SpotFallback(),
-                  // 사진이 실제로 뜬 뒤에만 그라데이션과 이름을 얹는다
-                  imageBuilder: (_, provider) => Stack(
+                  // 사진이 실제로 뜬 뒤에만 그라데이션과 이름을 얹는다.
+                  // imageBuilder에 오는 provider에는 memCacheWidth가 안 걸려
+                  // 있다 — 여기서 다시 감싸지 않으면 원본 크기로 디코드한다
+                  imageBuilder: (context, provider) => Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image(image: provider, fit: BoxFit.cover),
+                      Image(
+                        image: ResizeImage(
+                          provider,
+                          width: PlaceThumbnail.decodeWidthFor(
+                            context,
+                            _spotCardWidth,
+                          ),
+                        ),
+                        fit: BoxFit.cover,
+                      ),
                       _SpotNameOverlay(name: name),
                     ],
                   ),

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../network/image_cache.dart';
 import '../theme/tokens/tokens.dart';
 
 /// 장소 썸네일 — 이미지가 없거나 못 불러오면 회색 자리에 아이콘을 남긴다.
@@ -52,6 +53,7 @@ class PlaceThumbnail extends StatelessWidget {
           : LayoutBuilder(
               builder: (context, constraints) => CachedNetworkImage(
                 imageUrl: imageUrl!,
+                cacheManager: appImageCacheManager,
                 fit: BoxFit.cover,
                 // TourAPI 원본은 장당 100~500KB에 800px가 넘는다. 디스크에
                 // 캐시해 다음 실행부터 다시 받지 않고, 그리는 폭(픽셀)까지만
