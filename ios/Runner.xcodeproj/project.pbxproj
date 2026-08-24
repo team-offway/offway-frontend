@@ -204,6 +204,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				D3FB043AAF36A55D9CC2480A /* [CP] Embed Pods Frameworks */,
 				6AEC8A052B4175E86F69224C /* [CP] Copy Pods Resources */,
+				F1A5B2C3D4E5F60718293A4B /* Sign Native Asset Frameworks */,
 			);
 			buildRules = (
 			);
@@ -291,6 +292,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		F1A5B2C3D4E5F60718293A4B /* Sign Native Asset Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Native Asset Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Flutter 3.38의 embed_and_thin은 Dart 네이티브 에셋 프레임워크(objective_c 등)를\n# macOS에서만 서명하고 iOS에서는 ad-hoc으로 둔다. 앱은 팀 신원으로 서명되는데\n# 안의 프레임워크만 ad-hoc이면 기기가 설치를 거부한다(0xe8008014).\n# 앱과 같은 신원으로 다시 서명한다. ad-hoc인 것만 건드려 Pods 쪽은 손대지 않는다.\n# Flutter가 iOS에서도 서명하게 되면 이 단계는 아무것도 하지 않고 지나간다.\nif [ \"${CODE_SIGNING_ALLOWED}\" = \"NO\" ] || [ -z \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then\n  exit 0\nfi\nfor fw in \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"/*.framework; do\n  name=$(basename \"$fw\" .framework)\n  bin=\"$fw/$name\"\n  [ -f \"$bin\" ] || continue\n  if codesign -dv \"$bin\" 2>&1 | grep -q \"Signature=adhoc\"; then\n    echo \"ad-hoc 프레임워크 재서명: $name\"\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" ${OTHER_CODE_SIGN_FLAGS:-} --preserve-metadata=identifier,entitlements,flags --timestamp=none \"$fw\"\n  fi\ndone\n";
 		};
 		6AEC8A052B4175E86F69224C /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
