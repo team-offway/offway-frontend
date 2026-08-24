@@ -19,25 +19,39 @@ import '../../home/presentation/home_screen.dart' show homeUserProvider;
 /// 사용자 정보는 그 사이에 바뀌지 않는다 — 바뀌는 순간(로그인·로그아웃·
 /// 탈퇴·연차 저장)에 부르는 쪽이 무효화한다.
 final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final home = await ref.watch(homeUserProvider.future);
+  final homeFuture = ref.watch(homeUserProvider.future);
 
   final token = await ref.watch(secureStorageProvider).accessToken;
-  if (token == null) return home;
+  if (token == null) return homeFuture;
 
-  try {
-    final me = await ref.watch(authRepositoryProvider).me();
-    return {
-      ...home,
-      // 서버가 주는 이름이 정본이다 — 홈의 '게스트'를 덮는다
-      if (me['nickname'] case final String name) 'nickname': name,
-      if (me['email'] case final String email) 'email': email,
-      if (me['provider'] case final String provider) 'provider': provider,
-      // 프로필 사진(core #316) — 없으면 null이 실려 오고, 그때는 키를 만들지
-      // 않아 마이 화면이 기본 아이콘을 그린다. Apple은 항상 null이다
-      if (me['profileImageUrl'] case final String photo)
-        'profileImageUrl': photo,
-    };
-  } on ApiException {
-    return home;
-  }
+  // 홈과 /users/me는 서로를 기다릴 이유가 없다 — 홈을 기다린 뒤 me를
+  // 부르면 이름·연차가 한 왕복(0.3초) 늦게 뜬다. 함께 띄우고 함께 기다린다.
+  //
+  // 실패 처리는 **만들자마자** 붙인다. 홈을 기다리는 사이에 me가 먼저
+  // 실패하면 듣는 이가 없는 오류가 되어 '처리되지 않은 예외'로 샌다.
+  // 실패하면 null — 이름을 못 부르는 것뿐이라 화면을 막을 일이 아니다
+  final meFuture = ref
+      .watch(authRepositoryProvider)
+      .me()
+      .then<Map<String, dynamic>?>(
+        (me) => me,
+        onError: (Object e) {
+          if (e is ApiException) return null;
+          throw e;
+        },
+      );
+  final home = await homeFuture;
+  final me = await meFuture;
+  if (me == null) return home;
+
+  return {
+    ...home,
+    // 서버가 주는 이름이 정본이다 — 홈의 '게스트'를 덮는다
+    if (me['nickname'] case final String name) 'nickname': name,
+    if (me['email'] case final String email) 'email': email,
+    if (me['provider'] case final String provider) 'provider': provider,
+    // 프로필 사진(core #316) — 없으면 null이 실려 오고, 그때는 키를 만들지
+    // 않아 마이 화면이 기본 아이콘을 그린다. Apple은 항상 null이다
+    if (me['profileImageUrl'] case final String photo) 'profileImageUrl': photo,
+  };
 });
