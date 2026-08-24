@@ -38,6 +38,21 @@ final homePlacesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) async => (await ref.watch(homeSnapshotProvider.future)).places,
 );
 
+/// 잔여 연차가 없어 온보딩(연차 입력)으로 보내야 하는가.
+///
+/// **다 읽힌 값에서만 판단한다.** 재조회(invalidate) 중에는 Riverpod이
+/// 이전 값을 `.value`에 남겨두는데, 로그아웃 직후에는 그 자리에 게스트
+/// (연차 null)가 있다 — 그걸 보고 보내면 재로그인한 회원이 이미 등록한
+/// 연차를 두고도 온보딩으로 끌려간다 (#132).
+///
+/// 못 읽었거나 실패한 것도 '연차가 없다'와 다르다 — 홈은 그대로 두고
+/// 다음 조회를 기다린다.
+bool leaveOnboardingNeeded(AsyncValue<Map<String, dynamic>> user) {
+  if (user.isLoading) return false;
+  final data = user.value;
+  return data != null && data['remainingLeaveDays'] == null;
+}
+
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
 
@@ -87,8 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// '연차가 없다'는 다르다. 홈은 그대로 두고 다음 조회를 기다린다.
   void _redirectIfLeaveMissing(AsyncValue<Map<String, dynamic>> user) {
     if (_redirectedToOnboarding) return;
-    final data = user.value;
-    if (data == null || data['remainingLeaveDays'] != null) return;
+    if (!leaveOnboardingNeeded(user)) return;
 
     _redirectedToOnboarding = true;
     // build 도중에는 화면을 바꿀 수 없다
