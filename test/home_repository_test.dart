@@ -159,7 +159,27 @@ void main() {
       expect(empty.containsKey('description'), isFalse);
     });
 
-    test('장소는 시도가 없어 오버레이에 가운뎃점이 남지 않는다', () {
+    test('지역 목록에서 시도를 찾아 오버레이에 붙인다', () {
+      // 장소의 regionName은 시군구뿐이다 — 같은 응답의 지역 목록(name이
+      // "정선군 · 강원" 형태)에서 짝을 찾아 "정선군 · 강원"으로 그린다
+      final card = toPlaceCardMap(
+        const {
+          'poiContentId': '1',
+          'name': 'x',
+          'kind': 'SIGHT',
+          'regionName': '정선군',
+        },
+        filters: filters,
+        regions: const [
+          {'name': '정선군 · 강원'},
+          {'name': '동구 · 부산광역시'},
+        ],
+      );
+      expect(card['name'], '정선군');
+      expect(card['sido'], '강원');
+    });
+
+    test('지역 목록에 짝이 없으면 시도를 비워 가운뎃점이 남지 않는다', () {
       final card = toPlaceCardMap(const {
         'poiContentId': '1',
         'name': 'x',
