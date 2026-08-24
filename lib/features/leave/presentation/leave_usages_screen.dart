@@ -13,6 +13,7 @@ import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../course/application/pending_trip_provider.dart';
 import '../../course/data/course_repository.dart';
 import '../../course/presentation/my_courses_screen.dart'
     show savedCoursesProvider;
@@ -278,6 +279,9 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
       for (final id in cancelledCourseIds) {
         ref.invalidate(savedCourseDetailProvider('$id'));
       }
+      // 서버가 취소 시 답변 기록까지 지우면(core #327) 그 코스가 다시
+      // '물어볼 여행'이 된다 — 홈이 캐시를 들고 있지 않게 미리 비운다
+      ref.invalidate(pendingTripProvider);
     }
     // 막힌 게 있으면 그 이유를 알려준다 — 코스 화면으로 갈 수 있게
     if (failure case final String message) {
