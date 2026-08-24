@@ -24,6 +24,15 @@ final myLeaveProvider = FutureProvider.autoDispose<MyLeave>(
   (ref) => ref.watch(leaveRepositoryProvider).fetchMyLeave(),
 );
 
+/// 내역을 **등록한 순서**로, 최근 것이 위에 오게 늘어놓는다.
+///
+/// 서버는 사용일(`usedOn`) 내림차순으로 준다. 그러면 미래 날짜로 잡아 둔
+/// 내역이 늘 맨 위에 붙어, 방금 등록한 것이 아래로 숨는다 — 사용자가 찾는
+/// 건 "방금 한 일"이다. 응답에 등록 시각은 없지만 `id`가 등록 순서대로
+/// 매겨지므로 그걸로 정렬한다. 코스 확정으로 서버가 만든 행도 같은 규칙이다.
+List<LeaveUsage> sortUsagesByRegistration(List<LeaveUsage> usages) =>
+    [...usages]..sort((a, b) => b.id.compareTo(a.id));
+
 /// 화면에 뿌릴 사용 내역.
 ///
 /// 서버 내역에는 `courseId`만 있고 코스 이름이 없다. 목록에 "정선 여행"처럼
@@ -33,7 +42,7 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
   ref,
 ) async {
   final leave = await ref.watch(myLeaveProvider.future);
-  final usages = leave.usages;
+  final usages = sortUsagesByRegistration(leave.usages);
   if (usages.every((u) => u.courseId == null)) return usages;
 
   try {
