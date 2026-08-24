@@ -34,10 +34,10 @@ class DeviceRepository {
     }
   }
 
-  /// 이 소유자의 토큰을 전부 해제한다 (로그아웃·탈퇴).
+  /// 이 사용자의 토큰을 전부 해제한다 (로그아웃·탈퇴).
   ///
-  /// 토큰을 받지 않는다 — 게스트 ID가 설치마다 발급되므로 그 아래 토큰은
-  /// 사실상 이 기기의 것이다. 지울 것이 없어도 성공이다.
+  /// 토큰을 받지 않는다 — 서버가 JWT의 사용자 앞으로 등록된 기기를 전부
+  /// 푼다(core #320). 지울 것이 없어도 성공이다.
   Future<void> unregister() async {
     try {
       final response = await _dio.delete<dynamic>('/api/v1/devices');

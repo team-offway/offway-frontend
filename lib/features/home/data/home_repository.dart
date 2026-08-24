@@ -57,8 +57,8 @@ class HomeRepository {
         user: {
           'nickname': user['name'],
           'remainingLeaveDays': user['remainingLeaveDays'],
-          // 소셜 프로필 사진 — 서버가 아직 안 실어 준다. 필드가 붙으면
-          // 마이 화면이 기본 아이콘 대신 이 사진을 그린다
+          // 소셜 프로필 사진은 홈이 아니라 /users/me가 정본이다(core #316) —
+          // currentUserProvider가 그 값으로 덮는다. 홈에 실려 오면 받아 둘 뿐이다
           'profileImageUrl': ?user['profileImageUrl'],
         },
         regions: regions.map(_toRegionCardMap).toList(),
