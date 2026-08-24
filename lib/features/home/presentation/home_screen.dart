@@ -82,15 +82,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 고른 칩 `{key, label}` — null이면 '전체'
   Map<String, dynamic>? _selected;
 
-  /// 선택된 카테고리의 콘텐츠가 있는 지역만 남긴다 (목록 화면과 같은 규칙)
-  List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) {
-    final selected = _selected;
-    if (selected == null || selected['key'] == 'ALL') return all;
-    return all.where((r) {
-      final counts = r['categoryCounts'] as Map<String, dynamic>?;
-      return (counts?[selected['label']] as int? ?? 0) > 0;
-    }).toList();
-  }
+  /// 선택된 카테고리의 콘텐츠가 있는 카드만 남긴다 — 더보기 화면과 같은 규칙
+  List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) =>
+      filterCardsByCategory(all, _selected);
 
   /// 온보딩으로 한 번만 보낸다 — 프로바이더가 다시 읽힐 때마다 go가
   /// 겹치면 화면이 덜컥거린다

@@ -80,3 +80,19 @@ class CategoryChip extends StatelessWidget {
     );
   }
 }
+
+/// 칩으로 고른 카테고리의 콘텐츠가 있는 카드만 남긴다.
+///
+/// 홈 가로 목록과 더보기 그리드가 같은 규칙을 쓴다 — 한쪽만 고치면 홈에서
+/// 보이던 카드가 더보기에서 사라지는 식으로 어긋난다. [selected]가 null이거나
+/// '전체'면 그대로 돌려준다. 카드의 `categoryCounts`는 한글 라벨을 키로 편다.
+List<Map<String, dynamic>> filterCardsByCategory(
+  List<Map<String, dynamic>> cards,
+  Map<String, dynamic>? selected,
+) {
+  if (selected == null || selected['key'] == 'ALL') return cards;
+  return cards.where((card) {
+    final counts = card['categoryCounts'] as Map<String, dynamic>?;
+    return (counts?[selected['label']] as int? ?? 0) > 0;
+  }).toList();
+}
