@@ -22,13 +22,20 @@ int calendarDaysBetween(DateTime from, DateTime to) {
 /// [from]~[to] 사이에서 연차를 써야 하는 날 수 (양 끝 포함).
 ///
 /// 주말은 원래 쉬는 날이라 연차가 깎이지 않으므로 평일만 센다.
-/// 공휴일도 실제로는 빠져야 하지만 달력 데이터가 없어 아직 반영하지 못한다.
-/// TODO(server): 공휴일 목록이 생기면 여기서 함께 걸러낸다.
-int leaveDaysBetween(DateTime from, DateTime to) {
+/// [holidays]를 주면 공휴일(자정 기준 날짜 집합, `GET /holidays` — core #322)도
+/// 함께 거른다 — 광복절·추석이 낀 주를 주말만 빼고 세면 차감일이 실제보다
+/// 많아진다. 못 받아 비워 두면 예전처럼 주말만 거른 근사값이 된다.
+int leaveDaysBetween(
+  DateTime from,
+  DateTime to, {
+  Set<DateTime> holidays = const {},
+}) {
   var count = 0;
   for (var d = 0; d <= calendarDaysBetween(from, to); d++) {
     final day = DateTime(from.year, from.month, from.day + d);
-    if (day.weekday != DateTime.saturday && day.weekday != DateTime.sunday) {
+    if (day.weekday != DateTime.saturday &&
+        day.weekday != DateTime.sunday &&
+        !holidays.contains(day)) {
       count++;
     }
   }
