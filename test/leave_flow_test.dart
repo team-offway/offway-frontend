@@ -401,10 +401,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 연차만 돌아오는 게 아니라 코스 상태도 바뀐다는 걸 모달이 미리 말한다
-    expect(
-      find.text('삭제하면 차감된 연차가 복구되고, 연결된 코스는 미방문으로 바뀌어요.'),
-      findsOneWidget,
-    );
+    expect(find.text('삭제하면 차감된 연차가 복구되고, 연결된 코스는 미방문으로 바뀌어요.'), findsOneWidget);
     await tester.tap(
       find.descendant(of: find.byType(Dialog), matching: find.text('삭제하기')),
     );
