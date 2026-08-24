@@ -62,10 +62,12 @@ class HomeRepository {
           'profileImageUrl': ?user['profileImageUrl'],
         },
         regions: regions.map(_toRegionCardMap).toList(),
-        places: ((data['recommendedPlaces'] as List?) ?? const [])
-            .cast<Map<String, dynamic>>()
-            .map((p) => toPlaceCardMap(p, filters: filters, regions: regions))
-            .toList(),
+        places: interleaveByRegion(
+          ((data['recommendedPlaces'] as List?) ?? const [])
+              .cast<Map<String, dynamic>>()
+              .map((p) => toPlaceCardMap(p, filters: filters, regions: regions))
+              .toList(),
+        ),
         filters: filters,
       );
     } on DioException catch (e) {
@@ -115,6 +117,8 @@ Map<String, dynamic> toPlaceCardMap(
   return {
     'id': card['poiContentId']?.toString() ?? '',
     'placeName': card['name'],
+    // 같은 지역끼리 묶어 섞을 때 쓴다 — 시군구명은 광역시끼리 겹친다
+    if (regionId != null) 'regionId': regionId.toString(),
     'name': regionName,
     // 짝을 못 찾으면 비워 둔다 — 오버레이가 가운뎃점 없이 시군구만 그린다
     'sido': sido ?? '',
@@ -125,6 +129,30 @@ Map<String, dynamic> toPlaceCardMap(
     if (benefit != null) 'benefitPolicyId': benefit['policyId'],
     if (label != null) 'categoryCounts': {label: 1},
   };
+}
+
+/// 같은 지역이 연달아 나오지 않게 지역별로 번갈아 섞는다.
+///
+/// 서버는 지역 단위로 뽑아 지역별로 뭉쳐 준다(정선 8장 → 영월 8장 → …).
+/// 홈 가로 목록에서 그대로 보이면 첫 화면이 한 지역으로만 찬다. 지역별
+/// 순서는 그대로 두고 한 장씩 돌아가며 뽑는다 — 무작위로 섞으면 다시 읽을
+/// 때마다 카드가 자리를 바꿔 튄다. 지역을 모르는 카드는 이름으로 묶는다.
+List<Map<String, dynamic>> interleaveByRegion(
+  List<Map<String, dynamic>> cards,
+) {
+  final groups = <Object, List<Map<String, dynamic>>>{};
+  for (final card in cards) {
+    final key = card['regionId'] ?? card['name'] ?? '';
+    groups.putIfAbsent(key, () => []).add(card);
+  }
+  final queues = groups.values.toList();
+  final mixed = <Map<String, dynamic>>[];
+  for (var round = 0; mixed.length < cards.length; round++) {
+    for (final queue in queues) {
+      if (round < queue.length) mixed.add(queue[round]);
+    }
+  }
+  return mixed;
 }
 
 /// 서버 카드 → 화면(RegionCard)이 읽는 형태.
