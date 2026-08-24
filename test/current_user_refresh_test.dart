@@ -13,12 +13,17 @@ import 'package:offway/features/home/presentation/home_screen.dart';
 /// 불러 로딩이 걸리기 때문. 대신 **바뀌는 순간에 무효화**해야 하고,
 /// 빠뜨리면 로그인해도 '게스트'가 남는다.
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository(this.nickname);
+  _FakeAuthRepository(this.nickname, {this.photo});
 
   final String nickname;
+  final String? photo;
 
   @override
-  Future<Map<String, dynamic>> me() async => {'nickname': nickname};
+  Future<Map<String, dynamic>> me() async => {
+    'nickname': nickname,
+    // 서버는 없으면 null을 실어 보낸다(core #316)
+    'profileImageUrl': photo,
+  };
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -34,7 +39,7 @@ void main() {
     storage = TokenStorage(const FlutterSecureStorage());
   });
 
-  ProviderContainer containerWith(String nickname) {
+  ProviderContainer containerWith(String nickname, {String? photo}) {
     final container = ProviderContainer(
       overrides: [
         homeSnapshotProvider.overrideWith(
@@ -44,7 +49,9 @@ void main() {
           ),
         ),
         secureStorageProvider.overrideWithValue(storage),
-        authRepositoryProvider.overrideWithValue(_FakeAuthRepository(nickname)),
+        authRepositoryProvider.overrideWithValue(
+          _FakeAuthRepository(nickname, photo: photo),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -97,5 +104,18 @@ void main() {
 
     final after = await container.read(currentUserProvider.future);
     expect(after.containsKey('nickname'), isFalse);
+  });
+
+  test('프로필 사진이 오면 옮기고, null이면 키를 만들지 않는다', () async {
+    await storage.saveTokens(accessToken: 'a', refreshToken: 'r');
+
+    final withPhoto = containerWith('영찬', photo: 'http://p/1.jpg');
+    final user = await withPhoto.read(currentUserProvider.future);
+    expect(user['profileImageUrl'], 'http://p/1.jpg');
+
+    // Apple처럼 사진이 없는 계정 — 마이 화면이 기본 아이콘으로 가야 한다
+    final without = containerWith('영찬');
+    final bare = await without.read(currentUserProvider.future);
+    expect(bare.containsKey('profileImageUrl'), isFalse);
   });
 }

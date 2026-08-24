@@ -182,7 +182,8 @@ class AuthRepository {
   /// 다시 깔면 세션은 재발급으로 살아나는데 표시할 이름이 없다.
   ///
   /// `email`·`provider`는 null일 수 있다(카카오 미동의, 개발 로그인).
-  /// **프로필 사진은 아직 응답에 없다** — 서버에 요청해 둔 상태다.
+  /// `profileImageUrl`도 null일 수 있다(core #316) — Apple은 사진을 주지
+  /// 않고, 카카오도 동의를 껐으면 비어 온다.
   Future<Map<String, dynamic>> me() async {
     try {
       final response = await _dio.get<dynamic>('/api/v1/users/me');

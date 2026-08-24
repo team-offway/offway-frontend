@@ -32,6 +32,10 @@ final currentUserProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       if (me['nickname'] case final String name) 'nickname': name,
       if (me['email'] case final String email) 'email': email,
       if (me['provider'] case final String provider) 'provider': provider,
+      // 프로필 사진(core #316) — 없으면 null이 실려 오고, 그때는 키를 만들지
+      // 않아 마이 화면이 기본 아이콘을 그린다. Apple은 항상 null이다
+      if (me['profileImageUrl'] case final String photo)
+        'profileImageUrl': photo,
     };
   } on ApiException {
     return home;
