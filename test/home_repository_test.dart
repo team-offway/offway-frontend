@@ -159,60 +159,69 @@ void main() {
       expect(empty.containsKey('description'), isFalse);
     });
 
-    test('지역 목록에서 시도를 찾아 오버레이에 붙인다', () {
+    test('regionId로 지역 목록에서 시도를 찾아 오버레이에 붙인다 (core #318)', () {
       // 장소의 regionName은 시군구뿐이다 — 같은 응답의 지역 목록(name이
-      // "정선군 · 강원" 형태)에서 짝을 찾아 "정선군 · 강원"으로 그린다
+      // "정선군 · 강원" 형태)에서 id로 짝을 찾아 "정선군 · 강원"으로 그린다
       final card = toPlaceCardMap(
         const {
           'poiContentId': '1',
           'name': 'x',
           'kind': 'SIGHT',
           'regionName': '정선군',
+          'regionId': 7,
         },
         filters: filters,
         regions: const [
-          {'name': '정선군 · 강원'},
-          {'name': '동구 · 부산광역시'},
+          {'regionId': 7, 'name': '정선군 · 강원'},
+          {'regionId': 1, 'name': '동구 · 부산광역시'},
         ],
       );
       expect(card['name'], '정선군');
       expect(card['sido'], '강원');
     });
 
-    test('지역 목록에 짝이 없으면 시도를 비워 가운뎃점이 남지 않는다', () {
-      final card = toPlaceCardMap(
-        const {
-          'poiContentId': '1',
-          'name': 'x',
-          'kind': 'SIGHT',
-          'regionName': '정선군',
-        },
-        filters: filters,
-        // 목록은 있으나 짝이 없는 경우 — 빈 목록 기본값과는 다른 경로다
-        regions: const [
-          {'name': '동구 · 부산광역시'},
-        ],
-      );
-      expect(card['sido'], '');
-    });
-
-    test('같은 시군구명이 둘이면 시도를 비운다 — 틀리게 붙이지 않는다', () {
-      // 동구는 부산·대구·인천에 다 있다. 함께 추천되면 이름만으로는
-      // 어느 쪽 장소인지 알 수 없다
+    test('같은 시군구명이 둘이어도 id가 가른다 — 이름 대조 시절엔 비웠다', () {
+      // 동구는 부산·대구·인천에 다 있다. 서버가 regionId를 실어 주면서
+      // (core #318) 이름이 겹쳐도 어느 쪽 장소인지 정확히 안다
       final card = toPlaceCardMap(
         const {
           'poiContentId': '1',
           'name': 'x',
           'kind': 'SIGHT',
           'regionName': '동구',
+          'regionId': 2,
         },
         filters: filters,
         regions: const [
-          {'name': '동구 · 부산광역시'},
-          {'name': '동구 · 대구광역시'},
+          {'regionId': 1, 'name': '동구 · 부산광역시'},
+          {'regionId': 2, 'name': '동구 · 대구광역시'},
         ],
       );
-      expect(card['sido'], '');
+      expect(card['sido'], '대구광역시');
+    });
+
+    test('짝이 없으면 시도를 비워 가운뎃점이 남지 않는다', () {
+      // 서버 계약은 "장소의 regionId는 지역 목록 중 하나와 일치"지만,
+      // regionId가 없는 옛 응답이나 계약이 깨진 응답에도 틀리게 붙이지 않는다
+      for (final place in const [
+        {'poiContentId': '1', 'name': 'x', 'kind': 'SIGHT', 'regionName': '정선군'},
+        {
+          'poiContentId': '1',
+          'name': 'x',
+          'kind': 'SIGHT',
+          'regionName': '정선군',
+          'regionId': 99,
+        },
+      ]) {
+        final card = toPlaceCardMap(
+          place,
+          filters: filters,
+          regions: const [
+            {'regionId': 1, 'name': '동구 · 부산광역시'},
+          ],
+        );
+        expect(card['sido'], '');
+      }
     });
   });
 }
