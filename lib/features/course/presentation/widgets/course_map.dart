@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/tokens/tokens.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 /// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
@@ -88,7 +90,11 @@ class CourseMap extends StatelessWidget {
             position: NLatLng(p['mapy'] as double, p['mapx'] as double),
             // icon이 null이면 네이버 기본 핀 — 거기에 브랜드색만 입힌다
             icon: icon,
-            iconTintColor: single ? _placeColor : Colors.transparent,
+            // 브랜드 하늘색(Primary/Normal) — 마커용 _placeColor(#18D2FE)는
+            // 기본 핀에 입히면 너무 밝아 뜬다
+            iconTintColor: single
+                ? AppColors.primaryNormal
+                : Colors.transparent,
             caption: NOverlayCaption(
               text: single ? '${p['name']}' : '${i + 1}. ${p['name']}',
             ),
