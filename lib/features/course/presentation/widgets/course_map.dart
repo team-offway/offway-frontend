@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/tokens/tokens.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 /// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
@@ -10,6 +12,9 @@ const _pathColor = Color(0xFF878A93);
 
 /// 지도 마커 — 36은 지도를 덮어 장소가 겹칠 때 서로 가렸다
 const _pinSize = 28.0;
+
+/// 장소가 하나일 때의 핀 — 번호 원보다 크게, 핀답게
+const _singlePinSize = 44.0;
 
 /// 처음 보여줄 확대 정도. 10.5는 군 전체가 들어와 마커가 한 덩어리로 뭉쳤다 —
 /// 코스는 대개 한 지역 안이라 더 당겨야 순서가 읽힌다
@@ -64,25 +69,40 @@ class CourseMap extends StatelessWidget {
         ),
       ),
       onMapReady: (controller) async {
+        // 마커가 하나뿐이면 순서가 의미 없다 — 번호 원 대신 네이버 기본
+        // 핀을 브랜드색으로 물들여 꽂고, 캡션에서도 숫자를 뺀다(QA).
+        // places가 아니라 points로 센다 — 좌표 없는 장소는 마커가 안 되므로,
+        // 그걸 세면 하나뿐인 마커에 '2. 장소명'이 붙는 수가 있다
+        final single = points.length == 1;
         for (var i = 0; i < places.length; i++) {
           final p = places[i];
           if (p['mapy'] == null || p['mapx'] == null) continue;
-          // 시안: 기본 핀 대신 목록과 같은 번호 원. 숙박은 분홍으로 구분한다
-          final icon = context.mounted
-              ? await NOverlayImage.fromWidget(
-                  widget: _NumberPin(
-                    number: i + 1,
-                    isStay: p['kind'] == 'STAY',
-                  ),
-                  size: const Size(_pinSize, _pinSize),
+          // 시안: 기본 핀 대신 목록과 같은 번호 원. 숙박은 분홍으로 구분한다.
+          // 장소가 하나면 핀 모양을 브랜드색으로 직접 그린다 — 네이버 기본
+          // 핀의 iconTintColor는 **가산 혼합**이라 초록 원본 위에 어떤 파랑을
+          // 얹어도 밝은 청록이 되어 우리 색이 나오지 않는다
+          final icon = !context.mounted
+              ? null
+              : await NOverlayImage.fromWidget(
+                  widget: single
+                      ? const Icon(
+                          Icons.location_on,
+                          size: _singlePinSize,
+                          color: AppColors.primaryStrong,
+                        )
+                      : _NumberPin(number: i + 1, isStay: p['kind'] == 'STAY'),
+                  size: single
+                      ? const Size(_singlePinSize, _singlePinSize)
+                      : const Size(_pinSize, _pinSize),
                   context: context,
-                )
-              : null;
+                );
           final marker = NMarker(
             id: 'place-$i',
             position: NLatLng(p['mapy'] as double, p['mapx'] as double),
             icon: icon,
-            caption: NOverlayCaption(text: '${i + 1}. ${p['name']}'),
+            caption: NOverlayCaption(
+              text: single ? '${p['name']}' : '${i + 1}. ${p['name']}',
+            ),
           );
           controller.addOverlay(marker);
         }

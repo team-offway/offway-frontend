@@ -64,7 +64,7 @@ class HomeRepository {
         regions: regions.map(_toRegionCardMap).toList(),
         places: ((data['recommendedPlaces'] as List?) ?? const [])
             .cast<Map<String, dynamic>>()
-            .map((p) => toPlaceCardMap(p, filters: filters))
+            .map((p) => toPlaceCardMap(p, filters: filters, regions: regions))
             .toList(),
         filters: filters,
       );
@@ -88,6 +88,7 @@ class HomeRepository {
 Map<String, dynamic> toPlaceCardMap(
   Map<String, dynamic> card, {
   List<Map<String, dynamic>> filters = const [],
+  List<Map<String, dynamic>> regions = const [],
 }) {
   final benefit = card['benefit'] as Map<String, dynamic>?;
   final kind = card['kind'] as String?;
@@ -95,13 +96,25 @@ Map<String, dynamic> toPlaceCardMap(
       .where((f) => f['key'] == kind)
       .map((f) => f['label'] as String?)
       .firstOrNull;
+  // 장소의 regionName은 시군구("동구")만이다. 오버레이는 지역 카드처럼
+  // "동구 · 부산광역시"여야 하므로, 같은 응답의 지역 목록(name이 이미 그
+  // 형태다)에서 짝을 찾아 시도를 붙인다 — 장소는 그 지역들에서 나온다
+  final regionName = card['regionName'] as String?;
+  final sidoMatches = regions
+      .map((r) => (r['name'] as String? ?? '').split(' · '))
+      .where((parts) => parts.first == regionName && parts.length > 1)
+      .map((parts) => parts[1])
+      .toSet();
+  // 동구·남구 같은 이름은 여러 광역시에 있다. 서버가 장소에 regionId를 실어
+  // 주지 않아 이름으로만 짝을 찾는데, 같은 이름이 둘 이상 추천되면 어느
+  // 쪽인지 알 수 없다 — 틀리게 붙이느니 비워 시군구만 그린다
+  final sido = sidoMatches.length == 1 ? sidoMatches.first : null;
   return {
     'id': card['poiContentId']?.toString() ?? '',
     'placeName': card['name'],
-    // 오버레이가 '시군구 · 시도'를 조립하는데 장소는 시군구만 온다.
-    // sido를 비워 두면 가운뎃점만 남으므로 이름 한 덩어리로 넣는다
-    'name': card['regionName'],
-    'sido': '',
+    'name': regionName,
+    // 짝을 못 찾으면 비워 둔다 — 오버레이가 가운뎃점 없이 시군구만 그린다
+    'sido': sido ?? '',
     'imageUrl': card['imageUrl'],
     if ((card['subtitle'] as String?)?.isNotEmpty ?? false)
       'description': card['subtitle'],

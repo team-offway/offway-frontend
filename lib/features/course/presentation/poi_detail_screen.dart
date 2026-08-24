@@ -118,13 +118,19 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = poi['imageUrl'] as String?;
-    final catchphrase = poi['catchphrase'] as String?;
+    // 빈 문자열은 없는 것으로 친다 — TourAPI 원문 정리 뒤 ''가 남을 수 있고,
+    // 그대로 그리면 자리만 차지하는 빈 줄이 된다
+    final catchphraseRaw = poi['catchphrase'] as String?;
+    final catchphrase = (catchphraseRaw?.trim().isEmpty ?? true)
+        ? null
+        : catchphraseRaw;
     // 지자체 혜택 — 있는 장소가 드물어 없으면 뱃지를 그리지 않는다
     final benefitRaw = poi['benefit'] as String?;
     final benefit = (benefitRaw == null || benefitRaw.trim().isEmpty)
         ? null
         : benefitRaw;
-    final overview = poi['overview'] as String?;
+    final overviewRaw = poi['overview'] as String?;
+    final overview = (overviewRaw?.trim().isEmpty ?? true) ? null : overviewRaw;
     final lat = (poi['lat'] as num?)?.toDouble();
     final lng = (poi['lng'] as num?)?.toDouble();
 
