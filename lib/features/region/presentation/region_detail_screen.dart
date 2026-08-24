@@ -120,7 +120,9 @@ class RegionDetailScreen extends ConsumerWidget {
     final benefit = region['benefitBadge'] as String?;
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 120),
+      // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
+      // 홈 인디케이터 몫만 남긴다
+      padding: const EdgeInsets.only(bottom: 40),
       children: [
         _buildTopBar(context),
         Padding(

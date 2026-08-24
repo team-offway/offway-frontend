@@ -100,11 +100,15 @@ Map<String, dynamic> toPlaceCardMap(
   // "동구 · 부산광역시"여야 하므로, 같은 응답의 지역 목록(name이 이미 그
   // 형태다)에서 짝을 찾아 시도를 붙인다 — 장소는 그 지역들에서 나온다
   final regionName = card['regionName'] as String?;
-  final sido = regions
+  final sidoMatches = regions
       .map((r) => (r['name'] as String? ?? '').split(' · '))
       .where((parts) => parts.first == regionName && parts.length > 1)
       .map((parts) => parts[1])
-      .firstOrNull;
+      .toSet();
+  // 동구·남구 같은 이름은 여러 광역시에 있다. 서버가 장소에 regionId를 실어
+  // 주지 않아 이름으로만 짝을 찾는데, 같은 이름이 둘 이상 추천되면 어느
+  // 쪽인지 알 수 없다 — 틀리게 붙이느니 비워 시군구만 그린다
+  final sido = sidoMatches.length == 1 ? sidoMatches.first : null;
   return {
     'id': card['poiContentId']?.toString() ?? '',
     'placeName': card['name'],

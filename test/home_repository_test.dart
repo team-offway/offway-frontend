@@ -180,12 +180,38 @@ void main() {
     });
 
     test('지역 목록에 짝이 없으면 시도를 비워 가운뎃점이 남지 않는다', () {
-      final card = toPlaceCardMap(const {
-        'poiContentId': '1',
-        'name': 'x',
-        'kind': 'SIGHT',
-        'regionName': '정선군',
-      }, filters: filters);
+      final card = toPlaceCardMap(
+        const {
+          'poiContentId': '1',
+          'name': 'x',
+          'kind': 'SIGHT',
+          'regionName': '정선군',
+        },
+        filters: filters,
+        // 목록은 있으나 짝이 없는 경우 — 빈 목록 기본값과는 다른 경로다
+        regions: const [
+          {'name': '동구 · 부산광역시'},
+        ],
+      );
+      expect(card['sido'], '');
+    });
+
+    test('같은 시군구명이 둘이면 시도를 비운다 — 틀리게 붙이지 않는다', () {
+      // 동구는 부산·대구·인천에 다 있다. 함께 추천되면 이름만으로는
+      // 어느 쪽 장소인지 알 수 없다
+      final card = toPlaceCardMap(
+        const {
+          'poiContentId': '1',
+          'name': 'x',
+          'kind': 'SIGHT',
+          'regionName': '동구',
+        },
+        filters: filters,
+        regions: const [
+          {'name': '동구 · 부산광역시'},
+          {'name': '동구 · 대구광역시'},
+        ],
+      );
       expect(card['sido'], '');
     });
   });
