@@ -57,9 +57,6 @@ void main() {
   });
 
   test('날짜가 없으면 뱃지도 없다', () {
-    expect(
-      courseCardBadge(null, null, visited: false, today: today),
-      isNull,
-    );
+    expect(courseCardBadge(null, null, visited: false, today: today), isNull);
   });
 }
