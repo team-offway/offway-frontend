@@ -88,6 +88,42 @@ void main() {
     expect(region['imageUrl'], isNull);
   });
 
+  group('장소 카드 섞기', () {
+    Map<String, dynamic> card(String id, String region) => {
+      'id': id,
+      'regionId': region,
+      'name': region,
+    };
+
+    test('지역별로 뭉쳐 온 순서를 한 장씩 번갈아 섞는다', () {
+      // 서버: 정선 3장 → 영월 2장 → 공주 1장
+      final mixed = interleaveByRegion([
+        card('j1', '정선'),
+        card('j2', '정선'),
+        card('j3', '정선'),
+        card('y1', '영월'),
+        card('y2', '영월'),
+        card('g1', '공주'),
+      ]);
+      expect(mixed.map((c) => c['id']), ['j1', 'y1', 'g1', 'j2', 'y2', 'j3']);
+    });
+
+    test('같은 입력이면 같은 순서 — 다시 읽어도 카드가 자리를 바꾸지 않는다', () {
+      final input = [card('a', '정선'), card('b', '영월'), card('c', '정선')];
+      expect(interleaveByRegion(input), interleaveByRegion(input));
+    });
+
+    test('지역을 모르는 카드는 이름으로 묶고, 빈 목록은 그대로다', () {
+      expect(interleaveByRegion(const []), isEmpty);
+      final mixed = interleaveByRegion([
+        {'id': 'a', 'name': '동구'},
+        {'id': 'b', 'name': '동구'},
+        {'id': 'c', 'name': '공주시'},
+      ]);
+      expect(mixed.map((c) => c['id']), ['a', 'c', 'b']);
+    });
+  });
+
   group("'이번달 추천 여행지' 장소 카드 (core #305)", () {
     const filters = [
       {'key': 'ALL', 'label': '전체'},

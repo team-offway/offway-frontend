@@ -53,6 +53,28 @@ bool leaveOnboardingNeeded(AsyncValue<Map<String, dynamic>> user) {
   return data != null && data['remainingLeaveDays'] == null;
 }
 
+/// 홈 '이번달 추천 여행지'에 보여줄 장소 카드.
+///
+/// 칩으로 거른 뒤, **'전체'일 때는 한 줄 소개가 있는 장소만** 남긴다 —
+/// 첫 화면에서 소개 없는 카드가 섞이면 줄이 들쭉날쭉해 성기게 보인다.
+/// 카테고리를 고르면 그 갈래는 소개가 없어도 전부 보여준다(고른 사람은
+/// 그 갈래를 다 보고 싶은 것이고, 숙박·음식은 소개가 늦게 채워진다).
+List<Map<String, dynamic>> homePlacesForChip(
+  List<Map<String, dynamic>> places,
+  Map<String, dynamic>? selected,
+) {
+  final isAll = selected == null || selected['key'] == 'ALL';
+  if (!isAll) {
+    return places.where((p) {
+      final counts = p['categoryCounts'] as Map<String, dynamic>?;
+      return (counts?[selected['label']] as int? ?? 0) > 0;
+    }).toList();
+  }
+  return places
+      .where((p) => (p['description'] as String?)?.isNotEmpty ?? false)
+      .toList();
+}
+
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
 
@@ -496,8 +518,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       data: (served) {
         // 장소 배치(core #305)가 아직 안 돈 지역이 있다. 그럴 때 빈 칸을
         // 두느니 예전처럼 지역 카드를 보여준다 — 배치가 채우면 저절로 바뀐다
-        final all = served.isEmpty ? (fallback?.value ?? served) : served;
-        final list = _filter(all);
+        final usingPlaces = served.isNotEmpty;
+        final list = usingPlaces
+            ? homePlacesForChip(served, _selected)
+            : _filter(fallback?.value ?? served);
         if (list.isEmpty) {
           return SizedBox(
             height: placeholderHeight,
