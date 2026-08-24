@@ -158,5 +158,4 @@ class AuthInterceptor extends Interceptor {
 
   /// 재시도한 요청임을 표시 — 두 번 이상 되풀이하지 않게 막는다
   static const _retriedKey = 'authRetried';
-
 }
