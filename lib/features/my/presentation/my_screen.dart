@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/network/image_cache.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/place_thumbnail.dart' show PlaceThumbnail;
 import '../../auth/data/auth_repository.dart';
 import '../../notification/application/push_registration.dart';
 import '../../auth/application/current_user_provider.dart';
@@ -99,12 +102,22 @@ class MyScreen extends ConsumerWidget {
           // 사진 주소가 죽어 있을 수도 있어 실패하면 아이콘으로 되돌린다
           child: photoUrl == null || photoUrl.isEmpty
               ? _defaultAvatar
-              : Image.network(
-                  photoUrl,
-                  width: 76,
-                  height: 76,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _defaultAvatar,
+              : Builder(
+                  builder: (context) => CachedNetworkImage(
+                    imageUrl: photoUrl,
+                    cacheManager: appImageCacheManager,
+                    width: 76,
+                    height: 76,
+                    fit: BoxFit.cover,
+                    // 소셜 프로필 원본은 크다 — 76pt 원에 맞춰 디코드
+                    memCacheWidth: PlaceThumbnail.decodeWidthFor(context, 76),
+                    // 페이드 없이 즉시 — PlaceThumbnail과 같은 이유
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    placeholderFadeInDuration: Duration.zero,
+                    errorWidget: (_, _, _) => _defaultAvatar,
+                    placeholder: (_, _) => _defaultAvatar,
+                  ),
                 ),
         ),
         const SizedBox(height: 16),

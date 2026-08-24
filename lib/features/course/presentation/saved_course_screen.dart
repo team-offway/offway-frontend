@@ -1,4 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/network/image_cache.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -298,7 +301,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       for (final d in days)
         for (final p in (d['places'] as List).cast<Map<String, dynamic>>())
           if (p['imageUrl'] case final String url when url.isNotEmpty)
-            NetworkImage(url),
+            // 목록이 이미 받아 둔 디스크 캐시를 그대로 쓴다 — NetworkImage는
+            // 캐시를 모르고 다시 받는다
+            CachedNetworkImageProvider(url, cacheManager: appImageCacheManager),
     ];
   }
 

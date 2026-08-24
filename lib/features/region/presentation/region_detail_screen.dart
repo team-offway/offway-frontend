@@ -1,4 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/network/image_cache.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -356,23 +359,41 @@ class _SpotCard extends StatelessWidget {
           // 아이콘(실패)으로만 둔다 — 이름 없이.
           child: imageUrl == null
               ? const _SpotFallback()
-              : Image.network(
-                  imageUrl,
+              : CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  cacheManager: appImageCacheManager,
                   fit: BoxFit.cover,
-                  // 아직 첫 프레임이 없으면 로딩 중 — 스켈레톤만 둔다
-                  frameBuilder: (context, child, frame, syncLoaded) {
-                    if (frame == null && !syncLoaded) {
-                      return const _SpotFallback(showIcon: false);
-                    }
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        child,
-                        _SpotNameOverlay(name: name),
-                      ],
-                    );
-                  },
-                  errorBuilder: (_, _, _) => const _SpotFallback(),
+                  // 디스크 캐시 + 카드 폭까지만 디코드 (PlaceThumbnail과 같은 이유)
+                  memCacheWidth: PlaceThumbnail.decodeWidthFor(
+                    context,
+                    _spotCardWidth,
+                  ),
+                  // 페이드 없이 즉시 — PlaceThumbnail과 같은 이유
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  placeholderFadeInDuration: Duration.zero,
+                  // 받는 동안은 스켈레톤만 둔다
+                  placeholder: (_, _) => const _SpotFallback(showIcon: false),
+                  errorWidget: (_, _, _) => const _SpotFallback(),
+                  // 사진이 실제로 뜬 뒤에만 그라데이션과 이름을 얹는다.
+                  // imageBuilder에 오는 provider에는 memCacheWidth가 안 걸려
+                  // 있다 — 여기서 다시 감싸지 않으면 원본 크기로 디코드한다
+                  imageBuilder: (context, provider) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image(
+                        image: ResizeImage(
+                          provider,
+                          width: PlaceThumbnail.decodeWidthFor(
+                            context,
+                            _spotCardWidth,
+                          ),
+                        ),
+                        fit: BoxFit.cover,
+                      ),
+                      _SpotNameOverlay(name: name),
+                    ],
+                  ),
                 ),
         ),
       ),

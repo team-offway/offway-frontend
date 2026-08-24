@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -44,8 +45,11 @@ void main() {
     );
     await tester.pump();
 
-    final image = tester.widget<Image>(find.byType(Image).first);
-    expect((image.image as NetworkImage).url, 'https://example.com/me.jpg');
+    // 디스크 캐시가 있는 위젯으로 그린다 — 앱을 켤 때마다 다시 받지 않게
+    final image = tester.widget<CachedNetworkImage>(
+      find.byType(CachedNetworkImage),
+    );
+    expect(image.imageUrl, 'https://example.com/me.jpg');
   });
 
   testWidgets('빈 문자열은 사진이 없는 것으로 본다', (tester) async {
