@@ -22,6 +22,7 @@ class PlaceThumbnail extends StatelessWidget {
     this.height,
     this.background,
     this.iconSize,
+    this.decodeToFit = true,
   });
 
   final String? imageUrl;
@@ -39,6 +40,14 @@ class PlaceThumbnail extends StatelessWidget {
 
   /// 아이콘 한 변. null이면 짧은 쪽의 34%로 잡는다
   final double? iconSize;
+
+  /// 그리는 폭까지만 디코드할지(기본). 화면에서는 켜 두는 게 맞다.
+  ///
+  /// **캡처(공유 이미지)에서는 끈다.** 축소 디코드는 이미지 캐시 키에 폭이
+  /// 붙어(`ResizeImage`), 캡처 전에 `precacheImage`로 받아 둔 원본 키와
+  /// 달라진다. 그러면 캐시를 못 찾고 다시 디코드하는 사이에 찍혀 사진이
+  /// 빈 자리로 남는다(#155). 끄면 프리캐시와 같은 키라 바로 그려진다
+  final bool decodeToFit;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +68,9 @@ class PlaceThumbnail extends StatelessWidget {
                 // 캐시해 다음 실행부터 다시 받지 않고, 그리는 폭(픽셀)까지만
                 // 디코드해 메모리·디코드 시간을 줄인다 — 152pt 카드에
                 // 원본 해상도 그대로 올릴 이유가 없다
-                memCacheWidth: decodeWidthFor(context, constraints.maxWidth),
+                memCacheWidth: decodeToFit
+                    ? decodeWidthFor(context, constraints.maxWidth)
+                    : null,
                 // 기본 0.5초 페이드인을 끈다 — 디스크 캐시에서 바로 왔는데도
                 // 스르륵 나타나 오히려 느려 보인다. 예전처럼 준비되는 즉시 뜬다
                 fadeInDuration: Duration.zero,
