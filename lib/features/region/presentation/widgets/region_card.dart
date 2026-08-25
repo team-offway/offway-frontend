@@ -162,7 +162,9 @@ class RegionCard extends StatelessWidget {
             : AppRoutes.poiDetailPath(
                 region['id'] as String,
                 name: placeName,
-                regionName: region['name'] as String?,
+                // 상단바에 띄울 지역 — 카드 오버레이와 같은 "동구 · 부산광역시".
+                // 시군구만 넘기면 동구가 어느 동구인지 상세에서 알 수 없다
+                regionName: _regionLabel(region),
               ),
       ),
       child: style == RegionCardStyle.boxed
