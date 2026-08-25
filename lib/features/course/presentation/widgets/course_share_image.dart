@@ -324,6 +324,8 @@ class CourseShareImage extends StatelessWidget {
               imageUrl: place['imageUrl'] as String?,
               size: 175,
               radius: 12,
+              // 캡처 전에 프리캐시한 원본 키로 그려야 빈 자리 없이 찍힌다(#155)
+              decodeToFit: false,
             ),
           ),
         ],
