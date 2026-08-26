@@ -61,6 +61,15 @@ class PushRegistration {
     try {
       final messaging = FirebaseMessaging.instance;
 
+      // 앱을 보고 있는 동안 온 푸시도 배너·소리로 알린다. iOS 기본은
+      // 포그라운드 푸시를 조용히 삼켜서, 알림 목록에는 쌓이는데 배너가
+      // 없어 "푸시가 안 온다"로 보였다
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
       // iOS는 권한을 받아야 APNs 토큰이 나온다. 거부해도 앱은 그대로 간다
       final settings = await messaging.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
