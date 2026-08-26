@@ -4,6 +4,8 @@
 
 남은 연차로 다녀올 수 있는 **인구감소지역** 여행 코스를 추천하는 iOS 앱입니다. 백엔드는 별도 레포([team-offway/core](https://github.com/team-offway/core), Java Spring)에서 REST API로 제공합니다.
 
+[![App Store에서 다운로드](https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/ko-kr)](https://apps.apple.com/app/id6793610290)
+
 ## 서비스 소개
 
 연차는 남았는데 어디로 갈지 정하기 어렵고, 인구감소지역은 좋은 콘텐츠가 있어도 잘 알려지지 않습니다. OffWay는 **남은 연차·이동수단·일정 취향**을 입력받아 도달 가능한 지역과 날짜별 코스를 만들어 줍니다.
@@ -33,7 +35,7 @@
 | 지도 | flutter_naver_map (Dynamic Map) |
 | 소셜 로그인 | kakao_flutter_sdk_user, sign_in_with_apple, google_sign_in |
 | 공유 | kakao_flutter_sdk_share (카카오톡 공유 카드) |
-| 푸시 기반 | firebase_core, firebase_messaging (연동 준비만 완료) |
+| 푸시 | firebase_core, firebase_messaging (기기 등록·포그라운드 배너까지 연동) |
 
 ## 폴더 구조
 
@@ -47,7 +49,7 @@ lib/
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# JWT 토큰 Keychain 저장소
 │   └── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
-├── mock/                      # 지역 상세 등 서버 갭이 남은 화면용 로더
+├── mock/                      # 테스트 픽스처 로더 (앱 코드에서는 쓰지 않음)
 └── features/                  # 기능(도메인) 단위 모듈
     ├── auth/                      # 로그인 (카카오·Apple·구글)
     ├── onboarding/                # 잔여연차 입력
@@ -82,19 +84,19 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 
 ## 현재 상태
 
-메인 플로우는 **실 서버와 연동**되어 있습니다. 서버 갭이 남은 지역 상세만 `assets/mock/*.json`을 씁니다.
+**App Store 정식 출시** (2026-08-27, v1.0.0). 전 화면이 실 서버와 연동되어 있고, mock 데이터는 테스트에서만 씁니다.
 
 | 영역 | 상태 |
 |---|---|
 | 코스 추천 → 확정 → 내 코스 | 서버 연동 완료 |
 | 카카오·Apple·구글 로그인 | 연동 완료 |
-| 연차 등록·삭제 (반반차 0.25일 지원) | 연동 완료 |
-| 코스 공유 (카카오톡·링크·이미지) | 연동 완료 |
-| 지역 상세 | mock — 서버 API 대기 |
-| 알림 · 회원탈퇴 | 화면만 — 서버 API 대기 |
-| 푸시(FCM) | 기반만 깔림 — 알림 기획 확정 후 연결 |
+| 연차 등록·삭제·코스 차감/취소 (반반차 0.25일 지원) | 연동 완료 |
+| 코스 공유 (카카오톡·링크·이미지·웹 페이지) | 연동 완료 |
+| 지역 상세 · 이번달 추천 여행지 | 연동 완료 |
+| 알림 목록 · 푸시(FCM) | 연동 완료 (기기 등록, 포그라운드 배너) |
+| 회원탈퇴 | 연동 완료 |
 
-배포는 TestFlight로 진행합니다.
+사전 배포와 검증은 TestFlight로 진행합니다.
 
 ## 웹 (offway.cloud)
 
@@ -121,7 +123,7 @@ PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해�
 
 ## 비고
 
-- 번들 ID: `com.nth.offway` · App Store 등록명: **OffWay - 연차로 떠나는 로컬 여행 플래너**
+- 번들 ID: `com.nth.offway` · App Store 등록명: **[Offway - 연차로 떠나는 로컬 여행](https://apps.apple.com/app/id6793610290)**
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 엽니다 (`.xcodeproj` 아님)
 - 카카오 앱 키를 바꿀 때는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 합니다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못합니다
 - 레포가 **public**이므로 시크릿은 어떤 형태로도 커밋하지 않습니다 (카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret 등 — 서버가 쓰는 값은 백엔드 환경변수로만 관리)
