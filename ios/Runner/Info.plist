@@ -55,8 +55,8 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<!-- 배포 서버가 HTTPS(api.offway.cloud)로 바뀌어 전면 예외는 걷어냈다.
+		     로컬 백엔드(http://localhost:8080) 개발용 예외만 남긴다 -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>

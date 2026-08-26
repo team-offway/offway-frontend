@@ -1,11 +1,9 @@
 // 공유 페이지가 코스를 읽어 가는 통로.
 //
-// 페이지는 HTTPS로 뜨는데 백엔드는 HTTP만 받는다 — 브라우저가 그 요청을
-// 혼합 콘텐츠로 막기 때문에 직접 부를 수 없다. 그래서 같은 출처(HTTPS)로
-// 여기까지 받고, 서버끼리는 HTTP로 통신한다.
-//
-// 백엔드가 HTTPS를 지원하게 되면 이 함수는 지우고 페이지가 직접 불러도 된다.
-const API_ORIGIN = process.env.API_ORIGIN ?? 'http://18.181.168.227:8080';
+// 백엔드가 HTTPS(api.offway.cloud)를 받게 됐지만 CORS를 열어 주지는 않아,
+// 브라우저가 직접 부르면 막힌다. 같은 출처로 여기까지 받아 넘기고,
+// 겸사겸사 캐싱도 얹는다.
+const API_ORIGIN = process.env.API_ORIGIN ?? 'https://api.offway.cloud';
 
 export default async function handler(req, res) {
   const { token } = req.query;

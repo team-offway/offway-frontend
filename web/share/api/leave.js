@@ -5,7 +5,7 @@
 // 뒤에 있어, 브라우저 대신 여기서 자격을 붙여 부른다.
 //
 // 게이트가 걷히면 BASIC_AUTH_* 없이도 그대로 동작한다.
-const API_ORIGIN = process.env.API_ORIGIN ?? 'http://18.181.168.227:8080';
+const API_ORIGIN = process.env.API_ORIGIN ?? 'https://api.offway.cloud';
 const BASIC_USER = process.env.BASIC_AUTH_USER;
 const BASIC_PASS = process.env.BASIC_AUTH_PASS;
 
