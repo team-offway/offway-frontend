@@ -141,11 +141,21 @@
 
   /* ── 히어로 데모: 연차 → 일정 ───────────── */
   .demo {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 18px;
     padding: 22px;
   }
+  /* 앱 홈의 캐릭터가 카드 뒤에서 고개를 내민다 — 몸통이 밑단에서 잘린
+     그림이라 카드 윗변에 걸치면 뒤에 서 있는 것처럼 보인다 */
+  .demo-buddy {
+    position: absolute; right: 26px; bottom: calc(100% - 8px);
+    width: clamp(118px, 15vw, 158px); height: auto;
+    pointer-events: none; user-select: none;
+  }
+  /* 한 열로 쌓이면 캐릭터가 위 문단을 침범한다 — 키만큼 자리를 내준다 */
+  @media (max-width: 859px) { .demo { margin-top: 48px; } }
   .demo-q { font-size: 14px; font-weight: 600; color: var(--ink-3); margin: 0 0 14px; }
   .picker { display: flex; gap: 8px; margin: 0 0 20px; }
   .picker button {
@@ -213,6 +223,21 @@
   }
   .card p { margin: 0; font-size: 14.5px; color: var(--ink-3); }
 
+  /* 앱 아이콘을 mask로 그린다 — 파일에 박힌 색 대신 브랜드색을 입히고,
+     다크 모드에서도 변수 하나로 따라온다 */
+  .card-ico {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--brand-wash);
+    display: grid; place-items: center;
+    margin: 0 0 14px;
+  }
+  .card-ico i {
+    display: block; width: 22px; height: 22px;
+    background: var(--brand-deep);
+    -webkit-mask: var(--ico) center / contain no-repeat;
+    mask: var(--ico) center / contain no-repeat;
+  }
+
   /* ── 데이터 ─────────────────────────────── */
   .stats {
     display: grid; gap: 1px; background: var(--line);
@@ -235,6 +260,25 @@
     margin: 22px 0 0; font-size: 13.5px; color: var(--ink-3);
   }
   .src a { color: var(--brand-deep); }
+
+  /* ── 받기 배너 ──────────────────────────── */
+  .get-band {
+    position: relative;
+    background: var(--brand-wash);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: clamp(30px, 5vw, 48px);
+  }
+  .get-band h2 { margin-bottom: 8px; }
+  .get-band p { margin: 0 0 24px; color: var(--ink-3); max-width: 32ch; }
+  /* 캐리어도 밑단이 잘린 그림 — 배너 바닥에 세워 둔다 */
+  .get-lug {
+    position: absolute; right: clamp(20px, 6vw, 56px); bottom: 0;
+    width: clamp(120px, 17vw, 168px); height: auto;
+    pointer-events: none;
+  }
+  /* 좁은 화면에서는 글과 겹친다 — 그림을 접는다 */
+  @media (max-width: 620px) { .get-lug { display: none; } }
 
   /* ── 푸터 ───────────────────────────────── */
   footer { border-top: 1px solid var(--line); padding: 34px 0 46px; }
@@ -287,6 +331,7 @@
       </div>
 
       <div class="demo">
+        <img class="demo-buddy" src="/assets/hero-character.svg" alt="" aria-hidden="true">
         <p class="demo-q">연차를 며칠 쓸 수 있나요?</p>
         <div class="picker" role="group" aria-label="연차 일수 선택">
           <button type="button" data-d="1" aria-pressed="false">1일</button>
@@ -307,14 +352,17 @@
       </p>
       <div class="cards">
         <div class="card">
+          <div class="card-ico"><i style="--ico: url('/assets/ic-calendar.svg')"></i></div>
           <h3>남은 연차를 넣습니다</h3>
           <p>반차까지 0.5일 단위로. 주말을 붙일지, 평일만 쓸지도 함께 고릅니다.</p>
         </div>
         <div class="card">
+          <div class="card-ico"><i style="--ico: url('/assets/ic-car.svg')"></i></div>
           <h3>닿는 곳만 남깁니다</h3>
           <p>현재 위치에서 편도 7시간 안에 갈 수 있는 지역만 후보로 올립니다.</p>
         </div>
         <div class="card">
+          <div class="card-ico"><i style="--ico: url('/assets/ic-route.svg')"></i></div>
           <h3>날짜별로 짭니다</h3>
           <p>하루에 몇 곳을 볼지 밀도를 고르면 1일차·2일차 순서로 코스가 나옵니다.</p>
         </div>
@@ -361,6 +409,17 @@
         출처 · 한국관광공사 국문 관광정보 서비스(KorService2), 행정안전부 인구감소지역 지정 고시.
         지역마다 관광정보의 양이 크게 달라, 코스 밀도를 지역에 맞춰 조정합니다.
       </p>
+    </div>
+  </section>
+
+  <section id="get">
+    <div class="wrap">
+      <div class="get-band">
+        <h2>다음 연차, 어디로 갈까요?</h2>
+        <p>남은 연차만 넣으면 도착지부터 날짜별 코스까지 오프웨이가 짜 드립니다.</p>
+        <a class="btn btn-primary" href="https://apps.apple.com/app/id6793610290">App Store에서 받기</a>
+        <img class="get-lug" src="/assets/hero-luggage.svg" alt="" aria-hidden="true">
+      </div>
     </div>
   </section>
 
