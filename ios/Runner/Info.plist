@@ -4,8 +4,14 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- App Store의 '언어' 표기는 이 선언을 읽는다. 템플릿 기본(en)대로 두면
+	     전부 한국어인 앱이 스토어에 '영어'로 뜬다 -->
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>ko</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ko</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Offway</string>
 	<key>CFBundleExecutable</key>
