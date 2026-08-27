@@ -19,24 +19,13 @@
 
 ## 왜 API를 직접 안 부르나
 
-이 페이지는 HTTPS 로 뜨는데 **백엔드는 HTTP 만 받는다**. 브라우저는 HTTPS 문서가
-HTTP 로 보내는 요청을 혼합 콘텐츠로 막기 때문에, 직접 부르면 배포된 링크가
-코스를 못 불러온다.
+백엔드(`https://api.offway.cloud`)가 이 도메인의 브라우저 직접 호출에 CORS 를
+열어 주지 않아, 페이지가 직접 부르면 막힌다. 같은 출처의 서버리스 함수
+`api/course.js`·`api/leave.js` 가 대신 받아 넘기고, 응답 캐싱도 얹는다.
 
-그래서 같은 출처(HTTPS)의 서버리스 함수 `api/course.js` 로 한 번 받고,
-서버끼리는 HTTP 로 통신한다. 부수 효과로 백엔드 주소가 브라우저에 드러나지 않는다.
-
-백엔드가 HTTPS 를 지원하게 되면 이 함수를 지우고 페이지가 직접 불러도 된다.
-서버 주소를 바꿔야 하면 Vercel 환경변수 `API_ORIGIN` 을 쓴다.
-
-## 서버 쪽은 준비되어 있다
-
-- `GET /api/v1/public/courses/{shareToken}` — **인증 불필요**. 임시 Basic 게이트에도 예외 처리돼 있다
-- CORS 가 `https://offway-share.vercel.app` 을 허용한다
-
-CORS 는 브라우저가 직접 부를 때만 걸리는데 지금은 서버리스 함수를 거치므로
-프로젝트 이름이 달라도 동작한다. 다만 나중에 페이지가 API 를 직접 부르게 되면
-그때는 이름이 맞아야 하므로, 특별한 이유가 없으면 `offway-share` 로 두는 게 낫다.
+- `GET /api/v1/public/courses/{shareToken}` 은 **인증 불필요** (Basic 게이트 예외)
+- 연차 계산 API 는 게이트 뒤라 `api/leave.js` 가 Vercel 환경변수의 자격을 붙여 부른다
+- 서버 주소를 바꿔야 하면 Vercel 환경변수 `API_ORIGIN` 을 쓴다
 
 ## 배포 방법
 
@@ -69,7 +58,4 @@ flutter run --dart-define=SHARE_BASE_URL=https://offway.cloud
 
 ## 알아둘 점
 
-- 페이지가 백엔드 주소(`18.181.168.227:8080`)를 직접 부른다. 개발자도구에 드러나지만
-  어차피 인증 없는 공개 API라 실질적 위험은 낮다. 가리려면 Vercel 서버리스 함수로 감싼다
-- 서버 주소는 `index.html` 상단 `API` 상수 한 곳에 있다
 - 응답에 코스 이름이 없어 **첫 장소의 `regionName`** 으로 제목을 만든다
