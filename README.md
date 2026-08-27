@@ -109,7 +109,7 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 | `/m/{token}` | 내 코스 공유 — 담아둔 코스 (여행 날짜·사용 연차·D-DAY) |
 | `/privacy` · `/terms` | 개인정보처리방침 · 이용약관 (한국어·영문) |
 
-백엔드가 HTTP만 받아 브라우저가 혼합 콘텐츠로 막으므로, `web/share/api/*.js`가 같은 출처에서 받아 서버끼리 통신합니다.
+백엔드(`https://api.offway.cloud`)가 브라우저 직접 호출에 CORS를 열어 주지 않으므로, `web/share/api/*.js`가 같은 출처에서 받아 대신 부릅니다.
 
 ## 테스트 / 린트
 
