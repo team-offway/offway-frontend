@@ -1,5 +1,7 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/router/app_router.dart';
+import 'package:offway/features/notification/application/push_presenter.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 
 /// 푸시 배너가 목록 셀과 **같은 말을 하고 같은 곳으로 보내는지** 고정한다.
@@ -62,6 +64,31 @@ void main() {
         courseId: 3,
       );
       expect(item.destination, AppRoutes.savedCoursePath('3'));
+    });
+  });
+
+  group('도착 알리기', () {
+    /// 배너 표시는 네이티브 채널이라 테스트에서 돌지 않는다. 그 앞에서
+    /// 도착을 알리는지만 본다 — 배너가 못 떠도 앱 안에는 흔적이 남아야 한다
+    RemoteMessage messageOf(String type) => RemoteMessage(data: {'type': type});
+
+    testWidgets('푸시가 오면 배지·목록 갱신을 알린다', (tester) async {
+      var arrived = 0;
+      final presenter = PushPresenter()..onArrived = () => arrived++;
+
+      await presenter.show(messageOf('TRIP_TOMORROW'));
+
+      expect(arrived, 1, reason: '배너만 띄우고 끝내면 앱에 돌아왔을 때 티가 안 난다');
+    });
+
+    testWidgets('배너를 못 띄워도 도착은 알린다', (tester) async {
+      // initialize를 부르지 않아 표시가 막힌 상태 — 알림이 온 것은 사실이다
+      var arrived = 0;
+      final presenter = PushPresenter()..onArrived = () => arrived++;
+
+      await presenter.show(messageOf('UNKNOWN_KIND'));
+
+      expect(arrived, 1);
     });
   });
 
