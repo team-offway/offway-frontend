@@ -122,7 +122,15 @@ void main() {
         target.weekday == DateTime.sunday) {
       target = target.add(const Duration(days: 1));
     }
+    // 고를 날이 오늘이 아니면(오늘이 주말일 때) 그 칸이 첫 화면 아래로
+    // 밀려 있을 수 있다 — 보이는 데까지 굴려 놓고 누른다
     final day = find.text('${target.day}').first;
+    await tester.scrollUntilVisible(
+      day,
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(day);
     await tester.pump();
     await tester.tap(day);
