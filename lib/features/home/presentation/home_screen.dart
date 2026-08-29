@@ -7,6 +7,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../../notification/application/notification_provider.dart'
@@ -211,6 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             _buildRegionCards(places, fallback: regions),
             const SizedBox(height: _sectionGap),
             _buildLeavePicks(regions),
+            _buildCuratedLinks(),
           ],
         ),
       ),
@@ -423,6 +425,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
         ],
       ),
+    );
+  }
+
+  /// 화면 맨 끝 '함께 보면 좋아요' — 서버가 고른 외부 링크 (core #350).
+  ///
+  /// 홈을 아직 못 읽었거나 링크가 없으면 섹션째 접힌다. 로딩 자리도 두지
+  /// 않는다 — 추천 카드를 다 본 뒤에 따라오는 덤이라, 자리부터 잡아두면
+  /// 화면 끝이 빈 채로 기다리게 된다
+  Widget _buildCuratedLinks() {
+    final links =
+        ref.watch(homeSnapshotProvider).value?.curatedLinks ??
+        const <CuratedLink>[];
+    if (links.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      // 위 섹션(가로 카드)과 붙지 않게 같은 간격을 준다
+      padding: const EdgeInsets.only(top: _sectionGap),
+      child: CuratedLinkSection(links: links),
     );
   }
 

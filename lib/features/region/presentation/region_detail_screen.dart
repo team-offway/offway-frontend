@@ -15,6 +15,7 @@ import '../data/region_detail_repository.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/curated_link_section.dart';
 
 /// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
 ///
@@ -51,6 +52,8 @@ final regionDetailProvider = FutureProvider.autoDispose
         // 문단이 아니라 한 줄이라 펼치기 chevron은 쓸 자리가 없다
         if ((data['overview'] as String?)?.isNotEmpty ?? false)
           'story': data['overview'],
+        // 이 지역에서 더 찾아볼 만한 공식 사이트 (core #350) — 서버가 고른다
+        'curatedLinks': CuratedLink.parseList(data['curatedLinks']),
         // 사진 없는 장소와 상한(10)은 서버가 이미 처리해 준다 — 앱에서 또
         // 자르면 세는 쪽과 그리는 쪽이 갈린다
         'highlightSpots': [
@@ -121,6 +124,9 @@ class RegionDetailScreen extends ConsumerWidget {
         (region['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
         const [];
     final benefit = region['benefitBadge'] as String?;
+    final links =
+        (region['curatedLinks'] as List?)?.cast<CuratedLink>() ??
+        const <CuratedLink>[];
 
     return ListView(
       // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
@@ -206,6 +212,16 @@ class RegionDetailScreen extends ConsumerWidget {
                 regionName: region['name'] as String? ?? '',
               ),
             ),
+          ),
+        ],
+        // 이 지역을 더 알아볼 공식 사이트 — 매력 포인트를 훑은 다음 자리가
+        // 맞다. 안내 문구(_PopulationDeclineNote)는 화면을 맺는 말이라 끝에 둔다
+        if (links.isNotEmpty) ...[
+          const SizedBox(height: 44),
+          CuratedLinkSection(
+            links: links,
+            // 이 화면의 본문 여백은 24다
+            padding: const EdgeInsets.symmetric(horizontal: 24),
           ),
         ],
         // 시안: 매력 포인트 아래 52 (카드 220 + 여백)

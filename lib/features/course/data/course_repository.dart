@@ -6,6 +6,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/tour_text.dart';
+import '../../../core/widgets/curated_link_section.dart';
 
 final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
@@ -432,6 +433,9 @@ class CourseRepository {
       ],
       if (benefits.isNotEmpty)
         'benefitBadge': (benefits.first as Map<String, dynamic>)['text'],
+      // 이 코스와 함께 보면 좋은 공식 사이트 (core #350). 코스를 만드는 여섯
+      // 경로가 모두 이 함수를 지나므로 여기서 한 번만 꺼낸다
+      'curatedLinks': CuratedLink.parseList(course['curatedLinks']),
       '_save': ?savePayload,
     };
   }
