@@ -131,12 +131,16 @@ class _PolicyDetailSheet extends ConsumerWidget {
     );
   }
 
+  /// 지자체 신청 페이지를 앱 안에서 띄운다.
+  ///
+  /// iOS는 SFSafariViewController로 열려 상단에 주소가 그대로 보이고, 닫으면
+  /// 이 시트로 돌아온다 — 혜택을 확인하다 사파리로 튕겨 나가면 보던 정책이
+  /// 무엇이었는지부터 다시 찾아야 한다. 약관·큐레이션 링크와 같은 방식이다.
   Future<void> _openApplyUrl(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
     // 주소가 깨져 있어도 버튼이 먹통이 되면 안 된다 — 왜 안 되는지 알린다
     final opened =
-        uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        uri != null && await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
     if (!opened && context.mounted) {
       showAppToast(context, '신청 페이지를 열지 못했어요');
     }
