@@ -67,9 +67,9 @@ class PushPresenter {
       FirebaseMessaging.onMessage.listen(show);
       // 배너를 눌러 앱이 열린 경우 (백그라운드에 있던 앱)
       FirebaseMessaging.onMessageOpenedApp.listen(_openFrom);
-      // 앱이 꺼져 있다가 배너로 열린 경우 — 첫 프레임 전에 온 것을 받는다
-      final initial = await FirebaseMessaging.instance.getInitialMessage();
-      if (initial != null) _openFrom(initial);
+      // 앱을 띄운 알림으로 한 번만 이동한다. 아래 두 길이 같은 알림을
+      // 가리킬 수 있어, 먼저 잡히는 쪽만 쓴다
+      await _openFromLaunch();
     } on Object catch (e) {
       // 푸시는 덤이다 — 초기화가 실패해도 앱은 그대로 간다
       debugPrint('푸시 표시 준비 실패: $e');
@@ -96,6 +96,31 @@ class PushPresenter {
       );
     } on Object catch (e) {
       debugPrint('푸시 배너 표시 실패: $e');
+    }
+  }
+
+  /// 앱이 꺼져 있다가 **배너로 열린** 경우의 이동.
+  ///
+  /// 길이 둘이다. FCM이 직접 띄운 배너는 [FirebaseMessaging.getInitialMessage]
+  /// 로 오고, **우리가 띄운 배너**는 [getNotificationAppLaunchDetails]로 온다 —
+  /// `onDidReceiveNotificationResponse`는 앱이 살아 있을 때의 탭만 받기 때문이다.
+  ///
+  /// 앱을 보는 중에 배너가 떴는데 누르지 않고 앱을 닫으면 그 배너는 알림센터에
+  /// 남는다. 나중에 그것을 눌러 앱이 뜨면 두 번째 길로 오므로, 이게 없으면
+  /// 알림센터에서 연 사람만 조용히 홈에 떨어진다.
+  ///
+  /// **한 번만 이동한다.** 둘 다 값이 있으면 같은 알림으로 화면을 두 번 밀어
+  /// 올려 뒤로가기가 어색해진다.
+  Future<void> _openFromLaunch() async {
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) {
+      _openFrom(initial);
+      return;
+    }
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp ?? false) {
+      final response = launch!.notificationResponse;
+      if (response != null) _onTapBanner(response);
     }
   }
 
