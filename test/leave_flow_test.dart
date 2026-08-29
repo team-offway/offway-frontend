@@ -305,7 +305,16 @@ void main() {
     // 오늘 이후 아무 날이나 한 번 누르면 하루짜리 범위가 완성된다 —
     // 두 번 눌러야 열리면 하루만 쓰는 사람은 버튼이 잠긴 이유를 알 수 없다
     final today = DateTime.now();
-    await tester.tap(find.text('${today.day}').first);
+    // 달 끝자락이면 오늘 칸이 첫 화면 아래로 밀린다 — 보이는 데까지 굴려
+    // 놓고 누른다. 굴리지 않으면 탭이 허공에 떨어져 아무것도 안 골라진다
+    final day = find.text('${today.day}').first;
+    await tester.scrollUntilVisible(
+      day,
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(day);
     await tester.pumpAndSettle();
 
     final done = tester.widget<FilledButton>(find.byType(FilledButton));
