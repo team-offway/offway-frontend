@@ -77,6 +77,32 @@ void main() {
       expect(CuratedLink.parseList([link(linkUrl: null)]), isEmpty);
     });
 
+    test('https가 아닌 주소는 버린다', () {
+      // 서버도 저장할 때 막지만(core #350), 웹뷰에 주소를 넘기는 것은 앱이다.
+      // 목록에 남겨 두고 누를 때 막으면 눌러도 아무 일이 없는 카드가 된다
+      for (final bad in const [
+        'http://www.letskorail.com', // 암호화되지 않은 채로 오간다
+        'javascript:alert(1)', // 웹뷰에서 열 것이 아니다
+        'data:text/html,<h1>x', //
+        'www.letskorail.com', // 스킴이 없다
+        'https:///path', // 스킴만 맞고 갈 곳이 없다
+      ]) {
+        expect(
+          CuratedLink.parseList([link(linkUrl: bad)]),
+          isEmpty,
+          reason: '$bad 는 열지 않아야 한다',
+        );
+      }
+    });
+
+    test('대문자 스킴도 https면 받는다', () {
+      // Uri가 스킴을 소문자로 정규화한다 — 멀쩡한 주소를 버리지 않는다
+      final parsed = CuratedLink.parseList([
+        link(linkUrl: 'HTTPS://www.letskorail.com'),
+      ]);
+      expect(parsed, hasLength(1));
+    });
+
     test('성한 건만 남기고 나머지는 그린다', () {
       final parsed = CuratedLink.parseList([link(), link(title: null)]);
       expect(parsed, hasLength(1));
@@ -136,6 +162,19 @@ void main() {
     testWidgets('못 열면 주의 토스트로 알린다', (tester) async {
       final launcher = FakeUrlLauncher.install();
       launcher.succeeds = false;
+      await pumpSection(tester, CuratedLink.parseList([link()]));
+
+      await tester.tap(find.text('코레일 승차권 예매'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('페이지를 열지 못했어요.'), findsOneWidget);
+    });
+
+    testWidgets('플러그인이 예외를 던져도 토스트로 알린다', (tester) async {
+      // url_launcher는 실패를 false로도, 예외로도 알린다. 던지는 쪽을
+      // 놓치면 화면에 아무 일도 안 일어나 버튼이 고장난 것처럼 보인다
+      final launcher = FakeUrlLauncher.install();
+      launcher.throws = true;
       await pumpSection(tester, CuratedLink.parseList([link()]));
 
       await tester.tap(find.text('코레일 승차권 예매'));

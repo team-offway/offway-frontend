@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/tokens/tokens.dart';
-import 'app_toast.dart';
+import '../utils/external_link.dart';
 import 'place_thumbnail.dart';
 
 /// 서버가 화면마다 내려주는 외부 링크 한 건 (core #350).
@@ -25,11 +24,14 @@ class CuratedLink {
 
   /// 서버 응답 한 건(`{id, title, chipText, description, linkUrl, thumbnailUrl}`)에서 만든다.
   ///
-  /// 주소나 제목이 비면 누를 데가 없는 줄이 되므로 [parseList]에서 걸러낸다.
+  /// 제목이 비거나 **열 수 없는 주소**면 누를 데가 없는 줄이 되므로 버린다.
+  /// 목록에 남겨 두고 누를 때 막으면, 눌러도 아무 일이 없는 카드가 된다.
   static CuratedLink? tryParse(Map<String, dynamic> json) {
     final title = (json['title'] as String?)?.trim() ?? '';
-    final linkUrl = (json['linkUrl'] as String?)?.trim() ?? '';
-    if (title.isEmpty || linkUrl.isEmpty) return null;
+    // https가 아니거나 갈 곳이 없는 주소는 여기서 끊는다 — 서버도 저장할 때
+    // 막지만(core #350), 웹뷰에 주소를 넘기는 것은 앱이다
+    final linkUrl = safeExternalUri(json['linkUrl'] as String?)?.toString();
+    if (title.isEmpty || linkUrl == null) return null;
     final description = (json['description'] as String?)?.trim();
     final thumbnailUrl = (json['thumbnailUrl'] as String?)?.trim();
     return CuratedLink(
@@ -219,17 +221,9 @@ class _CuratedLinkTile extends StatelessWidget {
     );
   }
 
-  /// 앱 안 브라우저로 연다 — 약관 화면(`my_screen.dart`)과 같은 방식이다.
-  Future<void> _open(BuildContext context) async {
-    final uri = Uri.tryParse(link.linkUrl);
-    // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
-    final opened =
-        uri != null && await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    if (!opened && context.mounted) {
-      // 다시 눌러 보면 되는 일이라 주의(삼각형)로 알린다
-      showAppToast(context, '페이지를 열지 못했어요.', kind: AppToastKind.cautionary);
-    }
-  }
+  /// 앱 안 브라우저로 연다. 못 열면 주의 토스트까지 [openExternalLink]가 맡는다
+  Future<void> _open(BuildContext context) =>
+      openExternalLink(context, link.linkUrl);
 }
 
 /// '기차표 예매'처럼 무엇을 하러 가는지 알리는 칩.

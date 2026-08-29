@@ -80,6 +80,25 @@ void main() {
     expect(find.text('신청하러 가기'), findsNothing);
   });
 
+  testWidgets('https가 아닌 주소면 버튼을 두지 않는다', (tester) async {
+    // 눌러도 토스트만 뜨는 버튼은 없느니만 못하다
+    await openSheet(tester, applyUrl: 'http://example.gov.kr/apply');
+    expect(find.text('신청하러 가기'), findsNothing);
+  });
+
+  testWidgets('플러그인이 예외를 던져도 안내한다', (tester) async {
+    final launcher = await openSheet(
+      tester,
+      applyUrl: 'https://example.gov.kr/apply',
+    );
+    launcher.throws = true;
+
+    await tester.tap(find.text('신청하러 가기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('신청 페이지를 열지 못했어요'), findsOneWidget);
+  });
+
   testWidgets('해당 지역 목록은 시트에 두지 않는다', (tester) async {
     // 85곳이 오는 정책이 있어, 한 줄로 이으면 시트가 지역명으로만 찬다.
     // 뱃지를 누른 사람은 이미 그 지역을 보고 있어 답이 나와 있고,

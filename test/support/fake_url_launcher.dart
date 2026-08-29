@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -39,6 +40,12 @@ class FakeUrlLauncher extends UrlLauncherPlatform {
   /// 열기가 실패하는 상황(주소는 성했지만 열 수 없는 경우)을 흉내 낸다
   bool succeeds = true;
 
+  /// 플러그인이 실패를 **예외로** 알리는 경우를 흉내 낸다.
+  ///
+  /// url_launcher는 false를 주기도 하고 던지기도 한다. 던지는 쪽을 놓치면
+  /// 화면에 아무 일도 안 일어나 사용자는 버튼이 고장난 줄 안다
+  bool throws = false;
+
   @override
   final LinkDelegate? linkDelegate = null;
 
@@ -50,6 +57,9 @@ class FakeUrlLauncher extends UrlLauncherPlatform {
     lastUrl = url;
     lastMode = options.mode;
     launchCount++;
+    if (throws) {
+      throw PlatformException(code: 'channel-error', message: '테스트용 실패');
+    }
     return succeeds;
   }
 
