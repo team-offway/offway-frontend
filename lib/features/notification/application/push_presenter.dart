@@ -7,12 +7,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/router/app_router.dart';
 import '../domain/app_notification.dart';
+import 'notification_provider.dart';
 
 final pushPresenterProvider = Provider<PushPresenter>((ref) {
   final presenter = PushPresenter();
   // 배너를 누르면 알림 목록에서 누른 것과 같은 곳으로 보낸다.
   // 라우터를 직접 잡는다 — 여기는 위젯 트리 바깥이라 context가 없다
   presenter.onOpenRoute = (route) => ref.read(appRouterProvider).push(route);
+  presenter.onArrived = () {
+    // 방금 온 알림은 안 읽음이 확실하다 — 서버에 묻지 않고 켠다
+    ref.read(hasUnreadNotificationsProvider.notifier).markArrived();
+    // 알림 화면이 열려 있으면 새 알림이 바로 목록에 붙는다.
+    // autoDispose라 닫혀 있으면 이 호출은 아무 일도 하지 않는다
+    ref.invalidate(notificationFeedProvider);
+  };
   return presenter;
 });
 
@@ -40,6 +48,12 @@ class PushPresenter {
   ///
   /// 알림 목록에서 누를 때와 같은 규칙([notificationDestination])을 쓴다.
   void Function(String route)? onOpenRoute;
+
+  /// 푸시가 막 도착했다 — 홈 종 배지를 켜고 알림 목록을 다시 읽게 한다.
+  ///
+  /// 배너만 띄우고 끝내면 **배너는 떴는데 앱에 돌아오면 티가 안 난다.**
+  /// 종에 점이 없고, 알림 화면이 열려 있었다면 새 알림이 안 보인다.
+  void Function()? onArrived;
 
   bool _ready = false;
 
@@ -78,6 +92,11 @@ class PushPresenter {
 
   /// data 메시지 하나를 배너로 띄운다.
   Future<void> show(RemoteMessage message) async {
+    // 배너를 띄우지 못하더라도 **알림이 도착한 것은 사실이다.** 배지와 목록은
+    // 먼저 알린다 — 그러지 않으면 배너만 없는 게 아니라 앱 안에도 흔적이
+    // 남지 않아, 사용자는 알림이 온 줄도 모른다
+    onArrived?.call();
+
     if (!_ready) return;
     final type = NotificationType.parse(message.data['type'] as String?);
     try {
@@ -139,12 +158,20 @@ class PushPresenter {
   /// FCM이 직접 전한 메시지로 앱이 열렸을 때
   void _openFrom(RemoteMessage message) => _open(message.data);
 
+  /// 배너로 앱에 들어왔다 — 갈 곳으로 보내고, 목록·배지를 다시 맞춘다.
+  ///
+  /// **그 알림을 읽음 처리하지는 못한다.** `markRead`는 알림 id를 받는데
+  /// 푸시 payload에는 `type`·`courseId`만 있다(core `FcmPushSender.payload`).
+  /// 대신 목록을 다시 읽어, 알림 화면에 들어가면 그때 눌러 읽을 수 있게 한다.
   void _open(Map<String, dynamic> data) {
     final type = NotificationType.parse(data['type'] as String?);
     // courseId는 문자열로 온다 — 서버가 data 값을 전부 String으로 싣는다
     final courseId = int.tryParse(data['courseId']?.toString() ?? '');
     final route = notificationDestination(type, courseId);
     if (route != null) onOpenRoute?.call(route);
+    // 배너로 들어온 사람도 종에 점이 떠 있어야 한다 — 그 알림은 아직
+    // 안 읽음이다
+    onArrived?.call();
   }
 }
 

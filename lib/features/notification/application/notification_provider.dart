@@ -56,4 +56,10 @@ class UnreadNotificationsBadge extends Notifier<bool> {
 
   /// 서버가 준 안읽음 수로 배지를 맞춘다
   void setUnreadCount(int count) => state = count > 0;
+
+  /// 푸시가 막 도착했다 — 서버에 묻지 않고 켠다.
+  ///
+  /// 방금 온 알림은 당연히 안 읽음이라 왕복할 이유가 없다. 목록을 다시
+  /// 읽어 켜려 하면 그 사이 홈에 돌아온 사용자가 배지 없는 종을 본다.
+  void markArrived() => state = true;
 }
