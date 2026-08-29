@@ -29,7 +29,12 @@ void main() {
               'title': '숙박 할인',
               'description': '도내 등록 숙소 1박당 2만원 할인',
               'applyUrl': ?applyUrl,
-              'regions': const <Map<String, dynamic>>[],
+              // 숙박세일 페스타는 85곳이 온다 — 시트가 이 목록으로 가득
+              // 차지 않는지 본다
+              'regions': const [
+                {'name': '정선군 · 강원특별자치도'},
+                {'name': '영월군 · 강원특별자치도'},
+              ],
             },
           ),
         ],
@@ -73,6 +78,16 @@ void main() {
     // 눌러도 갈 곳이 없는 버튼은 고장으로 읽힌다
     await openSheet(tester);
     expect(find.text('신청하러 가기'), findsNothing);
+  });
+
+  testWidgets('해당 지역 목록은 시트에 두지 않는다', (tester) async {
+    // 85곳이 오는 정책이 있어, 한 줄로 이으면 시트가 지역명으로만 찬다.
+    // 뱃지를 누른 사람은 이미 그 지역을 보고 있어 답이 나와 있고,
+    // 전체 목록이 궁금하면 신청 페이지가 정본이다
+    await openSheet(tester, applyUrl: 'https://example.gov.kr/apply');
+
+    expect(find.text('해당 지역'), findsNothing);
+    expect(find.textContaining('정선군'), findsNothing);
   });
 
   testWidgets('못 열면 왜 안 됐는지 알린다', (tester) async {

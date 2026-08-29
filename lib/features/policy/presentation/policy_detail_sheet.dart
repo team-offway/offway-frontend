@@ -56,8 +56,6 @@ class _PolicyDetailSheet extends ConsumerWidget {
   Widget _buildBody(BuildContext context, Map<String, dynamic> policy) {
     final period = policy['period'] as Map<String, dynamic>?;
     final applyUrl = policy['applyUrl'] as String?;
-    final regions = ((policy['regions'] as List?) ?? const [])
-        .cast<Map<String, dynamic>>();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
@@ -103,14 +101,11 @@ class _PolicyDetailSheet extends ConsumerWidget {
             ),
           if (policy['target'] case final String target)
             _Row(label: '대상', value: target),
-          if (regions.isNotEmpty)
-            _Row(
-              label: '해당 지역',
-              value: regions
-                  .map((r) => (r['name'] as String?) ?? '')
-                  .where((n) => n.isNotEmpty)
-                  .join(', '),
-            ),
+          // '해당 지역'은 걷어냈다. 숙박세일 페스타는 85곳이 오는데
+          // 이름이 "정선군 · 강원특별자치도" 꼴이라 한 줄로 이으면 시트가
+          // 지역명으로만 가득 찬다. 뱃지를 누른 사람은 이미 그 지역을 보고
+          // 있어 "여기가 되나"는 이미 답이 나와 있고, 전체 목록이 궁금하면
+          // 신청 페이지가 정본이다
           if (applyUrl != null && applyUrl.isNotEmpty) ...[
             const SizedBox(height: 16),
             FilledButton(
