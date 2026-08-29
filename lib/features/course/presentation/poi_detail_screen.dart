@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/curated_link_section.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
@@ -133,6 +134,7 @@ class _Body extends StatelessWidget {
     final overview = (overviewRaw?.trim().isEmpty ?? true) ? null : overviewRaw;
     final lat = (poi['lat'] as num?)?.toDouble();
     final lng = (poi['lng'] as num?)?.toDouble();
+    final links = CuratedLink.parseList(poi['curatedLinks']);
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -243,6 +245,13 @@ class _Body extends StatelessWidget {
                   child: Text('길 찾기', style: AppTypography.body1NormalBold),
                 ),
               ),
+              // 이 장소를 더 알아볼 공식 사이트 (core #350). 길 찾기까지 본
+              // 뒤에 따라오는 덤이라 맨 끝에 둔다
+              if (links.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                // 이 화면은 이미 좌우 20 안쪽이라 섹션은 여백 없이 붙인다
+                CuratedLinkSection(links: links, padding: EdgeInsets.zero),
+              ],
             ],
           ),
         ),

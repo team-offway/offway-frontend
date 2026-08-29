@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/widgets/curated_link_section.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>(
   (ref) => HomeRepository(ref.watch(dioProvider)),
@@ -15,6 +16,7 @@ class HomeSnapshot {
     required this.regions,
     this.places = const [],
     this.filters = const [],
+    this.curatedLinks = const [],
   });
 
   /// `{nickname, remainingLeaveDays(double?)}`
@@ -36,6 +38,10 @@ class HomeSnapshot {
 
   /// 카테고리 칩 `[{key, label}]` — 구성·순서를 서버가 정한다
   final List<Map<String, dynamic>> filters;
+
+  /// 서버가 고른 외부 링크 (core #350) — 화면 끝 '함께 보면 좋아요'.
+  /// 안 내려오면 빈 목록이고, 그러면 섹션째 접힌다
+  final List<CuratedLink> curatedLinks;
 }
 
 /// 홈 API. 사용자 식별은 인터셉터가 싣는 JWT가 맡는다.
@@ -69,6 +75,7 @@ class HomeRepository {
               .toList(),
         ),
         filters: filters,
+        curatedLinks: CuratedLink.parseList(data['curatedLinks']),
       );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);

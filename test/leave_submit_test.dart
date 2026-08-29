@@ -85,8 +85,17 @@ Future<void> _pickOneDay(WidgetTester tester) async {
       target.weekday == DateTime.sunday) {
     target = target.add(const Duration(days: 1));
   }
-  // 같은 날을 두 번 눌러 하루짜리 범위를 만든다
+  // 고를 날이 오늘이 아니면(오늘이 주말일 때) 그 칸이 첫 화면 아래로
+  // 밀려 있을 수 있다 — 보이는 데까지 굴려 놓고 누른다. 굴리지 않으면
+  // 탭이 허공에 떨어져 아무것도 선택되지 않은 채 다음 단계로 간다
   final day = find.text('${target.day}').first;
+  await tester.scrollUntilVisible(
+    day,
+    100,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pumpAndSettle();
+  // 같은 날을 두 번 눌러 하루짜리 범위를 만든다
   await tester.tap(day);
   await tester.pump();
   await tester.tap(day);

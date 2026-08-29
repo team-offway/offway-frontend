@@ -35,6 +35,9 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_secure_storage_platform_interface: ^2.0.2
+  # 외부 링크를 앱 안(SFSafariViewController)에서 여는지 테스트가 확인한다 —
+  # 채널 인자 규약 대신 PreferredLaunchMode를 직접 본다
+  url_launcher_platform_interface: ^2.3.2
   flutter_launcher_icons: ^0.14.4
 
 # 앱 아이콘 생성 설정. 원본(assets/icon/app_icon.png) 교체 후

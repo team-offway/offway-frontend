@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/external_link.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_icon_button.dart';
-import '../../../core/widgets/app_toast.dart';
 import '../data/policy_repository.dart';
 
 /// 혜택 뱃지를 누르면 올라오는 정책 상세.
@@ -55,9 +54,9 @@ class _PolicyDetailSheet extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, Map<String, dynamic> policy) {
     final period = policy['period'] as Map<String, dynamic>?;
-    final applyUrl = policy['applyUrl'] as String?;
-    final regions = ((policy['regions'] as List?) ?? const [])
-        .cast<Map<String, dynamic>>();
+    // https가 아니거나 갈 곳이 없는 주소면 버튼째 감춘다 — 눌러도 토스트만
+    // 뜨는 버튼은 없느니만 못하다
+    final applyUri = safeExternalUri(policy['applyUrl'] as String?);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
@@ -103,18 +102,15 @@ class _PolicyDetailSheet extends ConsumerWidget {
             ),
           if (policy['target'] case final String target)
             _Row(label: '대상', value: target),
-          if (regions.isNotEmpty)
-            _Row(
-              label: '해당 지역',
-              value: regions
-                  .map((r) => (r['name'] as String?) ?? '')
-                  .where((n) => n.isNotEmpty)
-                  .join(', '),
-            ),
-          if (applyUrl != null && applyUrl.isNotEmpty) ...[
+          // '해당 지역'은 걷어냈다. 숙박세일 페스타는 85곳이 오는데
+          // 이름이 "정선군 · 강원특별자치도" 꼴이라 한 줄로 이으면 시트가
+          // 지역명으로만 가득 찬다. 뱃지를 누른 사람은 이미 그 지역을 보고
+          // 있어 "여기가 되나"는 이미 답이 나와 있고, 전체 목록이 궁금하면
+          // 신청 페이지가 정본이다
+          if (applyUri != null) ...[
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => _openApplyUrl(context, applyUrl),
+              onPressed: () => _openApplyUrl(context, applyUri.toString()),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryNormal,
                 foregroundColor: AppColors.staticWhite,
@@ -131,16 +127,13 @@ class _PolicyDetailSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _openApplyUrl(BuildContext context, String url) async {
-    final uri = Uri.tryParse(url);
-    // 주소가 깨져 있어도 버튼이 먹통이 되면 안 된다 — 왜 안 되는지 알린다
-    final opened =
-        uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      showAppToast(context, '신청 페이지를 열지 못했어요');
-    }
-  }
+  /// 지자체 신청 페이지를 앱 안에서 띄운다.
+  ///
+  /// iOS는 SFSafariViewController로 열려 상단에 주소가 그대로 보이고, 닫으면
+  /// 이 시트로 돌아온다 — 혜택을 확인하다 사파리로 튕겨 나가면 보던 정책이
+  /// 무엇이었는지부터 다시 찾아야 한다. 약관·큐레이션 링크와 같은 방식이다.
+  Future<void> _openApplyUrl(BuildContext context, String url) =>
+      openExternalLink(context, url, failureMessage: '신청 페이지를 열지 못했어요');
 }
 
 /// 라벨 + 값 한 줄 — 장소 상세 기본정보와 같은 결
