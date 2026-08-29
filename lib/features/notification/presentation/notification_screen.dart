@@ -169,7 +169,8 @@ class _NotificationCell extends ConsumerWidget {
   /// 있으면 누른 보람이 없고, 실패해도 다음 조회에서 다시 안 읽음으로
   /// 보일 뿐이라 잃는 게 없다.
   Future<void> _onTap(BuildContext context, WidgetRef ref) async {
-    final destination = _destination;
+    // 목록에서 누르든 푸시 배너에서 누르든 같은 곳으로 간다 (도메인이 정한다)
+    final destination = item.destination;
     if (destination != null) context.push(destination);
 
     if (item.read) return;
@@ -185,18 +186,6 @@ class _NotificationCell extends ConsumerWidget {
       // 요구한다. 이동은 이미 했으므로 화면 흐름은 끊기지 않는다
     }
   }
-
-  /// 종류별로 갈 곳. 없으면 누르기만 하고 이동하지 않는다.
-  String? get _destination => switch (item.type) {
-    // 시안 흐름: 알림 → 내 연차. 그 화면이 "다녀오셨나요?" 모달을 띄운다
-    NotificationType.tripAfter => AppRoutes.myLeaveFromNotification,
-    // 내일 떠날 여행을 보러 간다. 코스가 지워졌으면 갈 곳이 없다
-    NotificationType.tripTomorrow =>
-      item.courseId == null
-          ? null
-          : AppRoutes.savedCoursePath(item.courseId.toString()),
-    NotificationType.unknown => null,
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
