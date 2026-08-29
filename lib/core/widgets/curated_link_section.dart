@@ -47,9 +47,12 @@ class CuratedLink {
   /// 응답의 `curatedLinks` 배열 → 그릴 수 있는 것만 남긴 목록.
   ///
   /// 키가 아예 없는 옛 서버 응답도 그냥 빈 목록이 된다 — 그러면 섹션째 접힌다.
+  /// 배열이 아닌 값이 와도 마찬가지다. 링크는 화면에 덤으로 붙는 자리라,
+  /// 이 값 하나 때문에 홈이나 코스가 통째로 못 뜨는 쪽이 훨씬 나쁘다
   static List<CuratedLink> parseList(Object? raw) => [
-    for (final item in (raw as List?) ?? const [])
-      if (item is Map<String, dynamic>) ?tryParse(item),
+    if (raw is List)
+      for (final item in raw)
+        if (item is Map<String, dynamic>) ?tryParse(item),
   ];
 
   final String title;

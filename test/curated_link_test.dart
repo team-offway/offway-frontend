@@ -49,6 +49,19 @@ void main() {
       expect(CuratedLink.parseList(const []), isEmpty);
     });
 
+    test('배열이 아닌 값이 와도 화면을 무너뜨리지 않는다', () {
+      // 링크는 화면에 덤으로 붙는 자리다 — 이 값 하나 때문에 홈이나
+      // 코스가 통째로 못 뜨는 쪽이 훨씬 나쁘다
+      expect(CuratedLink.parseList('nope'), isEmpty);
+      expect(CuratedLink.parseList(42), isEmpty);
+      expect(CuratedLink.parseList(const {'a': 1}), isEmpty);
+    });
+
+    test('성하지 않은 항목이 섞여도 나머지를 그린다', () {
+      final parsed = CuratedLink.parseList([link(), 'nope', 42, null]);
+      expect(parsed, hasLength(1));
+    });
+
     test('description·thumbnailUrl이 null이어도 링크는 산다', () {
       final parsed = CuratedLink.parseList([
         link(description: null, thumbnailUrl: null),
