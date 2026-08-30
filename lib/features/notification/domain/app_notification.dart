@@ -34,15 +34,32 @@ enum NotificationType {
   }
 }
 
-/// 종류별 알림 문구 — 목록 셀과 푸시 배너가 같은 말을 쓴다.
+/// 종류별 알림 문구.
 ///
-/// 지역명이 필요한 문구는 코스를 따로 읽어야 알 수 있어 넣지 않는다.
-/// 시안 문구에서 지역명만 뺀 형태다.
-String notificationBody(NotificationType type) => switch (type) {
-  NotificationType.tripTomorrow => '내일은 여행을 떠나는 날이에요.\n짐은 다 챙기셨나요?',
-  NotificationType.tripAfter => '여행, 다녀오셨나요?\n연차를 사용했다면 기록해 주세요.',
-  NotificationType.unknown => '새로운 소식이 도착했어요.',
-};
+/// [regionName]이 있으면 **어떤 여행인지** 밝혀 준다(core #359) — 코스를
+/// 여럿 담아 둔 사람에게 "여행, 다녀오셨나요?"는 어느 것인지 알 수 없다.
+/// 서버가 `정선`처럼 짧은 이름으로 주므로 앱은 다듬지 않는다.
+///
+/// 코스가 지워졌거나 코스와 무관한 알림이면 null로 오고, 그때는 지역명
+/// 없는 문구로 되돌린다 — 알림은 코스가 사라져도 남는다.
+///
+/// **푸시 배너는 아직 지역명 없이 온다.** 서버가 배너 문구를 따로 들고
+/// 있어(core #358) 그쪽은 타입만으로 그린다.
+String notificationBody(NotificationType type, {String? regionName}) {
+  final region = regionName?.trim();
+  final hasRegion = region != null && region.isNotEmpty;
+  return switch (type) {
+    NotificationType.tripTomorrow =>
+      hasRegion
+          ? '내일은 \'$region 여행\'을 떠나는 날이에요.\n짐은 다 챙기셨나요?'
+          : '내일은 여행을 떠나는 날이에요.\n짐은 다 챙기셨나요?',
+    NotificationType.tripAfter =>
+      hasRegion
+          ? '\'$region 여행\' 다녀오셨나요?\n연차 차감을 확인해주세요.'
+          : '여행, 다녀오셨나요?\n연차를 사용했다면 기록해 주세요.',
+    NotificationType.unknown => '새로운 소식이 도착했어요.',
+  };
+}
 
 /// 종류별로 갈 곳. 없으면 누르기만 하고 이동하지 않는다.
 ///
@@ -66,6 +83,7 @@ class AppNotification {
     required this.type,
     required this.read,
     this.courseId,
+    this.regionName,
     this.createdAt,
   });
 
@@ -75,6 +93,8 @@ class AppNotification {
       type: NotificationType.parse(json['type'] as String?),
       read: json['read'] as bool? ?? false,
       courseId: (json['courseId'] as num?)?.toInt(),
+      // 코스가 지워졌거나 코스와 무관한 알림이면 null (core #359)
+      regionName: json['regionName'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
     );
   }
@@ -87,13 +107,17 @@ class AppNotification {
   /// **지워진 코스를 가리킬 수도 있다** — 알림은 코스가 사라져도 남는다
   final int? courseId;
 
+  /// 어떤 여행인지 — `정선`처럼 짧은 이름으로 온다(core #359).
+  /// **코스가 지워지면 null**이고, 그때는 지역명 없는 문구로 그린다
+  final String? regionName;
+
   final DateTime? createdAt;
 
   /// 셀 제목 — 시안은 종류와 무관하게 '알림'이다
   String get title => '알림';
 
-  /// 셀 본문 — 종류에 따라 앱이 고른다
-  String get body => notificationBody(type);
+  /// 셀 본문 — 종류와 지역명으로 앱이 고른다
+  String get body => notificationBody(type, regionName: regionName);
 
   /// 눌렀을 때 갈 곳. 없으면 이동하지 않는다.
   ///
