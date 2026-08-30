@@ -24,20 +24,15 @@ final pushPresenterProvider = Provider<PushPresenter>((ref) {
   return presenter;
 });
 
-/// 서버가 보낸 푸시를 **앱이 직접 배너로 그린다** (core #270).
+/// 푸시가 도착했을 때의 뒤처리 — 배지·목록 갱신과 배너 탭 이동.
 ///
-/// 서버는 `notification` 필드 없이 `data`만 싣는다 — 문구를 서버에 굳히지
-/// 않으려는 것이다. 그 대가로 시스템이 배너를 대신 그려주지 않으므로, 앱이
-/// `data.type`을 읽어 문구를 만들고 로컬 알림으로 띄운다. 이 코드가 없으면
-/// **알림 목록에는 쌓이는데 배너가 안 뜬다.**
+/// **배너는 서버가 실은 문구로 시스템이 그린다**(core #358). 앱이 켜져 있을
+/// 때도 `setForegroundNotificationPresentationOptions(alert: true)` 덕에
+/// 시스템이 띄우므로, 여기서 또 그리면 **같은 알림이 두 번 뜬다.**
 ///
-/// 문구는 목록 셀과 같은 [notificationBody]를 쓴다 — 두 곳에 따로 적으면
-/// 한쪽만 고쳐져 배너와 목록이 다른 말을 한다.
-///
-/// **앱이 화면에 떠 있을 때만 우리가 그린다.** 백그라운드·종료 상태의
-/// data-only 메시지는 iOS가 앱을 깨워주지 않으면 도착조차 하지 않는다.
-/// 그 경우까지 배너를 띄우려면 서버가 `notification` 필드를 함께 실어야 한다
-/// (아래 [kBackgroundPushNeedsServerNotification] 참고).
+/// 다만 `notification` 없이 오는 메시지도 있을 수 있어(옛 서버·다른 발송
+/// 경로) 그때는 앱이 대신 그린다 — [_needsLocalBanner]. 그 문구는 목록 셀과
+/// 같은 [notificationBody]를 쓴다.
 class PushPresenter {
   PushPresenter({FlutterLocalNotificationsPlugin? plugin})
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
@@ -90,12 +85,15 @@ class PushPresenter {
     }
   }
 
-  /// data 메시지 하나를 배너로 띄운다.
+  /// 앱을 보고 있는 동안 온 푸시 하나를 처리한다.
   Future<void> show(RemoteMessage message) async {
-    // 배너를 띄우지 못하더라도 **알림이 도착한 것은 사실이다.** 배지와 목록은
-    // 먼저 알린다 — 그러지 않으면 배너만 없는 게 아니라 앱 안에도 흔적이
-    // 남지 않아, 사용자는 알림이 온 줄도 모른다
+    // 배너가 뜨든 안 뜨든 **알림이 도착한 것은 사실이다.** 배지와 목록을
+    // 먼저 알린다 — 그러지 않으면 앱 안에 흔적이 없어 온 줄도 모른다
     onArrived?.call();
+
+    // 서버가 문구를 실어 보냈으면 시스템이 이미 배너를 그렸다(core #358).
+    // 여기서 또 그리면 같은 알림이 두 번 뜬다
+    if (!needsLocalBanner(message)) return;
 
     if (!_ready) return;
     final type = NotificationType.parse(message.data['type'] as String?);
@@ -117,6 +115,18 @@ class PushPresenter {
       debugPrint('푸시 배너 표시 실패: $e');
     }
   }
+
+  /// 앱이 배너를 대신 그려야 하는가.
+  ///
+  /// 서버는 `notification`을 실어 보내고(core #358), 그러면 앱이 켜져 있어도
+  /// 시스템이 배너를 띄운다 — `setForegroundNotificationPresentationOptions`
+  /// 로 켜 뒀기 때문이다. 그때 앱이 또 그리면 **같은 알림이 두 번 뜬다.**
+  ///
+  /// 문구 없이 오는 메시지에만 우리가 나선다. 옛 서버나 다른 발송 경로가
+  /// 그럴 수 있고, 그때까지 배너를 잃지 않는다.
+  @visibleForTesting
+  static bool needsLocalBanner(RemoteMessage message) =>
+      message.notification == null;
 
   /// 앱이 꺼져 있다가 **배너로 열린** 경우의 이동.
   ///
@@ -174,16 +184,3 @@ class PushPresenter {
     onArrived?.call();
   }
 }
-
-/// 백그라운드·종료 상태에서 배너가 뜨려면 **서버가 `notification` 필드를
-/// 함께 실어야 한다.**
-///
-/// iOS는 `notification` 없는 data-only 메시지를 배너로 그리지 않고,
-/// `content-available`만으로는 앱을 깨울지도 시스템이 정한다. 지금 서버는
-/// data만 보내므로(core #270 `FcmPushSender`) **앱이 화면에 떠 있을 때만**
-/// 배너가 뜬다.
-///
-/// 서버가 `notification`을 실어도 문구가 서버에 굳지는 않는다 — 앱이 켜져
-/// 있을 때는 여전히 이 클래스가 그리고, 꺼져 있을 때만 시스템이 서버 문구를
-/// 쓴다. 백엔드와 정할 문제라 여기 남긴다.
-const kBackgroundPushNeedsServerNotification = true;
