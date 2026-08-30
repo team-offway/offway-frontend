@@ -12,7 +12,9 @@ import 'package:offway/features/notification/domain/app_notification.dart';
 /// 메시지에만 앱이 나서고, 그 문구는 목록 셀과 같아야 한다.
 void main() {
   group('문구', () {
-    test('목록 셀과 배너가 같은 문구를 쓴다', () {
+    test('지역명이 없으면 목록 셀과 배너가 같은 문구를 쓴다', () {
+      // 배너는 아직 지역명 없이 온다(core #358) — 그때 두 문구가 갈리면
+      // 사용자는 같은 알림을 둘로 읽는다
       for (final type in NotificationType.values) {
         final item = AppNotification(id: 1, type: type, read: false);
         expect(
