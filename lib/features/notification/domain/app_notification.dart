@@ -50,9 +50,7 @@ String notificationBody(NotificationType type, {String? regionName}) {
   final hasRegion = region != null && region.isNotEmpty;
   return switch (type) {
     NotificationType.tripTomorrow =>
-      hasRegion
-          ? '내일은 \'$region 여행\'을 떠나는 날이에요.\n짐은 다 챙기셨나요?'
-          : '내일은 여행을 떠나는 날이에요.\n짐은 다 챙기셨나요?',
+      hasRegion ? '내일은 \'$region 여행\'을 떠나는 날이에요.' : '내일은 여행을 떠나는 날이에요.',
     NotificationType.tripAfter =>
       hasRegion
           ? '\'$region 여행\' 다녀오셨나요?\n연차 차감을 확인해주세요.'
