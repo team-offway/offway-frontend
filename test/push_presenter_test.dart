@@ -4,11 +4,12 @@ import 'package:offway/core/router/app_router.dart';
 import 'package:offway/features/notification/application/push_presenter.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 
-/// 푸시 배너가 목록 셀과 **같은 말을 하고 같은 곳으로 보내는지** 고정한다.
+/// 푸시가 목록 셀과 **같은 말을 하고 같은 곳으로 보내는지**, 그리고 배너가
+/// **두 번 뜨지 않는지** 고정한다.
 ///
-/// 서버는 data-only 메시지를 보낸다(core #270) — 문구를 서버에 굳히지 않으려는
-/// 것이고, 그래서 배너를 앱이 직접 그린다. 두 곳에 문구를 따로 적으면 한쪽만
-/// 고쳐져 배너와 목록이 다른 말을 한다.
+/// 서버가 문구를 실어 보내면(core #358) 앱이 켜져 있어도 시스템이 배너를
+/// 그린다. 그때 앱이 또 그리면 같은 알림이 두 번 뜬다. 문구 없이 오는
+/// 메시지에만 앱이 나서고, 그 문구는 목록 셀과 같아야 한다.
 void main() {
   group('문구', () {
     test('목록 셀과 배너가 같은 문구를 쓴다', () {
@@ -72,6 +73,12 @@ void main() {
     /// 도착을 알리는지만 본다 — 배너가 못 떠도 앱 안에는 흔적이 남아야 한다
     RemoteMessage messageOf(String type) => RemoteMessage(data: {'type': type});
 
+    /// 서버가 문구를 실어 보낸 메시지 (core #358)
+    RemoteMessage withBanner(String type) => RemoteMessage(
+      data: {'type': type},
+      notification: const RemoteNotification(title: '알림', body: '문구'),
+    );
+
     testWidgets('푸시가 오면 배지·목록 갱신을 알린다', (tester) async {
       var arrived = 0;
       final presenter = PushPresenter()..onArrived = () => arrived++;
@@ -89,6 +96,43 @@ void main() {
       await presenter.show(messageOf('UNKNOWN_KIND'));
 
       expect(arrived, 1);
+    });
+
+    testWidgets('서버가 문구를 실어 보내도 배지는 켠다', (tester) async {
+      // 배너는 시스템이 그리지만, 종 배지와 목록은 앱 몫이다
+      var arrived = 0;
+      final presenter = PushPresenter()..onArrived = () => arrived++;
+
+      await presenter.show(withBanner('TRIP_AFTER'));
+
+      expect(arrived, 1);
+    });
+  });
+
+  group('배너 중복', () {
+    test('서버가 문구를 실었으면 앱은 그리지 않는다', () {
+      // 앱이 켜져 있어도 시스템이 배너를 띄운다 — 여기서 또 그리면
+      // 같은 알림이 두 번 뜬다 (core #358 이후)
+      expect(
+        PushPresenter.needsLocalBanner(
+          RemoteMessage(
+            data: const {'type': 'TRIP_TOMORROW'},
+            notification: const RemoteNotification(title: '알림', body: '문구'),
+          ),
+        ),
+        isFalse,
+        reason: '시스템 배너와 겹쳐 두 번 뜬다',
+      );
+    });
+
+    test('문구 없이 오면 앱이 대신 그린다', () {
+      // 옛 서버나 다른 발송 경로 — 그때까지 배너를 잃지 않는다
+      expect(
+        PushPresenter.needsLocalBanner(
+          RemoteMessage(data: const {'type': 'TRIP_TOMORROW'}),
+        ),
+        isTrue,
+      );
     });
   });
 
