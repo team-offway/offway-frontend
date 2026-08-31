@@ -186,8 +186,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   ],
                 ),
               ),
-              // 시안: 썸네일과 Day 칩 사이 12
-              const SizedBox(height: 12),
+              // 시안 실측: 지도 끝에서 칩까지 22. DS Category가 칩(40) 위아래로
+              // 10씩 두르고 프레임 간격이 12라, 잉크 기준으로는 22가 된다
+              const SizedBox(height: 22),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CourseDayTabs(
@@ -210,8 +211,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     color: AppColors.labelAlternative,
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
-              const SizedBox(height: 16),
+              // 시안 실측: 칩 아래에서 구분선까지 26 (Category 아래 여백 10 포함)
+              const SizedBox(height: 26),
               // 시안이 여기를 **선에서 면으로** 바꿨다. 위(코스 요약·지도)와
               // 아래(하루 일정)를 다른 덩어리로 읽히게 하는 자리라, 실선
               // 한 줄보다 두께 있는 면이 경계를 분명히 한다
