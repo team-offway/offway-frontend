@@ -21,7 +21,14 @@ import '../data/leave_usages_provider.dart';
 /// 보는 곳이고, 여기는 "올해 며칠을 쓸 수 있는가"라는 **기준값**을 고치는
 /// 곳이다. 시안이 마이에서 따로 들어가게 그린 이유이기도 하다.
 class TotalLeaveScreen extends ConsumerStatefulWidget {
-  const TotalLeaveScreen({super.key});
+  const TotalLeaveScreen({super.key, this.popOnSaved = false});
+
+  /// 저장하면 이 화면을 닫고 부른 쪽에 `true`를 돌려줄지.
+  ///
+  /// 내 연차에서 들어온 경우다 — 바뀐 잔여 일수가 **그 화면에** 크게 떠 있어,
+  /// 여기 남아 토스트를 띄우면 정작 달라진 숫자를 못 본다. 마이 탭에서 온
+  /// 경우는 돌아가도 보여줄 것이 없으므로 제자리에서 알린다.
+  final bool popOnSaved;
 
   @override
   ConsumerState<TotalLeaveScreen> createState() => _TotalLeaveScreenState();
@@ -107,6 +114,11 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
         _submitting = false;
       });
       _input.clear();
+      if (widget.popOnSaved) {
+        // 토스트는 부른 쪽이 띄운다 — 이 화면은 이미 사라지고 없다
+        context.pop(true);
+        return;
+      }
       showAppToast(context, '연차 정보를 업데이트했어요.', kind: AppToastKind.success);
     } on Object {
       if (!mounted) return;
@@ -509,9 +521,11 @@ class _DaysField extends StatelessWidget {
                                 isDense: true,
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
-                                // 비었을 때만 보인다. 단위('일')는 옆에
-                                // 따로 그리므로 힌트에도 붙여 둔다
-                                hintText: hint,
+                                // **빈 칸일 때만 넘긴다.** IntrinsicWidth가
+                                // 고유 폭을 잴 때 힌트까지 재는 탓에, 값이
+                                // 있어도 힌트를 걸어 두면 칸이 '23일' 폭으로
+                                // 남아 숫자와 '일' 사이가 벌어진다
+                                hintText: empty ? hint : null,
                                 hintStyle: AppTypography.body1NormalRegular
                                     .copyWith(color: AppColors.labelAssistive),
                               ),
