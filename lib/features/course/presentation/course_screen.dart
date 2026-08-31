@@ -25,10 +25,8 @@ import '../data/course_repository.dart';
 import 'my_courses_screen.dart' show savedCoursesProvider;
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
-import '../domain/transit_access.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
-import 'widgets/transit_access_card.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
@@ -460,12 +458,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              // 코스는 '내린 곳'에서 시작한다(core #127) — 그 지점을 지도
-              // 앞에 알린다. 대중교통 코스에만 값이 온다
-              if (course['transitAccess'] case final TransitAccess access) ...[
-                TransitAccessCard(access: access),
-                const SizedBox(height: 16),
-              ],
+              // 도착 안내(무엇을 타고 어디에 내리는지)는 **담은 뒤에** 보인다.
+              // 여기는 아직 고르는 자리라 갈 방법보다 코스 자체를 봐야 한다
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
