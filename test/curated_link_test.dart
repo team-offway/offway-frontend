@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/widgets/curated_link_card.dart';
 import 'package:offway/core/widgets/curated_link_section.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -194,6 +195,58 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('페이지를 열지 못했어요.'), findsOneWidget);
+    });
+  });
+
+  group('홈 카드', () {
+    testWidgets('사진 위에 소개와 제목을 얹는다', (tester) async {
+      // 홈은 목록이 아니라 가로로 넘기는 큰 카드다 — 화면 끝에 붙는 덤이
+      // 아니라 위 '이번 연차엔 여기 어때요?'와 나란한 한 줄이다
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SizedBox(
+              height: CuratedLinkCard.height,
+              child: CuratedLinkCard(
+                link: CuratedLink.parseList([link()]).first,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('코레일 승차권 예매'), findsOneWidget);
+      expect(find.text('한국철도공사 공식 예매.'), findsOneWidget);
+      // 시안 실측 — 255×220
+      final card = tester.getRect(find.byType(CuratedLinkCard));
+      expect(card.width, 255);
+      expect(card.height, 220);
+    });
+
+    testWidgets('소개문이 없으면 제목만 남는다', (tester) async {
+      // 서버가 description을 비워 보낼 수 있다 — 그 줄만 접는다
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SizedBox(
+              height: CuratedLinkCard.height,
+              child: const CuratedLinkCard(
+                link: CuratedLink(
+                  title: '코레일 승차권 예매',
+                  chipText: '기차표 예매',
+                  linkUrl: 'https://www.letskorail.com',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('코레일 승차권 예매'), findsOneWidget);
     });
   });
 

@@ -7,6 +7,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/curated_link_card.dart';
 import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
@@ -428,20 +429,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// 화면 맨 끝 '함께 보면 좋아요' — 서버가 고른 외부 링크 (core #350).
+  /// 화면 맨 끝 '지금 유용한 혜택과 정보' — 서버가 고른 외부 링크 (core #350).
+  ///
+  /// 목록이 아니라 **가로로 넘기는 큰 카드**다. 화면 끝에 붙는 덤이 아니라
+  /// 위 '이번 연차엔 여기 어때요?'와 나란한 한 줄로, 홈이 보여 주려고 내미는
+  /// 자리다.
   ///
   /// 홈을 아직 못 읽었거나 링크가 없으면 섹션째 접힌다. 로딩 자리도 두지
-  /// 않는다 — 추천 카드를 다 본 뒤에 따라오는 덤이라, 자리부터 잡아두면
+  /// 않는다 — 추천 카드를 다 본 뒤에 따라오는 것이라, 자리부터 잡아두면
   /// 화면 끝이 빈 채로 기다리게 된다
   Widget _buildCuratedLinks() {
     final links =
         ref.watch(homeSnapshotProvider).value?.curatedLinks ??
         const <CuratedLink>[];
     if (links.isEmpty) return const SizedBox.shrink();
+
     return Padding(
       // 위 섹션(가로 카드)과 붙지 않게 같은 간격을 준다
       padding: const EdgeInsets.only(top: _sectionGap),
-      child: CuratedLinkSection(links: links),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: _CuratedLinksTitle(),
+          ),
+          // 시안 실측: 제목~카드 16, 카드 사이 18
+          const SizedBox(height: 16),
+          SizedBox(
+            height: CuratedLinkCard.height,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: links.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 18),
+              itemBuilder: (context, i) => CuratedLinkCard(link: links[i]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -570,6 +596,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         );
       },
+    );
+  }
+}
+
+/// '지금 유용한 **혜택과 정보**를 만나보세요' — 가운데 두 낱말만 브랜드색.
+///
+/// 두 줄로 접히는 문구라 `RichText` 한 덩이로 둔다. 낱말을 잘라 Row로 늘어
+/// 놓으면 줄바꿈 자리를 앱이 정하게 되어, 기기 폭이 좁아질 때 엉뚱한 데서
+/// 끊긴다.
+class _CuratedLinksTitle extends StatelessWidget {
+  const _CuratedLinksTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = AppTypography.headline1Bold.copyWith(
+      color: AppColors.labelNormal,
+    );
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          const TextSpan(text: '지금 유용한 '),
+          TextSpan(
+            text: '혜택과 정보',
+            style: base.copyWith(color: AppColors.primaryStrong),
+          ),
+          const TextSpan(text: '를\n만나보세요'),
+        ],
+      ),
     );
   }
 }
