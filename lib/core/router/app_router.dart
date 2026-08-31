@@ -49,6 +49,9 @@ abstract final class AppRoutes {
 
   /// 마이 > 내 연차 관리 — 총 연차일수를 고치는 자리
   static const totalLeave = '/leave/total';
+
+  /// 내 연차에서 들어가는 총 연차 수정 — 저장하면 닫고 돌아온다
+  static const totalLeaveFromMyLeave = '/leave/total?from=leave';
   static const home = '/';
   static const notifications = '/notifications';
 
@@ -244,7 +247,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.totalLeave,
         name: 'totalLeave',
-        builder: (context, state) => const TotalLeaveScreen(),
+        // ?from=leave 면 저장하고 닫는다 — 내 연차에서 들어온 경우다.
+        // 바뀐 잔여 일수가 그 화면에 크게 떠 있어 돌아가야 결과가 보인다
+        builder: (context, state) => TotalLeaveScreen(
+          popOnSaved: state.uri.queryParameters['from'] == 'leave',
+        ),
       ),
       GoRoute(
         path: AppRoutes.sharedCourse,
