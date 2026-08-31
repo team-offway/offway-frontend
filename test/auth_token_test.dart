@@ -156,6 +156,53 @@ void main() {
       expect(storage.access, isNull);
       expect(storage.refresh, isNull);
     });
+
+    test('네트워크가 끊기면 토큰을 지키다', () async {
+      // 지하철에서 잠깐 끊긴 것뿐인데 60일짜리 리프레시까지 버리면,
+      // 멀쩡한 세션을 두고 로그인 화면으로 튕긴다
+      final storage = _MemoryStorage()
+        ..access = 'alive'
+        ..refresh = 'alive';
+      final dio = Dio()
+        ..httpClientAdapter = _StubAdapter((options) {
+          throw DioException.connectionError(
+            requestOptions: options,
+            reason: '끊김',
+          );
+        });
+
+      final tokens = await AuthRepository(dio, storage).reissue();
+
+      expect(tokens, isNull, reason: '이번에는 못 되살렸다');
+      expect(storage.refresh, 'alive', reason: '토큰은 성하다 — 다음에 다시 시도한다');
+    });
+
+    test('서버가 5xx면 토큰을 지키다', () async {
+      // 서버 사정이지 토큰 문제가 아니다
+      final storage = _MemoryStorage()
+        ..access = 'alive'
+        ..refresh = 'alive';
+      final dio = Dio()
+        ..httpClientAdapter = _StubAdapter((_) => _json(503, {}));
+
+      final tokens = await AuthRepository(dio, storage).reissue();
+
+      expect(tokens, isNull);
+      expect(storage.refresh, 'alive');
+    });
+
+    test('403도 거절로 보고 비운다', () async {
+      // 서버가 폐기했거나 재사용을 감지한 경우다
+      final storage = _MemoryStorage()
+        ..access = 'dead'
+        ..refresh = 'dead';
+      final dio = Dio()
+        ..httpClientAdapter = _StubAdapter((_) => _json(403, {}));
+
+      await AuthRepository(dio, storage).reissue();
+
+      expect(storage.refresh, isNull);
+    });
   });
 
   group('401 인터셉터', () {
@@ -298,6 +345,40 @@ void main() {
 
       // 이 신호가 없으면 화면이 오류만 띄운 채 멈춘다
       expect(container.read(sessionExpiredProvider), isTrue);
+    });
+
+    test('네트워크 탓에 못 되살렸으면 만료라 하지 않는다', () async {
+      // 재발급이 실패했다고 늘 만료는 아니다. 서버가 거절했으면 토큰이
+      // 지워지고, 끊긴 것뿐이면 남는다 — 그 차이로 가른다
+      final storage = _MemoryStorage()
+        ..access = 'expired'
+        ..refresh = 'alive';
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          // 되살리지는 못했지만 토큰은 건드리지 않았다 (끊김·5xx)
+          tokenRefresherProvider.overrideWith(
+            (ref) =>
+                () async => false,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final dio = container.read(dioProvider)
+        ..httpClientAdapter = _StubAdapter((_) => _json(401, {}));
+
+      await dio
+          .get<dynamic>('/api/v1/leaves/me')
+          .catchError(
+            (_) => Response<dynamic>(requestOptions: RequestOptions()),
+          );
+
+      expect(
+        container.read(sessionExpiredProvider),
+        isFalse,
+        reason: '멀쩡한 세션을 두고 로그인 화면으로 보내면 안 된다',
+      );
     });
 
     test('되살렸으면 신호를 올리지 않는다', () async {
