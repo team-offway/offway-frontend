@@ -21,7 +21,6 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
-import '../../../core/widgets/curated_link_section.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
@@ -107,9 +106,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     );
     final places = (day['places'] as List).cast<Map<String, dynamic>>();
     final regionName = saved['regionName'] as String? ?? '';
-    final links =
-        (course['curatedLinks'] as List?)?.cast<CuratedLink>() ??
-        const <CuratedLink>[];
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
     // 오늘 기준 남은 날 — 표시 밀도(날씨·기온 노출)를 이 값이 정한다
@@ -227,12 +223,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       _showPlaceSheet(place, isToday: dDay == 0),
                 ),
               ),
-              // 예매·관광정보처럼 떠나기 전에 챙길 공식 사이트 (core #350).
-              // 담아둔 코스를 다시 열어 보는 자리라 여기가 제일 쓸모 있다
-              if (links.isNotEmpty) ...[
-                const SizedBox(height: 44),
-                CuratedLinkSection(links: links),
-              ],
             ],
           ),
         ),
