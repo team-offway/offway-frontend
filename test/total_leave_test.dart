@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/leave/presentation/total_leave_screen.dart';
@@ -56,51 +57,42 @@ void main() {
       await pump(tester);
       await startEditing(tester);
 
-      expect(find.text('새로운 총 연차일수를 입력해주세요'), findsOneWidget);
+      expect(find.text('총 연차일수를 입력해주세요'), findsOneWidget);
       expect(find.text('잔여 연차'), findsNothing);
     });
 
-    testWidgets('입력 칸은 비어서 시작한다', (tester) async {
-      // 시안에 placeholder가 없다 — 예시 숫자를 남겨 두면 그게 지금 값인지
-      // 그냥 예시인지 헷갈린다
+    testWidgets('입력 칸은 비어 있고 지금 값을 옅게 깔아 둔다', (tester) async {
+      // 무엇을 고치는 중인지 알려 주되, 값은 넣지 않는다 — 그대로 등록을
+      // 누르면 아무것도 안 바뀌는데 바뀐 것처럼 보인다
       await pump(tester);
       await startEditing(tester);
 
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller?.text, isEmpty);
-      expect(field.decoration?.hintText, isNull);
+      expect(field.decoration?.hintText, '23일');
     });
   });
 
   group('입력 검증', () {
     /// 화면에 뜬 오류 문구 — 없으면 null.
     ///
-    /// 오류는 입력 칸 아래 별도 줄로 그린다(연차 사용 등록과 같은 방식)
+    /// 오류는 입력 칸 아래 별도 줄로 그린다(연차 사용 등록과 같은 방식).
+    /// **색으로 찾는다** — 문구 목록을 나열해 걸러내면 라벨 한 글자만 바뀌어도
+    /// 테스트가 깨진다. 오류만 statusNegative를 쓰므로 그것이 정확한 표식이다
     Future<String?> errorFor(WidgetTester tester, String input) async {
       await pump(tester);
       await startEditing(tester);
       await tester.enterText(find.byType(TextField), input);
       await tester.pumpAndSettle();
-      final found = find.textContaining('지원하지 않는');
-      if (found.evaluate().isNotEmpty) {
-        return tester.widget<Text>(found).data;
-      }
-      // 다른 오류 문구도 잡는다 — 입력 칸 라벨·단위는 빼고 본다
-      final texts = find
+
+      final red = find
           .byType(Text)
           .evaluate()
-          .map((e) => (e.widget as Text).data)
-          .whereType<String>()
-          .where(
-            (t) =>
-                t != '새로운 총 연차일수를 입력해주세요' &&
-                t != '일' &&
-                t != '내 연차 관리' &&
-                t != '확인해주세요' &&
-                t != '등록하기' &&
-                !t.contains('재설정하면'),
-          );
-      return texts.isEmpty ? null : texts.first;
+          .map((e) => e.widget as Text)
+          .where((t) => t.style?.color == AppColors.statusNegative)
+          .map((t) => t.data)
+          .whereType<String>();
+      return red.isEmpty ? null : red.first;
     }
 
     testWidgets('0.25 단위가 아니면 막는다', (tester) async {
