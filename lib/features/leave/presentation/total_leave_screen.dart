@@ -37,7 +37,19 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   bool _submitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    // 손을 떼면 지우기(✕)가 체크(✓)로 바뀐다 — 그리려면 다시 build해야 한다
+    _focus.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _focus.removeListener(_onFocusChanged);
     _input.dispose();
     _focus.dispose();
     super.dispose();
@@ -56,7 +68,11 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
     if (days > kMaxTotalLeaveDays) {
       return '${formatLeaveDays(kMaxTotalLeaveDays)}일까지 입력할 수 있어요.';
     }
-    if ((days * 4) % 1 != 0) return '지원하지 않는 단위입니다.';
+    // 정수·0.25·0.5만 받는다. 0.75는 쓰지 않는 단위라 함께 막는다
+    final fraction = days - days.floorToDouble();
+    if (fraction != 0 && fraction != 0.25 && fraction != 0.5) {
+      return '지원하지 않는 단위입니다.';
+    }
     return null;
   }
 
@@ -116,7 +132,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
                   onRetry: () => ref.invalidate(myLeaveProvider),
                 ),
                 data: (data) => _editing
-                    ? _buildEditor(data.totalDays)
+                    ? _buildEditor()
                     : _buildSummary(data.remainingDays),
               ),
             ),
@@ -183,7 +199,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   }
 
   /// 새 총 연차일수를 받는 상태
-  Widget _buildEditor(double totalDays) {
+  Widget _buildEditor() {
     final error = _error;
     return Column(
       children: [
@@ -193,8 +209,6 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
             controller: _input,
             focusNode: _focus,
             error: error,
-            // 지금 값을 힌트로 둔다 — 며칠이었는지 기억해서 오지 않는다
-            hint: '${formatLeaveDays(totalDays)}일',
             onChanged: (_) => setState(() {}),
             onClear: () => setState(_input.clear),
           ),
@@ -397,7 +411,6 @@ class _DaysField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.error,
-    required this.hint,
     required this.onChanged,
     required this.onClear,
   });
@@ -405,9 +418,6 @@ class _DaysField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String? error;
-
-  /// 지금 저장된 총 연차 — 무엇을 바꾸는 중인지 알려 준다
-  final String hint;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
 
@@ -441,10 +451,6 @@ class _DaysField extends StatelessWidget {
             color: AppColors.labelNormal,
           ),
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTypography.body2NormalMedium.copyWith(
-              color: AppColors.labelAssistive,
-            ),
             filled: true,
             fillColor: AppColors.backgroundNormal,
             contentPadding: const EdgeInsets.symmetric(
@@ -480,7 +486,9 @@ class _DaysField extends StatelessWidget {
         semanticLabel: '입력 오류',
       );
     }
-    if (isValid) {
+    // 입력하는 동안은 지우기가 쓸모 있고, 손을 뗐을 때 체크로 확인시킨다 —
+    // 시안이 두 상태를 나눠 그렸다
+    if (isValid && !focusNode.hasFocus) {
       return _SuffixIcon(
         asset: 'assets/icons/ic_check_circle_fill.svg',
         color: AppColors.primaryNormal,

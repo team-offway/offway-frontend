@@ -55,7 +55,8 @@ class MyScreen extends ConsumerWidget {
             _buildProfile(user),
             // 시안: 인사말 끝에서 메뉴 첫 행까지 82.
             // 행 간격 26은 _MenuRow가 아래쪽에만 달고 있어 여기서 겹치지 않는다
-            const SizedBox(height: 82),
+            // 시안 실측: 인사말 끝에서 카드까지 32
+            const SizedBox(height: 32),
             // 총 연차일수를 고치러 가는 자리 — 아래 목록과 달리 카드로 둔다.
             // 이 앱에서 가장 자주 고치는 값이라 시안이 위계를 올려 뒀다
             Padding(

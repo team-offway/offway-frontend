@@ -59,12 +59,15 @@ void main() {
       expect(find.text('잔여 연차'), findsNothing);
     });
 
-    testWidgets('지금 값을 힌트로 둔다', (tester) async {
-      // 며칠이었는지 기억해서 오지 않는다
+    testWidgets('입력 칸은 비어서 시작한다', (tester) async {
+      // 시안에 placeholder가 없다 — 예시 숫자를 남겨 두면 그게 지금 값인지
+      // 그냥 예시인지 헷갈린다
       await pump(tester);
       await startEditing(tester);
 
-      expect(find.text('25일'), findsOneWidget);
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller?.text, isEmpty);
+      expect(field.decoration?.hintText, isNull);
     });
   });
 
@@ -100,6 +103,10 @@ void main() {
 
     testWidgets('반반차도 받는다', (tester) async {
       expect(await errorFor(tester, '15.25'), isNull);
+    });
+
+    testWidgets('0.75는 쓰지 않는 단위라 막는다', (tester) async {
+      expect(await errorFor(tester, '15.75'), '지원하지 않는 단위입니다.');
     });
 
     testWidgets('빈 값에는 오류를 띄우지 않는다', (tester) async {
