@@ -154,9 +154,18 @@ class AuthInterceptor extends Interceptor {
         .read(tokenRefresherProvider)()
         .whenComplete(() => _refreshing = null));
     if (!refreshed) {
-      // 되살릴 수 없는 401 — 다시 로그인해야 한다. 이 신호를 올리지 않으면
-      // 화면이 오류만 띄운 채 멈춰, 사용자가 나갈 길을 찾지 못한다
-      _ref.read(sessionExpiredProvider.notifier).markExpired();
+      // 재발급이 실패했다고 늘 만료는 아니다 — 지하철에서 끊기거나 서버가
+      // 잠깐 죽어도 여기 온다. 그때까지 '로그인이 만료됐어요'를 띄우면
+      // 멀쩡한 세션을 두고 로그인 화면으로 내보내게 된다.
+      //
+      // 서버가 거절했으면 재발급 쪽이 토큰을 지운다(`AuthRepository.reissue`).
+      // **남아 있다면 토큰 문제가 아니다** — 오류만 올리고 세션은 지킨다
+      final storage = _ref.read(secureStorageProvider);
+      if (await storage.refreshToken == null) {
+        // 되살릴 수 없는 401 — 다시 로그인해야 한다. 이 신호를 올리지 않으면
+        // 화면이 오류만 띄운 채 멈춰, 사용자가 나갈 길을 찾지 못한다
+        _ref.read(sessionExpiredProvider.notifier).markExpired();
+      }
       return handler.next(err);
     }
 

@@ -128,8 +128,12 @@ class AuthRepository {
   /// 저장해야 다음 재발급이 된다. 옛 값을 다시 쓰면 서버가 재사용으로 보고
   /// 그 계정의 토큰을 전부 끊는다.
   ///
-  /// 실패하면 저장된 토큰을 지우고 null을 돌려준다 — 못 쓰는 토큰을 들고
-  /// 있으면 요청마다 401을 맞으며 재발급을 되풀이한다.
+  /// **서버가 거절했을 때만** 저장된 토큰을 지운다. 못 쓰는 토큰을 들고
+  /// 있으면 요청마다 401을 맞으며 재발급을 되풀이하기 때문이다.
+  ///
+  /// 반대로 **네트워크가 끊기거나 서버가 죽었을 때는 지우지 않는다.** 지하철에서
+  /// 잠깐 끊긴 것뿐인데 60일짜리 리프레시 토큰까지 버리면, 멀쩡한 세션을 두고
+  /// 로그인 화면으로 튕긴다 — 원인을 가리지 않고 지우던 때의 문제다.
   Future<AuthTokens?> reissue() async {
     final refresh = await _storage.refreshToken;
     if (refresh == null) return null;
@@ -148,10 +152,22 @@ class AuthRepository {
         refreshToken: tokens.refreshToken,
       );
       return tokens;
-    } on DioException {
-      await _storage.clear();
+    } on DioException catch (e) {
+      // 서버가 "이 토큰은 못 쓴다"고 답한 경우만 버린다 — 만료·폐기·재사용
+      // 감지가 여기 온다. 그 밖(끊김·타임아웃·5xx)은 토큰 문제가 아니므로
+      // 남겨 두고 다음 요청에서 다시 시도한다
+      if (_isRejectedByServer(e)) await _storage.clear();
       return null;
     }
+  }
+
+  /// 서버가 이 리프레시 토큰을 거절했는가.
+  ///
+  /// 401·403만 그렇다. 5xx는 서버 사정이고, 응답이 아예 없으면(끊김·타임아웃)
+  /// 토큰이 성한지조차 물어보지 못한 것이다.
+  static bool _isRejectedByServer(DioException e) {
+    final status = e.response?.statusCode;
+    return status == 401 || status == 403;
   }
 
   /// 로그아웃 (`POST /auth/logout`).
