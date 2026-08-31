@@ -212,6 +212,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              // 시안이 여기를 **선에서 면으로** 바꿨다. 위(코스 요약·지도)와
+              // 아래(하루 일정)를 다른 덩어리로 읽히게 하는 자리라, 실선
+              // 한 줄보다 두께 있는 면이 경계를 분명히 한다
+              const Divider(
+                height: 12,
+                thickness: 12,
+                color: AppColors.lineNormalAlternative,
+              ),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _buildDayHeader(day, dDay),
