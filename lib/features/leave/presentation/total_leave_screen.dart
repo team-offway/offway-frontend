@@ -145,7 +145,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
                     onRetry: () => ref.invalidate(myLeaveProvider),
                   ),
                   data: (data) => _editing
-                      ? _buildEditor(data.usedDays)
+                      ? _buildEditor(data.usedDays, data.remainingDays)
                       : _buildSummary(data.remainingDays),
                 ),
               ),
@@ -213,7 +213,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   }
 
   /// 새 총 연차일수를 받는 상태
-  Widget _buildEditor(double usedDays) {
+  Widget _buildEditor(double usedDays, double remainingDays) {
     final error = _error;
     return Column(
       children: [
@@ -223,6 +223,8 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
             controller: _input,
             focusNode: _focus,
             error: error,
+            // 지금 값을 옅게 깔아 둔다 — 무엇을 고치는 중인지 알려 준다
+            hint: '${formatLeaveDays(remainingDays)}일',
             onChanged: (_) => setState(() {}),
             onClear: () => setState(_input.clear),
           ),
@@ -232,8 +234,9 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
           child: _Notice(
+            emphasized: true,
             title: '확인해주세요',
-            body: '재설정하면 지금까지의 사용 내역은 유지되지만,\n잔여일수가 새 기준으로 다시 계산돼요',
+            body: '재설정하면 지금까지의 사용 내역은 유지되지만,\n잔여일수가 새 기준으로 다시 계산돼요.',
           ),
         ),
         Padding(
@@ -365,10 +368,24 @@ class _Sparkle extends StatelessWidget {
 /// [AppInlineNotice]는 한 줄짜리 배너라 제목·본문 두 단이 필요한 이 자리에
 /// 맞지 않는다
 class _Notice extends StatelessWidget {
-  const _Notice({required this.title, required this.body});
+  const _Notice({
+    required this.title,
+    required this.body,
+    this.emphasized = false,
+  });
 
   final String title;
   final String body;
+
+  /// 더 진하게 그릴지 — 시안이 두 안내를 다른 농도로 쓴다.
+  ///
+  /// '총 연차일수란?'은 그냥 설명이라 옅고, '확인해주세요'는 재설정하면
+  /// 잔여가 다시 계산된다는 경고라 한 단 진하다
+  final bool emphasized;
+
+  /// 시안 실측 — 경고성은 #47484C(Label/Neutral), 설명은 #858588(Label/Alternative)
+  Color get _tone =>
+      emphasized ? AppColors.labelNeutral : AppColors.labelAlternative;
 
   @override
   Widget build(BuildContext context) {
@@ -381,17 +398,12 @@ class _Notice extends StatelessWidget {
               'assets/icons/ic_circle_info.svg',
               width: 24,
               height: 24,
-              colorFilter: const ColorFilter.mode(
-                AppColors.labelNeutral,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(_tone, BlendMode.srcIn),
             ),
             const SizedBox(width: 8),
             Text(
               title,
-              style: AppTypography.body2NormalMedium.copyWith(
-                color: AppColors.labelNeutral,
-              ),
+              style: AppTypography.body2NormalMedium.copyWith(color: _tone),
             ),
           ],
         ),
@@ -416,6 +428,7 @@ class _DaysField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.error,
+    required this.hint,
     required this.onChanged,
     required this.onClear,
   });
@@ -423,6 +436,9 @@ class _DaysField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String? error;
+
+  /// 지금 잔여 연차 — 값이 비었을 때 옅게 깔아 둔다
+  final String hint;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
 
@@ -436,7 +452,7 @@ class _DaysField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '새로운 총 연차일수를 입력해주세요',
+          '총 연차일수를 입력해주세요',
           style: AppTypography.label1NormalMedium.copyWith(
             color: AppColors.labelNeutral,
           ),
@@ -489,10 +505,15 @@ class _DaysField extends StatelessWidget {
                               style: AppTypography.body1NormalRegular.copyWith(
                                 color: AppColors.labelNormal,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 isDense: true,
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
+                                // 비었을 때만 보인다. 단위('일')는 옆에
+                                // 따로 그리므로 힌트에도 붙여 둔다
+                                hintText: hint,
+                                hintStyle: AppTypography.body1NormalRegular
+                                    .copyWith(color: AppColors.labelAssistive),
                               ),
                             ),
                           ),
