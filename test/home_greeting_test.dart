@@ -37,6 +37,15 @@ void main() {
     expect(find.text('영찬님, 어디로 떠나볼까요?'), findsOneWidget);
   });
 
+  testWidgets('성까지 온 세 글자 이름은 성을 떼고 부른다', (tester) async {
+    // 카카오는 대개 성까지 준다 — 그대로 부르면 '이예빈님'이 되는데,
+    // 성까지 붙여 부르는 자리가 아니다
+    await pump(tester, user: {'nickname': '이예빈', 'remainingLeaveDays': 12.0});
+
+    expect(find.text('예빈님, 어디로 떠나볼까요?'), findsOneWidget);
+    expect(find.textContaining('이예빈님'), findsNothing);
+  });
+
   testWidgets('이름이 없으면 이름 없이 인사한다', (tester) async {
     // 아직 못 읽었거나 서버가 이름을 못 준 상태.
     //
