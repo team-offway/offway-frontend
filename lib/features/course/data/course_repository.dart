@@ -7,6 +7,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/tour_text.dart';
 import '../../../core/widgets/curated_link_section.dart';
+import '../domain/transit_access.dart';
 
 final courseRepositoryProvider = Provider<CourseRepository>(
   (ref) => CourseRepository(ref.watch(dioProvider)),
@@ -54,6 +55,7 @@ class CourseRepository {
           density: density,
           transport: transport,
           confirmedDate: confirmedDate,
+          origin: origin,
         ),
       );
     } on DioException catch (e) {
@@ -101,6 +103,7 @@ class CourseRepository {
             density: density,
             transport: transport,
             confirmedDate: confirmedDate,
+            origin: origin,
           ),
         ),
         seed: (data['seed'] as num).toInt(),
@@ -436,22 +439,36 @@ class CourseRepository {
       // 이 코스와 함께 보면 좋은 공식 사이트 (core #350). 코스를 만드는 여섯
       // 경로가 모두 이 함수를 지나므로 여기서 한 번만 꺼낸다
       'curatedLinks': CuratedLink.parseList(course['curatedLinks']),
+      // 무엇을 타고 어디에 내리는가 (core #97). 자차·저장 코스는 없다.
+      // 여섯 경로가 이 함수를 지나므로 여기서 한 번만 꺼낸다
+      'transitAccess': ?TransitAccess.tryParse(course['transitAccess']),
       '_save': ?savePayload,
     };
   }
 
   /// 저장 API가 받는 형태 — 생성 응답의 슬롯을 저장 계약 필드만 남겨 되돌린다
+  /// 저장 API가 받는 형태 — 생성 응답의 슬롯을 저장 계약 필드만 남겨 되돌린다.
+  ///
+  /// **출발지를 함께 보낸다.** 서버는 도착 정보(무엇을 타고 어디에 내리는가)를
+  /// 저장하지 않고 상세를 열 때마다 다시 계산하는데, 그 근거가 출발지다
+  /// (core `CourseStorageService.trainAccessFor` — "결과가 아니라 입력을
+  /// 저장해 두고 여기서 계산한다. 시간표는 바뀌므로"). 안 보내면 담은 코스의
+  /// 교통 안내가 통째로 비어 버린다.
   Map<String, dynamic> _toSavePayload(
     Map<String, dynamic> course, {
     required String density,
     required String transport,
     required DateTime? confirmedDate,
+    required Origin origin,
   }) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     return {
       'regionId': course['regionId'],
       'density': density,
       'transport': transport,
+      // 상세 조회가 이 값으로 도착 정보를 다시 계산한다
+      'originLat': origin.lat,
+      'originLng': origin.lng,
       if (confirmedDate != null) 'travelDate': isoDate(confirmedDate),
       'days': [
         for (final day in days)
