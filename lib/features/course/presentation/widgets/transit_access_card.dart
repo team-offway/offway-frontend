@@ -95,32 +95,36 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
               ),
             ],
           ),
-          if (_detail case final String detail) ...[
-            const SizedBox(height: 6),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 아이콘 한가운데(24의 절반)에서 아래로 흘리는 점선.
-                  // 코스 타임라인이 번호를 잇는 것과 같은 뜻이다 — 위 줄에서
-                  // 이어지는 말임을 선으로 붙든다
-                  SizedBox(
-                    width: 24,
-                    child: Center(child: DottedVerticalLine.transit()),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      detail,
-                      style: AppTypography.label1NormalMedium.copyWith(
-                        color: AppColors.labelAlternative,
-                      ),
+          const SizedBox(height: 6),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 아이콘 한가운데(24의 절반)에서 아래로 흘리는 점선.
+                // 코스 타임라인이 번호를 잇는 것과 같은 뜻이다 — 위 줄에서
+                // 이어지는 말임을 선으로 붙든다.
+                //
+                // **문구가 없어도 그린다.** 서버가 소요시간을 아직 못 잰
+                // 구간에서는 둘째 줄이 통째로 비는데, 그때 점선까지 사라지면
+                // 같은 카드가 지역마다 다르게 보인다
+                SizedBox(
+                  width: 24,
+                  child: Center(child: DottedVerticalLine.transit()),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    // 아직 모르는 값이라 비워 둔다 — 자리는 점선이 지킨다.
+                    // 빈 문자열이라도 줘야 줄 높이가 잡혀 점선이 그려진다
+                    _detail ?? '',
+                    style: AppTypography.label1NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
           if (_swapLabel case final String label) ...[
             const SizedBox(height: 12),
             Padding(
