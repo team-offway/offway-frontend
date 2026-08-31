@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../network/image_cache.dart';
+import '../network/image_url.dart';
 import '../theme/tokens/tokens.dart';
 
 /// 장소 썸네일 — 이미지가 없거나 못 불러오면 회색 자리에 아이콘을 남긴다.
@@ -61,7 +62,9 @@ class PlaceThumbnail extends StatelessWidget {
           ? _placeholder(w, h)
           : LayoutBuilder(
               builder: (context, constraints) => CachedNetworkImage(
-                imageUrl: imageUrl!,
+                // TourAPI가 http로 주는데 iOS가 평문을 막는다 — 같은 파일을
+                // 주는 https로 올려 받는다
+                imageUrl: httpsImageUrl(imageUrl)!,
                 cacheManager: appImageCacheManager,
                 fit: BoxFit.cover,
                 // TourAPI 원본은 장당 100~500KB에 800px가 넘는다. 디스크에

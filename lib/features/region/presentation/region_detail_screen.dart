@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/image_cache.dart';
+import '../../../core/network/image_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -376,7 +377,8 @@ class _SpotCard extends StatelessWidget {
           child: imageUrl == null
               ? const _SpotFallback()
               : CachedNetworkImage(
-                  imageUrl: imageUrl,
+                  // TourAPI는 http로 준다 — iOS가 평문을 막아 안 뜬다
+                  imageUrl: httpsImageUrl(imageUrl)!,
                   cacheManager: appImageCacheManager,
                   fit: BoxFit.cover,
                   // 디스크 캐시 + 카드 폭까지만 디코드 (PlaceThumbnail과 같은 이유)
