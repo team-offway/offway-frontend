@@ -196,21 +196,21 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   onSelect: (d) => setState(() => _selectedDay = d),
                 ),
               ),
-              const SizedBox(height: 16),
-              // 접기·펼치기를 같은 자리에서 화살표 방향만 바꿔 처리한다 —
-              // 지도를 직접 눌러 펼치던 방식은 지도 조작과 충돌했다
-              Center(
-                child: AppIconButton(
-                  icon: _mapExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  // 가이드 아이콘 32
-                  size: 32,
-                  onTap: () => setState(() => _mapExpanded = !_mapExpanded),
-                  semanticLabel: _mapExpanded ? '지도 접기' : '지도 펼치기',
-                  color: AppColors.labelAlternative,
+              // 되돌아가는 화살표는 **펼친 상태에만** 둔다(시안 Note).
+              // 접혀 있을 때는 지도를 눌러 펼치므로 버튼이 필요 없다
+              if (_mapExpanded) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: AppIconButton(
+                    icon: Icons.keyboard_arrow_up,
+                    // 가이드 아이콘 32
+                    size: 32,
+                    onTap: () => setState(() => _mapExpanded = false),
+                    semanticLabel: '지도 접기',
+                    color: AppColors.labelAlternative,
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               // 시안이 여기를 **선에서 면으로** 바꿨다. 위(코스 요약·지도)와
               // 아래(하루 일정)를 다른 덩어리로 읽히게 하는 자리라, 실선
@@ -451,10 +451,26 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         child: CourseMap(places: places, dayKey: _selectedDay),
       ),
     );
-    // 접힌 상태에서도 지도를 옮기고 확대할 수 있다 — 예전에는 조작을 통째로
-    // 막아 탭이 곧 '펼치기'였는데, 미리보기라도 손이 닿지 않으면 답답하다.
-    // 펼치기는 지도 아래 화살표 버튼이 맡아 지도 제스처와 겹치지 않는다
-    return map;
+    // 펼친 상태에서는 지도를 마음껏 옮기고 확대한다 — 그러라고 펼친 것이다
+    if (_mapExpanded) return map;
+
+    // 접힌 상태는 **미리보기**다. 지도 제스처를 막고 탭을 '펼치기'로 받는다
+    // (시안 Note: 지도 영역을 탭하면 확장되며 지도뷰로 전환).
+    //
+    // 조작을 열어 두면 지도를 옮기려는 손짓과 펼치려는 탭이 구분되지 않는다 —
+    // 그래서 예전에 화살표 버튼을 따로 뒀는데, 접힌 자리에 늘 떠 있어
+    // 시안에 없는 버튼이 됐다. 미리보기에서는 조작을 포기하는 편이 맞다
+    return Semantics(
+      button: true,
+      label: '지도 펼치기',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () => setState(() => _mapExpanded = true),
+        behavior: HitTestBehavior.opaque,
+        // 지도가 제스처를 먼저 채가지 않도록 위에 덮는다
+        child: IgnorePointer(child: map),
+      ),
+    );
   }
 
   /// `여행 1일차 7.26 월` + 날씨 — 가까운 여행만 날씨가 붙고 당일엔 기온까지
