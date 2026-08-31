@@ -49,7 +49,10 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
     final usagesAsync = ref.watch(leaveUsagesProvider);
-    final usages = usagesAsync.value ?? const <LeaveUsage>[];
+    final all = usagesAsync.value ?? const <LeaveUsage>[];
+    // 이 화면은 훑어보는 자리다 — 다 쌓아 두면 아래 '총 연차일수 수정하기'가
+    // 한참 밑으로 밀려 보이지 않는다. 나머지는 '더보기'가 맡는다
+    final usages = all.take(_maxCards).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -142,6 +145,29 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
                         ],
                       ),
                     ),
+                  // 사용 내역을 보다가 '총량 자체가 틀렸다'를 깨닫는 자리다.
+                  // 마이 탭 진입점(설정하러 찾아오는 경로)과 함께 둘로 굴린다
+                  const SizedBox(height: 24),
+                  const Divider(
+                    height: 12,
+                    thickness: 12,
+                    color: AppColors.lineNormalAlternative,
+                  ),
+                  _TotalLeaveEntry(
+                    onTap: () async {
+                      final changed = await context.push<bool>(
+                        AppRoutes.totalLeaveFromMyLeave,
+                      );
+                      if (!context.mounted || changed != true) return;
+                      // 수정은 저쪽 화면에서 끝났지만 결과는 여기서 알린다 —
+                      // 바뀐 잔여 일수가 보이는 자리가 여기라야 말이 맞는다
+                      showAppToast(
+                        context,
+                        '연차 정보를 업데이트했어요.',
+                        kind: AppToastKind.success,
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -177,6 +203,114 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
       ),
     );
   }
+}
+
+/// 이 화면에 카드로 보여줄 사용 내역 개수.
+///
+/// 나머지는 '더보기'가 맡는다 — 서버가 목록을 잘라 주지 않아 앱에서 자른다
+/// (`GET /leaves/me`에 개수·페이지 파라미터가 없다).
+const _maxCards = 4;
+
+/// 사용 내역 아래, 총 연차일수를 고치러 가는 자리.
+///
+/// 마이 탭에도 같은 곳으로 가는 줄이 있다. 둘은 맥락이 다르다 — 마이 탭은
+/// 설정하러 찾아오는 경로고, 여기는 내역을 훑다가 **총량 자체가 틀렸음을
+/// 깨닫는** 경로다. 그 자리에서 바로 이어 준다.
+class _TotalLeaveEntry extends StatelessWidget {
+  const _TotalLeaveEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      // 시안은 구분선 아래로 24를 띄우고, 그 안에서 다시 24를 둔 뒤 아이콘을
+      // 놓는다. 스파클이 아이콘 위로 4.9 삐져나와 24만 주면 그만큼 먹힌다
+      padding: const EdgeInsets.only(top: 48, bottom: 24),
+      child: Column(
+        children: [
+          // 스파클은 아이콘 밖으로 삐져나온다 — 시안 좌표가 음수라
+          // Stack에 clipBehavior.none을 줘야 잘리지 않는다
+          SizedBox(
+            width: 48.9,
+            height: 48.9,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/ic_timer.svg',
+                  width: 48.9,
+                  height: 48.9,
+                  excludeFromSemantics: true,
+                ),
+                const Positioned(left: -15.7, top: -4.9, child: _Sparkle(7.3)),
+                const Positioned(left: 45.7, top: 14, child: _Sparkle(9)),
+                // 왼쪽 아래만 한 단 옅다 — 시안이 셋을 같은 색으로 두지
+                // 않는다. 나란히 놓으면 반짝임이 평평해 보이기 때문이다
+                const Positioned(
+                  left: -4.5,
+                  top: 39.9,
+                  child: _Sparkle(9, tone: AppPalette.lightBlue70),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            '연차가 새로 갱신됐나요?\n총 연차일수를 수정할 수 있어요',
+            textAlign: TextAlign.center,
+            style: AppTypography.label2Regular.copyWith(
+              color: AppColors.labelAlternative,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 여기가 목적지가 아니라 곁다리 제안이라 옅은 회색 버튼이다.
+          // 총 연차 화면의 파란 버튼과 위계를 나눈다
+          GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 189,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.fillNormal,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '총 연차일수 수정하기',
+                style: AppTypography.body1NormalMedium.copyWith(
+                  color: AppColors.labelNeutral,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 타이머 둘레에 흩어 둔 반짝임.
+///
+/// 에셋 원본은 `#3DC2FF`(Light Blue 60)다. [tone]을 주면 그 색으로 덮는다 —
+/// 시안이 세 개를 같은 농도로 두지 않아 하나만 한 단 옅게 쓴다.
+class _Sparkle extends StatelessWidget {
+  const _Sparkle(this.size, {this.tone});
+
+  final double size;
+
+  /// null이면 에셋 원본색을 그대로 쓴다
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) => SvgPicture.asset(
+    'assets/icons/ic_star_four.svg',
+    width: size,
+    height: size,
+    excludeFromSemantics: true,
+    colorFilter: tone == null ? null : ColorFilter.mode(tone!, BlendMode.srcIn),
+  );
 }
 
 /// 잔여 일수만 쓰는 큰 숫자.
