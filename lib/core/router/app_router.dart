@@ -23,6 +23,7 @@ import '../../features/my/presentation/withdraw_screen.dart';
 import '../../features/leave/presentation/leave_register_screen.dart';
 import '../../features/leave/presentation/leave_usages_screen.dart';
 import '../../features/leave/presentation/my_leave_screen.dart';
+import '../../features/leave/presentation/total_leave_screen.dart';
 import '../../features/course/presentation/shared_course_screen.dart';
 import '../../features/notification/presentation/notification_screen.dart';
 import '../../features/onboarding/presentation/leave_input_screen.dart';
@@ -45,6 +46,9 @@ abstract final class AppRoutes {
   static const myLeaveFromNotification = '/leave?from=notification';
   static const leaveRegister = '/leave/register';
   static const leaveUsages = '/leave/usages';
+
+  /// 마이 > 내 연차 관리 — 총 연차일수를 고치는 자리
+  static const totalLeave = '/leave/total';
   static const home = '/';
   static const notifications = '/notifications';
 
@@ -236,6 +240,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.leaveUsages,
         name: 'leaveUsages',
         builder: (context, state) => const LeaveUsagesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.totalLeave,
+        name: 'totalLeave',
+        builder: (context, state) => const TotalLeaveScreen(),
       ),
       GoRoute(
         path: AppRoutes.sharedCourse,

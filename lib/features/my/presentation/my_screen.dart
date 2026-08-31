@@ -55,7 +55,18 @@ class MyScreen extends ConsumerWidget {
             _buildProfile(user),
             // 시안: 인사말 끝에서 메뉴 첫 행까지 82.
             // 행 간격 26은 _MenuRow가 아래쪽에만 달고 있어 여기서 겹치지 않는다
-            const SizedBox(height: 82),
+            // 시안 실측: 인사말 끝에서 카드까지 32
+            const SizedBox(height: 32),
+            // 총 연차일수를 고치러 가는 자리 — 아래 목록과 달리 카드로 둔다.
+            // 이 앱에서 가장 자주 고치는 값이라 시안이 위계를 올려 뒀다
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _LeaveCard(
+                onTap: () => context.push(AppRoutes.totalLeave),
+              ),
+            ),
+            // 시안 실측: 카드~첫 메뉴 32
+            const SizedBox(height: 32),
             // 로그인 화면의 동의 문구와 같은 순서로 둔다
             _MenuRow(
               label: '이용약관',
@@ -174,6 +185,67 @@ class MyScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     context.go(AppRoutes.login);
+  }
+}
+
+/// 마이 > 내 연차 관리 — 홈의 연차 카드와 같은 결(패딩 16·아이콘 박스 36).
+///
+/// 아래 메뉴 목록과 달리 카드로 두는 것은 시안의 위계다. 약관·탈퇴는 한 번
+/// 보고 마는 것이지만, 연차는 해마다 갱신되고 잘못 넣으면 고쳐야 한다
+class _LeaveCard extends StatelessWidget {
+  const _LeaveCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundNormalAlternative,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.backgroundNormal,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(
+                'assets/icons/ic_timer.svg',
+                width: 26,
+                height: 26,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '내 연차 관리',
+              style: AppTypography.body1NormalBold.copyWith(
+                color: AppColors.labelNeutral,
+              ),
+            ),
+            const Spacer(),
+            SvgPicture.asset(
+              'assets/icons/ic_chevron_right.svg',
+              // DS 쉐브론(Tight)은 12×24 비율이다
+              width: 12,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                AppColors.labelAlternative,
+                BlendMode.srcIn,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
