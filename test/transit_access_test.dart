@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/domain/transit_access.dart';
+import 'package:offway/features/course/presentation/widgets/dotted_line.dart';
 import 'package:offway/features/course/presentation/widgets/transit_access_card.dart';
 
 /// 무엇을 타고 어디에 내리는가 (core #97).
@@ -144,6 +145,21 @@ void main() {
     testWidgets('내리는 곳을 모르면 통째로 접는다', (tester) async {
       await pump(tester, TransitAccess.tryParse(raw(toPlace: null))!);
       expect(find.byType(Text), findsNothing);
+    });
+
+    testWidgets('아는 것이 없어도 점선은 남는다', (tester) async {
+      // 서버가 소요시간을 아직 못 잰 구간은 출발지·편명·시간이 모두 비어
+      // 둘째 줄이 통째로 없다. 그때 점선까지 사라지면 같은 카드가 지역마다
+      // 다르게 보인다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(fromPlace: null, vehicleType: null, durationMinutes: null),
+        )!,
+      );
+
+      expect(find.text('시외버스로 정선까지'), findsOneWidget);
+      expect(find.byType(DottedVerticalLine), findsOneWidget);
     });
 
     testWidgets('다른 수단이 있으면 갈아끼우는 버튼을 둔다', (tester) async {
