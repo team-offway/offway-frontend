@@ -77,6 +77,7 @@ class CuratedLinkSection extends StatelessWidget {
     super.key,
     required this.links,
     this.title = '함께 보면 좋아요',
+    this.subtitle = '공식 사이트에서 더 자세히 확인해 보세요',
     this.padding = const EdgeInsets.symmetric(horizontal: 20),
   });
 
@@ -84,6 +85,10 @@ class CuratedLinkSection extends StatelessWidget {
 
   /// 섹션 제목 — 화면마다 문구를 달리 하고 싶을 때 연다
   final String title;
+
+  /// 제목 아래 한 줄. null이면 그 줄을 접는다 — 제목이 이미 무엇인지
+  /// 말하는 화면에서는 덧붙일 말이 없다
+  final String? subtitle;
 
   /// 화면마다 좌우 여백이 20·24로 갈려 열어 둔다
   final EdgeInsetsGeometry padding;
@@ -106,14 +111,17 @@ class CuratedLinkSection extends StatelessWidget {
               color: AppColors.labelNormal,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '공식 사이트에서 더 자세히 확인해 보세요',
-            style: AppTypography.label1NormalMedium.copyWith(
-              color: AppColors.labelAlternative,
+          if (subtitle case final String sub) ...[
+            const SizedBox(height: 4),
+            Text(
+              sub,
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
+          ],
+          // 시안 실측 — 부제가 있으면 14, 없으면 제목에서 바로 16
+          SizedBox(height: subtitle == null ? 16 : 14),
           for (var i = 0; i < links.length; i++) ...[
             if (i > 0) const SizedBox(height: _rowGap),
             _CuratedLinkTile(link: links[i]),
