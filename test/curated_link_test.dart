@@ -228,10 +228,12 @@ void main() {
       await pumpRegion(tester, links: CuratedLink.parseList([link()]));
 
       await tester.scrollUntilVisible(
-        find.text('함께 보면 좋아요'),
+        find.text('이 지역에서 누릴 수 있는 혜택이 있어요'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
+      // 제목이 이미 무엇인지 말한다 — 시안이 이 화면에서는 부제를 뺐다
+      expect(find.text('공식 사이트에서 더 자세히 확인해 보세요'), findsNothing);
       expect(find.text('기차표 예매'), findsOneWidget);
       // 화면을 맺는 말은 그대로 끝에 남는다
       await tester.scrollUntilVisible(
@@ -243,7 +245,7 @@ void main() {
 
     testWidgets('링크가 없으면 섹션이 없다', (tester) async {
       await pumpRegion(tester);
-      expect(find.text('함께 보면 좋아요'), findsNothing);
+      expect(find.text('이 지역에서 누릴 수 있는 혜택이 있어요'), findsNothing);
     });
   });
 }

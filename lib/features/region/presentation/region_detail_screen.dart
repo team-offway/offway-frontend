@@ -130,8 +130,8 @@ class RegionDetailScreen extends ConsumerWidget {
 
     return ListView(
       // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
-      // 홈 인디케이터 몫만 남긴다
-      padding: const EdgeInsets.only(bottom: 40),
+      // 홈 인디케이터 몫만 남긴다. 시안 실측 62
+      padding: const EdgeInsets.only(bottom: 62),
       children: [
         _buildTopBar(context),
         Padding(
@@ -214,18 +214,21 @@ class RegionDetailScreen extends ConsumerWidget {
             ),
           ),
         ],
-        // 이 지역을 더 알아볼 공식 사이트 — 매력 포인트를 훑은 다음 자리가
+        // 이 지역에서 누릴 수 있는 혜택 — 매력 포인트를 훑은 다음 자리가
         // 맞다. 안내 문구(_PopulationDeclineNote)는 화면을 맺는 말이라 끝에 둔다
         if (links.isNotEmpty) ...[
           const SizedBox(height: 44),
           CuratedLinkSection(
             links: links,
+            title: '이 지역에서 누릴 수 있는 혜택이 있어요',
+            // 시안이 이 화면에서는 부제를 뺐다 — 제목이 이미 무엇인지 말한다
+            subtitle: null,
             // 이 화면의 본문 여백은 24다
             padding: const EdgeInsets.symmetric(horizontal: 24),
           ),
         ],
-        // 시안: 매력 포인트 아래 52 (카드 220 + 여백)
-        const SizedBox(height: 52),
+        // 시안 실측: 혜택 카드 아래 36
+        const SizedBox(height: 36),
         const _PopulationDeclineNote(),
       ],
     );
