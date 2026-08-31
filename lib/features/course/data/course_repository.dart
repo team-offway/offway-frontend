@@ -54,6 +54,7 @@ class CourseRepository {
           density: density,
           transport: transport,
           confirmedDate: confirmedDate,
+          origin: origin,
         ),
       );
     } on DioException catch (e) {
@@ -101,6 +102,7 @@ class CourseRepository {
             density: density,
             transport: transport,
             confirmedDate: confirmedDate,
+            origin: origin,
           ),
         ),
         seed: (data['seed'] as num).toInt(),
@@ -441,17 +443,28 @@ class CourseRepository {
   }
 
   /// 저장 API가 받는 형태 — 생성 응답의 슬롯을 저장 계약 필드만 남겨 되돌린다
+  /// 저장 API가 받는 형태 — 생성 응답의 슬롯을 저장 계약 필드만 남겨 되돌린다.
+  ///
+  /// **출발지를 함께 보낸다.** 서버는 도착 정보(무엇을 타고 어디에 내리는가)를
+  /// 저장하지 않고 상세를 열 때마다 다시 계산하는데, 그 근거가 출발지다
+  /// (core `CourseStorageService.trainAccessFor` — "결과가 아니라 입력을
+  /// 저장해 두고 여기서 계산한다. 시간표는 바뀌므로"). 안 보내면 담은 코스의
+  /// 교통 안내가 통째로 비어 버린다.
   Map<String, dynamic> _toSavePayload(
     Map<String, dynamic> course, {
     required String density,
     required String transport,
     required DateTime? confirmedDate,
+    required Origin origin,
   }) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     return {
       'regionId': course['regionId'],
       'density': density,
       'transport': transport,
+      // 상세 조회가 이 값으로 도착 정보를 다시 계산한다
+      'originLat': origin.lat,
+      'originLng': origin.lng,
       if (confirmedDate != null) 'travelDate': isoDate(confirmedDate),
       'days': [
         for (final day in days)
