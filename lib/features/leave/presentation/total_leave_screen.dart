@@ -113,27 +113,32 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
-      // 키보드가 올라올 때 본문을 밀지 않는다 — 안내 문구가 입력 위에
-      // 붙어 있어, 밀면 그 문구부터 화면 밖으로 나간다
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTopBar(),
-            Expanded(
-              child: leave.when(
-                loading: () => const AppCircularLoadingView(),
-                error: (_, _) => AppErrorView(
-                  onRetry: () => ref.invalidate(myLeaveProvider),
+      // 빈 곳을 누르면 키보드를 접는다 — 연차 사용 등록과 같은 이유다.
+      // 입력 칸 밖을 눌러도 키보드가 남으면 아래 버튼이 가려진 채 갇힌
+      // 느낌이 된다
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        // 탭을 삼키지 않아야 아래 위젯이 제 동작을 그대로 받는다
+        behavior: HitTestBehavior.translucent,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopBar(),
+              Expanded(
+                child: leave.when(
+                  loading: () => const AppCircularLoadingView(),
+                  error: (_, _) => AppErrorView(
+                    onRetry: () => ref.invalidate(myLeaveProvider),
+                  ),
+                  data: (data) => _editing
+                      ? _buildEditor()
+                      : _buildSummary(data.remainingDays),
                 ),
-                data: (data) => _editing
-                    ? _buildEditor()
-                    : _buildSummary(data.remainingDays),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -220,13 +225,8 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            10,
-            20,
-            // 키보드가 있으면 그 위로, 없으면 홈 인디케이터 위로
-            MediaQuery.viewInsetsOf(context).bottom + 20,
-          ),
+          // Scaffold가 키보드만큼 본문을 밀어 올린다 — 직접 재지 않는다
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -502,7 +502,9 @@ class _DaysField extends StatelessWidget {
                 const SizedBox(width: 8),
                 _TrailingIcon(
                   hasError: hasError,
-                  focused: focused,
+                  // 지울 것이 있을 때만 ✕를 띄운다 — 빈 칸에 지우기가
+                  // 떠 있으면 무엇을 지우라는 것인지 알 수 없다
+                  focused: focused && !empty,
                   valid: !empty && !hasError,
                   onClear: onClear,
                 ),
