@@ -77,6 +77,82 @@ void main() {
     expect(find.text('청춘! 이는 듣기만 하여도 가슴이 설레는 말이다.'), findsOneWidget);
   });
 
+  testWidgets('내역이 많아도 네 개까지만 카드로 보인다', (tester) async {
+    // 서버가 목록을 잘라 주지 않는다(개수·페이지 파라미터가 없다) — 다 쌓으면
+    // 아래 '총 연차일수 수정하기'가 한참 밑으로 밀려 보이지 않는다
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myLeaveProvider.overrideWith(
+            (ref) async => MyLeave(
+              totalDays: 30,
+              usedDays: 7,
+              remainingDays: 23,
+              usages: const [],
+            ),
+          ),
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              for (var i = 0; i < 7; i++)
+                LeaveUsage(
+                  id: i + 1,
+                  usedOn: DateTime(2026, 6, i + 1),
+                  days: 1,
+                  reason: '사유 $i',
+                ),
+            ],
+          ),
+          pendingTripProvider.overrideWith((ref) async => null),
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: MyLeaveScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(LeaveUsageCard), findsNWidgets(4));
+    // 잘린 나머지는 '더보기'가 맡는다 — 그 길이 없으면 볼 방법이 사라진다
+    expect(find.text('더보기'), findsOneWidget);
+    expect(find.text('사유 4'), findsNothing);
+  });
+
+  testWidgets('사용 내역 아래에 총 연차일수를 고치러 가는 자리가 있다', (tester) async {
+    // 마이 탭과 함께 진입점이 둘이다 — 여기는 내역을 훑다가 총량이
+    // 틀렸음을 깨닫는 맥락에서 바로 이어지는 경로다
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myLeaveProvider.overrideWith(
+            (ref) async => MyLeave(
+              totalDays: 30,
+              usedDays: 7,
+              remainingDays: 23,
+              usages: const [],
+            ),
+          ),
+          leaveUsagesProvider.overrideWith((ref) async => const <LeaveUsage>[]),
+          pendingTripProvider.overrideWith((ref) async => null),
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 23.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: MyLeaveScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.scrollUntilVisible(find.text('총 연차일수 수정하기'), 200);
+    expect(find.text('연차가 새로 갱신됐나요?\n총 연차일수를 수정할 수 있어요'), findsOneWidget);
+  });
+
   testWidgets('취소 내역(음수)은 부호가 겹치지 않고 +로 보인다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
