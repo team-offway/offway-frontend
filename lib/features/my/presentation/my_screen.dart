@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/image_cache.dart';
-import '../../../core/network/image_url.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
@@ -105,7 +104,7 @@ class MyScreen extends ConsumerWidget {
               ? _defaultAvatar
               : Builder(
                   builder: (context) => CachedNetworkImage(
-                    imageUrl: httpsImageUrl(photoUrl)!,
+                    imageUrl: photoUrl,
                     cacheManager: appImageCacheManager,
                     width: 76,
                     height: 76,
