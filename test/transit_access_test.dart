@@ -138,7 +138,7 @@ void main() {
         )!,
       );
       expect(find.text('열차로 민둥산까지'), findsOneWidget);
-      expect(find.text('청량리에서 출발 · KTX · 약 3시간'), findsOneWidget);
+      expect(find.text('청량리에서 출발 • KTX 약 3시간'), findsOneWidget);
     });
 
     testWidgets('내리는 곳을 모르면 통째로 접는다', (tester) async {
@@ -146,48 +146,95 @@ void main() {
       expect(find.byType(Text), findsNothing);
     });
 
-    testWidgets('대안 수단은 소요시간을 알면 그것을 보여준다', (tester) async {
+    testWidgets('다른 수단이 있으면 갈아끼우는 버튼을 둔다', (tester) async {
+      // 시안이 칩 나열을 버튼 하나로 정리했다 — 나란히 두면 무엇이 지금
+      // 기준인지 흐려진다
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
             alternatives: [
-              {'modeLabel': '열차', 'toPlace': '대천', 'durationMinutes': 180},
+              {
+                'modeLabel': '열차',
+                'fromPlace': '청량리',
+                'toPlace': '민둥산',
+                'durationMinutes': 180,
+              },
             ],
           ),
         )!,
       );
-      expect(find.text('열차 · 3시간'), findsOneWidget);
+      expect(find.text('열차로 보기'), findsOneWidget);
     });
 
-    testWidgets('소요시간을 모르면 어디에 내리는지라도 말한다', (tester) async {
-      // 버스·여객선은 시간표를 못 물어 시간이 비는 일이 흔하다.
-      // 수단 이름만 남으면 무엇을 알려 주는지 흐려진다
+    testWidgets('버튼을 누르면 그 수단으로 갈아끼운다', (tester) async {
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
+            fromPlace: '동서울',
             alternatives: [
-              {'modeLabel': '열차', 'toPlace': '대천'},
+              {'modeLabel': '열차', 'toPlace': '민둥산', 'durationMinutes': 180},
             ],
           ),
         )!,
       );
-      expect(find.text('열차 · 대천'), findsOneWidget);
+
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('열차로 민둥산까지'), findsOneWidget);
+      expect(find.text('약 3시간'), findsOneWidget);
+      // 되돌아갈 길이 남아야 한다 — 목록에서 빼 버리면 갇힌다
+      expect(find.text('시외버스로 보기'), findsOneWidget);
     });
 
-    testWidgets('둘 다 모르면 수단 이름만 남는다', (tester) async {
+    testWidgets('갈아끼우면 출발지를 물려받지 않는다', (tester) async {
+      // 서버는 대안에 fromPlace를 싣지 않는다(TransitOptionResponse).
+      // 지금 값을 그대로 두면 열차로 바꿨는데 '동서울에서 출발'이라 말한다 —
+      // 수단이 다르면 타는 곳도 다르다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            fromPlace: '동서울',
+            alternatives: [
+              {'modeLabel': '열차', 'toPlace': '민둥산'},
+            ],
+          ),
+        )!,
+      );
+
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('동서울'), findsNothing);
+    });
+
+    testWidgets('다시 누르면 원래대로 돌아온다', (tester) async {
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
             alternatives: [
-              {'modeLabel': '여객선'},
+              {'modeLabel': '열차', 'toPlace': '민둥산', 'durationMinutes': 180},
             ],
           ),
         )!,
       );
-      expect(find.text('여객선'), findsOneWidget);
+
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('시외버스로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('시외버스로 정선까지'), findsOneWidget);
+    });
+
+    testWidgets('갈 수 있는 수단이 하나뿐이면 버튼이 없다', (tester) async {
+      // 자차가 그렇다 — 갈아낄 것이 없는데 버튼만 두면 누를 데가 없다
+      await pump(tester, TransitAccess.tryParse(raw())!);
+      expect(find.textContaining('로 보기'), findsNothing);
     });
   });
 }
