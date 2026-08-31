@@ -306,7 +306,13 @@ class _RemainingCard extends StatelessWidget {
           // 패딩 71을 뺀 자리라 왼쪽 값이 시안보다 그만큼 작다
           const Positioned(left: 131, top: 14, child: _Sparkle(size: 9)),
           const Positioned(left: 70, top: -5, child: _Sparkle(size: 7.3)),
-          const Positioned(left: 81, top: 40, child: _Sparkle(size: 9)),
+          // 왼쪽 아래만 한 단 옅다 — 내 연차 화면의 같은 자리와 맞춘다.
+          // 셋을 같은 색으로 두면 반짝임이 평평해 보인다
+          const Positioned(
+            left: 81,
+            top: 40,
+            child: _Sparkle(size: 9, tone: AppPalette.lightBlue70),
+          ),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -361,10 +367,17 @@ class _RemainingCard extends StatelessWidget {
 }
 
 /// 카드 위 반짝이 — 브랜드색이 SVG에 박혀 있어 색을 덧씌우지 않는다
+/// 타이머 둘레에 흩어 둔 반짝임.
+///
+/// 에셋 원본은 `#3DC2FF`(Light Blue 60)다. [tone]을 주면 그 색으로 덮는다 —
+/// 셋을 같은 농도로 두면 반짝임이 평평해 보여 하나만 한 단 옅게 쓴다.
 class _Sparkle extends StatelessWidget {
-  const _Sparkle({required this.size});
+  const _Sparkle({required this.size, this.tone});
 
   final double size;
+
+  /// null이면 에셋 원본색을 그대로 쓴다
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
@@ -372,6 +385,7 @@ class _Sparkle extends StatelessWidget {
     width: size,
     height: size,
     excludeFromSemantics: true,
+    colorFilter: tone == null ? null : ColorFilter.mode(tone!, BlendMode.srcIn),
   );
 }
 
