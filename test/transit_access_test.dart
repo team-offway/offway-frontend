@@ -211,17 +211,24 @@ void main() {
       expect(find.textContaining('동서울'), findsNothing);
     });
 
-    testWidgets('다시 누르면 원래대로 돌아온다', (tester) async {
+    testWidgets('다시 누르면 첫 화면 그대로 돌아온다', (tester) async {
+      // 대표를 대안 목록에 접어 넣는 식으로 맞바꾸면, 서버가 대안에 싣지 않는
+      // 출발지·편명이 그때 사라져 두 번 눌러 돌아왔을 때 '서울에서 출발'이
+      // 빠진 채로 남았다
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
+            fromPlace: '동서울',
+            vehicleType: '우등',
+            durationMinutes: 149,
             alternatives: [
               {'modeLabel': '열차', 'toPlace': '민둥산', 'durationMinutes': 180},
             ],
           ),
         )!,
       );
+      final before = tester.widget<Text>(find.text('동서울에서 출발 • 우등 약 2시간 29분'));
 
       await tester.tap(find.text('열차로 보기'));
       await tester.pumpAndSettle();
@@ -229,6 +236,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('시외버스로 정선까지'), findsOneWidget);
+      expect(find.text(before.data!), findsOneWidget);
     });
 
     testWidgets('갈 수 있는 수단이 하나뿐이면 버튼이 없다', (tester) async {

@@ -78,23 +78,14 @@ class TransitAccess {
 
   /// 대안 하나를 대표 자리에 올린 사본 — '시외버스로 보기'를 눌렀을 때.
   ///
-  /// 지금 대표는 대안 목록으로 내려간다. 다시 누르면 원래대로 돌아오도록
-  /// **자리만 맞바꾼다** — 목록에서 빼 버리면 되돌아갈 길이 없다.
-  ///
   /// **출발지와 편명은 물려주지 않는다.** 서버가 대안에 그 둘을 싣지 않는데
   /// 지금 값을 그대로 두면, 고속버스로 갈아끼웠는데 '청량리에서 출발'이라고
   /// 말하게 된다 — 수단이 다르면 타는 곳도 다르다.
+  ///
+  /// 되돌아가는 길은 [TransitAccess] 원본을 들고 있는 화면이 맡는다. 대표를
+  /// [TransitOption]으로 접어 목록에 넣으면 담지 못하는 항목(출발지·편명)이
+  /// 그때 사라져, 두 번 눌러 돌아왔을 때 **첫 화면과 달라진다.**
   TransitAccess swappedWith(TransitOption option) {
-    final rest = [
-      for (final o in alternatives)
-        if (!identical(o, option)) o,
-      TransitOption(
-        modeLabel: modeLabel,
-        mode: mode,
-        toPlace: toPlace,
-        durationMinutes: durationMinutes,
-      ),
-    ];
     return TransitAccess(
       modeLabel: option.modeLabel,
       mode: option.mode,
@@ -102,7 +93,9 @@ class TransitAccess {
       status: status,
       toPlace: option.toPlace ?? toPlace,
       durationMinutes: option.durationMinutes,
-      alternatives: rest,
+      // 갈아낀 뒤 남는 대안은 '원래 것'뿐이다. 화면이 원본을 들고 있으므로
+      // 여기서는 목록을 비우고, 되돌리기는 그쪽이 판단한다
+      alternatives: const [],
     );
   }
 }

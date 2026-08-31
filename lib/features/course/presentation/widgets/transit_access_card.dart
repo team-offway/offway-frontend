@@ -23,24 +23,35 @@ class TransitAccessCard extends StatefulWidget {
 }
 
 class _TransitAccessCardState extends State<TransitAccessCard> {
-  /// 지금 보여 주는 것 — 버튼을 누르면 대안과 자리를 맞바꾼다
-  late TransitAccess _shown = widget.access;
+  /// 대안으로 갈아낀 상태 — null이면 서버가 준 대표를 그대로 본다.
+  ///
+  /// **원본을 덮지 않고 따로 둔다.** 대표를 대안 목록에 접어 넣는 식으로
+  /// 맞바꾸면, 서버가 대안에 싣지 않는 출발지·편명이 그때 사라져 두 번 눌러
+  /// 돌아왔을 때 첫 화면과 달라진다.
+  TransitOption? _picked;
 
   @override
   void didUpdateWidget(TransitAccessCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 코스를 다시 읽어 새 값이 오면 고른 것을 버리고 대표로 돌아간다
-    if (!identical(oldWidget.access, widget.access)) {
-      _shown = widget.access;
-    }
+    if (!identical(oldWidget.access, widget.access)) _picked = null;
   }
+
+  /// 지금 화면에 그릴 것
+  TransitAccess get _shown =>
+      _picked == null ? widget.access : widget.access.swappedWith(_picked!);
 
   @override
   Widget build(BuildContext context) {
     // 내리는 곳조차 모르면 할 말이 없다 — 자리를 비운다
     if (!_shown.isPresentable) return const SizedBox.shrink();
 
-    final next = _shown.alternatives.isEmpty ? null : _shown.alternatives.first;
+    // 갈아낀 상태면 '원래대로', 아니면 첫 대안으로 넘어가는 버튼이다
+    final next = _picked != null
+        ? null
+        : (widget.access.alternatives.isEmpty
+              ? null
+              : widget.access.alternatives.first);
 
     return Container(
       width: double.infinity,
@@ -110,19 +121,28 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
               ),
             ),
           ],
-          if (next != null) ...[
+          if (_swapLabel case final String label) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(left: 30),
               child: _SwapButton(
-                label: '${next.modeLabel}로 보기',
-                onTap: () => setState(() => _shown = _shown.swappedWith(next)),
+                label: label,
+                // 갈아낀 상태에서 다시 누르면 원본으로 돌아간다
+                onTap: () =>
+                    setState(() => _picked = _picked == null ? next : null),
               ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  /// 버튼에 쓸 말 — 갈아낄 것도, 돌아갈 곳도 없으면 null이라 버튼을 안 그린다
+  String? get _swapLabel {
+    if (_picked != null) return '${widget.access.modeLabel}로 보기';
+    final first = widget.access.alternatives.firstOrNull;
+    return first == null ? null : '${first.modeLabel}로 보기';
   }
 
   /// `기차로 정선까지` — 수단 이름은 서버가 정한 한글을 그대로 쓴다
