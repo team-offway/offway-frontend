@@ -117,8 +117,15 @@ abstract final class AppRoutes {
   /// 담기 직전 여행 날짜 지정 (프리셋 경로 전용). 시작일을 pop 결과로 돌려준다
   static const courseSaveDate = '/course-save-date';
 
-  static String courseSaveDatePath({required int travelDays}) =>
-      '$courseSaveDate?days=${clampTripDays(travelDays)}';
+  /// [startWeekday]를 주면 캘린더가 그 요일 구간만 연다 — 위저드에서
+  /// '목금토'처럼 요일까지 정한 코스다
+  static String courseSaveDatePath({
+    required int travelDays,
+    int? startWeekday,
+  }) {
+    final base = '$courseSaveDate?days=${clampTripDays(travelDays)}';
+    return startWeekday == null ? base : '$base&startWeekday=$startWeekday';
+  }
 
   /// 코스 길이를 정책 범위(1일~2박3일)로 강제한다 — 딥링크 등 비정상 값 방어
   static int clampTripDays(int days) => days.clamp(1, kMaxTripSpanDays + 1);
@@ -360,6 +367,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           travelDays: AppRoutes.clampTripDays(
             int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
           ),
+          // 요일이 정해진 코스만 실린다. 범위 밖 값은 제한 없음으로 떨군다 —
+          // 딥링크로 8 같은 값이 오면 캘린더가 통째로 잠긴다
+          startWeekday: switch (int.tryParse(
+            state.uri.queryParameters['startWeekday'] ?? '',
+          )) {
+            final int w when w >= DateTime.monday && w <= DateTime.sunday => w,
+            _ => null,
+          },
         ),
       ),
     ],

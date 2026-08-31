@@ -25,6 +25,7 @@ class TripDateRangePicker extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(22, 28, 22, 24),
     this.maxSpanDays = kMaxTripSpanDays,
     this.showTripLabels = true,
+    this.allowedWeekdays,
   });
 
   final DateTime today;
@@ -44,6 +45,12 @@ class TripDateRangePicker extends StatelessWidget {
   /// 연차 사용일처럼 여행이 아닌 날짜를 고를 때는 끈다
   final bool showTripLabels;
 
+  /// 고를 수 있는 요일(`DateTime.monday`~`sunday`). null이면 모든 요일이 열린다.
+  ///
+  /// 위저드에서 '목금토'로 만든 코스를 담을 때 쓴다 — 그 조건으로 짠 일정이라
+  /// 아무 요일에나 붙이면 코스와 날짜가 어긋난다.
+  final Set<int>? allowedWeekdays;
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -57,6 +64,7 @@ class TripDateRangePicker extends StatelessWidget {
         onSelect: onSelect,
         maxSpanDays: maxSpanDays,
         showTripLabels: showTripLabels,
+        allowedWeekdays: allowedWeekdays,
       ),
     );
   }
@@ -71,6 +79,7 @@ class _MonthCalendar extends StatelessWidget {
     required this.onSelect,
     required this.maxSpanDays,
     required this.showTripLabels,
+    required this.allowedWeekdays,
   });
 
   final DateTime month;
@@ -80,6 +89,7 @@ class _MonthCalendar extends StatelessWidget {
   final ValueChanged<DateTime> onSelect;
   final int? maxSpanDays;
   final bool showTripLabels;
+  final Set<int>? allowedWeekdays;
 
   static const _weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -140,6 +150,11 @@ class _MonthCalendar extends StatelessWidget {
   /// 단, 범위가 완성된 뒤에는 다시 열어 다른 시점으로 재선택할 수 있게 한다.
   bool _isDisabled(DateTime date) {
     if (date.isBefore(today)) return true;
+    // 위저드에서 정한 요일 밖은 닫는다 — 그 조건으로 짠 코스라 아무 요일에나
+    // 붙이면 일정과 날짜가 어긋난다
+    if (allowedWeekdays case final Set<int> days) {
+      if (!days.contains(date.weekday)) return true;
+    }
     final limit = maxSpanDays;
     if (limit == null) return false;
     final start = startDate;

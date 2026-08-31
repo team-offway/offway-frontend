@@ -167,8 +167,17 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
     if (savePayload['travelDate'] == null) {
       final durationDays = course['durationDays'] as int? ?? 1;
+      // '목금토'처럼 요일까지 정해 만든 코스는 그 요일 구간만 고르게 한다 —
+      // 아무 요일에나 붙이면 그 조건으로 짠 일정과 날짜가 어긋난다
+      final startWeekday = ref
+          .read(courseWizardProvider)
+          .weekendPattern
+          ?.startWeekday;
       final picked = await context.push<DateTime>(
-        AppRoutes.courseSaveDatePath(travelDays: durationDays),
+        AppRoutes.courseSaveDatePath(
+          travelDays: durationDays,
+          startWeekday: startWeekday,
+        ),
       );
       if (picked == null) return; // 뒤로 가면 담기 취소 — 코스 화면에 그대로 머문다
       savePayload['travelDate'] = isoDate(picked);

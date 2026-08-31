@@ -18,10 +18,21 @@ import '../../course_wizard/presentation/calendar_screen.dart'
 /// 코스 길이는 이미 정해져 있으므로 시작일만 고르면 범위가 그 길이로 완성된다.
 /// 선택 완료 시 시작일을 결과로 돌려준다 (`context.pop<DateTime>`).
 class CourseSaveDateScreen extends ConsumerStatefulWidget {
-  const CourseSaveDateScreen({super.key, required this.travelDays});
+  const CourseSaveDateScreen({
+    super.key,
+    required this.travelDays,
+    this.startWeekday,
+  });
 
   /// 코스 길이 (1=당일치기 · 3=2박3일)
   final int travelDays;
+
+  /// 위저드에서 정한 시작 요일 (`DateTime.monday`~`sunday`). null이면 아무 날.
+  ///
+  /// '목금토'로 만든 코스는 목요일에 시작해야 그 일정이 성립한다. 그래서
+  /// 캘린더도 **목·금·토만** 열어 두고, 셋 중 무엇을 눌러도 그 주 목요일로
+  /// 잡는다 — 금요일을 눌렀다고 금토일이 되면 코스와 어긋난다.
+  final int? startWeekday;
 
   @override
   ConsumerState<CourseSaveDateScreen> createState() =>
@@ -30,6 +41,32 @@ class CourseSaveDateScreen extends ConsumerStatefulWidget {
 
 class _CourseSaveDateScreenState extends ConsumerState<CourseSaveDateScreen> {
   DateTime? _start;
+
+  /// 열어 둘 요일 — 시작 요일부터 코스 길이만큼.
+  ///
+  /// 시작일만 열면 '목금토' 코스에서 목요일 한 칸만 파랗고 금·토가 회색이라,
+  /// 정작 고른 조건이 화면에서 안 읽힌다. 셋 다 열어 두고 누른 날을 시작
+  /// 요일로 되돌린다.
+  Set<int>? get _allowedWeekdays {
+    final start = widget.startWeekday;
+    if (start == null) return null;
+    return {
+      for (var i = 0; i < widget.travelDays; i++)
+        // 일요일(7)을 넘으면 다시 월요일(1)로 돈다
+        ((start - 1 + i) % 7) + 1,
+    };
+  }
+
+  /// 누른 날이 속한 구간의 **시작일**.
+  ///
+  /// 금요일을 눌러도 그 주 목요일이 된다 — 코스는 목금토로 짜였으니 시작이
+  /// 목요일이라야 한다. 요일 제한이 없으면 누른 날이 그대로 시작일이다.
+  DateTime _alignToStart(DateTime picked) {
+    final start = widget.startWeekday;
+    if (start == null) return picked;
+    final back = (picked.weekday - start + 7) % 7;
+    return DateTime(picked.year, picked.month, picked.day - back);
+  }
 
   DateTime? get _end => _start == null
       ? null
@@ -87,8 +124,11 @@ class _CourseSaveDateScreenState extends ConsumerState<CourseSaveDateScreen> {
                 today: DateUtils.dateOnly(DateTime.now()),
                 startDate: start,
                 endDate: end,
-                // 길이가 정해진 코스라 시작일만 고르면 범위가 완성된다
-                onSelect: (day) => setState(() => _start = day),
+                // 위저드에서 요일까지 정한 코스는 그 요일만 열어 둔다
+                allowedWeekdays: _allowedWeekdays,
+                // 길이가 정해진 코스라 시작일만 고르면 범위가 완성된다.
+                // 목금토 중 금요일을 눌러도 시작은 목요일로 되돌린다
+                onSelect: (day) => setState(() => _start = _alignToStart(day)),
               ),
             ),
             Padding(
