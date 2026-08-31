@@ -5,6 +5,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/leave/presentation/total_leave_screen.dart';
+import 'package:offway/features/onboarding/data/leave_repository.dart';
 
 /// 마이 > 내 연차 관리 — 총 연차일수를 고치는 화면.
 ///
@@ -107,8 +108,14 @@ void main() {
       expect(await errorFor(tester, '9.1'), '지원하지 않는 단위입니다.');
     });
 
-    testWidgets('0 이하를 막는다', (tester) async {
-      expect(await errorFor(tester, '0'), isNotNull);
+    testWidgets('0일도 받는다', (tester) async {
+      // "쓸 수 있는 게 없다"도 넣을 수 있어야 한다 — 서버도 0~99를 받는다
+      expect(await errorFor(tester, '0'), isNull);
+    });
+
+    testWidgets('99일을 넘으면 막는다', (tester) async {
+      // 서버가 받는 상한이다 — 400으로 되돌아오기 전에 이유를 알려 준다
+      expect(await errorFor(tester, '100'), isNotNull);
     });
 
     testWidgets('반차는 받는다', (tester) async {
@@ -174,4 +181,56 @@ void main() {
       expect(find.textContaining('사용 내역은 유지되지만'), findsOneWidget);
     });
   });
+
+  group('저장', () {
+    testWidgets('입력한 값이 잔여 연차로 그대로 남는다', (tester) async {
+      // 서버가 받는 것은 총 연차이고 잔여는 거기서 사용분을 뺀 파생값이다.
+      // 입력값을 그대로 보내면 이미 쓴 만큼 줄어들어, 방금 넣은 숫자와 다른
+      // 값이 카드에 뜬다 — 쓴 일수를 얹어 보내야 한다
+      final repo = _RecordingLeaveRepository();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            leaveRepositoryProvider.overrideWithValue(repo),
+            myLeaveProvider.overrideWith(
+              (ref) async => const MyLeave(
+                totalDays: 25,
+                usedDays: 2,
+                remainingDays: 23,
+                usages: [],
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: const TotalLeaveScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('총 연차일수 수정하기'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '15');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('등록하기'));
+      await tester.pumpAndSettle();
+
+      // 잔여 15를 원하면 총은 15 + 이미 쓴 2 = 17이어야 한다
+      expect(repo.sentTotalDays, 17);
+    });
+  });
+}
+
+/// 서버로 보낸 총 연차를 기록하는 대역
+class _RecordingLeaveRepository implements LeaveRepository {
+  double? sentTotalDays;
+
+  @override
+  Future<double> updateTotalDays(double totalDays) async {
+    sentTotalDays = totalDays;
+    return totalDays;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -28,6 +28,10 @@ class TotalLeaveScreen extends ConsumerStatefulWidget {
 }
 
 class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
+  /// 서버가 받는 상한 (core `UpdateMyLeaveRequest` — 0.25 단위, 0~99).
+  /// 여기서 걸러야 서버가 400으로 되돌려 보내기 전에 이유를 알려 줄 수 있다
+  static const _maxDays = 99.0;
+
   /// 수정 모드인가 — 카드를 보는 상태와 입력하는 상태를 한 화면이 오간다.
   /// 시안이 화면을 나눠 그렸지만 상단바·안내가 그대로라 오가는 편이 자연스럽다
   bool _editing = false;
@@ -64,7 +68,9 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
     if (raw.isEmpty) return null;
     final days = double.tryParse(raw);
     if (days == null) return '숫자만 입력해 주세요.';
-    if (days <= 0) return '0일보다 많아야 해요.';
+    // 0은 "쓸 수 있는 게 없다"라는 뜻으로 넣을 수 있다 — 서버도 0~99를 받는다
+    if (days < 0) return '0일 이상이어야 해요.';
+    if (days > _maxDays) return '${formatLeaveDays(_maxDays)}일까지 넣을 수 있어요.';
     // 정수·0.25·0.5만 받는다. 0.75는 쓰지 않는 단위라 함께 막는다
     final fraction = days - days.floorToDouble();
     if (fraction != 0 && fraction != 0.25 && fraction != 0.5) {
@@ -76,13 +82,19 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   bool get _canSubmit =>
       _input.text.trim().isNotEmpty && _error == null && !_submitting;
 
-  Future<void> _submit() async {
+  /// 입력한 값이 **잔여 연차 그대로** 남도록 저장한다.
+  ///
+  /// 서버가 받는 것은 총 연차이고, 잔여는 거기서 사용분을 뺀 파생값이다
+  /// (core `MyLeaveService` — "남은 연차는 저장하지 않고 사용 내역이 정본").
+  /// 입력값을 그대로 보내면 이미 쓴 만큼 잔여가 줄어, 방금 넣은 숫자와
+  /// 다른 값이 카드에 뜬다. 쓴 일수를 얹어 보내야 화면이 말이 된다.
+  Future<void> _submit(double usedDays) async {
     final days = double.tryParse(_input.text.trim());
     if (days == null) return;
 
     setState(() => _submitting = true);
     try {
-      await ref.read(leaveRepositoryProvider).updateTotalDays(days);
+      await ref.read(leaveRepositoryProvider).updateTotalDays(days + usedDays);
       if (!mounted) return;
       // 잔여 연차를 읽는 곳이 셋이다 — 이 화면, 홈 카드, 마이의 사용자 정보.
       // 하나만 고치면 화면마다 다른 숫자를 말한다
@@ -133,7 +145,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
                     onRetry: () => ref.invalidate(myLeaveProvider),
                   ),
                   data: (data) => _editing
-                      ? _buildEditor()
+                      ? _buildEditor(data.usedDays)
                       : _buildSummary(data.remainingDays),
                 ),
               ),
@@ -201,7 +213,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   }
 
   /// 새 총 연차일수를 받는 상태
-  Widget _buildEditor() {
+  Widget _buildEditor(double usedDays) {
     final error = _error;
     return Column(
       children: [
@@ -230,7 +242,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _canSubmit ? _submit : null,
+              onPressed: _canSubmit ? () => _submit(usedDays) : null,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryNormal,
                 disabledBackgroundColor: AppColors.interactionDisable,
