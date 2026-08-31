@@ -9,6 +9,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
+import '../../../core/utils/nickname.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../../notification/application/notification_provider.dart'
     show hasUnreadNotificationsProvider;
@@ -332,7 +333,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // 곧 내 이름으로 바뀌었다 — 남의 이름으로 불리는 것처럼 보인다.
     // 이름이 오면 그때 붙인다
     final nickname = user.value?['nickname'] as String?;
-    final greeting = nickname == null ? '어디로 떠나볼까요?' : '$nickname님, 어디로 떠나볼까요?';
+    final greeting = nickname == null
+        ? '어디로 떠나볼까요?'
+        : '${displayName(nickname)}님, 어디로 떠나볼까요?';
     return Container(
       height: 230,
       padding: const EdgeInsets.all(24),

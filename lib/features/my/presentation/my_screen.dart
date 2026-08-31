@@ -13,6 +13,7 @@ import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart' show PlaceThumbnail;
 import '../../auth/data/auth_repository.dart';
+import '../../../core/utils/nickname.dart';
 import '../../notification/application/push_registration.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -133,7 +134,7 @@ class MyScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          nickname == null ? '반가워요!' : '$nickname님, 반가워요!',
+          nickname == null ? '반가워요!' : '${displayName(nickname)}님, 반가워요!',
           textAlign: TextAlign.center,
           style: AppTypography.heading2Bold.copyWith(
             color: AppColors.labelNeutral,
