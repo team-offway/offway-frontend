@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/router/app_router.dart';
+import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
 import 'notification_provider.dart';
 
@@ -19,6 +20,21 @@ final pushPresenterProvider = Provider<PushPresenter>((ref) {
     ref.read(hasUnreadNotificationsProvider.notifier).markArrived();
     // 알림 화면이 열려 있으면 새 알림이 바로 목록에 붙는다.
     // autoDispose라 닫혀 있으면 이 호출은 아무 일도 하지 않는다
+    ref.invalidate(notificationFeedProvider);
+  };
+  presenter.onRead = (notificationId) async {
+    try {
+      final unread = await ref
+          .read(notificationRepositoryProvider)
+          .markRead(notificationId);
+      // 서버가 센 값으로 맞춘다 — 배너로 들어온 그 알림만 읽은 것이라
+      // 다른 안 읽은 알림이 남아 있으면 종에 점이 그대로 있어야 한다
+      ref.read(hasUnreadNotificationsProvider.notifier).setUnreadCount(unread);
+    } on Object {
+      // 읽음 표시가 안 남는 것뿐이다 — 알림함에서 다시 누를 수 있다.
+      // 그래도 새 알림이 온 것은 사실이라 목록은 다시 읽는다
+      ref.read(hasUnreadNotificationsProvider.notifier).markArrived();
+    }
     ref.invalidate(notificationFeedProvider);
   };
   return presenter;
@@ -43,6 +59,13 @@ class PushPresenter {
   ///
   /// 알림 목록에서 누를 때와 같은 규칙([notificationDestination])을 쓴다.
   void Function(String route)? onOpenRoute;
+
+  /// 배너로 들어온 그 알림을 읽음으로 넘긴다 (core #367).
+  ///
+  /// 배너를 눌러 내용을 확인했는데 종에 점이 남으면, 알림함에서 한 번 더
+  /// 눌러야 읽음이 된다 — 확인한 사람에게 "안 읽은 알림이 있다"고 계속
+  /// 말하는 셈이다.
+  void Function(int notificationId)? onRead;
 
   /// 푸시가 막 도착했다 — 홈 종 배지를 켜고 알림 목록을 다시 읽게 한다.
   ///
@@ -159,28 +182,33 @@ class PushPresenter {
     if (payload == null) return;
     try {
       final data = jsonDecode(payload) as Map<String, dynamic>;
-      _open(data);
+      openFromPayload(data);
     } on Object catch (e) {
       debugPrint('푸시 payload를 읽지 못했다: $e');
     }
   }
 
   /// FCM이 직접 전한 메시지로 앱이 열렸을 때
-  void _openFrom(RemoteMessage message) => _open(message.data);
+  void _openFrom(RemoteMessage message) => openFromPayload(message.data);
 
-  /// 배너로 앱에 들어왔다 — 갈 곳으로 보내고, 목록·배지를 다시 맞춘다.
-  ///
-  /// **그 알림을 읽음 처리하지는 못한다.** `markRead`는 알림 id를 받는데
-  /// 푸시 payload에는 `type`·`courseId`만 있다(core `FcmPushSender.payload`).
-  /// 대신 목록을 다시 읽어, 알림 화면에 들어가면 그때 눌러 읽을 수 있게 한다.
-  void _open(Map<String, dynamic> data) {
+  /// 배너로 앱에 들어왔다 — 갈 곳으로 보내고, 그 알림을 읽음으로 넘긴다.
+  @visibleForTesting
+  void openFromPayload(Map<String, dynamic> data) {
     final type = NotificationType.parse(data['type'] as String?);
-    // courseId는 문자열로 온다 — 서버가 data 값을 전부 String으로 싣는다
+    // 서버는 data 값을 전부 String으로 싣는다
     final courseId = int.tryParse(data['courseId']?.toString() ?? '');
     final route = notificationDestination(type, courseId);
     if (route != null) onOpenRoute?.call(route);
-    // 배너로 들어온 사람도 종에 점이 떠 있어야 한다 — 그 알림은 아직
-    // 안 읽음이다
-    onArrived?.call();
+
+    // 배너를 눌러 확인했으니 읽은 것이다 (core #367이 id를 실어 준다).
+    // 옛 서버는 이 키가 없다 — 그때는 도착만 알려 목록에서 눌러 읽게 둔다
+    final notificationId = int.tryParse(
+      data['notificationId']?.toString() ?? '',
+    );
+    if (notificationId != null) {
+      onRead?.call(notificationId);
+    } else {
+      onArrived?.call();
+    }
   }
 }

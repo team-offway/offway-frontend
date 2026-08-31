@@ -157,4 +157,54 @@ void main() {
       expect(NotificationType.parse(null), NotificationType.unknown);
     });
   });
+
+  group('배너로 들어오면 읽음 처리', () {
+    test('서버가 실어 준 알림 id로 읽음 처리한다', () {
+      // core #367이 payload에 넣기 시작했다 — 배너를 눌러 확인한 알림이
+      // 계속 안 읽음으로 남지 않는다
+      int? read;
+      var arrived = 0;
+      final presenter = PushPresenter();
+      presenter.onRead = (id) => read = id;
+      presenter.onArrived = () => arrived++;
+
+      presenter.openFromPayload({
+        'type': 'TRIP_AFTER',
+        'courseId': '58',
+        'notificationId': '12',
+      });
+
+      expect(read, 12);
+      // 읽음 처리가 배지를 맞추므로 도착 알림까지 겹쳐 부르지 않는다
+      expect(arrived, 0);
+    });
+
+    test('옛 서버는 그 키가 없어 도착만 알린다', () {
+      // 키가 없어도 깨지지 않는다 — 목록에서 눌러 읽게 둔다
+      int? read;
+      var arrived = 0;
+      final presenter = PushPresenter();
+      presenter.onRead = (id) => read = id;
+      presenter.onArrived = () => arrived++;
+
+      presenter.openFromPayload({'type': 'TRIP_AFTER', 'courseId': '58'});
+
+      expect(read, isNull);
+      expect(arrived, 1);
+    });
+
+    test('갈 곳이 있으면 이동도 한다', () {
+      String? route;
+      final presenter = PushPresenter();
+      presenter.onOpenRoute = (r) => route = r;
+
+      presenter.openFromPayload({
+        'type': 'TRIP_TOMORROW',
+        'courseId': '7',
+        'notificationId': '3',
+      });
+
+      expect(route, AppRoutes.savedCoursePath('7'));
+    });
+  });
 }
