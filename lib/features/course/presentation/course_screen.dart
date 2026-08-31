@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/image_cache.dart';
+import '../../../core/network/image_url.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gal/gal.dart';
@@ -309,7 +310,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           if (p['imageUrl'] case final String url when url.isNotEmpty)
             // 목록이 이미 받아 둔 디스크 캐시를 그대로 쓴다 — NetworkImage는
             // 캐시를 모르고 다시 받는다
-            CachedNetworkImageProvider(url, cacheManager: appImageCacheManager),
+            // 목록(PlaceThumbnail)과 **같은 주소**여야 그 캐시를 쓴다 —
+            // 한쪽만 https로 올리면 키가 갈려 캡처가 다시 받는다
+            CachedNetworkImageProvider(
+              httpsImageUrl(url)!,
+              cacheManager: appImageCacheManager,
+            ),
     ];
   }
 
