@@ -28,11 +28,13 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import '../domain/transit_access.dart';
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
+import 'widgets/transit_access_card.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
 import 'widgets/dotted_line.dart';
@@ -169,6 +171,17 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       ),
                     ],
                     const SizedBox(height: 28),
+                    // 무엇을 타고 어디에 내리는지 (core #97).
+                    //
+                    // 서버 Schema 설명은 "저장 코스는 null"이라고 적혀 있지만
+                    // 실제로는 상세 조회도 같은 조립을 타 값이 온다
+                    // (CourseStorageService.get → withBenefits(course, true)).
+                    // 설명이 낡은 것으로 보고 값이 있으면 그린다
+                    if (course['transitAccess']
+                        case final TransitAccess access) ...[
+                      TransitAccessCard(access: access),
+                      const SizedBox(height: 16),
+                    ],
                     _buildMap(places),
                   ],
                 ),
