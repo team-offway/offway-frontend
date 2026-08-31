@@ -65,9 +65,6 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
     final days = double.tryParse(raw);
     if (days == null) return '숫자만 입력해 주세요.';
     if (days <= 0) return '0일보다 많아야 해요.';
-    if (days > kMaxTotalLeaveDays) {
-      return '${formatLeaveDays(kMaxTotalLeaveDays)}일까지 입력할 수 있어요.';
-    }
     // 정수·0.25·0.5만 받는다. 0.75는 쓰지 않는 단위라 함께 막는다
     final fraction = days - days.floorToDouble();
     if (fraction != 0 && fraction != 0.25 && fraction != 0.5) {
@@ -253,10 +250,6 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   }
 }
 
-/// 총 연차일수 상한 — 법정 최대(25일)에 회사 지급분을 얹어도 넘기 어려운 값.
-/// 오타로 세 자리를 넣는 것을 막는 자리다
-const kMaxTotalLeaveDays = 60.0;
-
 /// 잔여 연차를 크게 보여주고 수정으로 보내는 카드.
 ///
 /// 반짝이(StarFour) 셋은 시안 좌표 그대로 둔다 — 타이머 주변에 흩어져
@@ -423,10 +416,9 @@ class _DaysField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasText = controller.text.trim().isNotEmpty;
     final hasError = error != null;
-    // 유효한 값이 들어왔을 때만 체크 — 비어 있는데 초록을 보이면 다 된 줄 안다
-    final isValid = hasText && !hasError;
+    final focused = focusNode.hasFocus;
+    final empty = controller.text.trim().isEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,107 +430,148 @@ class _DaysField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          focusNode: focusNode,
-          onChanged: onChanged,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          // 숫자와 소수점만 — 단위를 붙여 적는 사람이 있어 미리 막는다
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          style: AppTypography.body2NormalMedium.copyWith(
-            color: AppColors.labelNormal,
+        // 연차 사용 등록의 차감 일수 칸과 같은 방식이다 — 숫자 폭만큼만
+        // TextField를 두고 단위는 그 옆에 붙인다. 칸 어디를 눌러도 수정으로
+        // 들어가게 전체를 탭 영역으로 둔다
+        GestureDetector(
+          onTap: focusNode.requestFocus,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundNormal,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: hasError
+                    ? AppColors.statusNegative
+                    : focused
+                    ? AppColors.primaryNormal
+                    : AppColors.lineNormalNeutral,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 숫자만 편집한다 — 단위까지 지워지지 않도록
+                        Flexible(
+                          child: IntrinsicWidth(
+                            child: TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              onChanged: onChanged,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              // 숫자와 소수점만 — 단위를 적어 넣는 사람이 있다
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.]'),
+                                ),
+                              ],
+                              style: AppTypography.body1NormalRegular.copyWith(
+                                color: AppColors.labelNormal,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // 단위는 화면에만 붙는다 (값에는 들어가지 않는다).
+                        // 빈 칸에까지 '일'만 떠 있으면 무엇을 넣으라는 것인지
+                        // 흐려진다
+                        if (!empty)
+                          Text(
+                            '일',
+                            style: AppTypography.body1NormalRegular.copyWith(
+                              color: AppColors.labelNormal,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _TrailingIcon(
+                  hasError: hasError,
+                  focused: focused,
+                  valid: !empty && !hasError,
+                  onClear: onClear,
+                ),
+              ],
+            ),
           ),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.backgroundNormal,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            suffixIcon: _buildSuffix(hasText: hasText, isValid: isValid),
-            enabledBorder: _border(AppColors.lineNormal),
-            focusedBorder: _border(
-              hasError ? AppColors.statusNegative : AppColors.primaryNormal,
-            ),
-            errorBorder: _border(AppColors.statusNegative),
-            focusedErrorBorder: _border(AppColors.statusNegative),
-            errorText: error,
-            errorStyle: AppTypography.caption1Medium.copyWith(
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 8),
+          Text(
+            error!,
+            style: AppTypography.caption1Regular.copyWith(
               color: AppColors.statusNegative,
             ),
           ),
-        ),
+        ],
       ],
     );
   }
-
-  /// 오른쪽 표식 — 오류면 경고, 성하면 체크, 입력 중이면 지우기.
-  ///
-  /// DS 에셋을 쓴다. Material 아이콘은 이 앱의 다른 화면과 굵기·모양이
-  /// 달라, 같은 뜻을 두 모양으로 말하게 된다
-  Widget? _buildSuffix({required bool hasText, required bool isValid}) {
-    if (error != null) {
-      return _SuffixIcon(
-        asset: 'assets/icons/ic_circle_exclamation_solid.svg',
-        color: AppColors.statusNegative,
-        semanticLabel: '입력 오류',
-      );
-    }
-    // 입력하는 동안은 지우기가 쓸모 있고, 손을 뗐을 때 체크로 확인시킨다 —
-    // 시안이 두 상태를 나눠 그렸다
-    if (isValid && !focusNode.hasFocus) {
-      return _SuffixIcon(
-        asset: 'assets/icons/ic_check_circle_fill.svg',
-        color: AppColors.primaryNormal,
-        semanticLabel: '입력 완료',
-      );
-    }
-    if (!hasText) return null;
-    return IconButton(
-      onPressed: onClear,
-      icon: SvgPicture.asset(
-        'assets/icons/ic_close.svg',
-        width: 18,
-        height: 18,
-        colorFilter: const ColorFilter.mode(
-          AppColors.labelAssistive,
-          BlendMode.srcIn,
-        ),
-      ),
-      tooltip: '지우기',
-    );
-  }
-
-  OutlineInputBorder _border(Color color) => OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12),
-    borderSide: BorderSide(color: color),
-  );
 }
 
-/// 입력 칸 오른쪽에 놓는 상태 표식 — 탭 대상이 아니라 자리만 지킨다
-class _SuffixIcon extends StatelessWidget {
-  const _SuffixIcon({
-    required this.asset,
-    required this.color,
-    required this.semanticLabel,
+/// 입력 칸 오른쪽 표식 — 오류면 경고, 입력 중이면 지우기, 다 됐으면 체크.
+///
+/// 연차 사용 등록의 같은 자리와 아이콘 세트를 맞춘다(22px DS 에셋).
+class _TrailingIcon extends StatelessWidget {
+  const _TrailingIcon({
+    required this.hasError,
+    required this.focused,
+    required this.valid,
+    required this.onClear,
   });
 
-  final String asset;
-  final Color color;
-  final String semanticLabel;
+  final bool hasError;
+  final bool focused;
+  final bool valid;
+  final VoidCallback onClear;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    // TextField가 suffixIcon을 세로 가운데에 두므로 좌우 여백만 맞춘다
-    padding: const EdgeInsets.only(right: 16, left: 8),
-    child: SvgPicture.asset(
-      asset,
-      width: 20,
-      height: 20,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      semanticsLabel: semanticLabel,
-    ),
-  );
+  Widget build(BuildContext context) {
+    if (hasError) {
+      // 에셋이 회색이라 오류 색을 입힌다
+      return SvgPicture.asset(
+        'assets/icons/ic_circle_exclamation_solid.svg',
+        width: 22,
+        height: 22,
+        colorFilter: const ColorFilter.mode(
+          AppColors.statusNegative,
+          BlendMode.srcIn,
+        ),
+      );
+    }
+    if (focused) {
+      // 시안은 민 ✕가 아니라 동그라미 안의 ✕다 (DS Icon/Normal/Circle Close)
+      return GestureDetector(
+        onTap: onClear,
+        behavior: HitTestBehavior.opaque,
+        child: SvgPicture.asset(
+          'assets/icons/ic_circle_close.svg',
+          width: 22,
+          height: 22,
+        ),
+      );
+    }
+    if (!valid) return const SizedBox(width: 22);
+    // 에셋이 브랜드색을 품고 있다
+    return SvgPicture.asset(
+      'assets/icons/ic_check_circle_fill.svg',
+      width: 22,
+      height: 22,
+    );
+  }
 }

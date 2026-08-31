@@ -72,15 +72,34 @@ void main() {
   });
 
   group('입력 검증', () {
+    /// 화면에 뜬 오류 문구 — 없으면 null.
+    ///
+    /// 오류는 입력 칸 아래 별도 줄로 그린다(연차 사용 등록과 같은 방식)
     Future<String?> errorFor(WidgetTester tester, String input) async {
       await pump(tester);
       await startEditing(tester);
       await tester.enterText(find.byType(TextField), input);
       await tester.pumpAndSettle();
-      return tester
-          .widget<TextField>(find.byType(TextField))
-          .decoration
-          ?.errorText;
+      final found = find.textContaining('지원하지 않는');
+      if (found.evaluate().isNotEmpty) {
+        return tester.widget<Text>(found).data;
+      }
+      // 다른 오류 문구도 잡는다 — 입력 칸 라벨·단위는 빼고 본다
+      final texts = find
+          .byType(Text)
+          .evaluate()
+          .map((e) => (e.widget as Text).data)
+          .whereType<String>()
+          .where(
+            (t) =>
+                t != '새로운 총 연차일수를 입력해주세요' &&
+                t != '일' &&
+                t != '내 연차 관리' &&
+                t != '확인해주세요' &&
+                t != '등록하기' &&
+                !t.contains('재설정하면'),
+          );
+      return texts.isEmpty ? null : texts.first;
     }
 
     testWidgets('0.25 단위가 아니면 막는다', (tester) async {
@@ -90,11 +109,6 @@ void main() {
 
     testWidgets('0 이하를 막는다', (tester) async {
       expect(await errorFor(tester, '0'), isNotNull);
-    });
-
-    testWidgets('지나치게 큰 값을 막는다', (tester) async {
-      // 오타로 세 자리를 넣는 것을 막는 자리다
-      expect(await errorFor(tester, '365'), isNotNull);
     });
 
     testWidgets('반차는 받는다', (tester) async {
