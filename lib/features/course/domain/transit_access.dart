@@ -15,6 +15,7 @@ class TransitAccess {
     this.toPlace,
     this.vehicleType,
     this.durationMinutes,
+    this.distanceKm,
     this.alternatives = const [],
   });
 
@@ -35,6 +36,7 @@ class TransitAccess {
       toPlace: _text(raw['toPlace']),
       vehicleType: _text(raw['vehicleType']),
       durationMinutes: (raw['durationMinutes'] as num?)?.toInt(),
+      distanceKm: (raw['distanceKm'] as num?)?.toInt(),
       alternatives: [
         for (final item in (raw['alternatives'] as List?) ?? const [])
           if (item is Map<String, dynamic>) ?TransitOption.tryParse(item),
@@ -67,6 +69,10 @@ class TransitAccess {
   /// 버스·여객선은 시간표를 못 물어 다음 편까지의 대기를 모른다
   final int? durationMinutes;
 
+  /// 출발지에서 도착 지점까지의 **직선거리**(km) — 실제 주행거리가 아니다
+  /// (core #380). 옛 서버는 안 실어 null일 수 있다
+  final int? distanceKm;
+
   /// 이 지역에 닿는 다른 수단들. 없으면 빈 목록이다
   final List<TransitOption> alternatives;
 
@@ -93,6 +99,8 @@ class TransitAccess {
       status: status,
       toPlace: option.toPlace ?? toPlace,
       durationMinutes: option.durationMinutes,
+      // 거리도 물려주지 않는다 — 출발지→도착 지점의 값이라, 다른 터미널에
+      // 내리는 수단으로 바꾸면 다른 거리다 (출발지와 같은 논리)
       // 갈아낀 뒤 남는 대안은 '원래 것'뿐이다. 화면이 원본을 들고 있으므로
       // 여기서는 목록을 비우고, 되돌리기는 그쪽이 판단한다
       alternatives: const [],

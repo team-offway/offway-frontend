@@ -166,6 +166,9 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
           type
       else if (_shown.durationLabel case final String duration)
         '약 $duration',
+      // 직선거리다(core #380) — 주행거리가 아니라고 서버가 못박았다.
+      // 시안 문구가 '200km'라 단위만 붙인다
+      if (_shown.distanceKm case final int km) '${km}km',
     ];
     if (parts.isEmpty) return null;
     return parts.join(' • ');
