@@ -14,6 +14,7 @@ import '../../course/presentation/trip_outcome_prompt.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
+import 'widgets/leave_new_chip.dart';
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
@@ -487,6 +488,11 @@ class LeaveUsageCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 갓 등록한 것임을 맨 위에서 알린다 — 시안: 칩 아래 4
+                      if (usage.isNewAt(DateTime.now())) ...[
+                        const LeaveNewChip(),
+                        const SizedBox(height: 4),
+                      ],
                       Text(
                         dateLabel,
                         style: AppTypography.body1NormalBold.copyWith(
