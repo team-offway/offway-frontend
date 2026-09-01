@@ -179,9 +179,15 @@ class AuthRepository {
   /// 줘도 로컬 토큰을 비우면 이 기기에서는 로그아웃된 것이다. 반대로 Keychain에
   /// 토큰이 남았는데 로그인 화면으로 보내면 로그아웃된 줄 알고 넘어간다.
   Future<void> logout() async {
+    // 이 기기의 refresh를 함께 보낸다(core #389) — 서버가 **그 세션만** 끊게.
+    // 지금 서버는 Bearer만 보고 그 사용자의 refresh를 전부 폐기해서, 시뮬레이터나
+    // 백오피스에서 로그아웃하면 최대 1시간 뒤 폰까지 풀렸다. 서버가 반영되기
+    // 전에는 이 값을 무시할 뿐이라 먼저 보내도 해가 없다
+    final refresh = await _storage.refreshToken;
     try {
       await _dio.post<dynamic>(
         '/api/v1/auth/logout',
+        data: {'refreshToken': ?refresh},
         // Bearer는 실어야 한다 — 서버가 그 사용자의 refresh 토큰을 폐기하려면
         // 누구인지 알아야 한다. 예전에 kSkipAuthKey로 헤더째 뺐더니 요청이
         // 컨트롤러에 닿지 못해 로그아웃 뒤에도 refresh가 60일 살아 있었다(#142).

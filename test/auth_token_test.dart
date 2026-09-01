@@ -269,6 +269,36 @@ void main() {
     });
   });
 
+  group('로그아웃 — 세션 지정 (core #389)', () {
+    /// 요청 본문까지 잡는 어댑터 — 로그아웃이 무엇을 실어 보내는지 봐야 한다
+    Object? sentBody;
+    Dio dioCapturing() => Dio()
+      ..httpClientAdapter = _StubAdapter((options) {
+        sentBody = options.data;
+        return _json(200, {});
+      });
+
+    test('이 기기의 refresh 토큰을 함께 보낸다', () async {
+      // 서버가 그 세션만 끊게 — 안 보내면 서버는 사용자의 모든 기기를 끊는다
+      final storage = _MemoryStorage()
+        ..access = 'a'
+        ..refresh = 'this-device';
+
+      await AuthRepository(dioCapturing(), storage).logout();
+
+      expect(sentBody, {'refreshToken': 'this-device'});
+    });
+
+    test('refresh가 없으면 본문을 비운다 — 옛 동작(전부 폐기)으로 둔다', () async {
+      sentBody = null;
+      final storage = _MemoryStorage()..access = 'a';
+
+      await AuthRepository(dioCapturing(), storage).logout();
+
+      expect(sentBody, isEmpty);
+    });
+  });
+
   group('로그아웃', () {
     test('Bearer를 실어 서버의 refresh 폐기에 닿는다 (#142)', () async {
       // 예전에는 kSkipAuthKey가 헤더 자체를 빼 버려 Basic(403)이나
