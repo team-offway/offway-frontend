@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/location/origin_locator.dart';
+import '../../../core/location/origin_namer.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
@@ -185,6 +186,16 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
     setState(() => _saving = true);
     try {
+      // 출발지 이름 — 서버가 저장했다가 자차 도착 안내의 fromPlace로
+      // 되돌려준다(core #382). 코스를 나중에 열 때는 앱 손에 좌표가 없어,
+      // 좌표를 아는 지금이 변환할 유일한 시점이다. 실패하면 안 싣는다 —
+      // 이름 없이 시간·거리만 그리는 화면이 폴백으로 서 있다
+      final lat = savePayload['originLat'];
+      final lng = savePayload['originLng'];
+      if (lat is double && lng is double) {
+        final name = await resolveOriginName(lat, lng);
+        if (name != null) savePayload['originName'] = name;
+      }
       // 담기만으로는 연차를 깎지 않는다 — 여행이 끝난 뒤 홈에서 다녀왔는지
       // 물어 그때 차감한다(안 간 여행까지 깎이지 않게). 미리 확정하고 싶으면
       // 내 코스 상세의 차감 액션을 쓴다
