@@ -14,6 +14,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart' show PlaceThumbnail;
 import '../../auth/data/auth_repository.dart';
 import '../../../core/utils/nickname.dart';
+import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -173,6 +174,8 @@ class MyScreen extends ConsumerWidget {
       // 계속 오면 계정이 남아 있는 것처럼 보인다
       await ref.read(pushRegistrationProvider).stop();
       await ref.read(authRepositoryProvider).logout();
+      // 남의 숫자가 아이콘에 남지 않게 — 다음 사람이 로그인하면 자기 값으로 다시 선다
+      await clearAppIconBadge();
     } catch (_) {
       if (!context.mounted) return;
       showAppToast(context, '로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요');
