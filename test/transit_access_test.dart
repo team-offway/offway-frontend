@@ -17,6 +17,7 @@ void main() {
     Object? toPlace = '정선',
     Object? vehicleType,
     Object? durationMinutes,
+    Object? distanceKm,
     List<Object>? alternatives,
   }) => {
     'mode': 'INTERCITY_BUS',
@@ -26,12 +27,13 @@ void main() {
     'toPlace': toPlace,
     'vehicleType': vehicleType,
     'durationMinutes': durationMinutes,
+    'distanceKm': distanceKm,
     'alternatives': alternatives ?? const [],
   };
 
   group('응답 파싱', () {
-    test('자차 코스는 값이 없다', () {
-      // 저장된 코스도 null이다 — 서버가 안 싣는다
+    test('값이 없으면 그리지 않는다', () {
+      // 옛 서버 응답과, 출발지를 모르는 옛 저장 코스가 null로 온다
       expect(TransitAccess.tryParse(null), isNull);
     });
 
@@ -100,6 +102,93 @@ void main() {
     test('모르면 아무 말도 하지 않는다', () {
       expect(formatTransitDuration(null), isNull);
       expect(formatTransitDuration(0), isNull);
+    });
+  });
+
+  group('거리 (core #380)', () {
+    test('직선거리를 읽는다', () {
+      expect(TransitAccess.tryParse(raw(distanceKm: 200))!.distanceKm, 200);
+    });
+
+    test('옛 서버 응답에는 없다 — 그래도 깨지지 않는다', () {
+      expect(TransitAccess.tryParse(raw())!.distanceKm, isNull);
+    });
+
+    testWidgets('소요시간 옆에 붙는다', (tester) async {
+      // 시안: 서울에서 출발 • 약 2시간 29분 • 200km
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: TransitAccessCard(
+              access: TransitAccess.tryParse(
+                raw(fromPlace: '서울', durationMinutes: 149, distanceKm: 200),
+              )!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('서울에서 출발 • 약 2시간 29분 • 200km'), findsOneWidget);
+    });
+
+    testWidgets('자차는 출발지 이름 없이 시간과 거리만 말한다', (tester) async {
+      // 서버가 자차의 fromPlace를 비운다 — 출발지를 좌표로만 받아 그곳을
+      // 뭐라고 부르는지 모른다(core #380). 앱도 이름을 모르기는 마찬가지라
+      // 지어내지 않고 아는 만큼만 쓴다
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: TransitAccessCard(
+              access: TransitAccess.tryParse({
+                'mode': 'CAR',
+                'modeLabel': '자차',
+                'status': 'AVAILABLE',
+                'toPlace': '정선',
+                'durationMinutes': 149,
+                'distanceKm': 200,
+                'alternatives': const <Object>[],
+              })!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('자차로 정선까지'), findsOneWidget);
+      expect(find.text('약 2시간 29분 • 200km'), findsOneWidget);
+      // 자차에 대안은 없다 — 전환 버튼이 안 뜬다
+      expect(find.textContaining('로 보기'), findsNothing);
+    });
+
+    testWidgets('갈아끼우면 거리를 물려받지 않는다', (tester) async {
+      // 출발지→도착 지점의 값이라, 다른 터미널에 내리는 수단으로 바꾸면
+      // 다른 거리다 — 출발지를 안 물려주는 것과 같은 논리
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: TransitAccessCard(
+              access: TransitAccess.tryParse(
+                raw(
+                  distanceKm: 200,
+                  alternatives: [
+                    {'modeLabel': '열차', 'toPlace': '민둥산'},
+                  ],
+                ),
+              )!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('200km'), findsNothing);
     });
   });
 
