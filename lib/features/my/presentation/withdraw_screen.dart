@@ -11,6 +11,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../../core/utils/nickname.dart';
+import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../home/presentation/home_screen.dart'
     show homeSnapshotProvider, homeUserProvider;
@@ -162,6 +163,8 @@ class WithdrawScreen extends ConsumerWidget {
       // 것이었는지 서버가 알 수 없다
       await ref.read(pushRegistrationProvider).stop();
       await ref.read(authRepositoryProvider).withdraw();
+      // 계정이 사라졌다 — 아이콘에 숫자가 남아 있으면 안 된다
+      await clearAppIconBadge();
     } on ApiException catch (e) {
       // 서버가 못 지웠는데 로그인 화면으로 보내면 탈퇴된 줄 알고 넘어간다
       if (!context.mounted) return;

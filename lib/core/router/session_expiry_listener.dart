@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/notification/application/app_icon_badge.dart';
 import '../network/dio_client.dart';
 import '../storage/secure_storage.dart';
 import '../widgets/app_toast.dart';
@@ -33,6 +34,7 @@ class SessionExpiryListener extends ConsumerWidget {
       // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
       // 되풀이된다
       await ref.read(secureStorageProvider).clear();
+      await clearAppIconBadge();
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다

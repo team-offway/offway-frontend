@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_envelope.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
+import 'app_icon_badge.dart';
 
 /// 알림 목록 한 페이지와 안읽음 전체 수.
 ///
@@ -49,13 +50,17 @@ class UnreadNotificationsBadge extends Notifier<bool> {
     try {
       final feed = await ref.read(notificationRepositoryProvider).fetch();
       state = feed.unreadCount > 0;
+      unawaited(syncAppIconBadge(feed.unreadCount));
     } on ApiException {
       // 배지는 덤이다 — 못 읽었으면 끈 채로 둔다
     }
   }
 
-  /// 서버가 준 안읽음 수로 배지를 맞춘다
-  void setUnreadCount(int count) => state = count > 0;
+  /// 서버가 준 안읽음 수로 배지를 맞춘다 — 종의 점과 아이콘 숫자를 함께
+  void setUnreadCount(int count) {
+    state = count > 0;
+    unawaited(syncAppIconBadge(count));
+  }
 
   /// 푸시가 막 도착했다 — 서버에 묻지 않고 켠다.
   ///
