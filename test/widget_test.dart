@@ -1345,8 +1345,17 @@ void main() {
     //
     // 달 끝자락이면 그 주가 달력 영역 밖으로 밀린다. ListView는 잘린 칸도
     // 트리에 남겨 finder는 찾지만 탭은 닿지 않으므로, 달력 안에 완전히
-    // 들어올 때까지 끌어올린다. 오늘이 몇째 주냐에 따라 갈리면 안 된다
-    final today = find.text('${DateTime.now().day}').first;
+    // 들어올 때까지 끌어올린다. 오늘이 몇째 주냐에 따라 갈리면 안 된다.
+    //
+    // **달력 안으로 좁혀 찾는다.** push 뒤에도 코스 화면이 트리에 남아,
+    // 매달 1일에는 트리 전체의 첫 '1'이 뒤 화면의 장소 번호가 된다 —
+    // 화면 밖 좌표를 탭하며 달만 바뀌면 터지는 테스트였다
+    final today = find
+        .descendant(
+          of: find.byType(TripDateRangePicker),
+          matching: find.text('${DateTime.now().day}'),
+        )
+        .first;
     final calendar = find.descendant(
       of: find.byType(TripDateRangePicker),
       matching: find.byType(Scrollable),
