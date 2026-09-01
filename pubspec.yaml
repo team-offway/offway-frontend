@@ -32,6 +32,7 @@ dependencies:
   # 서버는 data-only 메시지를 보낸다(core #270) — 문구를 앱이 소유하려는
   # 것이라, 배너도 앱이 직접 그려야 한다
   flutter_local_notifications: ^22.3.0
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:
