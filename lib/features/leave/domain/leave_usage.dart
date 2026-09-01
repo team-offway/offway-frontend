@@ -1,3 +1,5 @@
+import '../../../core/utils/date_format.dart';
+
 /// 연차 사용 내역 한 건.
 ///
 /// 코스에서 차감된 건([courseId]가 있음)과 직접 등록한 건은 화면에서 다르게
@@ -73,8 +75,8 @@ class LeaveUsage {
     reason: json['reason'] as String?,
     memo: json['memo'] as String?,
     courseId: (json['courseId'] as num?)?.toInt(),
-    // 알림의 createdAt과 같은 규격이라 같은 파서를 쓴다 — 없거나 못 읽으면 null
-    createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+    // 오프셋 없는 KST다 — 알림과 같은 파서로 읽는다. 없거나 못 읽으면 null
+    createdAt: parseServerDateTime(json['createdAt'] as String?),
   );
 }
 

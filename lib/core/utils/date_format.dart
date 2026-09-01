@@ -25,3 +25,22 @@ String tripPeriodLabel(DateTime start, DateTime end) {
   return '${monthDayWithWeekday(start)} – ${monthDayWithWeekday(end)}'
       ' · $nights박 ${nights + 1}일';
 }
+
+/// 서버 시각 문자열 → [DateTime]. **오프셋이 없으면 KST(+09:00)로 읽는다.**
+///
+/// 서버는 `2026-09-01T14:03:22`처럼 오프셋 없는 KST를 준다(알림 createdAt,
+/// 연차 내역 createdAt). `DateTime.parse`는 오프셋이 없으면 **기기 현지
+/// 시간대**로 읽으므로, 한국 밖 기기에서는 경과 시간이 시차만큼 어긋난다 —
+/// '3시간 전'이 '12시간 전'으로, 24시간짜리 New 칩이 15시간 만에 꺼진다.
+///
+/// 오프셋이 이미 붙어 있으면 그대로 둔다. 못 읽으면 null이다.
+DateTime? parseServerDateTime(String? raw) {
+  final s = raw?.trim();
+  if (s == null || s.isEmpty) return null;
+  // 날짜만 온 값(`2026-05-08`)은 시각이 없으면 오프셋을 못 붙인다 —
+  // 자정을 명시한다. 그 `-`를 오프셋으로 오인하지 않게 'T' 뒤만 본다
+  if (!s.contains('T')) return DateTime.tryParse('${s}T00:00:00+09:00');
+  final hasOffset =
+      s.endsWith('Z') || RegExp(r'T.*[+-]\d{2}:?\d{2}$').hasMatch(s);
+  return DateTime.tryParse(hasOffset ? s : '$s+09:00');
+}

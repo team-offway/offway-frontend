@@ -6,15 +6,19 @@ import 'package:offway/features/leave/domain/leave_usage.dart';
 /// 시안: 등록 시점 기준 24시간 동안만 New, 이후 자동 소멸.
 void main() {
   group('등록 시각 파싱', () {
-    test('KST 오프셋 없는 시각을 읽는다', () {
-      // 알림의 createdAt과 같은 규격이다 — 같은 파서를 쓴다
+    test('오프셋 없는 시각은 KST로 읽는다', () {
+      // 기기 시간대로 읽으면 한국 밖에서 24시간이 시차만큼 어긋난다 —
+      // 그래서 기대값도 현지 시각이 아니라 '그 순간'(UTC 05:03)으로 잰다
       final u = LeaveUsage.fromJson({
         'id': 57,
         'usedOn': '2026-05-08',
         'days': 1.0,
         'createdAt': '2026-09-01T14:03:22',
       });
-      expect(u.createdAt, DateTime(2026, 9, 1, 14, 3, 22));
+      expect(
+        u.createdAt!.isAtSameMomentAs(DateTime.utc(2026, 9, 1, 5, 3, 22)),
+        isTrue,
+      );
     });
 
     test('옛 내역은 없다 — 서버가 백필하지 않았다', () {
