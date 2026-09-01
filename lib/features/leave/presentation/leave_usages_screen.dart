@@ -24,6 +24,7 @@ import '../domain/leave_usage.dart';
 import '../../onboarding/data/leave_repository.dart';
 import 'my_leave_screen.dart' show reasonOf, memoOf, CourseDetailButton;
 import 'widgets/leave_empty_view.dart';
+import 'widgets/leave_new_chip.dart';
 
 /// O-13 · 연차 사용 내역 전체.
 ///
@@ -455,6 +456,11 @@ class _UsageCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 내 연차 화면과 같은 카드다 — 거기서 New인 것은 여기서도
+                      if (usage.isNewAt(DateTime.now())) ...[
+                        const LeaveNewChip(),
+                        const SizedBox(height: 4),
+                      ],
                       Text(
                         dateLabel,
                         style: AppTypography.body1NormalBold.copyWith(

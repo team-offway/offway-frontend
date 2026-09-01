@@ -1,3 +1,4 @@
+import '../../../core/utils/date_format.dart';
 import '../../../core/router/app_router.dart';
 
 /// 알림 종류 — 서버가 주는 `type` 값에 아이콘·문구를 맞추는 키 (core #263).
@@ -93,7 +94,9 @@ class AppNotification {
       courseId: (json['courseId'] as num?)?.toInt(),
       // 코스가 지워졌거나 코스와 무관한 알림이면 null (core #359)
       regionName: json['regionName'] as String?,
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+      // 오프셋 없는 KST다 — 현지 시간대로 읽으면 한국 밖에서 '3시간 전'이
+      // 시차만큼 어긋난다
+      createdAt: parseServerDateTime(json['createdAt'] as String?),
     );
   }
 

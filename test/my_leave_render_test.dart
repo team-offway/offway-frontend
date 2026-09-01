@@ -153,6 +153,78 @@ void main() {
     expect(find.text('연차가 새로 갱신됐나요?\n총 연차일수를 수정할 수 있어요'), findsOneWidget);
   });
 
+  testWidgets('갓 등록한 내역에만 New 칩이 붙는다', (tester) async {
+    // 시안: 등록 시점 기준 24시간. 사용일이 아니라 등록 시각(core #384)이다
+    final now = DateTime.now();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myLeaveProvider.overrideWith(
+            (ref) async => MyLeave(
+              totalDays: 30,
+              usedDays: 3,
+              remainingDays: 27,
+              usages: const [],
+            ),
+          ),
+          leaveUsagesProvider.overrideWith(
+            (ref) async => [
+              // 방금 등록 — 사용일은 지난달이어도 New
+              LeaveUsage(
+                id: 3,
+                usedOn: DateTime(2026, 8, 1),
+                days: 1,
+                reason: '방금 것',
+                createdAt: now.subtract(const Duration(minutes: 10)),
+              ),
+              // 이틀 전 등록 — 사용일이 미래여도 New가 아니다
+              LeaveUsage(
+                id: 2,
+                usedOn: DateTime(2027, 1, 1),
+                days: 1,
+                reason: '이틀 전 것',
+                createdAt: now.subtract(const Duration(days: 2)),
+              ),
+              // 등록 시각을 모르는 옛 내역
+              LeaveUsage(
+                id: 1,
+                usedOn: DateTime(2026, 8, 10),
+                days: 1,
+                reason: '옛 것',
+              ),
+            ],
+          ),
+          pendingTripProvider.overrideWith((ref) async => null),
+          homeSnapshotProvider.overrideWith(
+            (ref) async => const HomeSnapshot(
+              user: {'nickname': '예빈', 'remainingLeaveDays': 27.0},
+              regions: [],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: MyLeaveScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('New'), findsOneWidget);
+    // 그 칩이 '방금 것' 카드 안에 있는지 — 다른 카드에 붙으면 판정이 틀린 것
+    expect(
+      find.ancestor(
+        of: find.text('New'),
+        matching: find.byType(LeaveUsageCard),
+      ),
+      findsOneWidget,
+    );
+    final card = tester.widget<LeaveUsageCard>(
+      find.ancestor(
+        of: find.text('New'),
+        matching: find.byType(LeaveUsageCard),
+      ),
+    );
+    expect(card.usage.reason, '방금 것');
+  });
+
   testWidgets('취소 내역(음수)은 부호가 겹치지 않고 +로 보인다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
