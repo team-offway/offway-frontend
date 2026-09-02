@@ -485,10 +485,11 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
       top: rect.top,
       width: rect.width,
       height: rect.height,
-      // 칩은 지도만큼 커지지 않는다 — 시안은 지도 1.7배에 칩 1.37배(≈ 0.6제곱).
+      // 칩은 지도만큼 커지지 않는다 — 시안은 지도 1.7배에 칩 1.37배(≈ 0.6제곱)
+      // 인데 실기기에서 커 보여 0.4제곱으로 낮춘다 (2.7배 줌에 칩 1.5배).
       // 지도 배율을 되돌려 그만큼만 키운다
       child: Transform.scale(
-        scale: math.pow(_zoomScale, 0.6) / _zoomScale,
+        scale: math.pow(_zoomScale, 0.4) / _zoomScale,
         child: AnimatedOpacity(
           opacity: hidden ? 0 : 1,
           duration: const Duration(milliseconds: 250),
