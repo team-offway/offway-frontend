@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import '../data/sido_shapes.dart' show sidoKeyFor;
+import '../data/region_polygons.dart' show polygonKeyFor;
 import 'region_geo.dart';
 
 /// 랜덤 지역 선택 보드의 좌표계와 핀의 비행 경로.
@@ -40,18 +40,18 @@ abstract final class RandomBoard {
   static const pinDiameter = 67.7;
 
   /// 착지 후 줌인 배율. 시안 실측은 1.7(지도 383 → 653)인데 실기기에서
-  /// 밋밋해 보여 조금 더 당긴다
-  static const landingZoom = 2.7;
+  /// 밋밋해 보여 더 당긴다
+  static const landingZoom = 3.2;
 
   /// 위경도 → 보드 좌표.
   ///
   /// 시안 지도는 살짝 기울어진 투영(TM 계열)이라 위도·경도를 따로 늘리면
-  /// 동쪽이 위로 뜬다. 본토 SVG 윤곽의 꼭짓점 셋으로 회전까지 포함한
-  /// 아핀을 풀었다 — 동단 호미곶(129.57°E, 36.08°N) = (350.9, 300.3),
-  /// 북단 고성(128.36°E, 38.61°N) = (259.9, −0.1), 남단 해남 땅끝(126.53°E,
-  /// 34.29°N) = (56.1, 470.9). 검증: 남동 끝이 부산 기장(129.18, 35.20),
-  /// 서쪽 끝이 해남 화원(126.26, 34.66)으로 풀린다. [mapOrigin]을 더한다.
-  /// 울릉·독도는 시안이 본토 쪽으로 당겨 그려 그 둘만 따로 잡는다
+  /// 맞지 않는다. 지도 SVG의 시도 조각과 공공 시도 경계(통계청)를 통째로
+  /// 대응시켜(가까운 점끼리 여섯 번 반복) 2차 다항식으로 맞췄다 — 오차
+  /// 상위 10%가 1.6px 안이다. 해안 꼭짓점 셋으로 맞춘 1차식은 내륙 북부에서
+  /// 5px 넘게 어긋나 접경 면이 지도 선을 넘어갔다. 기준점은 (127.5°E,
+  /// 36.0°N)이고 [mapOrigin]을 더한다. 울릉·독도는 시안이 본토 쪽으로 당겨
+  /// 그려 그 둘만 따로 잡는다
   static Offset project(double lat, double lng) {
     if (lng > 130) {
       // 울릉도(130.9°E)·독도(131.9°E) — 시안 지도의 섬 위치
@@ -60,9 +60,23 @@ abstract final class RandomBoard {
               ? const Offset(382.5, 186.7)
               : const Offset(372.2, 170.9));
     }
+    final u = lng - 127.5;
+    final v = lat - 36.0;
     return Offset(
-      mapOrigin.dx + 92.198 * lng + 8.122 * lat - 11888.24,
-      mapOrigin.dy + 10.788 * lng - 113.607 * lat + 3001.42,
+      mapOrigin.dx +
+          159.6499 +
+          90.53997 * u +
+          8.94167 * v +
+          0.64020 * u * u +
+          -0.02196 * v * v +
+          -0.39296 * u * v,
+      mapOrigin.dy +
+          288.8311 +
+          6.71627 * u +
+          -111.54036 * v +
+          0.36103 * u * u +
+          -0.17931 * v * v +
+          -0.85028 * u * v,
     );
   }
 }
@@ -73,15 +87,15 @@ class MapChip {
     required this.regionId,
     required this.label,
     required this.center,
-    this.sidoKey,
+    this.polygonKey,
   });
 
   final String regionId;
   final String label;
 
-  /// 착지하면 연두색으로 채울 시도(`강원`). 모르는 곳이면 null —
-  /// 칩은 놓지만 면은 못 채운다
-  final String? sidoKey;
+  /// 착지하면 연두색으로 채울 시군구 경계의 키(`강원/정선군`). 모르는 곳이면
+  /// null — 칩은 놓지만 면은 못 채운다
+  final String? polygonKey;
 
   /// 칩 중심(보드 좌표). 겹침을 풀면서 조금 움직인다
   Offset center;
@@ -119,7 +133,7 @@ List<MapChip> buildMapChips(List<Map<String, dynamic>> candidates) {
         regionId: c['id'] as String,
         label: regionChipLabel(name),
         center: center,
-        sidoKey: sidoKeyFor(name: name, sido: sido),
+        polygonKey: polygonKeyFor(name: name, sido: sido),
       ),
     );
   }
@@ -238,7 +252,7 @@ class PinFlight {
         // 가까워졌거나 시간이 다 됐으면 감속 착지로. 회전 반경보다 가까운데
         // 목표가 옆·뒤에 있으면 돌아서 맞추려다 주위를 맴돈다 — 바로 착지로
         if (dist <= approachRadius ||
-            remaining <= -tolerance ||
+            remaining <= approachSec - tolerance ||
             (dist < 170 && angle > math.pi / 3)) {
           break;
         }
