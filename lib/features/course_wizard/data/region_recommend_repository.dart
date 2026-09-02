@@ -52,24 +52,21 @@ class RegionRecommendRepository {
       'name': nameParts.first,
       'sido': nameParts.length > 1 ? nameParts[1] : '',
       'imageUrl': item['imageUrl'],
-      // 한산도 뱃지 — 인구감소지역 서비스라 '한산'이 곧 장점이다
-      'badge': switch (item['crowdLevel'] as String?) {
-        'LOW' => '한산',
-        'MID' => '보통',
-        'HIGH' => '인기',
-        _ => null,
-      },
       // 캡션 자리에는 고른 이동수단 기준 도달시간을 보여준다
       'description': _reachText(item['reachMinutes'] as int, transport),
       'reachMinutes': item['reachMinutes'],
       'contentCount': item['contentCount'],
       // 한줄소개 — 랜덤 지역 결과 모달이 쓴다. 재료가 없으면 서버가 안 준다
       'intro': item['intro'],
-      // 지도 칩 자리. 아직 서버가 안 실어 null이다 — 실리면 앱 표보다 우선한다
+      // 지도 칩 자리(core #405). 없으면 앱 표로 물러난다
       'lat': item['lat'],
       'lng': item['lng'],
-      if (benefits.isNotEmpty)
+      // 혜택 뱃지 — 홈 카드와 같은 첫 번째 혜택. 누르면 정책 상세가 열린다.
+      // 한산/인기(crowdLevel) 뱃지는 시안이 혜택 칩으로 바꿔 더 안 그린다
+      if (benefits.isNotEmpty) ...{
         'benefitBadge': (benefits.first as Map<String, dynamic>)['text'],
+        'policyId': (benefits.first as Map<String, dynamic>)['policyId'],
+      },
     };
   }
 

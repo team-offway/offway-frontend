@@ -12,6 +12,7 @@ import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
+import '../../policy/presentation/policy_detail_sheet.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -402,7 +403,7 @@ class _SortChip extends StatelessWidget {
   }
 }
 
-/// 후보 지역 카드 — 16:9 썸네일 + 뱃지 + 지역명 + 설명
+/// 후보 지역 카드 — 16:9 썸네일 + 혜택 뱃지 + 지역명 + 설명
 class _CandidateCard extends ConsumerWidget {
   const _CandidateCard({required this.region});
 
@@ -411,7 +412,8 @@ class _CandidateCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final imageUrl = region['imageUrl'] as String?;
-    final badge = region['badge'] as String?;
+    final benefit = region['benefitBadge'] as String?;
+    final policyId = (region['policyId'] as num?)?.toInt();
 
     return GestureDetector(
       onTap: () {
@@ -445,8 +447,8 @@ class _CandidateCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (badge != null) ...[
-            _AccentBadge(label: badge),
+          if (benefit != null) ...[
+            _BenefitBadge(label: benefit, policyId: policyId),
             const SizedBox(height: 6),
           ],
           Text(
@@ -473,24 +475,32 @@ class _CandidateCard extends ConsumerWidget {
 }
 
 /// 지역 성격을 한 단어로 짚는 뱃지 (예: 인기)
-class _AccentBadge extends StatelessWidget {
-  const _AccentBadge({required this.label});
+/// 혜택 뱃지 — 홈 카드와 같은 첫 번째 혜택(시안 Badge: 브랜드색 8% 바탕에
+/// 브랜드색 12px). 누르면 정책 상세 시트가 열린다.
+class _BenefitBadge extends StatelessWidget {
+  const _BenefitBadge({required this.label, this.policyId});
 
   final String label;
+  final int? policyId;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        // DS 뱃지 규칙 — Accent/Background 토큰을 8%로 깐다 (무채색은 안 보인다)
-        color: AppAccentColors.backgroundCyan.withValues(alpha: AppOpacity.o8),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.caption1Medium.copyWith(
-          color: AppAccentColors.foregroundCyan,
+    final id = policyId;
+    return GestureDetector(
+      // 카드 전체 탭(코스)보다 안쪽이라 여기서 제스처를 먼저 받는다
+      onTap: id == null ? null : () => showPolicyDetailSheet(context, id),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.caption1Medium.copyWith(
+            color: AppColors.primaryNormal,
+          ),
         ),
       ),
     );
