@@ -186,6 +186,37 @@ void main() {
       }
     });
 
+    test('멀리서 끌려가지 않는다 — 끝나기 0.7초 전엔 목표 근처에 와 있다', () {
+      // 후반에 목표 쪽으로 슬며시 기울어 근처까지 가 두고, 마지막 구간은
+      // 짧게 내려앉는다. 어느 방향으로 쏘든, 목표가 어디든 그렇다
+      for (final target in const [
+        Offset(80, 100),
+        Offset(330, 60),
+        Offset(200, 380),
+        Offset(60, 480),
+      ]) {
+        for (final seed in [1, 2, 3]) {
+          for (final dir in const [Offset(1, 0), Offset(0, -1)]) {
+            final flight = PinFlight.plan(
+              start: RandomBoard.pinRest,
+              direction: dir,
+              target: target,
+              bounds: bounds,
+              random: math.Random(seed),
+            );
+            final beforeEnd = flight.positionAt(
+              flight.total - const Duration(milliseconds: 700),
+            );
+            expect(
+              (beforeEnd - target).distance,
+              lessThan(220),
+              reason: 'target $target seed $seed dir $dir',
+            );
+          }
+        }
+      }
+    });
+
     test('아래로 조준해도 튕겨서 계속 움직인다', () {
       final flight = plan(direction: const Offset(0, 1));
       final mid = flight.positionAt(const Duration(seconds: 2));

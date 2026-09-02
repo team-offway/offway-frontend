@@ -165,11 +165,12 @@ void relaxChips(List<MapChip> chips, {int iterations = 300, double gap = 4}) {
 /// 핀이 날아가는 길 — 발사 전에 끝까지 정해 둔다.
 ///
 /// **도착지를 먼저 뽑고 비행은 연출이다.** 진짜 물리로 튕기면 어디에 멈출지
-/// 보장할 수 없다. 조준 방향으로 벽에 튕기며 돌아다니다가([freeDuration]),
-/// 마지막 [approachDuration] 동안 목표 칩으로 부드럽게 빨려 들어간다.
+/// 보장할 수 없다. 조준 방향으로 벽에 튕기며 돌아다니다가, 남은 시간이
+/// 목표까지 가는 데 필요한 만큼이 되면 속도를 이어받은 곡선으로 내려앉는다.
 ///
-/// 튕길 때마다 각도를 조금 흔든다 — 완벽한 반사는 같은 길을 되풀이해
-/// 기계처럼 보인다.
+/// 튕길 때마다 '가고 싶은 방향'을 조금 흔들고 그쪽으로 몇 프레임에 걸쳐
+/// 돌아 들어간다 — 완벽한 반사는 같은 길을 되풀이해 기계처럼 보이고,
+/// 순간적으로 꺾으면 각이 튄다.
 class PinFlight {
   PinFlight._(this._samples, this.total, this._dt);
 
@@ -180,19 +181,38 @@ class PinFlight {
     required Rect bounds,
     required math.Random random,
     Duration total = const Duration(seconds: 5),
-    Duration approach = const Duration(milliseconds: 1100),
     double speed = 480,
   }) {
     const dt = 1 / 120;
-    final free = (total - approach).inMicroseconds / 1e6;
+    // 한 프레임에 꺾을 수 있는 최대 각 — 벽에서 튕긴 뒤 새 방향으로 '돌아
+    // 들어가게' 한다. 순간 반사만 두면 무작위 각이 튀어 보인다
+    const maxTurn = math.pi / 22;
+    // 마지막 구간에 쓸 최소 시간 — 이보다 짧으면 급하게 꺾여 들어간다.
+    // 후반에 목표 쪽으로 기울어 가까이 와 있으므로 대개 이 값이 쓰인다
+    const minApproach = 0.7;
+    final totalSec = total.inMicroseconds / 1e6;
+
     var pos = start;
     var dir = direction.distance < 1e-6
         ? const Offset(0, -1)
         : direction / direction.distance;
+    // 가고 싶은 방향. dir은 여기로 조금씩 돈다
+    var want = dir;
     final samples = <Offset>[pos];
     var step = 0;
+    var t = 0.0;
 
-    for (var t = dt; t <= free; t += dt) {
+    while (true) {
+      t += dt;
+      // 남은 시간이 목표까지 가는 데 필요한 시간에 닿으면 수렴 구간으로 —
+      // 속도를 유지한 채 곡선으로 들어가려면 거리에 비례한 시간이 필요하다
+      final remaining = totalSec - t;
+      final need = math.max(
+        minApproach,
+        (target - pos).distance / (speed * 0.8),
+      );
+      if (remaining <= need) break;
+
       var next = pos + dir * (speed * dt);
       var bounced = false;
       if (next.dx < bounds.left || next.dx > bounds.right) {
@@ -204,27 +224,47 @@ class PinFlight {
         bounced = true;
       }
       if (bounced) {
-        final jitter = (random.nextDouble() - 0.5) * math.pi / 3; // ±30°
-        dir = _steady(_rotate(dir, jitter));
+        // 반사는 즉시(벽은 딱딱하다), 흔들림은 '가고 싶은 방향'에만 준다 —
+        // 그쪽으로 몇 프레임에 걸쳐 돌아 들어가므로 각이 튀지 않는다
+        dir = _steady(dir);
+        want = _steady(_rotate(dir, (random.nextDouble() - 0.5) * math.pi / 3));
         next = Offset(
           next.dx.clamp(bounds.left, bounds.right),
           next.dy.clamp(bounds.top, bounds.bottom),
         );
-      } else if (step > 60 && step % 20 == 0) {
-        // 벽 사이에서도 살짝살짝 방향을 튼다 — 직선으로만 오가면 기계 같다
-        dir = _steady(_rotate(dir, (random.nextDouble() - 0.5) * math.pi / 12));
+      } else {
+        if (step > 60 && step % 40 == 0) {
+          // 벽 사이에서도 천천히 방향을 바꾼다 — 직선으로만 오가면 기계 같다
+          want = _steady(
+            _rotate(want, (random.nextDouble() - 0.5) * math.pi / 6),
+          );
+        }
+        // 후반에는 슬며시 목표 쪽으로 기운다. 멀리서 한 번에 끌려가면
+        // 어색하니, 돌아다니는 척하면서 근처까지 가 둔다 — 시간이 갈수록
+        // 목표 방향의 비중이 커진다
+        final phase = (t / totalSec - 0.45) / 0.45;
+        if (phase > 0) {
+          final toTarget = target - pos;
+          if (toTarget.distance > 1) {
+            final pull = math.min(1.0, phase) * 0.9;
+            final blended =
+                want * (1 - pull) + (toTarget / toTarget.distance) * pull;
+            if (blended.distance > 1e-6) want = blended / blended.distance;
+          }
+        }
+        dir = _turnToward(dir, want, maxTurn);
       }
       step++;
       pos = next;
       samples.add(pos);
     }
 
-    // 마지막 구간: 지금 속도 방향을 이어받아 목표에서 멈추는 에르미트 곡선.
-    // 갑자기 방향을 꺾지 않아 '끌려간다'는 느낌이 안 든다
-    final approachSec = approach.inMicroseconds / 1e6;
-    final steps = (approachSec / dt).round();
+    // 마지막 구간: 지금 속도를 그대로 이어받아 목표에서 멈추는 에르미트 곡선.
+    // 속도가 이어지므로 '갑자기 끌려간다'는 느낌 없이 스르르 내려앉는다
+    final approachSec = totalSec - t + dt;
+    final steps = math.max(1, (approachSec / dt).round());
     final p0 = pos;
-    final m0 = dir * (speed * approachSec * 0.6);
+    final m0 = dir * (speed * approachSec);
     for (var i = 1; i <= steps; i++) {
       final s = i / steps;
       final s2 = s * s, s3 = s2 * s;
@@ -241,6 +281,15 @@ class PinFlight {
       );
     }
     return PinFlight._(samples, total, dt);
+  }
+
+  /// [dir]을 [want] 쪽으로 최대 [maxTurn]만큼 돌린다
+  static Offset _turnToward(Offset dir, Offset want, double maxTurn) {
+    final cross = dir.dx * want.dy - dir.dy * want.dx;
+    final dot = dir.dx * want.dx + dir.dy * want.dy;
+    final angle = math.atan2(cross, dot);
+    if (angle.abs() <= maxTurn) return want;
+    return _rotate(dir, angle.sign * maxTurn);
   }
 
   final List<Offset> _samples;
