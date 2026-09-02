@@ -35,6 +35,17 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   /// 눌러도 제자리인 버튼은 없느니만 못하다.
   bool get showsLeaveShortcut => true;
 
+  /// 눌러서 들어온 "다녀오셨나요?" 알림이 가리키는 코스. 알림 없이 왔으면 null.
+  ///
+  /// **그 여행에 한해** [PendingTrip.askableFrom]을 다시 재지 않는다 — 알림이
+  /// 곧 "지금 물어볼 때"라는 서버의 판단인데, 기기 시계가 몇 초 느리거나
+  /// 시간대가 다르면 알림을 눌렀는데 모달이 안 뜨는 일이 생긴다.
+  ///
+  /// 다른 여행에는 적용하지 않는다. 프로바이더는 가장 오래 밀린 여행을
+  /// 고르므로, 옛 알림을 뒤늦게 누른 아침에 어제 끝난 다른 여행이 걸리면
+  /// 그 여행은 아직 물을 때가 아니다.
+  int? get notificationCourseId => null;
+
   /// 물어볼 여행이 있으면 화면이 그려진 뒤 모달을 띄운다.
   ///
   /// [build] 안에서 부른다 — build 도중에는 `showDialog`를 열 수 없어
@@ -44,6 +55,10 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     // 캐시돼 있으면 listen은 '바뀐 적 없다'며 부르지 않는다
     final trip = ref.watch(pendingTripProvider).value;
     if (trip == null || _asked) return;
+    // 알림(다음 날 20시)보다 먼저 묻지 않는다 — 자정에 넘어온 여행은
+    // 저녁까지 홈에 들어와도 조용하다. 그 여행의 알림을 눌러 왔을 때만 예외
+    final fromItsNotification = trip.courseId == notificationCourseId;
+    if (!fromItsNotification && !trip.isAskableAt(DateTime.now())) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_asked) _ask(trip);

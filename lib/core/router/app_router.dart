@@ -42,8 +42,13 @@ abstract final class AppRoutes {
   static const onboardingLeave = '/onboarding/leave';
   static const myLeave = '/leave';
 
-  /// "다녀오셨나요?" 알림을 눌렀을 때 — 도착하면 모달이 뜬다
-  static const myLeaveFromNotification = '/leave?from=notification';
+  /// "다녀오셨나요?" 알림을 눌렀을 때 — 도착하면 모달이 뜬다.
+  ///
+  /// 알림이 가리키는 코스를 함께 싣는다 — 화면은 **그 여행일 때만** 알림
+  /// 시각 문턱을 건너뛴다. 코스를 모르는 알림이면 싣지 않는다
+  static String myLeaveFromNotificationPath(int? courseId) => courseId == null
+      ? '/leave?from=notification'
+      : '/leave?from=notification&courseId=$courseId';
   static const leaveRegister = '/leave/register';
   static const leaveUsages = '/leave/usages';
 
@@ -239,6 +244,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // 눌러 들어온 경우다
         builder: (context, state) => MyLeaveScreen(
           fromNotification: state.uri.queryParameters['from'] == 'notification',
+          notificationCourseId: int.tryParse(
+            state.uri.queryParameters['courseId'] ?? '',
+          ),
         ),
       ),
       GoRoute(
