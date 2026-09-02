@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/utils/korean_josa.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
@@ -812,7 +813,7 @@ class _ResultDialog extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       _TextAction(
-                        label: '$label으로 떠나기',
+                        label: '${withEuro(label)} 떠나기',
                         color: AppColors.primaryNormal,
                         onTap: () =>
                             Navigator.of(context).pop(_ResultAnswer.go),
