@@ -56,7 +56,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   static const _unzoomDuration = Duration(milliseconds: 400);
 
   /// 핀이 칩을 스칠 때 반짝이는 시간
-  static const _flashDuration = Duration(milliseconds: 280);
+  static const _flashDuration = Duration(milliseconds: 140);
 
   late final AnimationController _spin = AnimationController(
     vsync: this,
@@ -492,8 +492,10 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         child: AnimatedOpacity(
           opacity: hidden ? 0 : 1,
           duration: const Duration(milliseconds: 250),
+          // 색이 바뀌는 시간도 짧게 — 길면 반짝임이 들어오고 나가는 데만
+          // 한참 걸려 스친 뒤에도 파랗게 남아 보인다
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
+            duration: const Duration(milliseconds: 60),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               // 스칠 때 offway 50으로 반짝, 내려앉으면 브랜드색으로 굳는다
