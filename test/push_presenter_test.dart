@@ -33,10 +33,18 @@ void main() {
 
   group('누르면 갈 곳', () {
     test('여행 다음 날 알림은 내 연차로 보낸다', () {
-      // 그 화면이 "다녀오셨나요?" 모달을 띄운다
+      // 그 화면이 "다녀오셨나요?" 모달을 띄운다. 어느 여행의 알림인지
+      // 함께 실어야 그 여행에만 알림 시각 문턱을 건너뛴다
+      expect(
+        notificationDestination(NotificationType.tripAfter, 7),
+        '/leave?from=notification&courseId=7',
+      );
+    });
+
+    test('코스를 모르는 다음 날 알림도 내 연차로는 간다', () {
       expect(
         notificationDestination(NotificationType.tripAfter, null),
-        AppRoutes.myLeaveFromNotification,
+        '/leave?from=notification',
       );
     });
 

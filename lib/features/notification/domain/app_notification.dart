@@ -63,17 +63,17 @@ String notificationBody(NotificationType type, {String? regionName}) {
 /// 종류별로 갈 곳. 없으면 누르기만 하고 이동하지 않는다.
 ///
 /// 목록에서 누르든 푸시 배너에서 누르든 같은 곳으로 가야 한다.
-String? notificationDestination(NotificationType type, int? courseId) =>
-    switch (type) {
-      // 시안 흐름: 알림 → 내 연차. 그 화면이 "다녀오셨나요?" 모달을 띄운다
-      NotificationType.tripAfter => AppRoutes.myLeaveFromNotification,
-      // 내일 떠날 여행을 보러 간다. 코스가 지워졌으면 갈 곳이 없다
-      NotificationType.tripTomorrow =>
-        courseId == null
-            ? null
-            : AppRoutes.savedCoursePath(courseId.toString()),
-      NotificationType.unknown => null,
-    };
+String? notificationDestination(
+  NotificationType type,
+  int? courseId,
+) => switch (type) {
+  // 시안 흐름: 알림 → 내 연차. 그 화면이 "다녀오셨나요?" 모달을 띄운다
+  NotificationType.tripAfter => AppRoutes.myLeaveFromNotificationPath(courseId),
+  // 내일 떠날 여행을 보러 간다. 코스가 지워졌으면 갈 곳이 없다
+  NotificationType.tripTomorrow =>
+    courseId == null ? null : AppRoutes.savedCoursePath(courseId.toString()),
+  NotificationType.unknown => null,
+};
 
 /// 알림 한 건.
 class AppNotification {

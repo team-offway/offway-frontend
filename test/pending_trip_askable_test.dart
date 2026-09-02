@@ -88,8 +88,9 @@ void main() {
 
     Future<void> pumpLeaveFromNotification(
       WidgetTester tester,
-      PendingTrip trip,
-    ) async {
+      PendingTrip trip, {
+      required int? notificationCourseId,
+    }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -108,7 +109,10 @@ void main() {
           ],
           child: MaterialApp(
             theme: AppTheme.light,
-            home: const MyLeaveScreen(fromNotification: true),
+            home: MyLeaveScreen(
+              fromNotification: true,
+              notificationCourseId: notificationCourseId,
+            ),
           ),
         ),
       );
@@ -125,10 +129,34 @@ void main() {
       expect(find.textContaining('다녀오셨나요?'), findsOneWidget);
     });
 
-    testWidgets('알림을 눌러 들어오면 시각을 따지지 않는다', (tester) async {
+    testWidgets('그 여행의 알림을 눌러 들어오면 시각을 따지지 않는다', (tester) async {
       // 알림이 왔다는 것이 곧 물어볼 때라는 뜻이다 — 기기 시계가 느려도 뜬다
-      await pumpLeaveFromNotification(tester, endedToday);
+      await pumpLeaveFromNotification(
+        tester,
+        endedToday,
+        notificationCourseId: endedToday.courseId,
+      );
       expect(find.textContaining('다녀오셨나요?'), findsOneWidget);
+    });
+
+    testWidgets('다른 여행의 알림으로 들어왔으면 시각을 따진다', (tester) async {
+      // 옛 알림을 아침에 눌렀는데 어제 끝난 다른 여행이 걸렸다 — 그 여행은
+      // 아직 물을 때가 아니다
+      await pumpLeaveFromNotification(
+        tester,
+        endedToday,
+        notificationCourseId: endedToday.courseId + 1,
+      );
+      expect(find.textContaining('다녀오셨나요?'), findsNothing);
+    });
+
+    testWidgets('코스를 모르는 알림으로 들어와도 시각은 따진다', (tester) async {
+      await pumpLeaveFromNotification(
+        tester,
+        endedToday,
+        notificationCourseId: null,
+      );
+      expect(find.textContaining('다녀오셨나요?'), findsNothing);
     });
   });
 }

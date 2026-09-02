@@ -19,7 +19,11 @@ import 'widgets/leave_new_chip.dart';
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
 class MyLeaveScreen extends ConsumerStatefulWidget {
-  const MyLeaveScreen({super.key, this.fromNotification = false});
+  const MyLeaveScreen({
+    super.key,
+    this.fromNotification = false,
+    this.notificationCourseId,
+  });
 
   /// "다녀오셨나요?" 알림을 눌러 들어왔는지.
   ///
@@ -27,6 +31,9 @@ class MyLeaveScreen extends ConsumerStatefulWidget {
   /// 연차를 보러 그냥 들어온 사람에게까지 띄우면, 홈에서 '나중에 할게요'를
   /// 눌러 미룬 사람이 연차 화면마다 같은 질문을 다시 받는다.
   final bool fromNotification;
+
+  /// 그 알림이 가리키는 코스. 이 여행일 때만 알림 시각 문턱을 건너뛴다
+  final int? notificationCourseId;
 
   @override
   ConsumerState<MyLeaveScreen> createState() => _MyLeaveScreenState();
@@ -42,7 +49,7 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
   bool get showsLeaveShortcut => false;
 
   @override
-  bool get entersFromNotification => widget.fromNotification;
+  int? get notificationCourseId => widget.notificationCourseId;
 
   @override
   Widget build(BuildContext context) {
