@@ -40,8 +40,8 @@ abstract final class RandomBoard {
   static const pinDiameter = 67.7;
 
   /// 착지 후 줌인 배율. 시안 실측은 1.7(지도 383 → 653)인데 실기기에서
-  /// 밋밋해 보여 조금 더 당긴다
-  static const landingZoom = 2.7;
+  /// 밋밋해 보여 더 당긴다
+  static const landingZoom = 3.2;
 
   /// 위경도 → 보드 좌표.
   ///
