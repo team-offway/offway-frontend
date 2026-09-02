@@ -85,4 +85,47 @@ void main() {
       expect(at(now.add(const Duration(minutes: 3))).isNewAt(now), isTrue);
     });
   });
+
+  group('New 칩은 하나', () {
+    final now = DateTime(2026, 9, 2, 12);
+    LeaveUsage at(int id, DateTime? created) => LeaveUsage(
+      id: id,
+      usedOn: DateTime(2026, 8, 1),
+      days: 1,
+      createdAt: created,
+    );
+
+    test('24시간 안에 여럿을 등록해도 가장 최근 것 하나다', () {
+      final older = at(1, now.subtract(const Duration(hours: 3)));
+      final latest = at(2, now.subtract(const Duration(minutes: 10)));
+      final oldest = at(3, now.subtract(const Duration(hours: 20)));
+      // 순서와 무관하게 등록 시각으로 고른다
+      expect(LeaveUsage.newest([older, latest, oldest], now), same(latest));
+    });
+
+    test('가장 최근 것도 24시간이 지났으면 아무것도 아니다', () {
+      final a = at(1, now.subtract(const Duration(days: 2)));
+      final b = at(2, now.subtract(const Duration(hours: 30)));
+      expect(LeaveUsage.newest([a, b], now), isNull);
+    });
+
+    test('등록 시각을 모르는 옛 내역은 후보가 아니다', () {
+      final unknown = at(1, null);
+      final fresh = at(2, now.subtract(const Duration(minutes: 5)));
+      expect(LeaveUsage.newest([unknown, fresh], now), same(fresh));
+      expect(LeaveUsage.newest([unknown], now), isNull);
+    });
+
+    test('같은 순간에 등록됐으면 목록에서 먼저 온 것이다', () {
+      // 서버가 등록 역순으로 주므로 화면 맨 위 카드에 붙는다
+      final created = now.subtract(const Duration(minutes: 1));
+      final first = at(1, created);
+      final second = at(2, created);
+      expect(LeaveUsage.newest([first, second], now), same(first));
+    });
+
+    test('빈 목록이면 없다', () {
+      expect(LeaveUsage.newest(const [], now), isNull);
+    });
+  });
 }

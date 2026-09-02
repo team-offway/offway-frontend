@@ -57,6 +57,25 @@ class LeaveUsage {
     return now.difference(created) < const Duration(hours: 24);
   }
 
+  /// 'New' 칩이 붙을 **단 하나**의 내역 — 가장 최근에 등록한 것.
+  ///
+  /// 24시간 안에 여럿을 등록하면 [isNewAt]은 전부 참이라 칩이 줄줄이 붙는다.
+  /// 칩은 "방금 뭘 넣었지?"를 짚어 주는 표시라 하나면 족하다 — 셋이 붙으면
+  /// 아무것도 짚지 못한다. 등록 시각이 가장 늦은 것을 고르고, 그것마저
+  /// 24시간이 지났으면 아무것도 고르지 않는다.
+  ///
+  /// 같은 순간에 등록된 것이 여럿이면(일괄 등록) 목록에서 먼저 온 것이다 —
+  /// 서버가 등록 역순으로 주므로 화면 맨 위 카드다.
+  static LeaveUsage? newest(Iterable<LeaveUsage> usages, DateTime now) {
+    LeaveUsage? latest;
+    for (final usage in usages) {
+      final created = usage.createdAt;
+      if (created == null) continue;
+      if (latest == null || created.isAfter(latest.createdAt!)) latest = usage;
+    }
+    return latest != null && latest.isNewAt(now) ? latest : null;
+  }
+
   LeaveUsage copyWith({String? courseName}) => LeaveUsage(
     id: id,
     usedOn: usedOn,
