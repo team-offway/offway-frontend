@@ -480,11 +480,17 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   );
 
   /// 착지한 칩이 화면 가운데로 오도록 키운다. 0이면 그대로다
+  /// 지금 지도가 몇 배로 당겨져 있는지 (1 = 그대로)
+  double get _zoomScale {
+    final t = Curves.easeInOut.transform(_zoom.value);
+    return _landed == null ? 1 : 1 + (RandomBoard.landingZoom - 1) * t;
+  }
+
   Matrix4 _zoomMatrix() {
     final t = Curves.easeInOut.transform(_zoom.value);
     final landed = _landed;
     if (t == 0 || landed == null) return Matrix4.identity();
-    final scale = 1 + (RandomBoard.landingZoom - 1) * t;
+    final scale = _zoomScale;
     final boardCenter = RandomBoard.size.center(Offset.zero);
     final anchor = Offset.lerp(landed.center, boardCenter, t)!;
     return Matrix4.identity()
@@ -505,26 +511,31 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
       top: rect.top,
       width: rect.width,
       height: rect.height,
-      child: AnimatedOpacity(
-        opacity: hidden ? 0 : 1,
-        duration: const Duration(milliseconds: 250),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            // 스칠 때 offway 50으로 반짝, 내려앉으면 브랜드색으로 굳는다
-            color: landed
-                ? AppColors.primaryNormal
-                : flashing
-                ? AppPalette.offway50
-                : AppPalette.coolNeutral70,
-            borderRadius: BorderRadius.circular(94),
-          ),
-          child: Text(
-            chip.label,
-            maxLines: 1,
-            style: AppTypography.body2NormalBold.copyWith(
-              color: AppPalette.common100,
+      // 칩은 지도만큼 커지지 않는다 — 시안은 지도 1.7배에 칩 1.37배(≈ 0.6제곱).
+      // 지도 배율을 되돌려 그만큼만 키운다
+      child: Transform.scale(
+        scale: math.pow(_zoomScale, 0.6) / _zoomScale,
+        child: AnimatedOpacity(
+          opacity: hidden ? 0 : 1,
+          duration: const Duration(milliseconds: 250),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              // 스칠 때 offway 50으로 반짝, 내려앉으면 브랜드색으로 굳는다
+              color: landed
+                  ? AppColors.primaryNormal
+                  : flashing
+                  ? AppPalette.offway50
+                  : AppPalette.coolNeutral70,
+              borderRadius: BorderRadius.circular(94),
+            ),
+            child: Text(
+              chip.label,
+              maxLines: 1,
+              style: AppTypography.body2NormalBold.copyWith(
+                color: AppPalette.common100,
+              ),
             ),
           ),
         ),
