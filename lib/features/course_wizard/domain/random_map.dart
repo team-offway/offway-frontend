@@ -54,10 +54,19 @@ abstract final class RandomBoard {
 
 /// 지도 위 지역 칩 하나 — 이름과 자리.
 class MapChip {
-  MapChip({required this.regionId, required this.label, required this.center});
+  MapChip({
+    required this.regionId,
+    required this.label,
+    required this.center,
+    this.polygonKey,
+  });
 
   final String regionId;
   final String label;
+
+  /// 착지하면 채울 시군구 폴리곤의 키(`강원/정선군`). 모르는 곳이면 null —
+  /// 칩은 놓지만 면은 못 채운다
+  final String? polygonKey;
 
   /// 칩 중심(보드 좌표). 겹침을 풀면서 조금 움직인다
   Offset center;

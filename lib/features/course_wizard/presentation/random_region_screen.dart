@@ -15,6 +15,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
+import '../data/region_polygons.dart';
 import '../domain/random_map.dart';
 import '../domain/region_geo.dart';
 import 'candidates_screen.dart' show wizardCandidatesProvider;
@@ -125,6 +126,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
           regionId: c['id'] as String,
           label: regionChipLabel(name),
           center: center,
+          polygonKey: polygonKeyFor(name: name, sido: c['sido'] as String?),
         ),
       );
     }
@@ -279,9 +281,13 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   // ─── 그리기 ────────────────────────────────────────────────────────────
 
+  /// 착지한 군을 채울 경계. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
+  RegionPolygons? _polygons;
+
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
+    _polygons = ref.watch(regionPolygonsProvider).value;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -408,6 +414,14 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                       fit: BoxFit.fill,
                     ),
                   ),
+                  // 내려앉은 군을 연두색으로 (시안 착지 화면). 지도 위,
+                  // 칩 아래 — 경계는 지도 선과 같은 굵기·색으로 다시 긋는다
+                  if (_landedRings case final rings?)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(painter: _RegionFillPainter(rings)),
+                      ),
+                    ),
                   for (final chip in chips) _buildChip(chip),
                   if (_phase == _Phase.aiming)
                     Positioned.fill(
@@ -441,6 +455,13 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
+  /// 착지한 군의 경계 고리들. 착지 전이거나 경계를 모르면 null
+  List<List<(double, double)>>? get _landedRings {
+    final key = _landed?.polygonKey;
+    if (key == null) return null;
+    return _polygons?.ringsFor(key);
+  }
+
   /// 착지한 칩이 화면 가운데로 오도록 키운다. 0이면 그대로다
   Matrix4 _zoomMatrix() {
     final t = Curves.easeInOut.transform(_zoom.value);
@@ -459,29 +480,35 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     final flashing =
         _flashUntil[chip.regionId]?.isAfter(DateTime.now()) ?? false;
     final landed = identical(chip, _landed);
+    // 내려앉으면 그 칩만 남고 나머지는 사라진다(시안 착지 화면)
+    final hidden = _landed != null && !landed;
     final rect = chip.rect;
     return Positioned(
       left: rect.left,
       top: rect.top,
       width: rect.width,
       height: rect.height,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          // 스칠 때 offway 50으로 반짝, 내려앉으면 브랜드색으로 굳는다
-          color: landed
-              ? AppColors.primaryNormal
-              : flashing
-              ? AppPalette.offway50
-              : AppPalette.coolNeutral70,
-          borderRadius: BorderRadius.circular(94),
-        ),
-        child: Text(
-          chip.label,
-          maxLines: 1,
-          style: AppTypography.body2NormalBold.copyWith(
-            color: AppPalette.common100,
+      child: AnimatedOpacity(
+        opacity: hidden ? 0 : 1,
+        duration: const Duration(milliseconds: 250),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            // 스칠 때 offway 50으로 반짝, 내려앉으면 브랜드색으로 굳는다
+            color: landed
+                ? AppColors.primaryNormal
+                : flashing
+                ? AppPalette.offway50
+                : AppPalette.coolNeutral70,
+            borderRadius: BorderRadius.circular(94),
+          ),
+          child: Text(
+            chip.label,
+            maxLines: 1,
+            style: AppTypography.body2NormalBold.copyWith(
+              color: AppPalette.common100,
+            ),
           ),
         ),
       ),
@@ -520,10 +547,11 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                 border: Border.all(color: AppPalette.offway50, width: 5),
               ),
               child: Center(
-                // 에셋은 오른쪽 위(45°)를 보는 종이비행기다 — 45°를 빼야 위를
-                // 향하고, 거기에 조준 방향을 더한다
+                // 에셋(vuesax direct-right)은 오른쪽을 보는 종이비행기다 —
+                // 90°를 빼야 위를 향하고, 거기에 조준 방향을 더한다. 조준
+                // 점선이 이 앞머리에서 시작한다
                 child: Transform.rotate(
-                  angle: heading - math.pi / 4,
+                  angle: heading - math.pi / 2,
                   child: SvgPicture.asset(
                     'assets/icons/ic_paper_plane.svg',
                     width: 37,
@@ -537,6 +565,36 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
       ),
     );
   }
+}
+
+/// 내려앉은 군의 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로 채운다.
+/// 테두리는 긋지 않는다(시안).
+class _RegionFillPainter extends CustomPainter {
+  const _RegionFillPainter(this.rings);
+
+  final List<List<(double, double)>> rings;
+
+  // TODO(디자인시스템): 시안 착지 면 색. 토큰에 없는 값이라 상수로 둔다
+  static const _fill = Color(0xFFE6FFD4);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    for (final ring in rings) {
+      if (ring.isEmpty) continue;
+      final first = RandomBoard.project(ring.first.$1, ring.first.$2);
+      path.moveTo(first.dx, first.dy);
+      for (final (lat, lng) in ring.skip(1)) {
+        final p = RandomBoard.project(lat, lng);
+        path.lineTo(p.dx, p.dy);
+      }
+      path.close();
+    }
+    canvas.drawPath(path, Paint()..color = _fill);
+  }
+
+  @override
+  bool shouldRepaint(_RegionFillPainter old) => !identical(old.rings, rings);
 }
 
 /// 핀 가장자리에서 조준 방향으로 자라는 점선.
@@ -677,10 +735,11 @@ class _ResultDialog extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(19.5, 20, 19.5, 0),
                   child: Column(
                     children: [
+                      // 글자를 감싸는 만큼만 칠한다(시안) — alignment를 주면
+                      // 카드 폭으로 늘어난다
                       Container(
                         height: 28,
                         padding: const EdgeInsets.symmetric(horizontal: 6),
-                        alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: AppColors.primaryNormal.withValues(
                             alpha: 0.12,

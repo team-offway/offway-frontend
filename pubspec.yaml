@@ -59,6 +59,7 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/mock/
+    - assets/data/
 
   # 디자인 시스템 본문 서체 (SIL OFL 1.1 · assets/fonts/LICENSE.txt)
   # 타이포 토큰이 쓰는 400·500·600·700만 포함한다
