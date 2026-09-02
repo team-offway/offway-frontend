@@ -10,7 +10,7 @@ abstract final class RandomBoard {
   /// 상단바 아래 본문(시안 `Frame 2147228782`) 크기
   static const size = Size(402, 752);
 
-  /// 한반도 SVG(`random_korea_map.svg`)가 놓이는 자리.
+  /// 한반도 SVG(`random_korea_base.svg`·`random_korea_overlay.svg`)가 놓이는 자리.
   ///
   /// 시안의 지도 프레임(`_경기도`)은 (6, 16)에 있고, 내보낸 SVG의 viewBox는
   /// 그 프레임 기준 (-0.84, -1.15)부터 시작한다 — 획 두께만큼 삐져나온 값이다
