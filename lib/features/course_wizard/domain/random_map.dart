@@ -59,15 +59,15 @@ class MapChip {
     required this.regionId,
     required this.label,
     required this.center,
-    this.polygonKey,
+    this.sidoKey,
   });
 
   final String regionId;
   final String label;
 
-  /// 착지하면 채울 시군구 폴리곤의 키(`강원/정선군`). 모르는 곳이면 null —
+  /// 착지하면 연두색으로 채울 시도(`강원`). 모르는 곳이면 null —
   /// 칩은 놓지만 면은 못 채운다
-  final String? polygonKey;
+  final String? sidoKey;
 
   /// 칩 중심(보드 좌표). 겹침을 풀면서 조금 움직인다
   Offset center;

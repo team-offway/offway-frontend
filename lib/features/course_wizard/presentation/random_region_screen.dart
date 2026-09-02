@@ -15,7 +15,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
-import '../data/region_polygons.dart';
+import '../data/sido_polygons.dart';
 import '../domain/random_map.dart';
 import '../domain/region_geo.dart';
 import 'candidates_screen.dart' show wizardCandidatesProvider;
@@ -126,7 +126,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
           regionId: c['id'] as String,
           label: regionChipLabel(name),
           center: center,
-          polygonKey: polygonKeyFor(name: name, sido: c['sido'] as String?),
+          sidoKey: sidoKeyFor(name: name, sido: c['sido'] as String?),
         ),
       );
     }
@@ -281,13 +281,13 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   // ─── 그리기 ────────────────────────────────────────────────────────────
 
-  /// 착지한 군을 채울 경계. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
-  RegionPolygons? _polygons;
+  /// 착지한 곳의 시도를 채울 경계. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
+  SidoPolygons? _polygons;
 
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
-    _polygons = ref.watch(regionPolygonsProvider).value;
+    _polygons = ref.watch(sidoPolygonsProvider).value;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -414,8 +414,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                       fit: BoxFit.fill,
                     ),
                   ),
-                  // 내려앉은 군을 연두색으로 (시안 착지 화면). 지도 위,
-                  // 칩 아래 — 경계는 지도 선과 같은 굵기·색으로 다시 긋는다
+                  // 내려앉은 곳의 시도를 연두색으로 (시안 착지 화면 — 보령에
+                  // 앉으면 충남 전체). 지도 위, 칩 아래
                   if (_landedRings case final rings?)
                     Positioned.fill(
                       child: IgnorePointer(
@@ -455,9 +455,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
-  /// 착지한 군의 경계 고리들. 착지 전이거나 경계를 모르면 null
+  /// 착지한 곳이 속한 시도의 경계 고리들. 착지 전이거나 모르면 null
   List<List<(double, double)>>? get _landedRings {
-    final key = _landed?.polygonKey;
+    final key = _landed?.sidoKey;
     if (key == null) return null;
     return _polygons?.ringsFor(key);
   }
@@ -567,8 +567,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 }
 
-/// 내려앉은 군의 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로 채운다.
-/// 테두리는 긋지 않는다(시안).
+/// 내려앉은 곳의 시도 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로
+/// 채운다. 테두리는 긋지 않는다(시안).
 class _RegionFillPainter extends CustomPainter {
   const _RegionFillPainter(this.rings);
 
