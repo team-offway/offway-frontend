@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../data/sido_shapes.dart' show sidoKeyFor;
+import 'region_geo.dart';
+
 /// 랜덤 지역 선택 보드의 좌표계와 핀의 비행 경로.
 ///
 /// 화면 폭이 기기마다 다르므로 **시안 단위(402×752)로 그려 놓고 통째로
@@ -78,6 +81,39 @@ class MapChip {
 
   Rect get rect =>
       Rect.fromCenter(center: center, width: width, height: height);
+}
+
+/// 후보 목록(추천 응답을 앱 모양으로 바꾼 맵)으로 지도 칩을 만든다.
+///
+/// 자리는 **서버가 준 `lat`·`lng`가 먼저다** (core #405). 없으면 앱 내장 표
+/// ([regionGeoFor])로 물러난다 — 옛 서버·목 데이터용 폴백이다. 둘 다 없으면
+/// 그 지역은 놓을 수 없고 뽑히지도 않는다. 겹침은 풀어서 돌려준다.
+List<MapChip> buildMapChips(List<Map<String, dynamic>> candidates) {
+  final chips = <MapChip>[];
+  for (final c in candidates) {
+    final name = c['name'] as String? ?? '';
+    final sido = c['sido'] as String?;
+    final lat = (c['lat'] as num?)?.toDouble();
+    final lng = (c['lng'] as num?)?.toDouble();
+    final Offset? center;
+    if (lat != null && lng != null) {
+      center = RandomBoard.project(lat, lng);
+    } else {
+      final geo = regionGeoFor(name: name, sido: sido);
+      center = geo == null ? null : RandomBoard.project(geo.lat, geo.lng);
+    }
+    if (center == null) continue;
+    chips.add(
+      MapChip(
+        regionId: c['id'] as String,
+        label: regionChipLabel(name),
+        center: center,
+        sidoKey: sidoKeyFor(name: name, sido: sido),
+      ),
+    );
+  }
+  relaxChips(chips);
+  return chips;
 }
 
 /// 칩끼리 겹치지 않게 살짝 밀어낸다.

@@ -17,7 +17,6 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/sido_shapes.dart';
 import '../domain/random_map.dart';
-import '../domain/region_geo.dart';
 import 'candidates_screen.dart' show wizardCandidatesProvider;
 
 /// 랜덤 지역 선택 — 핀을 던져 후보지역 중 한 곳을 고른다.
@@ -106,33 +105,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   List<MapChip> _chipsFor(List<Map<String, dynamic>> candidates) {
     if (identical(candidates, _chipSource)) return _chips;
-    final chips = <MapChip>[];
-    for (final c in candidates) {
-      final name = c['name'] as String? ?? '';
-      final lat = (c['lat'] as num?)?.toDouble();
-      final lng = (c['lng'] as num?)?.toDouble();
-      final Offset? center;
-      if (lat != null && lng != null) {
-        // 서버가 좌표를 주면 그게 진실이다 — 표는 서버가 없을 때의 임시값
-        center = RandomBoard.project(lat, lng);
-      } else {
-        final geo = regionGeoFor(name: name, sido: c['sido'] as String?);
-        center = geo == null ? null : RandomBoard.project(geo.lat, geo.lng);
-      }
-      // 자리를 모르는 곳은 놓을 수 없다 — 뽑히지도 않는다
-      if (center == null) continue;
-      chips.add(
-        MapChip(
-          regionId: c['id'] as String,
-          label: regionChipLabel(name),
-          center: center,
-          sidoKey: sidoKeyFor(name: name, sido: c['sido'] as String?),
-        ),
-      );
-    }
-    relaxChips(chips);
     _chipSource = candidates;
-    return _chips = chips;
+    return _chips = buildMapChips(candidates);
   }
 
   // ─── 제스처 ────────────────────────────────────────────────────────────

@@ -62,6 +62,33 @@ void main() {
     });
   });
 
+  group('칩 만들기', () {
+    test('서버 좌표가 오면 표보다 먼저 쓴다 (core #405)', () {
+      // 이름은 정선인데 좌표는 부산 — 서버가 진실이다
+      final chips = buildMapChips([
+        {
+          'id': '1',
+          'name': '정선군',
+          'sido': '강원특별자치도',
+          'lat': 35.180,
+          'lng': 129.075,
+        },
+      ]);
+      expect(chips.single.center, RandomBoard.project(35.180, 129.075));
+      expect(chips.single.label, '정선');
+      expect(chips.single.sidoKey, '강원');
+    });
+
+    test('좌표가 없으면 표로 물러나고, 표에도 없으면 놓지 않는다', () {
+      final chips = buildMapChips([
+        {'id': '1', 'name': '정선군', 'sido': '강원특별자치도'},
+        {'id': '2', 'name': '서울', 'sido': '서울특별시'},
+      ]);
+      expect(chips.map((c) => c.regionId), ['1']);
+      expect(chips.single.center, RandomBoard.project(37.381, 128.661));
+    });
+  });
+
   group('칩 겹침 풀기', () {
     test('전남 열여섯 곳을 놓아도 서로 겹치지 않는다', () {
       final chips = [
