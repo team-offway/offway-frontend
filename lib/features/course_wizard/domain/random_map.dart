@@ -188,9 +188,11 @@ class PinFlight {
     const maxTurn = math.pi / 40;
     // 마지막 감속 구간 길이. 이 시간에 지금 속도로 멈추려면 목표까지
     // 속도×시간/3 안에 있어야 곡선이 고리를 그리지 않는다(에르미트 접선 조건)
-    const approachSec = 0.7;
-    // 일찍 목표로 나갔을 때 직진 구간에서 늦출 수 있는 최저 속도 비율
-    const minGlide = 0.25;
+    const approachSec = 0.35;
+    // 비행 시간은 [total]에 딱 맞추지 않는다 — 방향 전환을 벽에서만 하므로
+    // 이만큼 이르거나 늦어도 그냥 제 속도로 간다(속도를 늦춰 시간을 맞추면
+    // 마지막이 굼떠 보인다)
+    const tolerance = 0.5;
     final approachRadius = speed * approachSec / 3;
     final totalSec = total.inMicroseconds / 1e6;
 
@@ -199,7 +201,6 @@ class PinFlight {
         ? const Offset(0, -1)
         : direction / direction.distance;
     var want = dir;
-    var curSpeed = speed;
     final samples = <Offset>[pos];
     var t = 0.0;
     // false: 자유 비행(벽 반사·느린 방향 전환) / true: 목표를 향해 직진
@@ -214,10 +215,10 @@ class PinFlight {
 
       final angle = _angleBetween(dir, toDir).abs();
       if (!cruising &&
-          remaining <=
+          remaining + tolerance <=
               _straightTime(dist, speed, approachRadius) + approachSec) {
         // 벽에서 틀 기회를 놓쳤다(드물다 — 다음 벽을 내다보고 튼다). 이대로
-        // 가면 못 닿으니 지금 목표로 튼다
+        // 가면 너무 늦으니 지금 목표로 튼다
         cruising = true;
         dir = toDir;
         want = dir;
@@ -226,21 +227,15 @@ class PinFlight {
         // 가까워졌거나 시간이 다 됐으면 감속 착지로. 회전 반경보다 가까운데
         // 목표가 옆·뒤에 있으면 돌아서 맞추려다 주위를 맴돈다 — 바로 착지로
         if (dist <= approachRadius ||
-            remaining <= approachSec ||
+            remaining <= -tolerance ||
             (dist < 170 && angle > math.pi / 3)) {
           break;
         }
-        want = toDir;
         // 벽에서 정확히 겨눴으므로 여기서는 미세 보정만 한다
-        // 시간이 남으면 그만큼 늦춘다(최저 45%). 급브레이크가 아니라
-        // 프레임마다 조금씩 — 착륙하는 비행기처럼 미끄러진다
-        final needNow =
-            math.max(0, dist - approachRadius) / speed + approachSec;
-        final wantSpeed = speed * (needNow / remaining).clamp(minGlide, 1.0);
-        curSpeed += (wantSpeed - curSpeed).clamp(-speed * dt, speed * dt);
+        want = toDir;
       }
 
-      var next = pos + dir * (curSpeed * dt);
+      var next = pos + dir * (speed * dt);
       var bounced = false;
       if (next.dx < bounds.left || next.dx > bounds.right) {
         dir = Offset(-dir.dx, dir.dy);
@@ -263,16 +258,12 @@ class PinFlight {
             _rotate(dir, (random.nextDouble() - 0.5) * math.pi / 6),
           );
           // 방향 전환은 벽에서만 한다('뱅크샷'). 허공에서 꺾으면 어색하다.
-          // 이 벽에서 목표로 곧장 가면 시간이 맞거나, 다음 벽까지 갔다가는
-          // 늦을 때 여기서 목표 쪽으로 나간다. 일찍 나가는 만큼은 직진하며
-          // 늦춘다
+          // 이 벽에서 목표로 곧장 가면 시간이 (허용 오차 안에서) 맞거나,
+          // 다음 벽까지 갔다가는 늦을 때 여기서 목표 쪽으로 나간다
           final fromWall = target - next;
           final bankNeed =
               _straightTime(fromWall.distance, speed, approachRadius) +
               approachSec;
-          final bankSlack =
-              _straightTime(fromWall.distance, speed, approachRadius) *
-              (1 / minGlide - 1);
           final nextWall = next + dir * _distToWall(next, dir, bounds);
           final nextNeed =
               _straightTime(
@@ -284,8 +275,8 @@ class PinFlight {
           final remainingAtNext =
               remaining - _distToWall(next, dir, bounds) / speed;
           if (fromWall.distance > approachRadius &&
-              (remaining <= bankNeed + bankSlack ||
-                  remainingAtNext < nextNeed)) {
+              (remaining <= bankNeed + tolerance ||
+                  remainingAtNext < nextNeed - tolerance)) {
             cruising = true;
             dir = fromWall / fromWall.distance;
           }
@@ -300,10 +291,10 @@ class PinFlight {
 
     // 감속 착지: 지금 속도를 이어받아 목표에서 멈추는 에르미트 곡선.
     // 접선은 남은 거리의 3배를 넘기지 않는다 — 넘기면 지나쳤다 돌아온다
-    final tail = math.max(approachSec / 2, totalSec - t + dt);
+    const tail = approachSec;
     final steps = math.max(1, (tail / dt).round());
     final p0 = pos;
-    final reach = math.min(curSpeed * tail, (target - pos).distance * 3);
+    final reach = math.min(speed * tail, (target - pos).distance * 3);
     final m0 = dir * reach;
     for (var i = 1; i <= steps; i++) {
       final s = i / steps;
@@ -320,7 +311,12 @@ class PinFlight {
         ),
       );
     }
-    return PinFlight._(samples, total, dt);
+    // 실제 걸린 시간 — [total] 언저리(±[tolerance])다
+    return PinFlight._(
+      samples,
+      Duration(microseconds: ((samples.length - 1) * dt * 1e6).round()),
+      dt,
+    );
   }
 
   /// [from]에서 [dir]로 직진하면 벽에 닿기까지의 거리(px)

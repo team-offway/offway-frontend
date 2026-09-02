@@ -61,10 +61,10 @@ void main() {
     expect(find.text('핀을 꾹 눌러 던져보세요'), findsNothing);
     await gesture.up();
 
-    // 비행 5초 + 줌인 2초. 프레임 밖에서 시작한 애니메이션은 첫 프레임에서
-    // 시각을 잡으므로, 시작 프레임을 한 번 밀고 나서 시간을 보낸다
+    // 비행 약 5초(±0.5) + 줌인 2초. 프레임 밖에서 시작한 애니메이션은 첫
+    // 프레임에서 시각을 잡으므로, 시작 프레임을 한 번 밀고 나서 시간을 보낸다
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 5200));
+    await tester.pump(const Duration(milliseconds: 5800));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2200));
     await tester.pump();

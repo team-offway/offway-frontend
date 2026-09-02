@@ -186,9 +186,16 @@ void main() {
       }
     });
 
-    test('멀리서 끌려가지 않는다 — 끝나기 0.7초 전엔 목표 근처에 와 있다', () {
-      // 후반에 목표 쪽으로 슬며시 기울어 근처까지 가 두고, 마지막 구간은
-      // 짧게 내려앉는다. 어느 방향으로 쏘든, 목표가 어디든 그렇다
+    test('비행은 약 5초 — 벽에서만 방향을 틀므로 ±0.5초 흔들린다', () {
+      for (final seed in [1, 2, 3, 4, 5]) {
+        final flight = plan(seed: seed, direction: const Offset(0.7, -0.7));
+        expect(flight.total.inMilliseconds, inInclusiveRange(4400, 5600));
+      }
+    });
+
+    test('멀리서 끌려가지 않는다 — 끝나기 0.5초 전엔 목표 근처에 와 있다', () {
+      // 마지막 벽에서 목표로 곧장 나가 제 속도로 가다가 짧게(0.35초)
+      // 내려앉는다. 어느 방향으로 쏘든, 목표가 어디든 그렇다
       for (final target in const [
         Offset(80, 100),
         Offset(330, 60),
@@ -205,11 +212,11 @@ void main() {
               random: math.Random(seed),
             );
             final beforeEnd = flight.positionAt(
-              flight.total - const Duration(milliseconds: 700),
+              flight.total - const Duration(milliseconds: 500),
             );
             expect(
               (beforeEnd - target).distance,
-              lessThan(220),
+              lessThan(200),
               reason: 'target $target seed $seed dir $dir',
             );
           }
