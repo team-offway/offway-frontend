@@ -63,6 +63,11 @@ class RegionRecommendRepository {
       'description': _reachText(item['reachMinutes'] as int, transport),
       'reachMinutes': item['reachMinutes'],
       'contentCount': item['contentCount'],
+      // 한줄소개 — 랜덤 지역 결과 모달이 쓴다. 재료가 없으면 서버가 안 준다
+      'intro': item['intro'],
+      // 지도 칩 자리. 아직 서버가 안 실어 null이다 — 실리면 앱 표보다 우선한다
+      'lat': item['lat'],
+      'lng': item['lng'],
       if (benefits.isNotEmpty)
         'benefitBadge': (benefits.first as Map<String, dynamic>)['text'],
     };

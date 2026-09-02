@@ -159,7 +159,12 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                           color: AppColors.labelAlternative,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      // 시안: 부제 아래 22 → 랜덤 카드 → 10 → 정렬 칩
+                      const SizedBox(height: 22),
+                      _RandomEntryCard(
+                        onTap: () => context.push(AppRoutes.wizardRandom),
+                      ),
+                      const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
                         child: _SortChip(label: _sort.label, onTap: _pickSort),
@@ -275,6 +280,79 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
           ),
           const TextSpan(text: '을 찾았어요'),
         ],
+      ),
+    );
+  }
+}
+
+/// "어디로 갈지 고민된다면? 핀을 던져 여행지를 정해보세요" — 랜덤 지역 선택 진입.
+///
+/// 시안: light blue 95 바탕, 반경 14, 안쪽 16. 왼쪽 36 흰 상자에 GPS 아이콘,
+/// 오른쪽 끝에 쉐브론.
+class _RandomEntryCard extends StatelessWidget {
+  const _RandomEntryCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '핀을 던져 여행지를 정해보세요',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppPalette.lightBlue95,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundNormal,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icons/ic_gps_bulk.svg',
+                  width: 24,
+                  height: 24,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '어디로 갈지 고민된다면?',
+                      style: AppTypography.body1NormalMedium.copyWith(
+                        color: AppColors.labelNormal,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '핀을 던져 여행지를 정해보세요',
+                      style: AppTypography.label2Medium.copyWith(
+                        color: AppColors.labelNeutral,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SvgPicture.asset(
+                'assets/icons/ic_chevron_right.svg',
+                width: 24,
+                height: 24,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
