@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import '../data/sido_shapes.dart' show sidoKeyFor;
+import '../data/region_polygons.dart' show polygonKeyFor;
 import 'region_geo.dart';
 
 /// 랜덤 지역 선택 보드의 좌표계와 핀의 비행 경로.
@@ -73,15 +73,15 @@ class MapChip {
     required this.regionId,
     required this.label,
     required this.center,
-    this.sidoKey,
+    this.polygonKey,
   });
 
   final String regionId;
   final String label;
 
-  /// 착지하면 연두색으로 채울 시도(`강원`). 모르는 곳이면 null —
-  /// 칩은 놓지만 면은 못 채운다
-  final String? sidoKey;
+  /// 착지하면 연두색으로 채울 시군구 경계의 키(`강원/정선군`). 모르는 곳이면
+  /// null — 칩은 놓지만 면은 못 채운다
+  final String? polygonKey;
 
   /// 칩 중심(보드 좌표). 겹침을 풀면서 조금 움직인다
   Offset center;
@@ -119,7 +119,7 @@ List<MapChip> buildMapChips(List<Map<String, dynamic>> candidates) {
         regionId: c['id'] as String,
         label: regionChipLabel(name),
         center: center,
-        sidoKey: sidoKeyFor(name: name, sido: sido),
+        polygonKey: polygonKeyFor(name: name, sido: sido),
       ),
     );
   }
@@ -238,7 +238,7 @@ class PinFlight {
         // 가까워졌거나 시간이 다 됐으면 감속 착지로. 회전 반경보다 가까운데
         // 목표가 옆·뒤에 있으면 돌아서 맞추려다 주위를 맴돈다 — 바로 착지로
         if (dist <= approachRadius ||
-            remaining <= -tolerance ||
+            remaining <= approachSec - tolerance ||
             (dist < 170 && angle > math.pi / 3)) {
           break;
         }

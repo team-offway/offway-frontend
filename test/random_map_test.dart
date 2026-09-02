@@ -76,7 +76,7 @@ void main() {
       ]);
       expect(chips.single.center, RandomBoard.project(35.180, 129.075));
       expect(chips.single.label, '정선');
-      expect(chips.single.sidoKey, '강원');
+      expect(chips.single.polygonKey, '강원/정선군');
     });
 
     test('좌표가 없으면 표로 물러나고, 표에도 없으면 놓지 않는다', () {

@@ -64,13 +64,14 @@ void main() {
     // 비행 약 5초(±0.5) + 줌인 2초. 프레임 밖에서 시작한 애니메이션은 첫
     // 프레임에서 시각을 잡으므로, 시작 프레임을 한 번 밀고 나서 시간을 보낸다
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 5800));
+    await tester.pump(const Duration(milliseconds: 6200));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2200));
     await tester.pump();
 
     expect(find.text('이번 여행지는'), findsOneWidget);
-    expect(find.textContaining('으로 떠나기'), findsOneWidget);
+    // '정선으로'·'완도로' — 조사가 갈리므로 공통 꼬리로 찾는다
+    expect(find.textContaining('로 떠나기'), findsOneWidget);
     expect(find.text('다시 던지기'), findsOneWidget);
     expect(find.text('여행지 목록으로 돌아가기'), findsOneWidget);
   });

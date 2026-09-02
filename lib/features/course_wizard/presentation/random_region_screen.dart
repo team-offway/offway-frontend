@@ -16,7 +16,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
-import '../data/sido_shapes.dart';
+import '../data/region_polygons.dart';
 import '../domain/random_map.dart';
 import 'candidates_screen.dart' show wizardCandidatesProvider;
 
@@ -256,13 +256,13 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   // ─── 그리기 ────────────────────────────────────────────────────────────
 
-  /// 착지한 곳의 시도 조각. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
-  SidoShapes? _shapes;
+  /// 착지한 시군구의 경계. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
+  RegionPolygons? _polygons;
 
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
-    _shapes = ref.watch(sidoShapesProvider).value;
+    _polygons = ref.watch(regionPolygonsProvider).value;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -376,9 +376,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                 clipBehavior: Clip.none,
                 children: [
                   // 지도는 두 겹이다 — 본토 실루엣(base) 위에 시도 조각(overlay).
-                  // 내려앉은 시도의 연두 면은 보통 조각 위에 그리지만, 충남처럼
-                  // 조각이 없는 시도는 실루엣을 통째로 칠하고 조각으로 덮어
-                  // 남는 자리만 보이게 한다 (SidoShapes 참고)
+                  // 내려앉은 시군구의 연두 면은 그 위에 그린다
                   Positioned.fromRect(
                     rect: RandomBoard.mapRect,
                     child: SvgPicture.asset(
@@ -386,8 +384,6 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                       fit: BoxFit.fill,
                     ),
                   ),
-                  if (_landedFill case (final rings, under: true))
-                    _buildFill(rings),
                   Positioned.fromRect(
                     rect: RandomBoard.mapRect,
                     child: SvgPicture.asset(
@@ -395,8 +391,12 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                       fit: BoxFit.fill,
                     ),
                   ),
-                  if (_landedFill case (final rings, under: false))
-                    _buildFill(rings),
+                  if (_landedRings case final rings?)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(painter: _RegionFillPainter(rings)),
+                      ),
+                    ),
                   Positioned.fromRect(
                     rect: RandomBoard.jejuRect,
                     child: SvgPicture.asset(
@@ -437,22 +437,12 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
-  /// 착지한 곳이 속한 시도의 조각과, 조각 아래에 그려야 하는지.
-  /// 착지 전이거나 모르면 null
-  (List<List<Offset>>, {bool under})? get _landedFill {
-    final key = _landed?.sidoKey;
-    final shapes = _shapes;
-    if (key == null || shapes == null) return null;
-    final rings = shapes.ringsFor(key);
-    if (rings == null) return null;
-    return (rings, under: shapes.isUnderOverlay(key));
+  /// 착지한 시군구의 경계 고리들(위경도). 착지 전이거나 모르면 null
+  List<List<(double, double)>>? get _landedRings {
+    final key = _landed?.polygonKey;
+    if (key == null) return null;
+    return _polygons?.ringsFor(key);
   }
-
-  Widget _buildFill(List<List<Offset>> rings) => Positioned.fill(
-    child: IgnorePointer(
-      child: CustomPaint(painter: _RegionFillPainter(rings)),
-    ),
-  );
 
   /// 착지한 칩이 화면 가운데로 오도록 키운다. 0이면 그대로다
   /// 지금 지도가 몇 배로 당겨져 있는지 (1 = 그대로)
@@ -573,29 +563,42 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 }
 
-/// 내려앉은 곳의 시도 면 — 지도 SVG에서 뽑은 조각(보드 좌표)을 연두색으로
-/// 채운다. 테두리는 긋지 않는다(시안). 짝홀 규칙이라 서울·대구 고리는
-/// 경기·경북에서 구멍이 된다.
+/// 내려앉은 시군구의 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로
+/// 채우고, 지도 SVG의 선과 같은 색·굵기(#37383C 16%, 0.6)로 테두리를 긋는다.
 class _RegionFillPainter extends CustomPainter {
   const _RegionFillPainter(this.rings);
 
-  final List<List<Offset>> rings;
+  final List<List<(double, double)>> rings;
 
   // TODO(디자인시스템): 시안 착지 면 색. 토큰에 없는 값이라 상수로 둔다
   static const _fill = Color(0xFFE6FFD4);
 
+  /// 지도 SVG의 경계선과 같은 색·굵기 — #37383C를 16%로, 0.6 굵기
+  static const _line = Color(0x2937383C);
+  static const _lineWidth = 0.6;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path()..fillType = PathFillType.evenOdd;
+    final path = Path();
     for (final ring in rings) {
       if (ring.isEmpty) continue;
-      path.moveTo(ring.first.dx, ring.first.dy);
-      for (final p in ring.skip(1)) {
+      final first = RandomBoard.project(ring.first.$1, ring.first.$2);
+      path.moveTo(first.dx, first.dy);
+      for (final (lat, lng) in ring.skip(1)) {
+        final p = RandomBoard.project(lat, lng);
         path.lineTo(p.dx, p.dy);
       }
       path.close();
     }
     canvas.drawPath(path, Paint()..color = _fill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = _line
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _lineWidth
+        ..strokeJoin = StrokeJoin.round,
+    );
   }
 
   @override
