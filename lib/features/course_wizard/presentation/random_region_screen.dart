@@ -437,8 +437,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
-  /// 착지한 시군구의 경계 고리들(위경도). 착지 전이거나 모르면 null
-  List<List<(double, double)>>? get _landedRings {
+  /// 착지한 시군구의 경계 고리들(지도 프레임 좌표). 착지 전이거나 모르면 null
+  List<List<Offset>>? get _landedRings {
     final key = _landed?.polygonKey;
     if (key == null) return null;
     return _polygons?.ringsFor(key);
@@ -563,12 +563,12 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 }
 
-/// 내려앉은 시군구의 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로
-/// 채우고, 지도 SVG의 선과 같은 색·굵기(#37383C 16%, 0.6)로 테두리를 긋는다.
+/// 내려앉은 시군구의 면 — 지도 프레임 좌표 고리를 연두색으로 채우고, 지도
+/// SVG의 선과 같은 색·굵기(#37383C 16%, 0.6)로 테두리를 긋는다.
 class _RegionFillPainter extends CustomPainter {
   const _RegionFillPainter(this.rings);
 
-  final List<List<(double, double)>> rings;
+  final List<List<Offset>> rings;
 
   // TODO(디자인시스템): 시안 착지 면 색. 토큰에 없는 값이라 상수로 둔다
   static const _fill = Color(0xFFE6FFD4);
@@ -580,13 +580,12 @@ class _RegionFillPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = Path();
+    final origin = RandomBoard.mapOrigin;
     for (final ring in rings) {
       if (ring.isEmpty) continue;
-      final first = RandomBoard.project(ring.first.$1, ring.first.$2);
-      path.moveTo(first.dx, first.dy);
-      for (final (lat, lng) in ring.skip(1)) {
-        final p = RandomBoard.project(lat, lng);
-        path.lineTo(p.dx, p.dy);
+      path.moveTo(ring.first.dx + origin.dx, ring.first.dy + origin.dy);
+      for (final p in ring.skip(1)) {
+        path.lineTo(p.dx + origin.dx, p.dy + origin.dy);
       }
       path.close();
     }

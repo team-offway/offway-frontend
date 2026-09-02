@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course_wizard/data/region_polygons.dart';
@@ -36,30 +38,35 @@ void main() {
   test('좌표 표의 점이 제 경계 안에 있다 — 표와 경계가 같은 곳을 가리킨다', () {
     for (final g in kRegionGeos) {
       final rings = polygons.ringsFor('${g.sido}/${g.name}')!;
+      // 경계는 지도 프레임 좌표라 투영에서 원점을 뺀다. 지도 선에 붙이며
+      // 경계가 몇 px 움직였으므로 안이거나 3px 안이면 같은 곳으로 본다
+      // (부산 동구처럼 작은 구는 표의 점이 해안선 바깥에 놓인다)
+      final p = RandomBoard.project(g.lat, g.lng) - RandomBoard.mapOrigin;
       expect(
-        rings.any((ring) => _contains(ring, g.lat, g.lng)),
+        rings.any((ring) => _contains(ring, p) || _edgeDistance(ring, p) < 3),
         isTrue,
         reason: '${g.name} (${g.lat}, ${g.lng})',
       );
     }
   });
 
-  test('투영하면 경계의 한가운데가 지도 안에 들어간다', () {
+  test('경계의 한가운데가 지도 안에 들어간다', () {
     // 점 하나하나는 지도 밖일 수 있다 — 백령도(옹진)·가거도(신안)는 시안
     // 지도가 그리지 않는다. 면의 중심이 지도 안이면 채워도 어색하지 않다
     for (final g in kRegionGeos) {
       if (g.name == '울릉군') continue; // 시안이 자리를 옮겨 그린 섬
-      var sumX = 0.0, sumY = 0.0, n = 0;
+      var sum = Offset.zero;
+      var n = 0;
       for (final ring in polygons.ringsFor('${g.sido}/${g.name}')!) {
-        for (final (lat, lng) in ring) {
-          final p = RandomBoard.project(lat, lng);
-          sumX += p.dx;
-          sumY += p.dy;
+        for (final o in ring) {
+          sum += o;
           n++;
         }
       }
       expect(
-        RandomBoard.mapRect.contains(Offset(sumX / n, sumY / n)),
+        RandomBoard.mapRect.contains(
+          RandomBoard.mapOrigin + sum / n.toDouble(),
+        ),
         isTrue,
         reason: g.name,
       );
@@ -68,15 +75,31 @@ void main() {
 }
 
 /// 짝수-홀수 규칙 — 고리 하나 안에 점이 있는가
-bool _contains(List<(double, double)> ring, double lat, double lng) {
+bool _contains(List<Offset> ring, Offset p) {
   var inside = false;
   for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    final (lat1, lng1) = ring[i];
-    final (lat2, lng2) = ring[j];
-    if ((lat1 > lat) != (lat2 > lat)) {
-      final x = lng1 + (lat - lat1) * (lng2 - lng1) / (lat2 - lat1);
-      if (x > lng) inside = !inside;
+    final a = ring[i];
+    final b = ring[j];
+    if ((a.dy > p.dy) != (b.dy > p.dy)) {
+      final x = a.dx + (p.dy - a.dy) * (b.dx - a.dx) / (b.dy - a.dy);
+      if (x > p.dx) inside = !inside;
     }
   }
   return inside;
+}
+
+/// 점에서 고리의 변까지 가장 가까운 거리
+double _edgeDistance(List<Offset> ring, Offset p) {
+  var best = double.infinity;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    final a = ring[j];
+    final b = ring[i];
+    final ab = b - a;
+    final t = ab.distanceSquared == 0
+        ? 0.0
+        : (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / ab.distanceSquared)
+              .clamp(0.0, 1.0);
+    best = math.min(best, (p - (a + ab * t)).distance);
+  }
+  return best;
 }
