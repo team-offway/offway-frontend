@@ -746,7 +746,7 @@ class _ResultDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       // 시안: 카드 위가 y 206(874 기준) — 정중앙보다 조금 위다
-      alignment: const Alignment(0, -0.18),
+      alignment: const Alignment(0, -0.22),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
