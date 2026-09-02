@@ -22,9 +22,9 @@ abstract final class RandomBoard {
   /// 핀이 쉬는 자리 — 가로 한가운데, 지도 아래
   static const pinRest = Offset(201, 658);
 
-  /// 핀 지름. 누르면 [pinPressedScale]배로 커진다
+  /// 핀 지름 — 어느 단계든 같다. 시안 프레임의 92.9·78.2는 기울인 정사각형의
+  /// 바깥 상자 크기지 핀이 커진 게 아니다
   static const pinDiameter = 67.7;
-  static const pinPressedScale = 92.9 / 67.7;
 
   /// 착지 후 줌인 배율 — 시안 실측(지도 383 → 653)
   static const landingZoom = 1.7;

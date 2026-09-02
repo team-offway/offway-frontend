@@ -201,6 +201,10 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     final plan = _plan;
     if (plan == null) return;
     final pos = plan.positionAt(_flight.duration! * _flight.value);
+    // 비행기는 가는 쪽을 본다(시안 발사·비행 화면). 아주 조금 움직인 프레임은
+    // 방향이 흔들리므로 건너뛴다
+    final delta = pos - _pinPos;
+    if (delta.distance > 0.5) _heading = math.atan2(delta.dx, -delta.dy);
     final now = DateTime.now();
     for (final chip in _chips) {
       // 핀 몸통이 칩에 닿는 순간 — 스치기만 해도 반짝인다(시안)
@@ -285,6 +289,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         child: Column(
           children: [
             _buildTopBar(context),
+            // 시안: 상단바(98) 아래 23.5를 희게 두고 바다가 시작한다
+            const SizedBox(height: 23.5),
             Expanded(
               child: candidates.when(
                 loading: () => const AppLoadingView(title: '지도를 준비하고 있어요'),
@@ -375,10 +381,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                             painter: _AimLinePainter(
                               from: _pinPos,
                               direction: _direction,
-                              startGap:
-                                  RandomBoard.pinDiameter /
-                                  2 *
-                                  RandomBoard.pinPressedScale,
+                              startGap: RandomBoard.pinDiameter / 2 + 6,
                               length:
                                   _aimLength *
                                   Curves.easeOut.transform(_aim.value),
@@ -444,7 +447,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
           chip.label,
           maxLines: 1,
           style: AppTypography.body2NormalBold.copyWith(
-            color: AppColors.inverseLabel,
+            color: AppPalette.common100,
           ),
         ),
       ),
@@ -452,9 +455,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 
   Widget _buildPin() {
-    final pressed = _phase == _Phase.pressed || _phase == _Phase.aiming;
-    // 내려앉으면 칩이 파랗게 굳고 핀은 사라진다(시안 착지 화면) — 핀이 그 위에
-    // 남아 있으면 어느 지역인지 가린다
+    // 핀 크기는 어느 단계든 67.7 그대로다(시안 프레임의 92.9·78.2는 기울인
+    // 사각형의 바깥 상자일 뿐이다). 내려앉으면 칩이 파랗게 굳고 핀은
+    // 사라진다 — 남아 있으면 지역을 가린다
     final landed = _phase == _Phase.landing || _phase == _Phase.result;
     final heading = _phase == _Phase.idle
         ? _spin.value * 2 * math.pi
@@ -471,7 +474,7 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         onPointerCancel: _onPinUp,
         behavior: HitTestBehavior.opaque,
         child: AnimatedScale(
-          scale: landed ? 0 : (pressed ? RandomBoard.pinPressedScale : 1),
+          scale: landed ? 0.0 : 1.0,
           duration: const Duration(milliseconds: 150),
           child: Semantics(
             button: true,
@@ -504,8 +507,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
 /// 핀 가장자리에서 조준 방향으로 자라는 점선.
 ///
-/// 시안: 굵기 3의 둥근 점을 11.5 간격으로, offway 50에서 light blue 40으로
-/// 옅어지는 그라디언트.
+/// 시안: 굵기 3의 둥근 점을 11.5 간격으로. 핀 쪽이 light blue 40(진함)이고
+/// 멀어질수록 offway 50으로 밝아지며 점도 조금 작아진다.
 class _AimLinePainter extends CustomPainter {
   const _AimLinePainter({
     required this.from,
@@ -527,12 +530,13 @@ class _AimLinePainter extends CustomPainter {
     if (length <= 0) return;
     final paint = Paint()..style = PaintingStyle.fill;
     for (var d = 0.0; d <= length; d += _spacing) {
-      paint.color = Color.lerp(
-        AppPalette.offway50,
-        AppPalette.lightBlue40,
-        d / _aimMax,
-      )!;
-      canvas.drawCircle(from + direction * (startGap + d), _dotRadius, paint);
+      final t = d / _aimMax;
+      paint.color = Color.lerp(AppPalette.lightBlue40, AppPalette.offway50, t)!;
+      canvas.drawCircle(
+        from + direction * (startGap + d),
+        _dotRadius * (1 - 0.35 * t),
+        paint,
+      );
     }
   }
 
@@ -622,6 +626,8 @@ class _ResultDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      // 시안: 카드 위가 y 206(874 기준) — 정중앙보다 조금 위다
+      alignment: const Alignment(0, -0.18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
