@@ -68,8 +68,10 @@ String? sidoKeyFor({required String name, String? sido}) {
 /// 못 읽으면 예외 대신 빈 값으로 — 면을 못 채울 뿐 던지기는 되어야 한다
 final sidoShapesProvider = FutureProvider<SidoShapes>((ref) async {
   try {
-    final json = await rootBundle.loadString('assets/data/sido_shapes.json');
-    return SidoShapes.parse(json);
+    // loadString은 50KB를 넘으면 isolate에서 푼다 — 위젯 테스트(가짜 시계)
+    // 에서는 그 결과가 돌아오지 않아 면이 안 그려진다. 바이트로 읽어 직접 푼다
+    final bytes = await rootBundle.load('assets/data/sido_shapes.json');
+    return SidoShapes.parse(utf8.decode(bytes.buffer.asUint8List()));
   } on Object {
     return const SidoShapes({}, {});
   }

@@ -154,6 +154,7 @@ class PinFlight {
         ? const Offset(0, -1)
         : direction / direction.distance;
     final samples = <Offset>[pos];
+    var step = 0;
 
     for (var t = dt; t <= free; t += dt) {
       var next = pos + dir * (speed * dt);
@@ -167,13 +168,17 @@ class PinFlight {
         bounced = true;
       }
       if (bounced) {
-        final jitter = (random.nextDouble() - 0.5) * math.pi / 5; // ±18°
-        dir = _rotate(dir, jitter);
+        final jitter = (random.nextDouble() - 0.5) * math.pi / 3; // ±30°
+        dir = _steady(_rotate(dir, jitter));
         next = Offset(
           next.dx.clamp(bounds.left, bounds.right),
           next.dy.clamp(bounds.top, bounds.bottom),
         );
+      } else if (step > 60 && step % 20 == 0) {
+        // 벽 사이에서도 살짝살짝 방향을 튼다 — 직선으로만 오가면 기계 같다
+        dir = _steady(_rotate(dir, (random.nextDouble() - 0.5) * math.pi / 12));
       }
+      step++;
       pos = next;
       samples.add(pos);
     }
@@ -190,7 +195,14 @@ class PinFlight {
       final h00 = 2 * s3 - 3 * s2 + 1;
       final h10 = s3 - 2 * s2 + s;
       final h01 = -2 * s3 + 3 * s2;
-      samples.add(p0 * h00 + m0 * h10 + target * h01);
+      final p = p0 * h00 + m0 * h10 + target * h01;
+      // 벽 옆에서 바깥쪽 속도로 시작하면 곡선이 잠깐 밖으로 나간다 — 붙든다
+      samples.add(
+        Offset(
+          p.dx.clamp(bounds.left, bounds.right),
+          p.dy.clamp(bounds.top, bounds.bottom),
+        ),
+      );
     }
     return PinFlight._(samples, total, dt);
   }
@@ -208,6 +220,18 @@ class PinFlight {
     if (lo < 0) return _samples.first;
     final f = i - lo;
     return Offset.lerp(_samples[lo], _samples[lo + 1], f)!;
+  }
+
+  /// 너무 눕거나 너무 선 방향을 편다.
+  ///
+  /// 오른쪽 벽을 정면으로 맞고 튕기면 좌우로만 왔다 갔다 한다 — 가로·세로
+  /// 성분이 각각 최소 0.4는 되게 해서 지도를 가로지르며 돈다
+  static Offset _steady(Offset dir) {
+    var dx = dir.dx, dy = dir.dy;
+    if (dx.abs() < 0.4) dx = 0.4 * (dx < 0 ? -1 : 1);
+    if (dy.abs() < 0.4) dy = 0.4 * (dy < 0 ? -1 : 1);
+    final v = Offset(dx, dy);
+    return v / v.distance;
   }
 
   static Offset _rotate(Offset v, double rad) => Offset(

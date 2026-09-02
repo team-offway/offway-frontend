@@ -145,6 +145,20 @@ void main() {
       expect((early.dy - RandomBoard.pinRest.dy).abs(), lessThan(1));
     });
 
+    test('오른쪽 벽을 정면으로 맞아도 좌우로만 오가지 않는다', () {
+      // 벽에서 튕길 때 세로 성분을 살려 두므로 위아래로도 넓게 돈다
+      for (final seed in [1, 2, 3]) {
+        final flight = plan(seed: seed, direction: const Offset(1, 0));
+        var minY = double.infinity, maxY = -double.infinity;
+        for (var ms = 0; ms <= 3900; ms += 16) {
+          final p = flight.positionAt(Duration(milliseconds: ms));
+          minY = math.min(minY, p.dy);
+          maxY = math.max(maxY, p.dy);
+        }
+        expect(maxY - minY, greaterThan(250), reason: 'seed $seed');
+      }
+    });
+
     test('아래로 조준해도 튕겨서 계속 움직인다', () {
       final flight = plan(direction: const Offset(0, 1));
       final mid = flight.positionAt(const Duration(seconds: 2));
