@@ -168,9 +168,8 @@ void relaxChips(List<MapChip> chips, {int iterations = 300, double gap = 4}) {
 /// 보장할 수 없다. 조준 방향으로 벽에 튕기며 돌아다니다가, 남은 시간이
 /// 목표까지 가는 데 필요한 만큼이 되면 속도를 이어받은 곡선으로 내려앉는다.
 ///
-/// 튕길 때마다 '가고 싶은 방향'을 조금 흔들고 그쪽으로 몇 프레임에 걸쳐
-/// 돌아 들어간다 — 완벽한 반사는 같은 길을 되풀이해 기계처럼 보이고,
-/// 순간적으로 꺾으면 각이 튄다.
+/// 벽 사이는 직선이다. 튕길 때 반사각만 조금 흔든다 — 완벽한 반사는 같은
+/// 길을 되풀이해 기계처럼 보인다.
 class PinFlight {
   PinFlight._(this._samples, this.total, this._dt);
 
@@ -184,12 +183,14 @@ class PinFlight {
     double speed = 480,
   }) {
     const dt = 1 / 120;
-    // 한 프레임에 꺾을 수 있는 최대 각(2.25°, 초당 270°, 회전 반경 약 100px) —
-    // 벽에서 튕긴 뒤나 목표를 향해 돌 때 팽이처럼 돌지 않고 크게 호를 그린다
-    const maxTurn = math.pi / 80;
+    // 목표를 향해 돌 때 한 프레임에 꺾을 수 있는 최대 각(4.5°, 초당 540°,
+    // 회전 반경 약 50px) — 짧게 돌고 나머지는 직선으로 간다
+    const maxTurn = math.pi / 40;
     // 마지막 감속 구간 길이. 이 시간에 지금 속도로 멈추려면 목표까지
     // 속도×시간/3 안에 있어야 곡선이 고리를 그리지 않는다(에르미트 접선 조건)
     const approachSec = 0.7;
+    // 일찍 목표로 나갔을 때 직진 구간에서 늦출 수 있는 최저 속도 비율
+    const minGlide = 0.25;
     final approachRadius = speed * approachSec / 3;
     final totalSec = total.inMicroseconds / 1e6;
 
@@ -200,7 +201,6 @@ class PinFlight {
     var want = dir;
     var curSpeed = speed;
     final samples = <Offset>[pos];
-    var step = 0;
     var t = 0.0;
     // false: 자유 비행(벽 반사·느린 방향 전환) / true: 목표를 향해 직진
     var cruising = false;
@@ -213,21 +213,14 @@ class PinFlight {
       final toDir = dist < 1e-6 ? dir : toTarget / dist;
 
       final angle = _angleBetween(dir, toDir).abs();
-      if (!cruising) {
-        // 목표로 방향을 트는 시점 — 돌아서는 시간 + 직진 시간 + 감속 시간이
-        // 남은 시간과 같아질 때. 다만 그 전 1.6초 안에 목표가 대략 앞쪽이면
-        // 그때 미리 튼다 — 등 뒤에 두고 크게 U턴하는 것보다 자연스럽다.
-        // 일찍 출발한 만큼은 직진하며 천천히 늦춰 시간을 맞춘다
-        final turn = angle / maxTurn * dt;
-        final straight = math.max(0, dist - approachRadius) / speed;
-        final need = turn + straight + approachSec;
-        // 미리 출발해도 되는 여유 = 직진 구간을 최저 속도(45%)로 늦춰 벌 수
-        // 있는 시간. 이미 코앞이면 여유가 없다 — 일찍 붙어 기어가지 않게
-        final slack = math.min(1.6, straight * (1 / 0.45 - 1));
-        if (remaining <= need ||
-            (remaining <= need + slack && angle < math.pi / 4)) {
-          cruising = true;
-        }
+      if (!cruising &&
+          remaining <=
+              _straightTime(dist, speed, approachRadius) + approachSec) {
+        // 벽에서 틀 기회를 놓쳤다(드물다 — 다음 벽을 내다보고 튼다). 이대로
+        // 가면 못 닿으니 지금 목표로 튼다
+        cruising = true;
+        dir = toDir;
+        want = dir;
       }
       if (cruising) {
         // 가까워졌거나 시간이 다 됐으면 감속 착지로. 회전 반경보다 가까운데
@@ -238,11 +231,12 @@ class PinFlight {
           break;
         }
         want = toDir;
+        // 벽에서 정확히 겨눴으므로 여기서는 미세 보정만 한다
         // 시간이 남으면 그만큼 늦춘다(최저 45%). 급브레이크가 아니라
         // 프레임마다 조금씩 — 착륙하는 비행기처럼 미끄러진다
         final needNow =
             math.max(0, dist - approachRadius) / speed + approachSec;
-        final wantSpeed = speed * (needNow / remaining).clamp(0.45, 1.0);
+        final wantSpeed = speed * (needNow / remaining).clamp(minGlide, 1.0);
         curSpeed += (wantSpeed - curSpeed).clamp(-speed * dt, speed * dt);
       }
 
@@ -257,28 +251,49 @@ class PinFlight {
         bounced = true;
       }
       if (bounced) {
-        // 반사는 즉시(벽은 딱딱하다). 자유 비행 중이면 흔들림은 '가고 싶은
-        // 방향'에만 줘서 몇 프레임에 걸쳐 돌아 들어가게 한다
-        dir = _steady(dir);
-        if (!cruising) {
-          want = _steady(
-            _rotate(dir, (random.nextDouble() - 0.5) * math.pi / 3),
-          );
-        }
         next = Offset(
           next.dx.clamp(bounds.left, bounds.right),
           next.dy.clamp(bounds.top, bounds.bottom),
         );
-      } else {
-        if (!cruising && step > 60 && step % 40 == 0) {
-          // 벽 사이에서도 천천히 방향을 바꾼다 — 직선으로만 오가면 기계 같다
-          want = _steady(
-            _rotate(want, (random.nextDouble() - 0.5) * math.pi / 6),
+        // 반사는 즉시(벽은 딱딱하다). 자유 비행 중이면 반사각을 조금(±15°)
+        // 흔든다 — 완벽한 반사는 같은 길을 되풀이한다. 벽 사이는 직선이다
+        dir = _steady(dir);
+        if (!cruising) {
+          dir = _steady(
+            _rotate(dir, (random.nextDouble() - 0.5) * math.pi / 6),
           );
+          // 방향 전환은 벽에서만 한다('뱅크샷'). 허공에서 꺾으면 어색하다.
+          // 이 벽에서 목표로 곧장 가면 시간이 맞거나, 다음 벽까지 갔다가는
+          // 늦을 때 여기서 목표 쪽으로 나간다. 일찍 나가는 만큼은 직진하며
+          // 늦춘다
+          final fromWall = target - next;
+          final bankNeed =
+              _straightTime(fromWall.distance, speed, approachRadius) +
+              approachSec;
+          final bankSlack =
+              _straightTime(fromWall.distance, speed, approachRadius) *
+              (1 / minGlide - 1);
+          final nextWall = next + dir * _distToWall(next, dir, bounds);
+          final nextNeed =
+              _straightTime(
+                (target - nextWall).distance,
+                speed,
+                approachRadius,
+              ) +
+              approachSec;
+          final remainingAtNext =
+              remaining - _distToWall(next, dir, bounds) / speed;
+          if (fromWall.distance > approachRadius &&
+              (remaining <= bankNeed + bankSlack ||
+                  remainingAtNext < nextNeed)) {
+            cruising = true;
+            dir = fromWall / fromWall.distance;
+          }
         }
+        want = dir;
+      } else {
         dir = _turnToward(dir, want, maxTurn);
       }
-      step++;
       pos = next;
       samples.add(pos);
     }
@@ -307,6 +322,20 @@ class PinFlight {
     }
     return PinFlight._(samples, total, dt);
   }
+
+  /// [from]에서 [dir]로 직진하면 벽에 닿기까지의 거리(px)
+  static double _distToWall(Offset from, Offset dir, Rect bounds) {
+    var t = double.infinity;
+    if (dir.dx > 1e-9) t = math.min(t, (bounds.right - from.dx) / dir.dx);
+    if (dir.dx < -1e-9) t = math.min(t, (bounds.left - from.dx) / dir.dx);
+    if (dir.dy > 1e-9) t = math.min(t, (bounds.bottom - from.dy) / dir.dy);
+    if (dir.dy < -1e-9) t = math.min(t, (bounds.top - from.dy) / dir.dy);
+    return t.isFinite ? t : 0;
+  }
+
+  /// 목표까지 [dist] 남았을 때 감속 반경 밖을 직진하는 데 걸리는 시간(초)
+  static double _straightTime(double dist, double speed, double radius) =>
+      math.max(0, dist - radius) / speed;
 
   /// [a]에서 [b]까지의 부호 있는 각(라디안)
   static double _angleBetween(Offset a, Offset b) =>
