@@ -184,36 +184,69 @@ class PinFlight {
     double speed = 480,
   }) {
     const dt = 1 / 120;
-    // 한 프레임에 꺾을 수 있는 최대 각 — 벽에서 튕긴 뒤 새 방향으로 '돌아
-    // 들어가게' 한다. 순간 반사만 두면 무작위 각이 튀어 보인다
-    const maxTurn = math.pi / 22;
-    // 마지막 구간에 쓸 최소 시간 — 이보다 짧으면 급하게 꺾여 들어간다.
-    // 후반에 목표 쪽으로 기울어 가까이 와 있으므로 대개 이 값이 쓰인다
-    const minApproach = 0.7;
+    // 한 프레임에 꺾을 수 있는 최대 각(2.25°, 초당 270°, 회전 반경 약 100px) —
+    // 벽에서 튕긴 뒤나 목표를 향해 돌 때 팽이처럼 돌지 않고 크게 호를 그린다
+    const maxTurn = math.pi / 80;
+    // 마지막 감속 구간 길이. 이 시간에 지금 속도로 멈추려면 목표까지
+    // 속도×시간/3 안에 있어야 곡선이 고리를 그리지 않는다(에르미트 접선 조건)
+    const approachSec = 0.7;
+    final approachRadius = speed * approachSec / 3;
     final totalSec = total.inMicroseconds / 1e6;
 
     var pos = start;
     var dir = direction.distance < 1e-6
         ? const Offset(0, -1)
         : direction / direction.distance;
-    // 가고 싶은 방향. dir은 여기로 조금씩 돈다
     var want = dir;
+    var curSpeed = speed;
     final samples = <Offset>[pos];
     var step = 0;
     var t = 0.0;
+    // false: 자유 비행(벽 반사·느린 방향 전환) / true: 목표를 향해 직진
+    var cruising = false;
 
     while (true) {
       t += dt;
-      // 남은 시간이 목표까지 가는 데 필요한 시간에 닿으면 수렴 구간으로 —
-      // 속도를 유지한 채 곡선으로 들어가려면 거리에 비례한 시간이 필요하다
       final remaining = totalSec - t;
-      final need = math.max(
-        minApproach,
-        (target - pos).distance / (speed * 0.8),
-      );
-      if (remaining <= need) break;
+      final toTarget = target - pos;
+      final dist = toTarget.distance;
+      final toDir = dist < 1e-6 ? dir : toTarget / dist;
 
-      var next = pos + dir * (speed * dt);
+      final angle = _angleBetween(dir, toDir).abs();
+      if (!cruising) {
+        // 목표로 방향을 트는 시점 — 돌아서는 시간 + 직진 시간 + 감속 시간이
+        // 남은 시간과 같아질 때. 다만 그 전 1.6초 안에 목표가 대략 앞쪽이면
+        // 그때 미리 튼다 — 등 뒤에 두고 크게 U턴하는 것보다 자연스럽다.
+        // 일찍 출발한 만큼은 직진하며 천천히 늦춰 시간을 맞춘다
+        final turn = angle / maxTurn * dt;
+        final straight = math.max(0, dist - approachRadius) / speed;
+        final need = turn + straight + approachSec;
+        // 미리 출발해도 되는 여유 = 직진 구간을 최저 속도(45%)로 늦춰 벌 수
+        // 있는 시간. 이미 코앞이면 여유가 없다 — 일찍 붙어 기어가지 않게
+        final slack = math.min(1.6, straight * (1 / 0.45 - 1));
+        if (remaining <= need ||
+            (remaining <= need + slack && angle < math.pi / 4)) {
+          cruising = true;
+        }
+      }
+      if (cruising) {
+        // 가까워졌거나 시간이 다 됐으면 감속 착지로. 회전 반경보다 가까운데
+        // 목표가 옆·뒤에 있으면 돌아서 맞추려다 주위를 맴돈다 — 바로 착지로
+        if (dist <= approachRadius ||
+            remaining <= approachSec ||
+            (dist < 170 && angle > math.pi / 3)) {
+          break;
+        }
+        want = toDir;
+        // 시간이 남으면 그만큼 늦춘다(최저 45%). 급브레이크가 아니라
+        // 프레임마다 조금씩 — 착륙하는 비행기처럼 미끄러진다
+        final needNow =
+            math.max(0, dist - approachRadius) / speed + approachSec;
+        final wantSpeed = speed * (needNow / remaining).clamp(0.45, 1.0);
+        curSpeed += (wantSpeed - curSpeed).clamp(-speed * dt, speed * dt);
+      }
+
+      var next = pos + dir * (curSpeed * dt);
       var bounced = false;
       if (next.dx < bounds.left || next.dx > bounds.right) {
         dir = Offset(-dir.dx, dir.dy);
@@ -224,33 +257,24 @@ class PinFlight {
         bounced = true;
       }
       if (bounced) {
-        // 반사는 즉시(벽은 딱딱하다), 흔들림은 '가고 싶은 방향'에만 준다 —
-        // 그쪽으로 몇 프레임에 걸쳐 돌아 들어가므로 각이 튀지 않는다
+        // 반사는 즉시(벽은 딱딱하다). 자유 비행 중이면 흔들림은 '가고 싶은
+        // 방향'에만 줘서 몇 프레임에 걸쳐 돌아 들어가게 한다
         dir = _steady(dir);
-        want = _steady(_rotate(dir, (random.nextDouble() - 0.5) * math.pi / 3));
+        if (!cruising) {
+          want = _steady(
+            _rotate(dir, (random.nextDouble() - 0.5) * math.pi / 3),
+          );
+        }
         next = Offset(
           next.dx.clamp(bounds.left, bounds.right),
           next.dy.clamp(bounds.top, bounds.bottom),
         );
       } else {
-        if (step > 60 && step % 40 == 0) {
+        if (!cruising && step > 60 && step % 40 == 0) {
           // 벽 사이에서도 천천히 방향을 바꾼다 — 직선으로만 오가면 기계 같다
           want = _steady(
             _rotate(want, (random.nextDouble() - 0.5) * math.pi / 6),
           );
-        }
-        // 후반에는 슬며시 목표 쪽으로 기운다. 멀리서 한 번에 끌려가면
-        // 어색하니, 돌아다니는 척하면서 근처까지 가 둔다 — 시간이 갈수록
-        // 목표 방향의 비중이 커진다
-        final phase = (t / totalSec - 0.45) / 0.45;
-        if (phase > 0) {
-          final toTarget = target - pos;
-          if (toTarget.distance > 1) {
-            final pull = math.min(1.0, phase) * 0.9;
-            final blended =
-                want * (1 - pull) + (toTarget / toTarget.distance) * pull;
-            if (blended.distance > 1e-6) want = blended / blended.distance;
-          }
         }
         dir = _turnToward(dir, want, maxTurn);
       }
@@ -259,12 +283,13 @@ class PinFlight {
       samples.add(pos);
     }
 
-    // 마지막 구간: 지금 속도를 그대로 이어받아 목표에서 멈추는 에르미트 곡선.
-    // 속도가 이어지므로 '갑자기 끌려간다'는 느낌 없이 스르르 내려앉는다
-    final approachSec = totalSec - t + dt;
-    final steps = math.max(1, (approachSec / dt).round());
+    // 감속 착지: 지금 속도를 이어받아 목표에서 멈추는 에르미트 곡선.
+    // 접선은 남은 거리의 3배를 넘기지 않는다 — 넘기면 지나쳤다 돌아온다
+    final tail = math.max(approachSec / 2, totalSec - t + dt);
+    final steps = math.max(1, (tail / dt).round());
     final p0 = pos;
-    final m0 = dir * (speed * approachSec);
+    final reach = math.min(curSpeed * tail, (target - pos).distance * 3);
+    final m0 = dir * reach;
     for (var i = 1; i <= steps; i++) {
       final s = i / steps;
       final s2 = s * s, s3 = s2 * s;
@@ -283,11 +308,13 @@ class PinFlight {
     return PinFlight._(samples, total, dt);
   }
 
+  /// [a]에서 [b]까지의 부호 있는 각(라디안)
+  static double _angleBetween(Offset a, Offset b) =>
+      math.atan2(a.dx * b.dy - a.dy * b.dx, a.dx * b.dx + a.dy * b.dy);
+
   /// [dir]을 [want] 쪽으로 최대 [maxTurn]만큼 돌린다
   static Offset _turnToward(Offset dir, Offset want, double maxTurn) {
-    final cross = dir.dx * want.dy - dir.dy * want.dx;
-    final dot = dir.dx * want.dx + dir.dy * want.dy;
-    final angle = math.atan2(cross, dot);
+    final angle = _angleBetween(dir, want);
     if (angle.abs() <= maxTurn) return want;
     return _rotate(dir, angle.sign * maxTurn);
   }
