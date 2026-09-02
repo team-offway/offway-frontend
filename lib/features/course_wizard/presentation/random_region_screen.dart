@@ -762,8 +762,10 @@ class _ResultDialog extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(19.5, 20, 19.5, 0),
                   child: Column(
                     children: [
-                      // 글자를 감싸는 만큼만 칠한다(시안) — alignment를 주면
-                      // 카드 폭으로 늘어난다
+                      // 글자를 감싸는 만큼만 칠한다(시안). Container에
+                      // alignment를 주면 카드 폭으로 늘어나므로 Center로
+                      // 폭은 감싸고 세로만 가운데 맞춘다 — 그냥 두면 글자가
+                      // 위로 붙는다
                       Container(
                         height: 28,
                         padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -773,10 +775,14 @@ class _ResultDialog extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
-                          '이번 여행지는',
-                          style: AppTypography.label1NormalBold.copyWith(
-                            color: AppColors.primaryNormal,
+                        child: Center(
+                          widthFactor: 1,
+                          child: Text(
+                            '이번 여행지는',
+                            style: AppTypography.label1NormalBold.copyWith(
+                              color: AppColors.primaryNormal,
+                              leadingDistribution: TextLeadingDistribution.even,
+                            ),
                           ),
                         ),
                       ),
