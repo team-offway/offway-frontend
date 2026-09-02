@@ -73,6 +73,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(leaveUsagesProvider);
     final usages = async.value ?? const <LeaveUsage>[];
+    // 'New'는 가장 최근 등록 하나에만 — 내 연차 화면과 같은 규칙
+    final newest = LeaveUsage.newest(usages, DateTime.now());
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -95,6 +97,7 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) => _UsageCard(
                         usage: usages[i],
+                        isNew: identical(usages[i], newest),
                         expanded: _expanded == i,
                         selecting: _selecting,
                         checked: _selected.contains(i),
@@ -407,6 +410,7 @@ class _UsageCard extends StatelessWidget {
     required this.usage,
     required this.expanded,
     required this.onTap,
+    this.isNew = false,
     this.selecting = false,
     this.checked = false,
   });
@@ -414,6 +418,9 @@ class _UsageCard extends StatelessWidget {
   final LeaveUsage usage;
   final bool expanded;
   final VoidCallback? onTap;
+
+  /// 'New' 칩을 붙이는지 — 목록에서 하나만 고르므로 카드가 판단하지 않는다
+  final bool isNew;
 
   /// 삭제 모드라 체크박스를 띄우는지
   final bool selecting;
@@ -457,7 +464,7 @@ class _UsageCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 내 연차 화면과 같은 카드다 — 거기서 New인 것은 여기서도
-                      if (usage.isNewAt(DateTime.now())) ...[
+                      if (isNew) ...[
                         const LeaveNewChip(),
                         const SizedBox(height: 4),
                       ],

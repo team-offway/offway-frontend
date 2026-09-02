@@ -153,8 +153,10 @@ void main() {
     expect(find.text('연차가 새로 갱신됐나요?\n총 연차일수를 수정할 수 있어요'), findsOneWidget);
   });
 
-  testWidgets('갓 등록한 내역에만 New 칩이 붙는다', (tester) async {
-    // 시안: 등록 시점 기준 24시간. 사용일이 아니라 등록 시각(core #384)이다
+  testWidgets('New 칩은 가장 최근에 등록한 하나에만 붙는다', (tester) async {
+    // 시안: 등록 시점 기준 24시간. 사용일이 아니라 등록 시각(core #384)이다.
+    // 24시간 안에 둘을 등록해도 칩은 최신 하나다 — 줄줄이 붙으면 아무것도
+    // 짚어 주지 못한다
     final now = DateTime.now();
     await tester.pumpWidget(
       ProviderScope(
@@ -176,6 +178,14 @@ void main() {
                 days: 1,
                 reason: '방금 것',
                 createdAt: now.subtract(const Duration(minutes: 10)),
+              ),
+              // 한 시간 전 등록 — 24시간 안이지만 최신이 아니라 New가 아니다
+              LeaveUsage(
+                id: 4,
+                usedOn: DateTime(2026, 8, 2),
+                days: 1,
+                reason: '한 시간 전 것',
+                createdAt: now.subtract(const Duration(hours: 1)),
               ),
               // 이틀 전 등록 — 사용일이 미래여도 New가 아니다
               LeaveUsage(

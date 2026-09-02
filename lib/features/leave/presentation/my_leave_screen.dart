@@ -64,6 +64,9 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
     // 이 화면은 훑어보는 자리다 — 다 쌓아 두면 아래 '총 연차일수 수정하기'가
     // 한참 밑으로 밀려 보이지 않는다. 나머지는 '더보기'가 맡는다
     final usages = all.take(_maxCards).toList();
+    // 칩은 전체 내역 중 하나다 — 잘라낸 네 개 안에서 고르면 '더보기' 너머의
+    // 최신 건과 어긋난다
+    final newest = LeaveUsage.newest(all, DateTime.now());
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -143,6 +146,7 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
                             if (i > 0) const SizedBox(height: 8),
                             LeaveUsageCard(
                               usage: usage,
+                              isNew: identical(usage, newest),
                               expanded: _expanded == i,
                               // 코스 건만 펼쳐진다 — 직접 등록한 건은 더 볼 게 없다
                               onTap: usage.fromCourse
@@ -458,10 +462,15 @@ class LeaveUsageCard extends StatelessWidget {
     required this.usage,
     this.onTap,
     this.expanded = false,
+    this.isNew = false,
   });
 
   final LeaveUsage usage;
   final VoidCallback? onTap;
+
+  /// 'New' 칩을 붙이는지 — 목록에서 하나만 고르므로([LeaveUsage.newest])
+  /// 카드가 스스로 판단하지 않고 받는다
+  final bool isNew;
 
   /// 펼쳐서 '코스 자세히 보기'를 보이는지 — 코스 건에만 쓴다
   final bool expanded;
@@ -499,7 +508,7 @@ class LeaveUsageCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 갓 등록한 것임을 맨 위에서 알린다 — 시안: 칩 아래 4
-                      if (usage.isNewAt(DateTime.now())) ...[
+                      if (isNew) ...[
                         const LeaveNewChip(),
                         const SizedBox(height: 4),
                       ],
