@@ -42,6 +42,9 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
   bool get showsLeaveShortcut => false;
 
   @override
+  bool get entersFromNotification => widget.fromNotification;
+
+  @override
   Widget build(BuildContext context) {
     // 알림을 눌러 들어온 경우에만 묻는다. 그 알림이 곧 질문이라 여기서
     // 안 띄우면 눌러도 아무 일이 없다

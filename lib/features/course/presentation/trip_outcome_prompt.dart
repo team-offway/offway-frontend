@@ -35,6 +35,13 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   /// 눌러도 제자리인 버튼은 없느니만 못하다.
   bool get showsLeaveShortcut => true;
 
+  /// 알림을 눌러 들어왔는지.
+  ///
+  /// 그 알림이 곧 "지금 물어볼 때"라는 서버의 판단이라 [PendingTrip.askableFrom]
+  /// 을 다시 재지 않는다 — 기기 시계가 몇 초 느리거나 시간대가 다르면
+  /// 알림을 눌렀는데 모달이 안 뜨는 일이 생긴다.
+  bool get entersFromNotification => false;
+
   /// 물어볼 여행이 있으면 화면이 그려진 뒤 모달을 띄운다.
   ///
   /// [build] 안에서 부른다 — build 도중에는 `showDialog`를 열 수 없어
@@ -44,6 +51,9 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     // 캐시돼 있으면 listen은 '바뀐 적 없다'며 부르지 않는다
     final trip = ref.watch(pendingTripProvider).value;
     if (trip == null || _asked) return;
+    // 알림(다음 날 20시)보다 먼저 묻지 않는다 — 자정에 넘어온 여행은
+    // 저녁까지 홈에 들어와도 조용하다
+    if (!entersFromNotification && !trip.isAskableAt(DateTime.now())) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_asked) _ask(trip);

@@ -42,6 +42,21 @@ class PendingTrip {
   /// 다녀왔다고 답하면 깎일 연차 — 서버가 평일−공휴일로 계산해 준다
   final double consumedLeaveDays;
 
+  /// 서버가 "다녀오셨나요?" 알림을 보내는 시각 — 여행 다음 날 20시(KST,
+  /// core `TripAfterNotifier`). 서버 시각이라 기기 시간대와 무관하게 UTC로 잰다
+  static const _askHourUtc = 20 - 9;
+
+  /// 이 여행을 물어봐도 되는 첫 순간.
+  ///
+  /// `pending-trips`는 날짜만 보므로 여행 다음 날 **자정**에 넘어온다. 그대로
+  /// 띄우면 알림보다 20시간 먼저 묻는다 — 아침에 홈에 들어왔다가 질문을
+  /// 받고, 저녁에 알림을 또 받는다. 알림과 같은 시각에 맞춘다
+  DateTime get askableFrom =>
+      DateTime.utc(endDate.year, endDate.month, endDate.day + 1, _askHourUtc);
+
+  /// [now]에 물어봐도 되는가 — [askableFrom]을 지났는가
+  bool isAskableAt(DateTime now) => !now.isBefore(askableFrom);
+
   /// 모달 제목 — `정선 여행, 다녀오셨나요?`
   String get title {
     final region = shortRegionName;
