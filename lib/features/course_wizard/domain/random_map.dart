@@ -13,14 +13,24 @@ abstract final class RandomBoard {
   /// 상단바 아래 본문(시안 `Frame 2147228782`) 크기
   static const size = Size(402, 752);
 
+  /// 시안 지도 프레임(`_경기도`)의 원점. 시도 조각(`sido_shapes.json`)과
+  /// [project]가 이 원점 기준이다 — 디자이너가 지도를 옮기면 여기만 바꾼다
+  /// (2026-09-03 시안 18824:29662에서 (6, 16) → (11.5, 89.24)로 내렸다)
+  static const mapOrigin = Offset(11.5, 89.24);
+
   /// 한반도 SVG(`random_korea_base.svg`·`random_korea_overlay.svg`)가 놓이는 자리.
   ///
-  /// 시안의 지도 프레임(`_경기도`)은 (6, 16)에 있고, 내보낸 SVG의 viewBox는
-  /// 그 프레임 기준 (-0.84, -1.15)부터 시작한다 — 획 두께만큼 삐져나온 값이다
-  static const mapRect = Rect.fromLTWH(6 - 0.84, 16 - 1.15, 385.42, 494.25);
+  /// 내보낸 SVG의 viewBox는 프레임 기준 (-0.84, -1.15)부터 시작한다 — 획
+  /// 두께만큼 삐져나온 값이다
+  static const mapRect = Rect.fromLTWH(
+    11.5 - 0.84,
+    89.24 - 1.15,
+    385.42,
+    494.25,
+  );
 
   /// 제주도는 시안에서 본섬과 따로 그려져 있다 (실제보다 위로 당겨 놓았다)
-  static const jejuRect = Rect.fromLTWH(112.6, 552.5, 62, 31);
+  static const jejuRect = Rect.fromLTWH(118.07, 630.73, 62, 31);
 
   /// 핀이 쉬는 자리 — 가로 한가운데, 지도 아래
   static const pinRest = Offset(201, 658);
@@ -40,18 +50,19 @@ abstract final class RandomBoard {
   /// 아핀을 풀었다 — 동단 호미곶(129.57°E, 36.08°N) = (350.9, 300.3),
   /// 북단 고성(128.36°E, 38.61°N) = (259.9, −0.1), 남단 해남 땅끝(126.53°E,
   /// 34.29°N) = (56.1, 470.9). 검증: 남동 끝이 부산 기장(129.18, 35.20),
-  /// 서쪽 끝이 해남 화원(126.26, 34.66)으로 풀린다. 프레임 원점 (6, 16)을
-  /// 더한다. 울릉·독도는 시안이 본토 쪽으로 당겨 그려 그 둘만 따로 잡는다
+  /// 서쪽 끝이 해남 화원(126.26, 34.66)으로 풀린다. [mapOrigin]을 더한다.
+  /// 울릉·독도는 시안이 본토 쪽으로 당겨 그려 그 둘만 따로 잡는다
   static Offset project(double lat, double lng) {
     if (lng > 130) {
       // 울릉도(130.9°E)·독도(131.9°E) — 시안 지도의 섬 위치
-      return lng > 131.5
-          ? const Offset(388.5, 202.7)
-          : const Offset(378.2, 186.9);
+      return mapOrigin +
+          (lng > 131.5
+              ? const Offset(382.5, 186.7)
+              : const Offset(372.2, 170.9));
     }
     return Offset(
-      6 + 92.198 * lng + 8.122 * lat - 11888.24,
-      16 + 10.788 * lng - 113.607 * lat + 3001.42,
+      mapOrigin.dx + 92.198 * lng + 8.122 * lat - 11888.24,
+      mapOrigin.dy + 10.788 * lng - 113.607 * lat + 3001.42,
     );
   }
 }
