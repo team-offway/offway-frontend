@@ -16,6 +16,7 @@ import '../../features/course/presentation/saved_course_screen.dart';
 import '../../features/course_wizard/presentation/candidates_screen.dart';
 import '../../features/course_wizard/presentation/density_screen.dart';
 import '../../features/course_wizard/presentation/period_style_screen.dart';
+import '../../features/course_wizard/presentation/random_region_screen.dart';
 import '../../features/course_wizard/presentation/transport_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my/presentation/my_screen.dart';
@@ -73,6 +74,9 @@ abstract final class AppRoutes {
   static const wizardTransport = '/wizard/transport';
   static const wizardDensity = '/wizard/density';
   static const wizardCandidates = '/wizard/candidates';
+
+  /// 후보지역 위에서 핀을 던져 한 곳을 고른다 — 후보 목록은 위저드가 들고 있다
+  static const wizardRandom = '/wizard/random';
 
   static const myCourses = '/my-courses';
 
@@ -310,6 +314,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.wizardCandidates,
         name: 'wizardCandidates',
         builder: (context, state) => const CandidatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardRandom,
+        name: 'wizardRandom',
+        builder: (context, state) => const RandomRegionScreen(),
       ),
       // 더 구체적인 /schedule 경로를 :savedId 보다 먼저 등록한다
       GoRoute(

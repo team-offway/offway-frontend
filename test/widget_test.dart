@@ -162,7 +162,6 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
           'name': r['name'],
           'sido': r['sido'],
           'imageUrl': r['imageUrl'],
-          'badge': r['badge'],
           'description': r['description'],
           'reachMinutes': r['travelMinutesByCar'],
           if (r['benefitBadge'] != null) 'benefitBadge': r['benefitBadge'],

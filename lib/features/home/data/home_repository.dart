@@ -178,6 +178,9 @@ Map<String, dynamic> toRegionCardMap(Map<String, dynamic> card) {
     'id': (card['regionId'] as num).toString(),
     'name': nameParts.first,
     'sido': nameParts.length > 1 ? nameParts[1] : '',
+    // 대표 좌표(core #405) — 지도 위에 놓을 때 쓴다. 홈 카드에는 안 온다
+    'lat': card['lat'],
+    'lng': card['lng'],
     'imageUrl': card['imageUrl'],
     if (benefit != null) 'benefitBadge': benefit['text'],
     if (benefit != null) 'benefitPolicyId': benefit['policyId'],
