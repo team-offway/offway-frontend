@@ -15,7 +15,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
-import '../data/sido_polygons.dart';
+import '../data/sido_shapes.dart';
 import '../domain/random_map.dart';
 import '../domain/region_geo.dart';
 import 'candidates_screen.dart' show wizardCandidatesProvider;
@@ -281,13 +281,13 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   // ─── 그리기 ────────────────────────────────────────────────────────────
 
-  /// 착지한 곳의 시도를 채울 경계. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
-  SidoPolygons? _polygons;
+  /// 착지한 곳의 시도 조각. 아직 안 읽혔으면 면 없이 칩만 파랗게 굳는다
+  SidoShapes? _shapes;
 
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
-    _polygons = ref.watch(sidoPolygonsProvider).value;
+    _shapes = ref.watch(sidoShapesProvider).value;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -400,13 +400,28 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
+                  // 지도는 두 겹이다 — 본토 실루엣(base) 위에 시도 조각(overlay).
+                  // 내려앉은 시도의 연두 면은 보통 조각 위에 그리지만, 충남처럼
+                  // 조각이 없는 시도는 실루엣을 통째로 칠하고 조각으로 덮어
+                  // 남는 자리만 보이게 한다 (SidoShapes 참고)
                   Positioned.fromRect(
                     rect: RandomBoard.mapRect,
                     child: SvgPicture.asset(
-                      'assets/images/random_korea_map.svg',
+                      'assets/images/random_korea_base.svg',
                       fit: BoxFit.fill,
                     ),
                   ),
+                  if (_landedFill case (final rings, under: true))
+                    _buildFill(rings),
+                  Positioned.fromRect(
+                    rect: RandomBoard.mapRect,
+                    child: SvgPicture.asset(
+                      'assets/images/random_korea_overlay.svg',
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                  if (_landedFill case (final rings, under: false))
+                    _buildFill(rings),
                   Positioned.fromRect(
                     rect: RandomBoard.jejuRect,
                     child: SvgPicture.asset(
@@ -414,14 +429,6 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                       fit: BoxFit.fill,
                     ),
                   ),
-                  // 내려앉은 곳의 시도를 연두색으로 (시안 착지 화면 — 보령에
-                  // 앉으면 충남 전체). 지도 위, 칩 아래
-                  if (_landedRings case final rings?)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(painter: _RegionFillPainter(rings)),
-                      ),
-                    ),
                   for (final chip in chips) _buildChip(chip),
                   if (_phase == _Phase.aiming)
                     Positioned.fill(
@@ -455,12 +462,22 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
-  /// 착지한 곳이 속한 시도의 경계 고리들. 착지 전이거나 모르면 null
-  List<List<(double, double)>>? get _landedRings {
+  /// 착지한 곳이 속한 시도의 조각과, 조각 아래에 그려야 하는지.
+  /// 착지 전이거나 모르면 null
+  (List<List<Offset>>, {bool under})? get _landedFill {
     final key = _landed?.sidoKey;
-    if (key == null) return null;
-    return _polygons?.ringsFor(key);
+    final shapes = _shapes;
+    if (key == null || shapes == null) return null;
+    final rings = shapes.ringsFor(key);
+    if (rings == null) return null;
+    return (rings, under: shapes.isUnderOverlay(key));
   }
+
+  Widget _buildFill(List<List<Offset>> rings) => Positioned.fill(
+    child: IgnorePointer(
+      child: CustomPaint(painter: _RegionFillPainter(rings)),
+    ),
+  );
 
   /// 착지한 칩이 화면 가운데로 오도록 키운다. 0이면 그대로다
   Matrix4 _zoomMatrix() {
@@ -567,25 +584,24 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 }
 
-/// 내려앉은 곳의 시도 면 — 위경도 고리를 지도와 같은 투영으로 그려 연두색으로
-/// 채운다. 테두리는 긋지 않는다(시안).
+/// 내려앉은 곳의 시도 면 — 지도 SVG에서 뽑은 조각(보드 좌표)을 연두색으로
+/// 채운다. 테두리는 긋지 않는다(시안). 짝홀 규칙이라 서울·대구 고리는
+/// 경기·경북에서 구멍이 된다.
 class _RegionFillPainter extends CustomPainter {
   const _RegionFillPainter(this.rings);
 
-  final List<List<(double, double)>> rings;
+  final List<List<Offset>> rings;
 
   // TODO(디자인시스템): 시안 착지 면 색. 토큰에 없는 값이라 상수로 둔다
   static const _fill = Color(0xFFE6FFD4);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path();
+    final path = Path()..fillType = PathFillType.evenOdd;
     for (final ring in rings) {
       if (ring.isEmpty) continue;
-      final first = RandomBoard.project(ring.first.$1, ring.first.$2);
-      path.moveTo(first.dx, first.dy);
-      for (final (lat, lng) in ring.skip(1)) {
-        final p = RandomBoard.project(lat, lng);
+      path.moveTo(ring.first.dx, ring.first.dy);
+      for (final p in ring.skip(1)) {
         path.lineTo(p.dx, p.dy);
       }
       path.close();
