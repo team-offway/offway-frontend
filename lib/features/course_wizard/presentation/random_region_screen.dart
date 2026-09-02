@@ -285,7 +285,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 바다가 홈 인디케이터 아래까지 이어진다(시안) — 아래 안전영역은 열어 둔다
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildTopBar(context),
@@ -331,7 +333,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
             right: 6,
             child: AppIconButton(
               icon: Icons.info_outline,
-              asset: 'assets/icons/ic_circle_info.svg',
+              // 시안은 속이 빈 원형 i(Icon/Normal/Circle Info) — 기존
+              // ic_circle_info는 속이 찬 변형이라 따로 둔다
+              asset: 'assets/icons/ic_circle_info_outline.svg',
               semanticLabel: '어떤 지역이 나오는지 안내',
               onTap: _showInfo,
             ),
@@ -341,64 +345,94 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     );
   }
 
-  /// 시안 단위(402×752)로 그려 폭에 맞춰 통째로 배율을 맞춘다
+  /// 시안 단위(402×752)로 그려 폭에 맞춰 통째로 배율을 맞춘다.
+  ///
+  /// 폭을 꽉 채우는 게 기본이다. 아래가 시안보다 짧은 기기는 보드 바닥이
+  /// 잘려도 되지만 핀까지 잘리면 던질 수 없으므로, 핀이 다 들어갈 만큼만
+  /// 줄인다. 바다색은 보드 밖까지 칠한다 — 옆이든 아래든 희게 남지 않게.
+  ///
+  /// **가로를 명시적으로 채운다.** Column 안에서는 가로가 느슨해서, 그냥 두면
+  /// FittedBox가 세로에 맞춰 줄고 양옆이 빈다 (실기기에서 그렇게 떴다).
   Widget _buildBoard(List<MapChip> chips) {
-    // 바다색은 보드 밖까지 — 시안 폭보다 긴 기기에서 보드 아래가 희게 남지 않게
-    return ColoredBox(
-      color: _seaColor,
-      child: ClipRect(
-        child: FittedBox(
-          fit: BoxFit.fitWidth,
-          alignment: Alignment.topCenter,
-          child: SizedBox.fromSize(
-            size: RandomBoard.size,
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_spin, _aim, _zoom]),
-              builder: (context, _) => Transform(
-                transform: _zoomMatrix(),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned.fromRect(
-                      rect: RandomBoard.mapRect,
-                      child: SvgPicture.asset(
-                        'assets/images/random_korea_map.svg',
-                        fit: BoxFit.fill,
-                      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boardWidth = math.min(
+          constraints.maxWidth,
+          constraints.maxHeight / _minBoardHeight * RandomBoard.size.width,
+        );
+        return ColoredBox(
+          color: _seaColor,
+          child: SizedBox.expand(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: boardWidth,
+                height: constraints.maxHeight,
+                child: _buildScaledBoard(chips),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 보드에서 핀 바닥까지의 높이 — 이 아래는 잘려도 된다
+  static const _minBoardHeight = 700.0;
+
+  Widget _buildScaledBoard(List<MapChip> chips) {
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.fitWidth,
+        alignment: Alignment.topCenter,
+        child: SizedBox.fromSize(
+          size: RandomBoard.size,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_spin, _aim, _zoom]),
+            builder: (context, _) => Transform(
+              transform: _zoomMatrix(),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fromRect(
+                    rect: RandomBoard.mapRect,
+                    child: SvgPicture.asset(
+                      'assets/images/random_korea_map.svg',
+                      fit: BoxFit.fill,
                     ),
-                    Positioned.fromRect(
-                      rect: RandomBoard.jejuRect,
-                      child: SvgPicture.asset(
-                        'assets/images/random_jeju.svg',
-                        fit: BoxFit.fill,
-                      ),
+                  ),
+                  Positioned.fromRect(
+                    rect: RandomBoard.jejuRect,
+                    child: SvgPicture.asset(
+                      'assets/images/random_jeju.svg',
+                      fit: BoxFit.fill,
                     ),
-                    for (final chip in chips) _buildChip(chip),
-                    if (_phase == _Phase.aiming)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: CustomPaint(
-                            painter: _AimLinePainter(
-                              from: _pinPos,
-                              direction: _direction,
-                              startGap: RandomBoard.pinDiameter / 2 + 6,
-                              length:
-                                  _aimLength *
-                                  Curves.easeOut.transform(_aim.value),
-                            ),
+                  ),
+                  for (final chip in chips) _buildChip(chip),
+                  if (_phase == _Phase.aiming)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _AimLinePainter(
+                            from: _pinPos,
+                            direction: _direction,
+                            startGap: RandomBoard.pinDiameter / 2 + 6,
+                            length:
+                                _aimLength *
+                                Curves.easeOut.transform(_aim.value),
                           ),
                         ),
                       ),
-                    if (_phase == _Phase.idle)
-                      const Positioned(
-                        top: 567.7,
-                        left: 0,
-                        right: 0,
-                        child: Center(child: _PinTooltip()),
-                      ),
-                    _buildPin(),
-                  ],
-                ),
+                    ),
+                  if (_phase == _Phase.idle)
+                    const Positioned(
+                      top: 567.7,
+                      left: 0,
+                      right: 0,
+                      child: Center(child: _PinTooltip()),
+                    ),
+                  _buildPin(),
+                ],
               ),
             ),
           ),
