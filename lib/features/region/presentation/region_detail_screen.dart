@@ -13,13 +13,13 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/presentation/benefit_badge.dart';
+import '../../policy/presentation/region_benefit_card.dart';
 import '../data/region_detail_repository.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../../core/widgets/curated_link_section.dart';
 
 /// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
 ///
@@ -55,8 +55,6 @@ final regionDetailProvider = FutureProvider.autoDispose
         // 문단이 아니라 한 줄이라 펼치기 chevron은 쓸 자리가 없다
         if ((data['overview'] as String?)?.isNotEmpty ?? false)
           'story': data['overview'],
-        // 이 지역에서 더 찾아볼 만한 공식 사이트 (core #350) — 서버가 고른다
-        'curatedLinks': CuratedLink.parseList(data['curatedLinks']),
         // 공공데이터 출처 (core #417) — 리포지토리가 래퍼에서 꺼내 실어 준다
         '_sources': data['_sources'] ?? const <DataSource>[],
         // 사진 없는 장소와 상한(10)은 서버가 이미 처리해 준다 — 앱에서 또
@@ -123,9 +121,6 @@ class RegionDetailScreen extends ConsumerWidget {
         (region['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
         const [];
     final benefit = RegionBenefit.tryParse(region['benefit']);
-    final links =
-        (region['curatedLinks'] as List?)?.cast<CuratedLink>() ??
-        const <CuratedLink>[];
 
     return ListView(
       // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
@@ -204,16 +199,30 @@ class RegionDetailScreen extends ConsumerWidget {
           ),
         ],
         // 이 지역에서 누릴 수 있는 혜택 — 매력 포인트를 훑은 다음 자리가
-        // 맞다. 안내 문구(_PopulationDeclineNote)는 화면을 맺는 말이라 끝에 둔다
-        if (links.isNotEmpty) ...[
+        // 맞다. 안내 문구(_PopulationDeclineNote)는 화면을 맺는 말이라 끝에 둔다.
+        //
+        // **혜택이 있는 지역에만 뜬다.** 예전에는 이 자리에 큐레이션 링크
+        // (대한민국 구석구석·국가유산포털)를 그렸는데, 그 둘은 모든 지역에
+        // 똑같이 붙는 고정 링크라 혜택이 없는 지역에서도 "혜택이 있어요"라고
+        // 말했다. 시안(18761:72093)이 여기에 두는 것은 혜택 카드 하나다
+        if (benefit != null) ...[
           const SizedBox(height: 44),
-          CuratedLinkSection(
-            links: links,
-            title: '이 지역에서 누릴 수 있는 혜택이 있어요',
-            // 시안이 이 화면에서는 부제를 뺐다 — 제목이 이미 무엇인지 말한다
-            subtitle: null,
-            // 이 화면의 본문 여백은 24다
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '이 지역에서 누릴 수 있는 혜택이 있어요',
+                  style: AppTypography.headline2Bold.copyWith(
+                    color: _labelNormal,
+                  ),
+                ),
+                // 시안 실측: 제목 아래 42 — 제목 프레임(26) 다음이 16이다
+                const SizedBox(height: 16),
+                RegionBenefitCard(benefit: benefit),
+              ],
+            ),
           ),
         ],
         // 시안 실측: 혜택 카드 아래 36

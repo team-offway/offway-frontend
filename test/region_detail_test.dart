@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/features/policy/presentation/benefit_badge.dart';
+import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
 
 /// 지역 상세 — 시안(코스_상세)의 순서와 접힘 규칙을 고정한다.
@@ -48,7 +50,10 @@ void main() {
       await pump(tester);
 
       expect(find.text('정선 · 강원'), findsOneWidget);
-      expect(find.text('숙박 할인'), findsOneWidget);
+      // 지역명 아래 뱃지와 혜택 카드 안 뱃지 — 같은 문구가 두 자리에 온다
+      expect(find.text('숙박 할인'), findsNWidgets(2));
+      expect(find.byType(BenefitBadge), findsOneWidget);
+      expect(find.byType(RegionBenefitCard), findsOneWidget);
     });
 
     testWidgets('우측 상단에 공유 버튼이 없다', (tester) async {
