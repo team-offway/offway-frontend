@@ -17,6 +17,7 @@ import '../../../core/constants/trip_constants.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -234,6 +235,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   onTapPlace: (place) =>
                       _showPlaceSheet(place, isToday: dDay == 0),
                 ),
+              ),
+              // 공공데이터 출처 (core #417) — 코스가 장소·날씨를 빌려 온다
+              DataSourceNote(
+                sources:
+                    (course['_sources'] as List?)?.cast<DataSource>() ??
+                    const <DataSource>[],
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               ),
             ],
           ),

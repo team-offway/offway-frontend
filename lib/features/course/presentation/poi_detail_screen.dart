@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/network/api_envelope.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -229,6 +230,15 @@ class _Body extends StatelessWidget {
                   ),
                   child: Text('길 찾기', style: AppTypography.body1NormalBold),
                 ),
+              ),
+              // 공공데이터 출처 (core #417) — 장소마다 갈린다. 인허가 장소는
+              // 지방행정인허가데이터개방이고, 사진이 있으면 공사가 함께 온다.
+              // 서버가 이 응답에 실제로 쓴 기관만 주므로 앱은 그대로 적는다
+              DataSourceNote(
+                sources:
+                    (poi['_sources'] as List?)?.cast<DataSource>() ??
+                    const <DataSource>[],
+                padding: const EdgeInsets.only(top: 24),
               ),
             ],
           ),

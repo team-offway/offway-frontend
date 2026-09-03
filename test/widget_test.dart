@@ -147,25 +147,29 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
   _FakeRegionRecommendRepository() : super(Dio());
 
   @override
-  Future<List<Map<String, dynamic>>> recommend({
+  Future<({List<Map<String, dynamic>> regions, List<DataSource> sources})>
+  recommend({
     required Origin origin,
     required String transport,
     required int maxReachMinutes,
   }) async {
     final data = await MockDataSource.regions();
     final list = (data['candidates'] as List).cast<Map<String, dynamic>>();
-    return [
-      for (final r in list)
-        {
-          'id': r['id'],
-          'name': r['name'],
-          'sido': r['sido'],
-          'imageUrl': r['imageUrl'],
-          'description': r['description'],
-          'reachMinutes': r['travelMinutesByCar'],
-          'benefit': ?r['benefit'],
-        },
-    ];
+    return (
+      regions: [
+        for (final r in list)
+          {
+            'id': r['id'],
+            'name': r['name'],
+            'sido': r['sido'],
+            'imageUrl': r['imageUrl'],
+            'description': r['description'],
+            'reachMinutes': r['travelMinutesByCar'],
+            'benefit': ?r['benefit'],
+          },
+      ],
+      sources: const [DataSource(key: 'KTO', label: '한국관광공사')],
+    );
   }
 }
 

@@ -17,7 +17,8 @@ class RegionRecommendRepository {
 
   /// [transport]는 서버 enum 문자열(CAR·TRANSIT).
   /// [maxReachMinutes]는 가용시간 계산이 준 도달 한계 — 일정이 짧을수록 줄어든다.
-  Future<List<Map<String, dynamic>>> recommend({
+  Future<({List<Map<String, dynamic>> regions, List<DataSource> sources})>
+  recommend({
     required Origin origin,
     required String transport,
     required int maxReachMinutes,
@@ -34,7 +35,14 @@ class RegionRecommendRepository {
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       final regions = (data['regions'] as List).cast<Map<String, dynamic>>();
-      return regions.map((r) => _toCandidateMap(r, transport)).toList();
+      // 출처는 래퍼 옆에 온다(core #417). 카드마다 붙일 값이 아니라 응답
+      // 하나에 하나라, 항목마다 복사하지 않고 카드와 같은 목록에 실어 화면이
+      // 끝에 한 줄로 표기한다
+      final sources = ApiEnvelope.sourcesOf(response);
+      return (
+        regions: regions.map((r) => _toCandidateMap(r, transport)).toList(),
+        sources: sources,
+      );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }

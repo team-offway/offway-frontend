@@ -17,6 +17,7 @@ class HomeSnapshot {
     this.places = const [],
     this.filters = const [],
     this.curatedLinks = const [],
+    this.sources = const [],
   });
 
   /// `{nickname, remainingLeaveDays(double?)}`
@@ -42,6 +43,10 @@ class HomeSnapshot {
   /// 서버가 고른 외부 링크 (core #350) — 화면 끝 '함께 보면 좋아요'.
   /// 안 내려오면 빈 목록이고, 그러면 섹션째 접힌다
   final List<CuratedLink> curatedLinks;
+
+  /// 이 응답이 빌려 쓴 공공데이터 (core #417) — 화면 끝에 텍스트로 표기한다.
+  /// 공모전 규정이라 누락이 곧 위반이다
+  final List<DataSource> sources;
 }
 
 /// 홈 API. 사용자 식별은 인터셉터가 싣는 JWT가 맡는다.
@@ -54,6 +59,7 @@ class HomeRepository {
     try {
       final response = await _dio.get<dynamic>('/api/v1/home');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      final sources = ApiEnvelope.sourcesOf(response);
       final user = data['user'] as Map<String, dynamic>;
       final regions = (data['recommendedRegions'] as List)
           .cast<Map<String, dynamic>>();
@@ -76,6 +82,7 @@ class HomeRepository {
         ),
         filters: filters,
         curatedLinks: CuratedLink.parseList(data['curatedLinks']),
+        sources: sources,
       );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
