@@ -17,6 +17,7 @@ class TransitAccess {
     this.durationMinutes,
     this.distanceKm,
     this.alternatives = const [],
+    this.departures = const [],
   });
 
   /// 응답의 `transitAccess` → 화면이 읽는 형태.
@@ -41,6 +42,7 @@ class TransitAccess {
         for (final item in (raw['alternatives'] as List?) ?? const [])
           if (item is Map<String, dynamic>) ?TransitOption.tryParse(item),
       ],
+      departures: TransitDeparture.parseList(raw['departures']),
     );
   }
 
@@ -76,6 +78,14 @@ class TransitAccess {
   /// 이 지역에 닿는 다른 수단들. 없으면 빈 목록이다
   final List<TransitOption> alternatives;
 
+  /// 집을 나서는 시각 이후로 탈 수 있는 편들 (core #420) — 최대 6편.
+  ///
+  /// **비어 있는 것이 정상이다.** 버스·여객선은 조회창(버스 +2일 · 여객선
+  /// +7일) 밖이면 서버가 아예 묻지 않고, 그날 운행이 없거나 막차가 지났을
+  /// 때도 빈다. 연차로 다음 달 코스를 짜는 서비스라 **대부분이 창 밖**이다.
+  /// "가끔 안 나온다"가 아니라 "그 날짜엔 원래 없다"로 그려야 한다
+  final List<TransitDeparture> departures;
+
   /// 안내를 그릴 만한 값이 있는가 — 내리는 곳조차 모르면 할 말이 없다
   bool get isPresentable => toPlace != null && toPlace!.isNotEmpty;
 
@@ -95,6 +105,9 @@ class TransitAccess {
     return TransitAccess(
       modeLabel: option.modeLabel,
       mode: option.mode,
+      // 시간표는 대안이 제 것을 들고 온다 — 대표의 것을 남기면 시외버스로
+      // 갈아꼈는데 무궁화호 시각이 뜬다
+      departures: option.departures,
       // 갈아낀 수단의 시간표를 우리가 물어본 것은 아니다 — 상태는 그대로 둔다
       status: status,
       toPlace: option.toPlace ?? toPlace,
@@ -119,6 +132,7 @@ class TransitOption {
     this.mode,
     this.toPlace,
     this.durationMinutes,
+    this.departures = const [],
   });
 
   static TransitOption? tryParse(Map<String, dynamic> json) {
@@ -129,6 +143,7 @@ class TransitOption {
       mode: _text(json['mode']),
       toPlace: _text(json['toPlace']),
       durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
+      departures: TransitDeparture.parseList(json['departures']),
     );
   }
 
@@ -142,7 +157,72 @@ class TransitOption {
   /// 값이 오고 버스·여객선은 null로 고정이다(`RegionAccessService.alternativesTo`)
   final int? durationMinutes;
 
+  /// 이 수단으로 탈 수 있는 편들 (core #420). 대표와 같은 이유로 빌 수 있다.
+  ///
+  /// **대안에도 싣는 이유**는 고르는 근거가 되기 때문이다 — 시외버스가 40분
+  /// 더 걸려도 지금 바로 타는 편이 있으면 그쪽을 고른다
+  final List<TransitDeparture> departures;
+
   String? get durationLabel => formatTransitDuration(durationMinutes);
+}
+
+/// 탈 수 있는 편 하나 — 몇 시 차가 있는가 (core #420).
+///
+/// **시각을 문자열로 받지 않는다.** 서버가 `2026-09-05T07:20:00` 꼴로 내리고
+/// 오전/오후·24시간 표기는 화면이 정한다.
+class TransitDeparture {
+  const TransitDeparture({
+    required this.departAt,
+    this.vehicleType,
+    this.arriveAt,
+    this.durationMinutes,
+  });
+
+  static List<TransitDeparture> parseList(Object? raw) {
+    if (raw is! List) return const [];
+    return [
+      for (final item in raw)
+        if (item is Map<String, dynamic>) ?tryParse(item),
+    ];
+  }
+
+  /// 출발 시각이 없으면 편이 아니다 — 이 카드가 답하는 질문이 "몇 시 차인가"다
+  static TransitDeparture? tryParse(Map<String, dynamic> json) {
+    final departAt = _dateTime(json['departAt']);
+    if (departAt == null) return null;
+    return TransitDeparture(
+      departAt: departAt,
+      vehicleType: _text(json['vehicleType']),
+      arriveAt: _dateTime(json['arriveAt']),
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
+    );
+  }
+
+  /// 출발 시각
+  final DateTime departAt;
+
+  /// `무궁화호`·`우등` — 같은 구간에 여러 등급이 섞인다
+  final String? vehicleType;
+
+  /// 도착 시각 — 모르면 null
+  final DateTime? arriveAt;
+
+  /// 이 편의 소요시간(분). **카드 위쪽 값과 다를 수 있다** — 위쪽은 가장 빨리
+  /// 닿는 편 기준이라, 무궁화와 KTX가 같은 구간에 섞이면 갈린다
+  final int? durationMinutes;
+
+  /// `07:20` — 24시간 표기. 시간표는 여러 줄이 세로로 붙어 자릿수가 같아야
+  /// 눈으로 훑을 수 있다. 오전/오후를 앞에 붙이면 줄마다 폭이 달라진다
+  String get departLabel => _hhmm(departAt);
+
+  /// `07:20 → 09:49` — 도착을 모르면 출발만
+  String get rangeLabel =>
+      arriveAt == null ? departLabel : '$departLabel → ${_hhmm(arriveAt!)}';
+
+  String? get durationLabel => formatTransitDuration(durationMinutes);
+
+  static String _hhmm(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
 /// 도착 정보를 얼마나 아는가.
@@ -185,6 +265,17 @@ String? formatTransitDuration(int? minutes) {
   if (hours == 0) return '$rest분';
   if (rest == 0) return '$hours시간';
   return '$hours시간 $rest분';
+}
+
+/// 서버가 주는 `2026-09-05T07:20:00` — 못 읽으면 null이라 그 편을 버린다.
+///
+/// **타임존 없는 값이다.** 서버가 한국 시각으로 내리고 사용자도 한국에서
+/// 보므로 그대로 로컬로 읽는다 — `toLocal()`을 태우면 UTC로 오해해 9시간이
+/// 밀린다
+DateTime? _dateTime(Object? value) {
+  final s = (value as String?)?.trim();
+  if (s == null || s.isEmpty) return null;
+  return DateTime.tryParse(s);
 }
 
 String? _text(Object? value) {
