@@ -7,13 +7,20 @@ import '../../home/data/home_repository.dart' show toRegionCardMap;
 
 /// 지역 목록 한 페이지 — 카드와 '다음이 더 있는지'를 함께 준다.
 class RegionPage {
-  const RegionPage({required this.regions, required this.hasMore});
+  const RegionPage({
+    required this.regions,
+    required this.hasMore,
+    this.sources = const [],
+  });
 
   /// RegionCard가 읽는 형태 (홈 카드와 같다)
   final List<Map<String, dynamic>> regions;
 
   /// 마지막 페이지면 false — 무한 스크롤을 여기서 멈춘다
   final bool hasMore;
+
+  /// 이 응답이 빌려 쓴 공공데이터 (core #417) — 목록 끝에 표기한다
+  final List<DataSource> sources;
 }
 
 /// 지역 목록 API (`GET /regions`) — core#272.
@@ -57,6 +64,7 @@ class RegionListRepository {
       return RegionPage(
         regions: regions.map(toRegionCardMap).toList(),
         hasMore: hasMore,
+        sources: ApiEnvelope.sourcesOf(response),
       );
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/trip_constants.dart';
 import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
@@ -25,8 +26,10 @@ import '../data/region_recommend_repository.dart';
 ///
 /// 위치 권한은 이 시점에 처음 묻는다 — "여행지를 찾는 중"이라는 맥락이 있어야
 /// 왜 위치가 필요한지 납득된다. 거부하면 서울 출발로 가정하고 계속 간다.
-final wizardCandidatesProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+final wizardRecommendProvider =
+    FutureProvider.autoDispose<
+      ({List<Map<String, dynamic>> regions, List<DataSource> sources})
+    >((ref) async {
       final transport = ref.watch(
         courseWizardProvider.select((draft) => draft.transportMode),
       );
@@ -42,6 +45,18 @@ final wizardCandidatesProvider =
             maxReachMinutes: availableTime?.maxReachMinutes ?? kMaxReachMinutes,
           );
     });
+
+/// 후보 지역 카드들. 화면 넷이 이 목록만 보므로 출처와 갈라 둔다 —
+/// 함께 묶으면 지역만 필요한 랜덤 지역 화면까지 레코드를 풀어야 한다
+final wizardCandidatesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+      (ref) async => (await ref.watch(wizardRecommendProvider.future)).regions,
+    );
+
+/// 후보 지역 응답이 빌려 쓴 공공데이터 (core #417)
+final wizardSourcesProvider = FutureProvider.autoDispose<List<DataSource>>(
+  (ref) async => (await ref.watch(wizardRecommendProvider.future)).sources,
+);
 
 /// 후보지역 정렬 기준
 enum CandidateSort {
@@ -176,6 +191,13 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                         _CandidateCard(region: region),
                         const SizedBox(height: 36),
                       ],
+                      // 공공데이터 출처 (core #417) — 목록 끝에 텍스트 한 줄
+                      DataSourceNote(
+                        sources:
+                            ref.watch(wizardSourcesProvider).value ??
+                            const <DataSource>[],
+                        padding: EdgeInsets.zero,
+                      ),
                     ],
                   );
                 },

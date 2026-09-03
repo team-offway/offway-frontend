@@ -50,6 +50,7 @@ class CourseRepository {
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       return _toCourseMap(
         data,
+        sources: ApiEnvelope.sourcesOf(response),
         savePayload: _toSavePayload(
           data,
           density: density,
@@ -98,6 +99,7 @@ class CourseRepository {
       return (
         course: _toCourseMap(
           course,
+          sources: ApiEnvelope.sourcesOf(response),
           savePayload: _toSavePayload(
             course,
             density: density,
@@ -188,7 +190,11 @@ class CourseRepository {
       final data = await _fetchCourse(id);
       return (
         saved: _toSavedCardMap(_summaryFromDetail(data), data),
-        course: _toCourseMap(data),
+        // _fetchCourse가 래퍼에서 꺼내 실어 둔 값이다
+        course: _toCourseMap(
+          data,
+          sources: (data['_sources'] as List?)?.cast<DataSource>() ?? const [],
+        ),
       );
     } on ApiException catch (e) {
       if (e.status == 404) return null;
@@ -275,7 +281,7 @@ class CourseRepository {
         '/api/v1/public/courses/$shareToken',
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
-      return _toCourseMap(data);
+      return _toCourseMap(data, sources: ApiEnvelope.sourcesOf(response));
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }
@@ -308,6 +314,9 @@ class CourseRepository {
     try {
       final response = await _dio.get<dynamic>('/api/v1/pois/$contentId');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      // 출처는 래퍼 옆에 온다(core #417) — 장소마다 갈린다. 인허가 장소는
+      // 지방행정인허가데이터개방이고, 사진·캐치프레이즈가 있으면 공사가 함께 온다
+      data['_sources'] = ApiEnvelope.sourcesOf(response);
       // TourAPI 원문에는 <br> 같은 HTML이 섞여 온다 — 화면에 내보내기 전에 걷어낸다
       for (final key in const [
         'title',
@@ -378,7 +387,10 @@ class CourseRepository {
   Future<Map<String, dynamic>> _fetchCourse(int courseId) async {
     try {
       final response = await _dio.get<dynamic>('/api/v1/courses/$courseId');
-      return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
+      // 출처는 data가 아니라 래퍼 옆에 온다(core #417) — 여기서 꺼내지
+      // 않으면 저장 코스 화면이 표기할 값을 잃는다
+      return {...data, '_sources': ApiEnvelope.sourcesOf(response)};
     } on DioException catch (e) {
       throw ApiEnvelope.toApiException(e);
     }
@@ -390,8 +402,12 @@ class CourseRepository {
   ///
   /// 지도는 mock 시절 키(mapx=경도·mapy=위도)를 쓰므로 그대로 맞춰준다.
   /// [savePayload]가 있으면 '_save'로 실어 화면이 그대로 저장 API에 넘긴다.
+  /// [sources]는 **필수 인자**다. 여섯 경로가 이 함수를 지나는데 옵션으로
+  /// 두면 한 곳만 빠뜨려도 그 화면의 출처 표기가 조용히 사라진다 —
+  /// 표기 누락은 공모전 규정 위반이라 컴파일러가 잡게 한다(core #417)
   Map<String, dynamic> _toCourseMap(
     Map<String, dynamic> course, {
+    required List<DataSource> sources,
     Map<String, dynamic>? savePayload,
   }) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
@@ -443,6 +459,8 @@ class CourseRepository {
       // 무엇을 타고 어디에 내리는가 (core #97). 자차·저장 코스는 없다.
       // 여섯 경로가 이 함수를 지나므로 여기서 한 번만 꺼낸다
       'transitAccess': ?TransitAccess.tryParse(course['transitAccess']),
+      // 공공데이터 출처 (core #417) — 코스 화면 끝에 텍스트로 표기한다
+      '_sources': sources,
       '_save': ?savePayload,
     };
   }

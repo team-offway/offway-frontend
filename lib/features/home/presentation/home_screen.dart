@@ -7,6 +7,7 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/widgets/curated_link_card.dart';
 import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
@@ -215,6 +216,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const SizedBox(height: _sectionGap),
             _buildLeavePicks(regions),
             _buildCuratedLinks(),
+            // 공공데이터 출처 (core #417) — 화면 끝에 텍스트로 한 줄.
+            // 공모전 규정이 요구하고, 서버가 이 응답에 실제로 쓴 기관만 준다
+            DataSourceNote(
+              sources:
+                  ref.watch(homeSnapshotProvider).value?.sources ??
+                  const <DataSource>[],
+              padding: const EdgeInsets.fromLTRB(20, _sectionGap, 20, 0),
+            ),
           ],
         ),
       ),

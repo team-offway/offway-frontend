@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_empty_view.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../home/presentation/home_screen.dart'
     show homePlacesProvider, homeSnapshotProvider;
 import '../data/region_list_repository.dart';
@@ -41,6 +42,9 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
 
   int _page = 0;
   bool _hasMore = true;
+
+  /// 지역 목록 응답의 출처 (core #417) — 페이지마다 같은 값이라 덮어 쓴다
+  List<DataSource> _sources = const [];
   bool _loading = false;
   Object? _error;
 
@@ -92,6 +96,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
       setState(() {
         _regions.addAll(page.regions);
         _hasMore = page.hasMore;
+        _sources = page.sources;
         _page++;
       });
     } catch (e) {
@@ -132,10 +137,32 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
                 },
               ),
             ),
+            // 공공데이터 출처 (core #417) — 목록은 끝없이 이어져 그리드 안에
+            // 두면 언제 보일지 알 수 없다. 화면 아래에 고정한다.
+            //
+            // **어느 응답을 그리는지에 따라 갈린다** — 장소 카드를 쓰는
+            // 중이면 홈 응답의 출처고, 지역 목록으로 폴백했으면 그쪽이다.
+            // 섞으면 안 쓴 출처를 표기하게 된다
+            DataSourceNote(
+              sources: _shownSources,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// 지금 화면이 그리는 응답의 출처.
+  ///
+  /// 홈 장소 카드를 쓰는 중이면 홈 응답이 답이고, 그게 비어 지역 목록으로
+  /// 폴백했으면 목록 응답이 답이다
+  List<DataSource> get _shownSources {
+    if (_usingPlaces) {
+      return ref.watch(homeSnapshotProvider).value?.sources ??
+          const <DataSource>[];
+    }
+    return _sources;
   }
 
   Widget _buildBody(double cardExtent) {

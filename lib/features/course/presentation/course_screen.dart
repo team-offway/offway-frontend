@@ -15,6 +15,7 @@ import '../../../core/location/origin_namer.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
@@ -512,6 +513,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               _buildSavePrompt(),
               const SizedBox(height: 16),
               _buildActionArea(course),
+              // 공공데이터 출처 (core #417) — 코스는 장소·날씨를 여러 기관에서
+              // 빌려 오므로 목록 끝에 텍스트로 표기한다
+              DataSourceNote(
+                sources:
+                    (course['_sources'] as List?)?.cast<DataSource>() ??
+                    const <DataSource>[],
+                padding: const EdgeInsets.only(top: 24),
+              ),
             ],
           ),
         ),

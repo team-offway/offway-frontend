@@ -14,7 +14,9 @@ import '../../course/presentation/widgets/expandable_description.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../data/region_detail_repository.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/data_source_note.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/curated_link_section.dart';
@@ -55,6 +57,8 @@ final regionDetailProvider = FutureProvider.autoDispose
           'story': data['overview'],
         // 이 지역에서 더 찾아볼 만한 공식 사이트 (core #350) — 서버가 고른다
         'curatedLinks': CuratedLink.parseList(data['curatedLinks']),
+        // 공공데이터 출처 (core #417) — 리포지토리가 래퍼에서 꺼내 실어 준다
+        '_sources': data['_sources'] ?? const <DataSource>[],
         // 사진 없는 장소와 상한(10)은 서버가 이미 처리해 준다 — 앱에서 또
         // 자르면 세는 쪽과 그리는 쪽이 갈린다
         'highlightSpots': [
@@ -215,6 +219,13 @@ class RegionDetailScreen extends ConsumerWidget {
         // 시안 실측: 혜택 카드 아래 36
         const SizedBox(height: 36),
         const _PopulationDeclineNote(),
+        // 공공데이터 출처 (core #417) — 화면을 맺는 안내 아래에 텍스트 한 줄
+        DataSourceNote(
+          sources:
+              (region['_sources'] as List?)?.cast<DataSource>() ??
+              const <DataSource>[],
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        ),
       ],
     );
   }
