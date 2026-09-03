@@ -30,12 +30,25 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
   /// 돌아왔을 때 첫 화면과 달라진다.
   TransitOption? _picked;
 
+  /// 시간표를 펼쳤는가 — 기본은 접어 둔다.
+  ///
+  /// 여섯 편이 다 펼쳐지면 카드가 화면 절반을 먹어 정작 코스가 안 보인다.
+  /// **접어도 다음 차 한 편은 남긴다** — 표를 끊으려면 결국 시각을 봐야 하고,
+  /// 한 편도 안 보이면 몇 시 차가 있는지 알려고 반드시 한 번 더 눌러야 한다
+  bool _expanded = false;
+
   @override
   void didUpdateWidget(TransitAccessCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 코스를 다시 읽어 새 값이 오면 고른 것을 버리고 대표로 돌아간다
-    if (!identical(oldWidget.access, widget.access)) _picked = null;
+    if (!identical(oldWidget.access, widget.access)) {
+      _picked = null;
+      _expanded = false;
+    }
   }
+
+  /// 접었을 때 보여 주는 편 수 — 다음 차 하나
+  static const _collapsedCount = 1;
 
   /// 지금 화면에 그릴 것
   TransitAccess get _shown =>
@@ -139,7 +152,23 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
                       // 정보처럼 보인다
                       if (_shown.departures.isNotEmpty) ...[
                         if (_detail != null) const SizedBox(height: 8),
-                        _DepartureList(departures: _shown.departures),
+                        _DepartureList(
+                          departures: _expanded
+                              ? _shown.departures
+                              : _shown.departures
+                                    .take(_collapsedCount)
+                                    .toList(),
+                        ),
+                        // 접힌 편이 남아 있을 때만 버튼을 둔다
+                        if (_shown.departures.length > _collapsedCount) ...[
+                          const SizedBox(height: 8),
+                          _MoreDeparturesButton(
+                            expanded: _expanded,
+                            hiddenCount:
+                                _shown.departures.length - _collapsedCount,
+                            onTap: () => setState(() => _expanded = !_expanded),
+                          ),
+                        ],
                       ],
                     ],
                   ),
@@ -154,8 +183,11 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
               child: _SwapButton(
                 label: label,
                 // 갈아낀 상태에서 다시 누르면 원본으로 돌아간다
-                onTap: () =>
-                    setState(() => _picked = _picked == null ? next : null),
+                onTap: () => setState(() {
+                  _picked = _picked == null ? next : null;
+                  // 수단이 바뀌면 시간표도 다른 것이라 다시 접는다
+                  _expanded = false;
+                }),
               ),
             ),
           ],
@@ -245,6 +277,62 @@ class _DepartureList extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// `다음 차 5편 더 보기` — 시간표를 펼치고 접는다.
+///
+/// 수단을 갈아끼우는 [_SwapButton]과 생김새를 일부러 다르게 뒀다. 그쪽은
+/// **다른 것을 보는** 버튼이라 테두리를 두르고, 이쪽은 **같은 것을 더 보는**
+/// 자리라 글자와 화살표만 남긴다. 둘이 나란히 붙는데 모양까지 같으면 무엇이
+/// 무엇인지 구분되지 않는다.
+class _MoreDeparturesButton extends StatelessWidget {
+  const _MoreDeparturesButton({
+    required this.expanded,
+    required this.hiddenCount,
+    required this.onTap,
+  });
+
+  final bool expanded;
+
+  /// 접혀 있는 편 수 — 몇 편이 더 있는지 알려야 누를 값어치를 판단한다
+  final int hiddenCount;
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = expanded ? '접기' : '다음 차 $hiddenCount편 더 보기';
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          // 글자만 있는 버튼이라 위아래로 눌리는 자리를 넓혀 둔다
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: AppTypography.label2Bold.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                size: 16,
+                color: AppColors.labelAlternative,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
