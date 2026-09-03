@@ -28,7 +28,7 @@ void main() {
               'name': '정선 · 강원',
               'headline': '🏔️ 폐광촌에서 예술마을로',
               'story': ?story,
-              'benefitBadge': '숙박 할인',
+              'benefit': {'text': '숙박 할인', 'policyId': 3},
               'photos': const <String>[],
               'highlightSpots': spots,
             },

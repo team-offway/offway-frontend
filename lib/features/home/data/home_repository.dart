@@ -23,7 +23,7 @@ class HomeSnapshot {
   final Map<String, dynamic> user;
 
   /// **'이번 연차엔 여기 어때요?'** 섹션 — 지역 카드.
-  /// RegionCard가 읽는 형태 (name·sido·benefitBadge·categoryCounts…)
+  /// RegionCard가 읽는 형태 (name·sido·benefit·categoryCounts…)
   final List<Map<String, dynamic>> regions;
 
   /// **'이번달 추천 여행지'** 섹션 — 장소 카드 (core #305).
@@ -132,8 +132,9 @@ Map<String, dynamic> toPlaceCardMap(
     'imageUrl': card['imageUrl'],
     if ((card['subtitle'] as String?)?.isNotEmpty ?? false)
       'description': card['subtitle'],
-    if (benefit != null) 'benefitBadge': benefit['text'],
-    if (benefit != null) 'benefitPolicyId': benefit['policyId'],
+    // 서버가 홈·지역 상세·장소 상세를 한 모양으로 맞췄다(core #418) —
+    // 필드를 흩지 않고 통째로 넘겨 화면이 `RegionBenefit`으로 읽는다
+    'benefit': ?benefit,
     if (label != null) 'categoryCounts': {label: 1},
   };
 }
@@ -182,8 +183,9 @@ Map<String, dynamic> toRegionCardMap(Map<String, dynamic> card) {
     'lat': card['lat'],
     'lng': card['lng'],
     'imageUrl': card['imageUrl'],
-    if (benefit != null) 'benefitBadge': benefit['text'],
-    if (benefit != null) 'benefitPolicyId': benefit['policyId'],
+    // 서버가 홈·지역 상세·장소 상세를 한 모양으로 맞췄다(core #418) —
+    // 필드를 흩지 않고 통째로 넘겨 화면이 `RegionBenefit`으로 읽는다
+    'benefit': ?benefit,
     'categoryCounts': {for (final c in categories) c['label'] as String: 1},
   };
 }

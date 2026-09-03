@@ -33,8 +33,7 @@ void main() {
         'name': '정선군',
         'sido': '강원특별자치도',
         'description': '자차 약 2시간 소요',
-        'benefitBadge': '숙박비 30% 지원',
-        'policyId': 7,
+        'benefit': {'text': '숙박비 30% 지원', 'policyId': 7},
       },
     ]);
 

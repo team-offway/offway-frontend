@@ -72,8 +72,9 @@ void main() {
     expect(region['sido'], '부산광역시');
     // 라우트가 문자열 id를 쓰므로 숫자를 문자열로 바꾼다
     expect(region['id'], '1');
-    expect(region['benefitBadge'], '여행경비 50% 환급');
-    expect(region['benefitPolicyId'], 1);
+    // 혜택은 서버 모양 그대로 넘긴다(core #418) — 화면이 RegionBenefit으로 읽는다
+    expect(region['benefit'], containsPair('text', '여행경비 50% 환급'));
+    expect(region['benefit'], containsPair('policyId', 1));
     // 홈 필터가 한글 라벨로 거르므로 라벨을 키로 편다
     expect(region['categoryCounts'], containsPair('체험', 1));
   });
@@ -82,9 +83,9 @@ void main() {
     final snapshot = await repository.fetch();
     final region = snapshot.regions[1];
 
-    // 카드가 `if (region['benefitBadge'] case ...)` 로 분기하므로
-    // null을 넣는 게 아니라 키가 없어야 뱃지 줄이 사라진다
-    expect(region.containsKey('benefitBadge'), isFalse);
+    // 카드가 `RegionBenefit.tryParse` 결과로 분기하므로 키가 없어야
+    // 뱃지 줄이 사라진다 — null을 넣으면 파서가 또 null을 걸러야 한다
+    expect(region.containsKey('benefit'), isFalse);
     expect(region['imageUrl'], isNull);
   });
 
@@ -149,7 +150,7 @@ void main() {
       expect(card['description'], '폐광촌에서 다시 태어난 마을');
       // 카드 탭이 장소 상세로 가려면 id가 poiContentId여야 한다
       expect(card['id'], '126508');
-      expect(card['benefitBadge'], '입장료 50% 할인');
+      expect(card['benefit'], containsPair('text', '입장료 50% 할인'));
     });
 
     test('칩 필터가 거를 수 있게 kind를 한글 라벨로 편다', () {

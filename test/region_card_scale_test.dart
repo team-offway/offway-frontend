@@ -10,7 +10,7 @@ void main() {
       'name': '아주아주긴지역이름테스트',
       'sido': '강원',
       'description': '설명',
-      'benefitBadge': '숙박비 30% 지원',
+      'benefit': {'text': '숙박비 30% 지원', 'policyId': 7},
     };
 
     for (final scale in [1.0, 1.3, 1.6]) {
@@ -73,7 +73,7 @@ void main() {
       'name': '정선',
       'sido': '강원',
       'description': '폐광촌에서 다시 태어난 마을',
-      'benefitBadge': '숙박비 30% 지원',
+      'benefit': {'text': '숙박비 30% 지원', 'policyId': 7},
     };
 
     await tester.pumpWidget(
@@ -127,7 +127,7 @@ void main() {
       'name': '정선',
       'sido': '강원',
       'description': '설명',
-      'benefitBadge': '입장료 50% 할인',
+      'benefit': {'text': '입장료 50% 할인', 'policyId': 7},
     };
     await tester.pumpWidget(
       const MaterialApp(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/poi_detail_screen.dart';
+import 'package:offway/features/policy/presentation/benefit_badge.dart';
 
 /// 장소 상세 상단바 — 들어온 경로에 따라 지역명을 띄운다.
 void main() {
@@ -14,16 +15,21 @@ void main() {
     'lng': 128.8,
   };
 
-  Widget wrap({String? regionName}) => ProviderScope(
-    overrides: [poiDetailProvider('X').overrideWith((ref) async => poi)],
-    child: MaterialApp(
-      home: PoiDetailScreen(
-        contentId: 'X',
-        name: '금수사',
-        regionName: regionName,
-      ),
-    ),
-  );
+  Widget wrap({String? regionName, Map<String, dynamic>? extra}) =>
+      ProviderScope(
+        overrides: [
+          poiDetailProvider(
+            'X',
+          ).overrideWith((ref) async => {...poi, ...?extra}),
+        ],
+        child: MaterialApp(
+          home: PoiDetailScreen(
+            contentId: 'X',
+            name: '금수사',
+            regionName: regionName,
+          ),
+        ),
+      );
 
   testWidgets('지역 상세에서 들어오면 상단바에 지역명이 뜬다', (tester) async {
     await tester.pumpWidget(wrap(regionName: '동구 · 부산광역시'));
@@ -41,5 +47,33 @@ void main() {
     // 어느 지역인지 이미 알고 들어온 경로라 지역명을 띄우지 않는다
     expect(find.text('동구 · 부산광역시'), findsNothing);
     expect(find.text('금수사'), findsOneWidget);
+  });
+
+  testWidgets('혜택이 객체로 와도 뱃지를 그린다 (core #418)', (tester) async {
+    // 서버가 문자열에서 객체로 바꾼 자리다 — `as String?`으로 읽던 때는
+    // 혜택이 붙은 장소에서만 상세가 통째로 터졌다
+    await tester.pumpWidget(
+      wrap(
+        extra: {
+          'benefit': {
+            'text': '숙박 할인',
+            'policyType': 'STAY_FESTA',
+            'policyId': 2,
+            'applyUrl': 'https://ktostay.visitkorea.or.kr',
+          },
+        },
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('숙박 할인'), findsOneWidget);
+    expect(find.byType(BenefitBadge), findsOneWidget);
+  });
+
+  testWidgets('혜택이 없으면 뱃지 자리도 없다', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    expect(find.byType(BenefitBadge), findsNothing);
   });
 }
