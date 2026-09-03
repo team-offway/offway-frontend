@@ -11,6 +11,8 @@ import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
+import '../../policy/domain/region_benefit.dart';
+import '../../policy/presentation/benefit_badge.dart';
 import '../data/region_detail_repository.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
@@ -36,7 +38,6 @@ final regionDetailProvider = FutureProvider.autoDispose
           .detail(regionId);
 
       // 서버는 name에 시군구와 시도를 이미 합쳐 준다("동구 · 부산광역시")
-      final benefit = data['benefit'] as Map<String, dynamic>?;
       final spots =
           (data['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
           const [];
@@ -44,9 +45,9 @@ final regionDetailProvider = FutureProvider.autoDispose
       return {
         'id': regionId,
         'name': data['name'],
-        if (benefit?['text'] != null) 'benefitBadge': benefit!['text'],
-        if (benefit?['policyId'] != null)
-          'benefitPolicyId': benefit!['policyId'],
+        // 혜택은 서버가 홈·장소 상세와 같은 모양으로 준다(core #418) —
+        // 필드를 흩지 않고 통째로 넘긴다
+        'benefit': data['benefit'],
         'photos': (data['photos'] as List?)?.cast<String>() ?? const <String>[],
         // 서버가 그 지역에 실제로 있는 것의 이름으로 만든 한 줄 문장이다(core #140).
         // 문단이 아니라 한 줄이라 펼치기 chevron은 쓸 자리가 없다
@@ -76,12 +77,6 @@ class RegionDetailScreen extends ConsumerWidget {
 
   // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
   static const _labelNormal = Color(0xFF171719);
-  // 혜택 뱃지 — 시안 Badge와 같은 브랜드색 8% 배경 + 브랜드색 글자.
-  // 예전에는 다른 파랑(#3182F6)을 쓰고 있어 카드 뱃지와 색이 달랐다
-  static final _badgeBg = AppColors.primaryNormal.withValues(
-    alpha: AppOpacity.o8,
-  );
-  static const _badgeText = AppColors.primaryNormal;
   // 소개글 본문
   static const _storyText = AppColors.labelNeutral;
   // 화면 끝 인구감소지역 안내 — 제목은 진하게, 설명은 흐리게
@@ -123,7 +118,7 @@ class RegionDetailScreen extends ConsumerWidget {
     final spots =
         (region['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
         const [];
-    final benefit = region['benefitBadge'] as String?;
+    final benefit = RegionBenefit.tryParse(region['benefit']);
     final links =
         (region['curatedLinks'] as List?)?.cast<CuratedLink>() ??
         const <CuratedLink>[];
@@ -147,21 +142,11 @@ class RegionDetailScreen extends ConsumerWidget {
               ),
               if (benefit != null) ...[
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _badgeBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    benefit,
-                    // 가이드는 Label 2/Medium(13·w500)이다 — w600은 더 두껍다
-                    style: AppTypography.label2Medium.copyWith(
-                      color: _badgeText,
-                    ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: BenefitBadge(
+                    benefit: benefit,
+                    size: BenefitBadgeSize.regionDetail,
                   ),
                 ),
               ],

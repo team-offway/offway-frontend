@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/place_thumbnail.dart';
-import '../../../policy/presentation/policy_detail_sheet.dart';
+import '../../../policy/domain/region_benefit.dart';
+import '../../../policy/presentation/benefit_badge.dart';
 
 /// 지역 카드 표시 형태
 enum RegionCardStyle {
@@ -52,8 +53,8 @@ class RegionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 혜택 뱃지를 눌러 열 정책 — 없으면 뱃지는 그냥 표시만 된다
-    final policyId = region['benefitPolicyId'] as int?;
+    // 혜택 — 서버가 홈·상세를 한 모양으로 맞췄다(core #418)
+    final benefit = RegionBenefit.tryParse(region['benefit']);
     // 장소 카드(홈 위 섹션)면 이름이 들어 있다. 지역 카드는 null이다
     final placeName = region['placeName'] as String?;
     final content = Column(
@@ -120,35 +121,11 @@ class RegionCard extends StatelessWidget {
             ),
           ),
         ],
-        if (region['benefitBadge'] case final String badge) ...[
+        if (benefit != null) ...[
           const SizedBox(height: 6),
           // 뱃지를 누르면 혜택 상세가 열린다 — 카드 전체 탭(지역 상세)보다
-          // 안쪽이라 여기서 제스처를 먼저 받는다
-          Builder(
-            builder: (context) => GestureDetector(
-              onTap: policyId == null
-                  ? null
-                  : () => showPolicyDetailSheet(context, policyId),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  // 혜택 뱃지는 브랜드색 8% 배경에 브랜드색 글자다(시안 Badge).
-                  // 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
-                  color: AppColors.primaryNormal.withValues(
-                    alpha: AppOpacity.o8,
-                  ),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: AppTypography.caption2Medium.copyWith(
-                    color: AppColors.primaryNormal,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          // 안쪽이라 뱃지가 제스처를 먼저 받는다
+          BenefitBadge(benefit: benefit, size: BenefitBadgeSize.card),
         ],
       ],
     );

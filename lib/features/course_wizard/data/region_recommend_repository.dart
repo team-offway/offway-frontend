@@ -62,11 +62,10 @@ class RegionRecommendRepository {
       'lat': item['lat'],
       'lng': item['lng'],
       // 혜택 뱃지 — 홈 카드와 같은 첫 번째 혜택. 누르면 정책 상세가 열린다.
-      // 한산/인기(crowdLevel) 뱃지는 시안이 혜택 칩으로 바꿔 더 안 그린다
-      if (benefits.isNotEmpty) ...{
-        'benefitBadge': (benefits.first as Map<String, dynamic>)['text'],
-        'policyId': (benefits.first as Map<String, dynamic>)['policyId'],
-      },
+      // 한산/인기(crowdLevel) 뱃지는 시안이 혜택 칩으로 바꿔 더 안 그린다.
+      // 서버가 셋을 한 모양(`BenefitResponse`)으로 맞췄으므로(core #418)
+      // 필드를 흩지 않고 통째로 넘긴다 — 화면이 `RegionBenefit`으로 읽는다
+      if (benefits.isNotEmpty) 'benefit': benefits.first,
     };
   }
 

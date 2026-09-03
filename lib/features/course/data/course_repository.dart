@@ -434,8 +434,9 @@ class CourseRepository {
             ],
           },
       ],
-      if (benefits.isNotEmpty)
-        'benefitBadge': (benefits.first as Map<String, dynamic>)['text'],
+      // 코스에 걸린 혜택 — 서버가 홈·상세와 같은 모양으로 준다(core #418).
+      // 지금 코스 화면은 안 그리지만, 그릴 때 다시 꺼내지 않도록 통째로 둔다
+      if (benefits.isNotEmpty) 'benefit': benefits.first,
       // 이 코스와 함께 보면 좋은 공식 사이트 (core #350). 코스를 만드는 여섯
       // 경로가 모두 이 함수를 지나므로 여기서 한 번만 꺼낸다
       'curatedLinks': CuratedLink.parseList(course['curatedLinks']),

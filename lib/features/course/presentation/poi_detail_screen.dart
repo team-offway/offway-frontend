@@ -11,6 +11,8 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/place_thumbnail.dart';
+import '../../policy/domain/region_benefit.dart';
+import '../../policy/presentation/benefit_badge.dart';
 import '../data/course_repository.dart';
 import 'widgets/course_map.dart';
 import 'widgets/expandable_description.dart';
@@ -124,11 +126,10 @@ class _Body extends StatelessWidget {
     final catchphrase = (catchphraseRaw?.trim().isEmpty ?? true)
         ? null
         : catchphraseRaw;
-    // 지자체 혜택 — 있는 장소가 드물어 없으면 뱃지를 그리지 않는다
-    final benefitRaw = poi['benefit'] as String?;
-    final benefit = (benefitRaw == null || benefitRaw.trim().isEmpty)
-        ? null
-        : benefitRaw;
+    // 지자체 혜택 — 있는 장소가 드물어 없으면 뱃지를 그리지 않는다.
+    // 서버가 문자열에서 객체로 바꿨다(core #418) — `as String?`으로 읽으면
+    // 혜택이 붙은 장소에서만 상세가 통째로 터진다
+    final benefit = RegionBenefit.tryParse(poi['benefit']);
     final overviewRaw = poi['overview'] as String?;
     final overview = (overviewRaw?.trim().isEmpty ?? true) ? null : overviewRaw;
     final lat = (poi['lat'] as num?)?.toDouble();
@@ -151,26 +152,12 @@ class _Body extends StatelessWidget {
                 iconSize: 48,
               ),
               const SizedBox(height: 16),
-              // 지자체가 이 장소에 붙인 혜택. 없는 장소가 더 많아 있을 때만 그린다
+              // 지자체가 이 장소에 붙인 혜택. 없는 장소가 더 많아 있을 때만
+              // 그린다. 이제 policyId가 함께 와 눌러서 상세를 볼 수 있다
               if (benefit != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    // 지역 카드·지역 상세의 혜택 뱃지와 같은 값 (시안 Badge)
-                    color: AppColors.primaryNormal.withValues(
-                      alpha: AppOpacity.o8,
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    benefit,
-                    style: AppTypography.caption1Medium.copyWith(
-                      color: AppColors.primaryNormal,
-                    ),
-                  ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: BenefitBadge(benefit: benefit),
                 ),
                 // 시안 실측: 혜택 뱃지에서 장소명까지 12
                 const SizedBox(height: 12),

@@ -111,8 +111,7 @@ class _FakeRegionDetailRepository extends RegionDetailRepository {
       'name': '${r['name'] ?? regionId} \u00b7 ${r['sido'] ?? ''}',
       'overview': r['story'],
       'photos': (r['photos'] as List?)?.cast<String>() ?? const <String>[],
-      if (r['benefitBadge'] != null)
-        'benefit': {'text': r['benefitBadge'], 'policyId': 1},
+      'benefit': ?r['benefit'],
       'highlightSpots': [
         for (final s
             in (r['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
@@ -164,7 +163,7 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
           'imageUrl': r['imageUrl'],
           'description': r['description'],
           'reachMinutes': r['travelMinutesByCar'],
-          if (r['benefitBadge'] != null) 'benefitBadge': r['benefitBadge'],
+          'benefit': ?r['benefit'],
         },
     ];
   }
