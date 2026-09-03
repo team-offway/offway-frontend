@@ -406,7 +406,9 @@ void main() {
       expect(TransitAccess.tryParse(raw())!.departures, isEmpty);
     });
 
-    testWidgets('탈 수 있는 편을 시각과 등급으로 보여준다', (tester) async {
+    testWidgets('접힌 채로 다음 차 한 편만 보여준다', (tester) async {
+      // 여섯 편이 다 펼쳐지면 카드가 화면 절반을 먹어 정작 코스가 안 보인다.
+      // 그래도 한 편은 남긴다 — 표를 끊으려면 결국 시각을 봐야 한다
       await pump(
         tester,
         TransitAccess.tryParse(
@@ -425,8 +427,48 @@ void main() {
 
       expect(find.text('07:20 → 09:49'), findsOneWidget);
       expect(find.text('무궁화호'), findsOneWidget);
+      expect(find.text('09:05 → 10:31'), findsNothing);
+      // 몇 편이 더 있는지 알려야 누를 값어치를 판단한다
+      expect(find.text('다음 차 1편 더 보기'), findsOneWidget);
+    });
+
+    testWidgets('버튼을 누르면 나머지가 펼쳐지고 다시 접힌다', (tester) async {
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            departures: [
+              departure(),
+              departure(
+                vehicleType: 'KTX-이음',
+                departAt: '2026-09-05T09:05:00',
+                arriveAt: '2026-09-05T10:31:00',
+              ),
+            ],
+          ),
+        )!,
+      );
+
+      await tester.tap(find.text('다음 차 1편 더 보기'));
+      await tester.pumpAndSettle();
+
       expect(find.text('09:05 → 10:31'), findsOneWidget);
       expect(find.text('KTX-이음'), findsOneWidget);
+
+      await tester.tap(find.text('접기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('09:05 → 10:31'), findsNothing);
+    });
+
+    testWidgets('한 편뿐이면 버튼이 없다 — 펼칠 것이 없다', (tester) async {
+      await pump(
+        tester,
+        TransitAccess.tryParse(raw(departures: [departure()]))!,
+      );
+
+      expect(find.text('07:20 → 09:49'), findsOneWidget);
+      expect(find.textContaining('더 보기'), findsNothing);
     });
 
     testWidgets('시간표가 없으면 그 줄만 접는다 — 소요시간은 그대로 그린다', (tester) async {
@@ -473,6 +515,50 @@ void main() {
       expect(find.text('08:10 → 10:40'), findsOneWidget);
       expect(find.text('우등'), findsOneWidget);
       expect(find.text('07:20 → 09:49'), findsNothing);
+    });
+
+    testWidgets('수단을 갈아끼우면 시간표가 다시 접힌다', (tester) async {
+      // 펼친 채로 넘어가면 다른 수단의 시간표가 통째로 펼쳐져 있다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '열차',
+            departures: [
+              departure(),
+              departure(departAt: '2026-09-05T09:05:00'),
+            ],
+            alternatives: [
+              {
+                'mode': 'INTERCITY_BUS',
+                'modeLabel': '시외버스',
+                'toPlace': '정선',
+                'departures': [
+                  departure(
+                    vehicleType: '우등',
+                    departAt: '2026-09-05T08:10:00',
+                    arriveAt: '2026-09-05T10:40:00',
+                  ),
+                  departure(
+                    vehicleType: '우등',
+                    departAt: '2026-09-05T14:10:00',
+                    arriveAt: '2026-09-05T16:40:00',
+                  ),
+                ],
+              },
+            ],
+          ),
+        )!,
+      );
+      await tester.tap(find.text('다음 차 1편 더 보기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('시외버스로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('08:10 → 10:40'), findsOneWidget);
+      expect(find.text('14:10 → 16:40'), findsNothing);
+      expect(find.text('다음 차 1편 더 보기'), findsOneWidget);
     });
   });
 }
