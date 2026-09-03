@@ -19,6 +19,7 @@ void main() {
     Object? durationMinutes,
     Object? distanceKm,
     List<Object>? alternatives,
+    List<Object>? departures,
   }) => {
     'mode': 'INTERCITY_BUS',
     'modeLabel': modeLabel,
@@ -29,7 +30,18 @@ void main() {
     'durationMinutes': durationMinutes,
     'distanceKm': distanceKm,
     'alternatives': alternatives ?? const [],
+    'departures': departures ?? const [],
   };
+
+  Future<void> pump(WidgetTester tester, TransitAccess access) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(body: TransitAccessCard(access: access)),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
   group('응답 파싱', () {
     test('값이 없으면 그리지 않는다', () {
@@ -193,16 +205,6 @@ void main() {
   });
 
   group('화면', () {
-    Future<void> pump(WidgetTester tester, TransitAccess access) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light,
-          home: Scaffold(body: TransitAccessCard(access: access)),
-        ),
-      );
-      await tester.pumpAndSettle();
-    }
-
     testWidgets('무엇을 타고 어디에 내리는지 말한다', (tester) async {
       await pump(tester, TransitAccess.tryParse(raw())!);
       expect(find.text('시외버스로 정선까지'), findsOneWidget);
@@ -348,6 +350,129 @@ void main() {
       // 자차가 그렇다 — 갈아낄 것이 없는데 버튼만 두면 누를 데가 없다
       await pump(tester, TransitAccess.tryParse(raw())!);
       expect(find.textContaining('로 보기'), findsNothing);
+    });
+  });
+
+  group('시간표 — 몇 시 차가 있는가 (core #420)', () {
+    Map<String, dynamic> departure({
+      String? vehicleType = '무궁화호',
+      Object? departAt = '2026-09-05T07:20:00',
+      Object? arriveAt = '2026-09-05T09:49:00',
+      Object? durationMinutes = 149,
+    }) => {
+      'vehicleType': vehicleType,
+      'departAt': departAt,
+      'arriveAt': arriveAt,
+      'durationMinutes': durationMinutes,
+    };
+
+    test('출발·도착 시각과 등급을 읽는다', () {
+      final access = TransitAccess.tryParse(raw(departures: [departure()]))!;
+
+      expect(access.departures, hasLength(1));
+      final d = access.departures.first;
+      expect(d.departAt, DateTime(2026, 9, 5, 7, 20));
+      expect(d.arriveAt, DateTime(2026, 9, 5, 9, 49));
+      expect(d.vehicleType, '무궁화호');
+      expect(d.durationMinutes, 149);
+    });
+
+    test('시각은 24시간 두 자리로 그린다 — 세로로 훑을 때 자리가 맞아야 한다', () {
+      final d = TransitDeparture.tryParse(
+        departure(departAt: '2026-09-05T07:05:00', arriveAt: null),
+      )!;
+
+      expect(d.departLabel, '07:05');
+      // 도착을 모르면 출발만 말한다 — 화살표만 남기면 어디로 가는지 모른다
+      expect(d.rangeLabel, '07:05');
+    });
+
+    test('출발 시각이 없는 편은 버린다 — 답할 질문이 없다', () {
+      expect(TransitDeparture.tryParse(departure(departAt: null)), isNull);
+      expect(TransitDeparture.tryParse(departure(departAt: '엉뚱한 값')), isNull);
+    });
+
+    test('타임존을 붙이지 않는다 — 9시간 밀리면 다른 날 차가 된다', () {
+      // 서버가 한국 시각으로 내리고 사용자도 한국에서 본다
+      final d = TransitDeparture.tryParse(departure())!;
+      expect(d.departAt.isUtc, isFalse);
+      expect(d.departAt.hour, 7);
+    });
+
+    test('목록이 없거나 모양이 다르면 빈 목록이다', () {
+      // 창 밖 날짜·운행 없음·막차 지남이 모두 이 경우다 — 정상이다
+      expect(TransitDeparture.parseList(null), isEmpty);
+      expect(TransitDeparture.parseList('아무 값'), isEmpty);
+      expect(TransitAccess.tryParse(raw())!.departures, isEmpty);
+    });
+
+    testWidgets('탈 수 있는 편을 시각과 등급으로 보여준다', (tester) async {
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            departures: [
+              departure(),
+              departure(
+                vehicleType: 'KTX-이음',
+                departAt: '2026-09-05T09:05:00',
+                arriveAt: '2026-09-05T10:31:00',
+              ),
+            ],
+          ),
+        )!,
+      );
+
+      expect(find.text('07:20 → 09:49'), findsOneWidget);
+      expect(find.text('무궁화호'), findsOneWidget);
+      expect(find.text('09:05 → 10:31'), findsOneWidget);
+      expect(find.text('KTX-이음'), findsOneWidget);
+    });
+
+    testWidgets('시간표가 없으면 그 줄만 접는다 — 소요시간은 그대로 그린다', (tester) async {
+      // "가끔 안 나온다"가 아니라 "그 날짜엔 원래 없다"다
+      await pump(
+        tester,
+        TransitAccess.tryParse(raw(fromPlace: '동서울', durationMinutes: 149))!,
+      );
+
+      expect(find.text('동서울에서 출발 • 약 2시간 29분'), findsOneWidget);
+      expect(find.textContaining('→'), findsNothing);
+    });
+
+    testWidgets('갈아끼우면 그 수단의 시간표로 바뀐다', (tester) async {
+      // 대표의 시간표가 남으면 시외버스로 갈아꼈는데 무궁화호 시각이 뜬다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '열차',
+            departures: [departure()],
+            alternatives: [
+              {
+                'mode': 'INTERCITY_BUS',
+                'modeLabel': '시외버스',
+                'toPlace': '정선',
+                'departures': [
+                  departure(
+                    vehicleType: '우등',
+                    departAt: '2026-09-05T08:10:00',
+                    arriveAt: '2026-09-05T10:40:00',
+                  ),
+                ],
+              },
+            ],
+          ),
+        )!,
+      );
+      expect(find.text('07:20 → 09:49'), findsOneWidget);
+
+      await tester.tap(find.text('시외버스로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('08:10 → 10:40'), findsOneWidget);
+      expect(find.text('우등'), findsOneWidget);
+      expect(find.text('07:20 → 09:49'), findsNothing);
     });
   });
 }

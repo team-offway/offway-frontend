@@ -113,13 +113,35 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    // 아직 모르는 값이라 비워 둔다 — 자리는 점선이 지킨다.
-                    // 빈 문자열이라도 줘야 줄 높이가 잡혀 점선이 그려진다
-                    _detail ?? '',
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 아는 만큼만 말한다. 시간표까지 없으면 빈 문자열이라도
+                      // 줘야 줄 높이가 잡혀 점선이 그려진다 — 자리는 점선이
+                      // 지킨다. 시간표가 있으면 그쪽이 높이를 만드므로 빈
+                      // 줄을 남기지 않는다: 남기면 시간표가 아래로 떠 보인다
+                      if (_detail case final String detail)
+                        Text(
+                          detail,
+                          style: AppTypography.label1NormalMedium.copyWith(
+                            color: AppColors.labelAlternative,
+                          ),
+                        )
+                      else if (_shown.departures.isEmpty)
+                        Text(
+                          '',
+                          style: AppTypography.label1NormalMedium.copyWith(
+                            color: AppColors.labelAlternative,
+                          ),
+                        ),
+                      // 몇 시 차가 있는지 (core #420). 점선 **안쪽**에 둔다 —
+                      // 밖으로 빼면 같은 구간을 말하는데 선이 끊겨 따로 노는
+                      // 정보처럼 보인다
+                      if (_shown.departures.isNotEmpty) ...[
+                        if (_detail != null) const SizedBox(height: 8),
+                        _DepartureList(departures: _shown.departures),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -172,6 +194,58 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
     ];
     if (parts.isEmpty) return null;
     return parts.join(' • ');
+  }
+}
+
+/// 탈 수 있는 편들 — `07:20 → 09:49 · 무궁화호`.
+///
+/// **출발 순으로 세로로 붙인다.** 카드 위쪽의 소요시간은 가장 빨리 닿는 편에서
+/// 오지만, 이 줄이 답하는 질문은 "다음 차가 몇 시인가"라 순서가 다르다.
+/// 가로로 늘어놓으면 시각이 화면 밖으로 밀려 뒤쪽 편을 못 본다.
+class _DepartureList extends StatelessWidget {
+  const _DepartureList({required this.departures});
+
+  final List<TransitDeparture> departures;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (i, d) in departures.indexed) ...[
+          if (i > 0) const SizedBox(height: 4),
+          Row(
+            children: [
+              // 시각 열은 폭을 고정한다 — 등급 이름 길이에 따라 흔들리면
+              // 세로로 훑을 때 시각이 들쭉날쭉해 다음 차를 찾기 어렵다.
+              // 자릿수가 같은 값이라 폭도 하나로 잡힌다
+              Text(
+                d.rangeLabel,
+                style: AppTypography.label2Medium.copyWith(
+                  color: AppColors.labelNeutral,
+                  // 시각을 고정폭 숫자로 그린다 — 1과 8의 폭이 달라 세로로
+                  // 훑을 때 콜론 자리가 어긋나는 것을 막는다. 폭을 px로
+                  // 박으면 글자 배율을 키운 기기에서 시각이 잘린다
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (d.vehicleType case final String type)
+                Flexible(
+                  child: Text(
+                    type,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label2Medium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 }
 
