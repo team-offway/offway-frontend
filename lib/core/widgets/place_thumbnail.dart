@@ -23,6 +23,7 @@ class PlaceThumbnail extends StatelessWidget {
     this.background,
     this.iconSize,
     this.decodeToFit = true,
+    this.fit = BoxFit.cover,
   });
 
   final String? imageUrl;
@@ -49,6 +50,14 @@ class PlaceThumbnail extends StatelessWidget {
   /// 빈 자리로 남는다(#155). 끄면 프리캐시와 같은 키라 바로 그려진다
   final bool decodeToFit;
 
+  /// 이미지를 자리에 맞추는 방식.
+  ///
+  /// 기본 [BoxFit.cover]는 자리를 꽉 채우려 가장자리를 잘라낸다 — 장소 사진은
+  /// 어디를 잘라도 그 장소라 이 편이 맞다. **글씨가 들어간 배너·포스터는
+  /// 다르다.** 비율이 다른 원본을 잘라 채우면 가운데 글씨만 크게 확대돼
+  /// 무엇인지 못 읽는다. 그때는 [BoxFit.contain]으로 통째로 넣는다
+  final BoxFit fit;
+
   @override
   Widget build(BuildContext context) {
     final w = width ?? size;
@@ -63,7 +72,7 @@ class PlaceThumbnail extends StatelessWidget {
               builder: (context, constraints) => CachedNetworkImage(
                 imageUrl: imageUrl!,
                 cacheManager: appImageCacheManager,
-                fit: BoxFit.cover,
+                fit: fit,
                 // TourAPI 원본은 장당 100~500KB에 800px가 넘는다. 디스크에
                 // 캐시해 다음 실행부터 다시 받지 않고, 그리는 폭(픽셀)까지만
                 // 디코드해 메모리·디코드 시간을 줄인다 — 152pt 카드에
