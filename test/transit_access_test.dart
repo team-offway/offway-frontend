@@ -45,7 +45,7 @@ void main() {
 
   group('응답 파싱', () {
     test('값이 없으면 그리지 않는다', () {
-      // 옛 서버 응답과, 출발지를 모르는 옛 저장 코스가 null로 온다
+      // 자차 코스와 옛 서버 응답이 null로 온다
       expect(TransitAccess.tryParse(null), isNull);
     });
 
@@ -559,6 +559,49 @@ void main() {
       expect(find.text('08:10 → 10:40'), findsOneWidget);
       expect(find.text('14:10 → 16:40'), findsNothing);
       expect(find.text('다음 차 1편 더 보기'), findsOneWidget);
+    });
+  });
+
+  group('출발지를 모르는 코스 (core #423)', () {
+    // 좌표 없이 저장된 옛 코스다. 예전에는 `transitAccess` 필드가 통째로
+    // 빠져 "값을 모르는 옛 서버"와 구분되지 않았다. 서버가 상태를 만들어
+    // 이제 이유를 말한다
+    Map<String, dynamic> originUnknown() => {
+      'status': 'ORIGIN_UNKNOWN',
+      'mode': null,
+      'modeLabel': null,
+      'fromPlace': null,
+      'toPlace': null,
+      'vehicleType': null,
+      'durationMinutes': null,
+      'distanceKm': null,
+      'alternatives': const [],
+      'departures': const [],
+    };
+
+    test('카드를 그리지 않는다 — 수단도 내리는 곳도 없다', () {
+      // 고칠 수 없는 사정이다. 원본 출발지가 사라져 되살릴 방법이 없어
+      // (core #423), 안내로 띄워 봐야 답답하기만 하다
+      expect(TransitAccess.tryParse(originUnknown()), isNull);
+    });
+
+    test('상태 이름을 안다 — UNAVAILABLE과 뭉치지 않는다', () {
+      // 외부 장애가 아니라 우리 데이터가 빈 것이라 서버가 갈라 놓았다.
+      // 앱이 이 값을 모르면 그 구분이 여기서 도로 사라진다
+      expect(
+        TransitStatus.parse('ORIGIN_UNKNOWN'),
+        TransitStatus.originUnknown,
+      );
+      expect(
+        TransitStatus.parse('ORIGIN_UNKNOWN'),
+        isNot(TransitStatus.unavailable),
+      );
+    });
+
+    test('서버가 상태를 더 늘려도 화면이 안 죽는다', () {
+      // 모르는 값은 unavailable로 받는다
+      expect(TransitStatus.parse('BRAND_NEW'), TransitStatus.unavailable);
+      expect(TransitStatus.parse(null), TransitStatus.unavailable);
     });
   });
 }
