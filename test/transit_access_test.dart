@@ -211,9 +211,51 @@ void main() {
     });
 
     testWidgets('아는 만큼만 덧붙인다', (tester) async {
-      // 버스는 시간표를 못 물어 소요시간이 없다 — 출발지만 알린다
+      // 버스도 어디서 타는지를 함께 준다(core #424) — 예전에는 이 값이 늘
+      // null이라 같은 카드가 수단에 따라 다른 모양이었다. 소요시간은 아직
+      // 안 잰 구간이면 비므로(core #107 배치가 채운다) 출발지만 남는다
       await pump(tester, TransitAccess.tryParse(raw(fromPlace: '동서울'))!);
       expect(find.text('동서울에서 출발'), findsOneWidget);
+    });
+
+    testWidgets('버스도 어디서 타는지 말한다 (core #424)', (tester) async {
+      // 예전에는 버스·여객선의 fromPlace가 항상 null이라, 같은 카드가
+      // 수단에 따라 다른 모양이었다 — 열차만 '어디서 출발'이 뜨고 버스는
+      // 도착 지점만 떴다. 서버가 이미 찾고 있던 출발 터미널의 이름을
+      // 싣기 시작했다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(modeLabel: '고속버스', fromPlace: '서울경부', distanceKm: 150),
+        )!,
+      );
+
+      expect(find.text('고속버스로 정선까지'), findsOneWidget);
+      expect(find.text('서울경부에서 출발 • 150km'), findsOneWidget);
+    });
+
+    testWidgets('갈아끼운 수단에는 출발지를 물려주지 않는다', (tester) async {
+      // 서버가 대안에는 출발 지점을 안 싣는다(TransitOptionResponse).
+      // 대표의 값을 그대로 두면 고속버스로 갈아꼈는데 '청량리에서 출발'이라고
+      // 말하게 된다 — 수단이 다르면 타는 곳도 다르다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '열차',
+            fromPlace: '청량리',
+            alternatives: [
+              {'mode': 'EXPRESS_BUS', 'modeLabel': '고속버스', 'toPlace': '정선'},
+            ],
+          ),
+        )!,
+      );
+      expect(find.text('청량리에서 출발'), findsOneWidget);
+
+      await tester.tap(find.text('고속버스로 보기'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('청량리'), findsNothing);
     });
 
     testWidgets('열차는 편명과 시간까지 보여준다', (tester) async {
@@ -239,9 +281,10 @@ void main() {
     });
 
     testWidgets('아는 것이 없어도 점선은 남는다', (tester) async {
-      // 서버가 소요시간을 아직 못 잰 구간은 출발지·편명·시간이 모두 비어
-      // 둘째 줄이 통째로 없다. 그때 점선까지 사라지면 같은 카드가 지역마다
-      // 다르게 보인다
+      // 출발 지점을 못 찾는 구간이 그렇다 — 서울에서 울릉도는 출발 항구가
+      // 반경 안에 없어 빈 값이 오고, 그게 맞는 답이다(core #424). 소요시간도
+      // 아직 안 잰 구간이면 비어 둘째 줄이 통째로 없다. 그때 점선까지
+      // 사라지면 같은 카드가 지역마다 다르게 보인다
       await pump(
         tester,
         TransitAccess.tryParse(
