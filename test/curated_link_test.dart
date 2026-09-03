@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/curated_link_card.dart';
 import 'package:offway/core/widgets/curated_link_section.dart';
+import 'package:offway/features/policy/data/policy_repository.dart';
+import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -250,21 +252,32 @@ void main() {
     });
   });
 
-  group('지역 상세', () {
+  group('지역 상세 — 혜택 카드가 그 자리를 쓴다', () {
+    // 예전에는 여기에 큐레이션 링크를 그렸다. 그런데 대한민국 구석구석·
+    // 국가유산포털은 **모든 지역에 똑같이 붙는 고정 링크**라, 혜택이 없는
+    // 지역에서도 "혜택이 있어요"라고 말했다. 시안(18761:72093)이 이 자리에
+    // 두는 것은 혜택 카드 하나다
     Future<void> pumpRegion(
       WidgetTester tester, {
-      List<CuratedLink> links = const [],
+      Map<String, dynamic>? benefit,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            policyDetailProvider(3).overrideWith(
+              (ref) async => {
+                'id': 3,
+                'name': '숙박세일페스타',
+                'benefitDetail': '인구감소지역 숙박 예약 시 숙박비 할인 쿠폰 지급',
+              },
+            ),
             regionDetailProvider('정선').overrideWith(
               (ref) async => {
                 'id': '정선',
                 'name': '정선 · 강원',
                 'photos': const <String>[],
                 'highlightSpots': const <Map<String, dynamic>>[],
-                'curatedLinks': links,
+                'benefit': benefit,
               },
             ),
           ],
@@ -277,17 +290,17 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('링크가 오면 마무리 안내 앞에 끼워 넣는다', (tester) async {
-      await pumpRegion(tester, links: CuratedLink.parseList([link()]));
+    testWidgets('혜택이 있으면 그 혜택 하나를 마무리 안내 앞에 그린다', (tester) async {
+      await pumpRegion(tester, benefit: const {'text': '숙박 할인', 'policyId': 3});
 
       await tester.scrollUntilVisible(
         find.text('이 지역에서 누릴 수 있는 혜택이 있어요'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      // 제목이 이미 무엇인지 말한다 — 시안이 이 화면에서는 부제를 뺐다
-      expect(find.text('공식 사이트에서 더 자세히 확인해 보세요'), findsNothing);
-      expect(find.text('기차표 예매'), findsOneWidget);
+      // 정책 이름과 설명은 정책 상세에서 받아 채운다
+      expect(find.text('숙박세일페스타'), findsOneWidget);
+      expect(find.text('인구감소지역 숙박 예약 시 숙박비 할인 쿠폰 지급'), findsOneWidget);
       // 화면을 맺는 말은 그대로 끝에 남는다
       await tester.scrollUntilVisible(
         find.text('새롭게 주목받는 인구감소지역이에요'),
@@ -296,9 +309,19 @@ void main() {
       );
     });
 
-    testWidgets('링크가 없으면 섹션이 없다', (tester) async {
+    testWidgets('혜택이 없으면 섹션째 없다 — 없는 혜택을 있다고 말하지 않는다', (tester) async {
       await pumpRegion(tester);
+
       expect(find.text('이 지역에서 누릴 수 있는 혜택이 있어요'), findsNothing);
+      expect(find.byType(RegionBenefitCard), findsNothing);
+    });
+
+    testWidgets('고정 큐레이션 링크는 이 자리에 안 온다', (tester) async {
+      // 혜택이 있는 지역이어도 그렇다 — 그 둘은 혜택이 아니다
+      await pumpRegion(tester, benefit: const {'text': '숙박 할인', 'policyId': 3});
+
+      expect(find.text('대한민국 구석구석'), findsNothing);
+      expect(find.text('국가유산포털'), findsNothing);
     });
   });
 }
