@@ -68,6 +68,12 @@ class _PlaceRow extends StatelessWidget {
     final isFirst = index == 1;
     // 숙박은 눈에 띄게 다른 색을 쓴다 — 하루의 마무리라 위치를 빨리 찾게
     final isStay = place['kind'] == 'STAY';
+    // 대중교통 코스의 첫·끝 칸 — 역·터미널이다(core #431).
+    //
+    // 장소 풀에서 온 칸이 아니라 **상세도 사진도 없다.** 다른 칸과 같은
+    // 자리를 쓰되(코스의 1번이자 마지막 번호다) 없는 것을 있는 척하지 않는다
+    final isTransitPoint =
+        place['kind'] == 'ARRIVAL' || place['kind'] == 'DEPARTURE';
     final meters = place['distanceFromPrevMeters'] as int?;
 
     final row = IntrinsicHeight(
@@ -168,8 +174,12 @@ class _PlaceRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  PlaceThumbnail(imageUrl: imageUrl),
+                  // 역·터미널은 사진이 없다. 빈 회색 자리를 남기면 '못 불러온
+                  // 사진'으로 읽혀, 아예 접고 글이 그 폭을 쓴다
+                  if (!isTransitPoint) ...[
+                    const SizedBox(width: 16),
+                    PlaceThumbnail(imageUrl: imageUrl),
+                  ],
                 ],
               ),
             ),
@@ -183,7 +193,9 @@ class _PlaceRow extends StatelessWidget {
         // 앞 장소에서 여기까지의 거리 — 첫 장소에는 없다
         if (showDistance && index != 1 && meters != null)
           _buildDistanceChip(meters),
-        if (onTap case final handler?)
+        // 역·터미널은 열 상세가 없다 — 누르면 '상세 정보가 아직 없어요'가
+        // 뜨는데, 데이터가 빠진 것이 아니라 원래 없는 칸이라 틀린 안내다
+        if (onTap case final handler? when !isTransitPoint)
           GestureDetector(
             onTap: () => handler(place),
             behavior: HitTestBehavior.opaque,

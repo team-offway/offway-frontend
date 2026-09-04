@@ -890,6 +890,10 @@ class _PlaceRow extends ConsumerWidget {
     final imageUrl = place['imageUrl'] as String?;
     final catchphrase = place['catchphrase'] as String?;
     final isStay = place['kind'] == 'STAY';
+    // 대중교통 코스의 첫·끝 칸 — 역·터미널이다(core #431). 장소 풀에서 온
+    // 칸이 아니라 상세도 사진도 운영시간도 없다
+    final isTransitPoint =
+        place['kind'] == 'ARRIVAL' || place['kind'] == 'DEPARTURE';
     final contentId = place['poiContentId'] as String?;
     // 당일에만 장소 운영 정보를 불러 안내 문구를 만든다 (실패하면 조용히 생략)
     final schedule = showOpeningWarning && contentId != null
@@ -902,10 +906,20 @@ class _PlaceRow extends ConsumerWidget {
             restDate: schedule.restDate,
           );
 
+    final row = _buildRow(
+      imageUrl,
+      catchphrase,
+      isStay,
+      warning,
+      isTransitPoint,
+    );
+    // 역·터미널은 열 시트가 없다 — 운영시간도 상세도 없는 칸이라, 눌러서
+    // 빈 시트를 띄우면 무엇을 보라는 것인지 알 수 없다
+    if (isTransitPoint) return row;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: _buildRow(imageUrl, catchphrase, isStay, warning),
+      child: row,
     );
   }
 
@@ -914,6 +928,7 @@ class _PlaceRow extends ConsumerWidget {
     String? catchphrase,
     bool isStay,
     String? warning,
+    bool isTransitPoint,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1003,11 +1018,15 @@ class _PlaceRow extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(width: 17),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: PlaceThumbnail(imageUrl: imageUrl),
-        ),
+        // 역·터미널은 사진이 없다. 빈 회색 자리를 남기면 '못 불러온 사진'으로
+        // 읽혀, 아예 접고 글이 그 폭을 쓴다
+        if (!isTransitPoint) ...[
+          const SizedBox(width: 17),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: PlaceThumbnail(imageUrl: imageUrl),
+          ),
+        ],
       ],
     );
   }
