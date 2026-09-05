@@ -34,7 +34,7 @@ class RegionVisitMetrics {
 class QuietestDay {
   const QuietestDay({
     required this.label,
-    required this.percentLessThanOtherDays,
+    this.percentLessThanOtherDays,
     this.dayOfWeek,
   });
 
@@ -46,8 +46,13 @@ class QuietestDay {
     if (label == null || label.isEmpty) return null;
     return QuietestDay(
       label: label,
-      percentLessThanOtherDays:
-          (raw['percentLessThanOtherDays'] as num?)?.toInt() ?? 0,
+      // **없으면 0으로 채우지 않는다.** 0을 넣으면 안내에 "약 0% 적어요"가
+      // 측정값처럼 뜬다 — 요일은 알지만 격차를 모르는 것이 사실이다.
+      // 숫자가 아닌 값이 와도 같은 자리로 떨어진다(as num?는 던진다)
+      percentLessThanOtherDays: switch (raw['percentLessThanOtherDays']) {
+        final num n => n.toInt(),
+        _ => null,
+      },
       dayOfWeek: (raw['dayOfWeek'] as String?)?.trim(),
     );
   }
@@ -55,8 +60,9 @@ class QuietestDay {
   /// 화면에 그대로 쓰는 한글 — `화요일`. **서버가 든다**
   final String label;
 
-  /// 나머지 요일들보다 몇 % 적은가 — 툴팁 문구의 그 숫자다
-  final int percentLessThanOtherDays;
+  /// 나머지 요일들보다 몇 % 적은가 — 안내 문구의 그 숫자다.
+  /// **모르면 null**이고, 그때는 그 문장을 통째로 뺀다
+  final int? percentLessThanOtherDays;
 
   /// 요일 코드(`TUESDAY`). 앱이 자체 표기를 쓸 때를 위해 함께 온다
   final String? dayOfWeek;

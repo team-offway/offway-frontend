@@ -303,7 +303,7 @@ void main() {
       expect(find.text('인구감소지역 숙박 예약 시 숙박비 할인 쿠폰 지급'), findsOneWidget);
       // 화면을 맺는 말은 그대로 끝에 남는다
       await tester.scrollUntilVisible(
-        find.text('새롭게 주목받는 인구감소지역이에요'),
+        find.text('아직 발견할 매력이 많은 지역이에요'),
         300,
         scrollable: find.byType(Scrollable).first,
       );

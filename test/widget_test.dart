@@ -987,11 +987,11 @@ void main() {
 
     // 화면 끝 안내는 뷰포트 아래라 스크롤해서 확인
     await tester.scrollUntilVisible(
-      find.text('새롭게 주목받는 인구감소지역이에요'),
+      find.text('아직 발견할 매력이 많은 지역이에요'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.textContaining('지역의 새로운 매력을 만나보세요'), findsOneWidget);
+    expect(find.textContaining('지역만의 숨은 매력을 발견해보세요'), findsOneWidget);
   });
 
   testWidgets('바로 추천받기 → 날짜 갈림길에서 선택해야 다음이 활성화된다', (tester) async {

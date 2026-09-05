@@ -109,6 +109,44 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   bool _regenerating = false;
 
+  /// 본문 스크롤 — 하단 담기 버튼을 언제 감출지 이 값이 정한다
+  final _scroll = ScrollController();
+
+  /// 하단에 떠 있는 '내 코스에 담기'가 보이는가 (시안 18860:77008).
+  ///
+  /// **최초 진입에는 떠 있고, 스크롤을 내리면 사라진다.** 코스를 훑는 동안
+  /// 화면 아래를 가리지 않게 하려는 것이고, 맨 위로 돌아오면 다시 나온다.
+  /// 목록 끝의 버튼과 같은 동작을 부르므로 여기서 담아도 결과가 같다
+  bool _hoverVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  /// 맨 위에서만 보인다.
+  ///
+  /// **떨어진 거리로 판단한다.** 스크롤 방향으로 가르면 위로 조금만 올려도
+  /// 도로 뜨는데, 시안 노트는 "최상단으로 다시 스크롤하면 재노출"이라
+  /// 방향이 아니라 위치가 기준이다
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final atTop = _scroll.offset <= _hoverHideOffset;
+    if (atTop != _hoverVisible) setState(() => _hoverVisible = atTop);
+  }
+
+  /// 이만큼 내려가면 감춘다 — 손가락이 살짝 스친 정도로는 안 사라진다
+  static const _hoverHideOffset = 24.0;
+
   /// 같은 지역에서 코스를 다시 뽑는다. 화면을 떠나지 않고 그 자리에서 바뀐다.
   Future<void> _regenerate() async {
     if (_regenerating) return;
@@ -404,7 +442,78 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
+  /// 본문 + 하단에 떠 있는 담기 버튼.
+  ///
+  /// 버튼을 목록 안이 아니라 **화면에 띄운다** — 목록에 넣으면 끝까지
+  /// 내려야 보이는데, 이 버튼은 코스를 다 보기 전에도 담을 수 있게 하려는
+  /// 것이다. 목록 끝의 버튼은 그대로 두고 같은 동작을 부른다
   Widget _buildBody(Map<String, dynamic> course) {
+    return Stack(
+      children: [
+        _buildScrollBody(course),
+        Positioned(
+          left: 0,
+          right: 0,
+          // 시안 실측: 화면 아래에서 36
+          bottom: 36,
+          child: IgnorePointer(
+            ignoring: !_hoverVisible,
+            child: AnimatedOpacity(
+              opacity: _hoverVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: Center(child: _buildHoverSaveButton(course)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 시안 Button/Button — 아이콘 + 글, 좌우 28·상하 12, 반경 12
+  Widget _buildHoverSaveButton(Map<String, dynamic> course) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _saving ? null : () => _saveToMyCourses(course),
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.primaryNormal,
+            borderRadius: BorderRadius.circular(12),
+            // 목록 위에 떠 있어 글이 겹쳐 보이지 않게 그림자를 준다 —
+            // 시안에는 없지만 시안은 흰 배경 위 정지 상태다
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.staticBlack.withValues(alpha: 0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.download,
+                size: 20,
+                color: AppColors.staticWhite,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '내 코스에 담기',
+                style: AppTypography.body1NormalBold.copyWith(
+                  color: AppColors.staticWhite,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrollBody(Map<String, dynamic> course) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     final durationDays = course['durationDays'] as int;
     final day = days.firstWhere(
@@ -460,6 +569,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         ),
         Expanded(
           child: ListView(
+            controller: _scroll,
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
             children: [
               Center(
@@ -543,15 +653,17 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   Widget _buildSavePrompt() {
     return Column(
       children: [
+        // 시안이 위치 핀에서 하트로 바꿨다 — '갈 수 있다'가 아니라
+        // '마음에 들면 담아 둔다'는 말이라 결이 다르다
         SvgPicture.asset(
-          'assets/icons/ic_location_tick.svg',
+          'assets/icons/ic_heart_tick.svg',
           width: 48,
           height: 48,
         ),
         // 시안: 아이콘 끝에서 제목까지 24
         const SizedBox(height: 24),
         Text(
-          '이 코스로 떠나볼까요?',
+          '코스가 마음에 든다면?',
           textAlign: TextAlign.center,
           style: AppTypography.headline2Bold.copyWith(
             color: AppColors.labelStrong,
@@ -559,7 +671,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          '내 코스에 담아 언제든 다시 확인할 수 있어요.',
+          '내 코스에 담아 여행 계획을 이어가보세요',
           textAlign: TextAlign.center,
           style: AppTypography.body2NormalMedium.copyWith(
             color: AppColors.labelAlternative,

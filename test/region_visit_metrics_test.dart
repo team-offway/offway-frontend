@@ -55,6 +55,24 @@ void main() {
       );
     });
 
+    test('격차를 모르면 null이다 — 0으로 채우지 않는다', () {
+      // 0을 넣으면 안내에 "약 0% 적어요"가 측정값처럼 뜬다.
+      // 요일은 알지만 격차를 모르는 것이 사실이다
+      final noPercent = QuietestDay.tryParse(const {'label': '화요일'});
+      expect(noPercent?.label, '화요일');
+      expect(noPercent?.percentLessThanOtherDays, isNull);
+    });
+
+    test('숫자가 아닌 격차가 와도 안 죽는다', () {
+      // as num? 캐스트로 두면 여기서 예외가 올라가 화면이 통째로 빈다
+      final odd = QuietestDay.tryParse(const {
+        'label': '화요일',
+        'percentLessThanOtherDays': '삼십',
+      });
+      expect(odd?.label, '화요일');
+      expect(odd?.percentLessThanOtherDays, isNull);
+    });
+
     test('rising이 거짓인 것과 trend가 없는 것은 다르다', () {
       // 앞은 "재 보니 안 늘었다", 뒤는 "아직 잴 수 없다"
       final flat = PopularityTrend.tryParse(const {
@@ -101,6 +119,18 @@ void main() {
       await pump(tester, null);
 
       expect(tester.getSize(find.byType(QuietestDayBanner)), Size.zero);
+    });
+
+    testWidgets('격차를 모르면 그 문장을 뺀다', (tester) async {
+      // "약 0% 적어요"를 띄우면 재 본 값처럼 읽힌다
+      await pump(tester, const QuietestDay(label: '화요일'));
+
+      await tester.tap(find.bySemanticsLabel('한산한 요일 안내'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('0%'), findsNothing);
+      expect(find.textContaining('한산해요'), findsWidgets);
+      expect(find.text('출처 · 관광빅데이터'), findsOneWidget);
     });
 
     testWidgets('i를 누르면 근거와 출처가 뜬다', (tester) async {

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/policy/presentation/benefit_badge.dart';
 import 'package:offway/features/policy/presentation/region_benefit_card.dart';
+import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
 
 /// 지역 상세 — 시안(코스_상세)의 순서와 접힘 규칙을 고정한다.
@@ -19,6 +20,7 @@ void main() {
     WidgetTester tester, {
     String? story = longStory,
     List<Map<String, dynamic>> spots = const [],
+    Object? visitMetrics,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -33,6 +35,7 @@ void main() {
               'benefit': {'text': '숙박 할인', 'policyId': 3},
               'photos': const <String>[],
               'highlightSpots': spots,
+              'visitMetrics': RegionVisitMetrics.parse(visitMetrics),
             },
           ),
         ],
@@ -74,11 +77,13 @@ void main() {
 
       expect(find.text('기본 정보'), findsNothing);
       await tester.scrollUntilVisible(
-        find.text('새롭게 주목받는 인구감소지역이에요'),
+        find.text('아직 발견할 매력이 많은 지역이에요'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.textContaining('익숙한 여행지에서 조금 벗어나'), findsOneWidget);
+      // 추세를 모르는 지역이라 '안 뜨는 곳' 문구다(시안 18860:76344) —
+      // 없는 근거로 "발길이 늘고 있다"고 말하지 않는다
+      expect(find.textContaining('잘 알려지지 않은 곳에서'), findsOneWidget);
     });
 
     testWidgets('소개글이 없으면 그 칸을 접는다', (tester) async {
@@ -159,6 +164,51 @@ void main() {
     testWidgets('장소가 없으면 그 칸을 통째로 접는다', (tester) async {
       await pump(tester);
       expect(find.text('정선 매력 포인트 장소'), findsNothing);
+    });
+  });
+
+  group('마무리 안내 — 인기 상승 여부로 갈린다 (core #438)', () {
+    // 같은 지역을 두고도 할 말이 다르다. 발길이 느는 곳은 "지금 뜨는 곳"이라
+    // 권하고, 그렇지 않은 곳은 "아직 안 알려진 곳"이라 권한다
+    Future<void> scrollToNote(WidgetTester tester, String title) =>
+        tester.scrollUntilVisible(
+          find.text(title),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+    testWidgets('발길이 느는 지역이면 그렇게 말한다', (tester) async {
+      await pump(
+        tester,
+        visitMetrics: const {
+          'trend': {'percent': 40, 'rising': true},
+        },
+      );
+
+      await scrollToNote(tester, '요즘 발길이 늘고 있는 지역이에요');
+      expect(find.textContaining('익숙한 여행지에서 조금 벗어나'), findsOneWidget);
+    });
+
+    testWidgets('안 느는 지역이면 숨은 매력으로 권한다', (tester) async {
+      // 이쪽을 "주목받는 곳"이라 부르면 사실과 다르다
+      await pump(
+        tester,
+        visitMetrics: const {
+          'trend': {'percent': -5, 'rising': false},
+        },
+      );
+
+      await scrollToNote(tester, '아직 발견할 매력이 많은 지역이에요');
+      expect(find.textContaining('잘 알려지지 않은 곳에서'), findsOneWidget);
+    });
+
+    testWidgets('추세를 모르면 안 뜨는 쪽으로 본다', (tester) async {
+      // 재료가 모자라 서버가 값을 비웠을 뿐인데 "발길이 늘고 있다"고 하면
+      // 없는 근거를 지어내는 것이다
+      await pump(tester, visitMetrics: null);
+
+      await scrollToNote(tester, '아직 발견할 매력이 많은 지역이에요');
+      expect(find.text('요즘 발길이 늘고 있는 지역이에요'), findsNothing);
     });
   });
 }
