@@ -115,6 +115,30 @@ void main() {
       expect(find.textContaining('가장 한산해요'), findsOneWidget);
     });
 
+    testWidgets('시안 높이를 지킨다 — 54', (tester) async {
+      // i 버튼이 손가락 몫으로 44×44를 차지해, 그대로 두면 카드가 74가 된다.
+      // 탭 영역은 지키면서 줄 높이만 24로 못박았다
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(
+            body: SizedBox(
+              width: 363,
+              child: QuietestDayBanner(
+                quietestDay: QuietestDay(
+                  label: '화요일',
+                  percentLessThanOtherDays: 30,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(QuietestDayBanner)).height, 54);
+    });
+
     testWidgets('값이 없으면 자리도 없다', (tester) async {
       await pump(tester, null);
 
