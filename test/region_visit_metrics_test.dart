@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/region/presentation/widgets/quietest_day_banner.dart';
@@ -141,26 +139,24 @@ void main() {
       expect(tester.getSize(find.byType(QuietestDayBanner)).height, 54);
     });
 
-    testWidgets('i는 시안 농도(Assistive 28%)로 그린다', (tester) async {
-      // 에셋은 Label/Alternative(61%)를 품고 있어 그대로 쓰면 진하다.
-      // 에셋을 고치면 같은 파일을 쓰는 랜덤 지역 화면까지 옅어진다
+    testWidgets('i를 시안 농도(28%)로 그린다', (tester) async {
+      // 에셋이 Label/Alternative(61%)를 품고 있어 색으로는 못 맞춘다 —
+      // 반투명 색을 씌우면 srcIn이 원본 알파를 남겨 두 값이 곱해지고
+      // 17%가 된다(시안보다 훨씬 옅다). 투명도를 한 번만 곱한다
       await pump(
         tester,
         const QuietestDay(label: '수요일', percentLessThanOtherDays: 23),
       );
 
-      final svg = tester.widget<SvgPicture>(
+      final opacity = tester.widget<Opacity>(
         find
-            .descendant(
+            .ancestor(
               of: find.bySemanticsLabel('한산한 요일 안내'),
-              matching: find.byType(SvgPicture),
+              matching: find.byType(Opacity),
             )
             .first,
       );
-      expect(
-        svg.colorFilter,
-        const ColorFilter.mode(AppColors.labelAssistive, BlendMode.srcIn),
-      );
+      expect(opacity.opacity, closeTo(0.28, 0.001));
     });
 
     testWidgets('값이 없으면 자리도 없다', (tester) async {
