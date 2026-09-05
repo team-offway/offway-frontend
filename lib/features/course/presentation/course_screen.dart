@@ -653,15 +653,17 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   Widget _buildSavePrompt() {
     return Column(
       children: [
+        // 시안이 위치 핀에서 하트로 바꿨다 — '갈 수 있다'가 아니라
+        // '마음에 들면 담아 둔다'는 말이라 결이 다르다
         SvgPicture.asset(
-          'assets/icons/ic_location_tick.svg',
+          'assets/icons/ic_heart_tick.svg',
           width: 48,
           height: 48,
         ),
         // 시안: 아이콘 끝에서 제목까지 24
         const SizedBox(height: 24),
         Text(
-          '이 코스로 떠나볼까요?',
+          '코스가 마음에 든다면?',
           textAlign: TextAlign.center,
           style: AppTypography.headline2Bold.copyWith(
             color: AppColors.labelStrong,
@@ -669,7 +671,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          '내 코스에 담아 언제든 다시 확인할 수 있어요.',
+          '내 코스에 담아 여행 계획을 이어가보세요',
           textAlign: TextAlign.center,
           style: AppTypography.body2NormalMedium.copyWith(
             color: AppColors.labelAlternative,
