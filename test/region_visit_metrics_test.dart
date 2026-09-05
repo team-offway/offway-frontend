@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/region/presentation/widgets/quietest_day_banner.dart';
 
@@ -139,24 +143,36 @@ void main() {
       expect(tester.getSize(find.byType(QuietestDayBanner)).height, 54);
     });
 
-    testWidgets('i를 시안 농도(28%)로 그린다', (tester) async {
-      // 에셋이 Label/Alternative(61%)를 품고 있어 색으로는 못 맞춘다 —
-      // 반투명 색을 씌우면 srcIn이 원본 알파를 남겨 두 값이 곱해지고
-      // 17%가 된다(시안보다 훨씬 옅다). 투명도를 한 번만 곱한다
+    testWidgets('i를 시안 농도(Assistive 28%)로 그린다', (tester) async {
+      // 한 번 17%로 나간 적이 있다. 에셋이 fill-opacity 0.61을 품고 있었고
+      // srcIn은 **원본 알파를 남기므로** 토큰 28%가 거기 곱해졌다.
+      // 에셋에서 그 값을 걷어냈으니 토큰 알파가 그대로 농도가 된다 —
+      // 이 테스트는 칠하는 색이 아니라 **에셋이 불투명한지**까지 본다
       await pump(
         tester,
         const QuietestDay(label: '수요일', percentLessThanOtherDays: 23),
       );
 
-      final opacity = tester.widget<Opacity>(
-        find
-            .ancestor(
-              of: find.bySemanticsLabel('한산한 요일 안내'),
-              matching: find.byType(Opacity),
-            )
-            .first,
+      final svg = tester.widget<SvgPicture>(
+        find.descendant(
+          of: find.bySemanticsLabel('한산한 요일 안내'),
+          matching: find.byType(SvgPicture),
+        ),
       );
-      expect(opacity.opacity, closeTo(0.28, 0.001));
+      expect(
+        svg.colorFilter,
+        const ColorFilter.mode(AppColors.labelAssistive, BlendMode.srcIn),
+      );
+
+      // 에셋에 알파가 남아 있으면 토큰과 곱해져 옅어진다
+      final svgSource = File(
+        'assets/icons/ic_circle_info_outline.svg',
+      ).readAsStringSync();
+      expect(
+        svgSource.contains('fill-opacity'),
+        isFalse,
+        reason: 'srcIn이 원본 알파를 남겨 토큰 농도와 곱해진다',
+      );
     });
 
     testWidgets('값이 없으면 자리도 없다', (tester) async {

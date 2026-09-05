@@ -317,6 +317,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
               // 시안은 속이 빈 원형 i(Icon/Normal/Circle Info) — 기존
               // ic_circle_info는 속이 찬 변형이라 따로 둔다
               asset: 'assets/icons/ic_circle_info_outline.svg',
+              // 에셋에 박혀 있던 61%를 토큰으로 옮겼다 — 농도는 그대로다
+              tintAsset: true,
+              color: AppColors.labelAlternative,
               semanticLabel: '어떤 지역이 나오는지 안내',
               onTap: _showInfo,
             ),
