@@ -17,6 +17,7 @@ import '../../../core/constants/trip_constants.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
+import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../region/domain/region_visit_metrics.dart';
 import '../../region/presentation/widgets/quietest_day_banner.dart';
@@ -78,6 +79,36 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 지도를 크게 펼친 상태(지도뷰)인지
   bool _mapExpanded = false;
 
+  /// 본문 스크롤 — 공유 툴팁을 언제 감출지 이 값이 정한다
+  final _scroll = ScrollController();
+
+  /// 공유 버튼을 가리키는 툴팁이 보이는가 (시안 18860:76589).
+  ///
+  /// **한 번 사라지면 다시 안 뜬다.** 신규 기능의 위치를 알리는 자리라
+  /// (DS Tooltip 사용 예시) 코스를 읽기 시작하면 할 일을 다 한 셈이다 —
+  /// 맨 위로 돌아올 때마다 다시 뜨면 그때부터는 잔소리가 된다
+  bool _shareTipVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_shareTipVisible || !_scroll.hasClients) return;
+    // 손가락이 살짝 스친 정도로는 안 사라진다
+    if (_scroll.offset > 24) setState(() => _shareTipVisible = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(savedCourseDetailProvider(widget.savedId));
@@ -120,8 +151,26 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTopBar(saved, course),
+        // 공유 버튼을 가리키는 안내 — 상단바 바로 아래에 겹치지 않게 둔다.
+        // 목록 위에 띄우지 않고 자리를 차지하게 하는 이유는, 사라질 때
+        // 위 내용이 밀리지 않도록 높이를 애니메이션으로 줄이기 때문이다
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          alignment: Alignment.topCenter,
+          child: _shareTipVisible
+              ? Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    // 화살표가 공유 아이콘(우측 끝에서 22) 아래에 오게 한다
+                    padding: const EdgeInsets.only(right: 12, bottom: 4),
+                    child: const AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
         Expanded(
           child: ListView(
+            controller: _scroll,
             padding: const EdgeInsets.only(top: 12, bottom: 32),
             children: [
               Padding(
