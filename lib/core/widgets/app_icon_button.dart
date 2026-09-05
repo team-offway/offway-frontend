@@ -19,6 +19,7 @@ class AppIconButton extends StatelessWidget {
     this.size = 24,
     this.color = AppColors.labelNormal,
     this.asset,
+    this.tintAsset = false,
   });
 
   /// 닫기 버튼 — DS 에셋(`ic_close.svg`)을 쓴다.
@@ -32,7 +33,8 @@ class AppIconButton extends StatelessWidget {
     this.size = 24,
   }) : icon = Icons.close,
        color = AppColors.labelAlternative,
-       asset = 'assets/icons/ic_close.svg';
+       asset = 'assets/icons/ic_close.svg',
+       tintAsset = false;
 
   final IconData icon;
   final VoidCallback onTap;
@@ -45,6 +47,14 @@ class AppIconButton extends StatelessWidget {
 
   /// DS SVG 경로. 주면 [icon] 대신 이걸 그린다
   final String? asset;
+
+  /// 에셋에 [color]를 덧입힐지.
+  ///
+  /// **기본은 끈다.** DS 에셋은 대개 제 색(Label/Alternative 등)을 품고
+  /// 있어 덮으면 시안과 어긋난다. 다만 같은 아이콘을 화면마다 다른 농도로
+  /// 쓰는 경우가 있어(한산한 날 배너는 Assistive 28%, 랜덤 지역은 61%)
+  /// 그때만 켠다 — 에셋을 고치면 다른 화면까지 바뀐다
+  final bool tintAsset;
 
   /// 손가락으로 눌러 빗나가지 않는 최소 크기
   static const _minTapTarget = 44.0;
@@ -64,7 +74,14 @@ class AppIconButton extends StatelessWidget {
           child: Center(
             child: path == null
                 ? Icon(icon, size: size, color: color)
-                : SvgPicture.asset(path, width: size, height: size),
+                : SvgPicture.asset(
+                    path,
+                    width: size,
+                    height: size,
+                    colorFilter: tintAsset
+                        ? ColorFilter.mode(color, BlendMode.srcIn)
+                        : null,
+                  ),
           ),
         ),
       ),
