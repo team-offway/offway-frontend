@@ -89,6 +89,36 @@ void main() {
     expect(find.byType(AppTooltipBubble), findsNothing);
   });
 
+  testWidgets('화살표가 둥근 모서리를 밟지 않는다', (tester) async {
+    // 모서리 반지름(8) 안쪽에 화살표를 두면 밑동이 곡선에 걸쳐
+    // 양옆이 파여 보인다 — 실제로 그렇게 나갔던 적이 있다
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
+          body: Align(
+            alignment: Alignment.centerRight,
+            child: AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bubble = tester.getRect(find.byType(AppTooltipBubble));
+    // 화살표는 시안 20×8 — 그 크기로 가려낸다(_ArrowPainter가 private이라
+    // 타입으로는 못 집는다)
+    final arrow = tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.size == const Size(20, 8),
+      ),
+    );
+
+    // 화살표 오른쪽 끝과 말풍선 오른쪽 끝 사이가 반지름보다 넓어야
+    // 밑동 전체가 평평한 윗변을 딛는다
+    expect(bubble.right - arrow.right, greaterThan(8));
+  });
+
   testWidgets('시안 크기를 지킨다', (tester) async {
     // 말풍선이 부모 폭을 다 먹으면 화살표가 붙을 자리를 잃는다
     // 테마를 줘야 Pretendard로 잰다 — 기본 서체는 폭이 달라 시안과 어긋난다

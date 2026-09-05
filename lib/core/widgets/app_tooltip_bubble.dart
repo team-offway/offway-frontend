@@ -14,6 +14,7 @@ class AppTooltipBubble extends StatelessWidget {
   /// 시안 실측 — 화살표 20×8
   static const _arrowWidth = 20.0;
   static const _arrowHeight = 8.0;
+  static const _bubbleRadius = 8.0;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +25,10 @@ class AppTooltipBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Padding(
-          // 시안: 화살표가 모서리에 딱 붙지 않고 8 안쪽이다
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          // 둥근 모서리(8)를 피해 앉힌다. 시안대로 8만 띄우면 화살표
+          // 밑동이 코너 곡선에 걸쳐 양옆이 파여 보인다 — 반지름만큼
+          // 더 들어와야 평평한 윗변을 딛는다
+          padding: const EdgeInsets.symmetric(horizontal: 8 + _bubbleRadius),
           child: CustomPaint(
             size: const Size(_arrowWidth, _arrowHeight),
             painter: const _ArrowPainter(),
@@ -36,7 +39,7 @@ class AppTooltipBubble extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: _bubbleColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(_bubbleRadius),
           ),
           child: Text(
             text,
