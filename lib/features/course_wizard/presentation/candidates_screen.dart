@@ -14,6 +14,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../policy/domain/region_benefit.dart';
+import '../../region/domain/region_visit_metrics.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
@@ -426,6 +427,32 @@ class _SortChip extends StatelessWidget {
   }
 }
 
+/// `최근 인기 상승` — 작년 같은 기간보다 사람이 늘고 있는 지역 (core #438).
+///
+/// **눌러도 아무 일이 없다**(시안 Note). 혜택 칩은 정책 상세로 가지만 이쪽은
+/// 열어 보일 상세가 없다 — 근거는 지역 상세의 지표 배너가 답한다.
+class _RisingChip extends StatelessWidget {
+  const _RisingChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        // 혜택 칩과 같은 8% 배경을 쓰되 색을 달리해 둘이 구분된다
+        color: AppColors.primaryStrong.withValues(alpha: AppOpacity.o8),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '최근 인기 상승',
+        style: AppTypography.caption1Medium.copyWith(
+          color: AppColors.primaryStrong,
+        ),
+      ),
+    );
+  }
+}
+
 /// 후보 지역 카드 — 16:9 썸네일 + 혜택 뱃지 + 지역명 + 설명
 class _CandidateCard extends ConsumerWidget {
   const _CandidateCard({required this.region});
@@ -436,6 +463,10 @@ class _CandidateCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final imageUrl = region['imageUrl'] as String?;
     final benefit = RegionBenefit.tryParse(region['benefit']);
+    // 리포지토리가 파싱해 넘기지만, 캐스팅으로 두면 모양이 다를 때 카드가
+    // 통째로 죽는다 — 지표는 덤이라 그렇게까지 할 값이 아니다
+    final metrics = region['visitMetrics'];
+    final trend = metrics is RegionVisitMetrics ? metrics.trend : null;
 
     return GestureDetector(
       onTap: () {
@@ -469,8 +500,21 @@ class _CandidateCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (benefit != null) ...[
-            BenefitBadge(benefit: benefit, size: BenefitBadgeSize.candidate),
+          // 혜택 칩과 인기 상승 칩이 나란히 놓인다(시안) — 둘 다 없으면
+          // 줄째 사라져 사진과 지역명이 붙는다
+          if (benefit != null || trend?.rising == true) ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (benefit != null)
+                  BenefitBadge(
+                    benefit: benefit,
+                    size: BenefitBadgeSize.candidate,
+                  ),
+                if (trend?.rising == true) const _RisingChip(),
+              ],
+            ),
             const SizedBox(height: 6),
           ],
           Text(

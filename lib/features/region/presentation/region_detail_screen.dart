@@ -11,6 +11,8 @@ import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
+import '../domain/region_visit_metrics.dart';
+import 'widgets/quietest_day_banner.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../../policy/presentation/region_benefit_card.dart';
@@ -57,6 +59,9 @@ final regionDetailProvider = FutureProvider.autoDispose
           'story': data['overview'],
         // 공공데이터 출처 (core #417) — 리포지토리가 래퍼에서 꺼내 실어 준다
         '_sources': data['_sources'] ?? const <DataSource>[],
+        // 한산한 요일·인기 추세 (core #438). 객체는 늘 오고 안의 두 값이
+        // 각각 비어 있을 수 있다 — 재료가 모자라면 서버가 지어내지 않는다
+        'visitMetrics': RegionVisitMetrics.parse(data['visitMetrics']),
         // 사진 없는 장소와 상한(10)은 서버가 이미 처리해 준다 — 앱에서 또
         // 자르면 세는 쪽과 그리는 쪽이 갈린다
         'highlightSpots': [
@@ -168,6 +173,16 @@ class RegionDetailScreen extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 24),
+        // 언제 가면 덜 붐비는지 (core #438) — 사진 위에 둔다. 값이 없으면
+        // 위젯이 스스로 자리를 비운다
+        if (region['visitMetrics'] case final RegionVisitMetrics m
+            when m.quietestDay != null) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: QuietestDayBanner(quietestDay: m.quietestDay),
+          ),
+        ],
         _PhotoCarousel(photos: photos),
         const SizedBox(height: 36),
         if (spots.isNotEmpty) ...[
