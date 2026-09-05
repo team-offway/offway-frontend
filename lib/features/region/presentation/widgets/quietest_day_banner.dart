@@ -56,28 +56,18 @@ class QuietestDayBanner extends StatelessWidget {
               child: OverflowBox(
                 maxHeight: 44,
                 maxWidth: 44,
-                // 시안 Label/Assistive는 28%다. 에셋이 이미 61%를 품고
-                // 있어 색으로는 못 맞추고, 여기서 한 번만 곱한다
-                child: Opacity(
-                  opacity: 0.28,
-                  child: AppIconButton(
-                    icon: Icons.info_outline,
-                    // 시안은 속이 빈 원형 i — ic_circle_info는 속이 찬 변형이다
-                    // (랜덤 지역 화면과 같은 에셋)
-                    asset: 'assets/icons/ic_circle_info_outline.svg',
-                    size: 24,
-                    // 에셋은 Label/Alternative(61%)를 품고 있는데 이 시안은
-                    // **Assistive(28%)** 다. 에셋을 고치면 같은 파일을 쓰는
-                    // 랜덤 지역 화면까지 옅어져, 여기서만 덮는다.
-                    //
-                    // **알파를 1로 준다.** srcIn은 원본 알파를 남기므로
-                    // 반투명 색을 씌우면 에셋의 61%에 다시 곱해져 17%가 된다
-                    // (시안보다 훨씬 옅다). 투명도는 아래 Opacity가 정한다
-                    tintAsset: true,
-                    color: const Color(0xFF37383C),
-                    onTap: () => showQuietestDaySheet(context, day),
-                    semanticLabel: '한산한 요일 안내',
-                  ),
+                child: AppIconButton(
+                  icon: Icons.info_outline,
+                  // 시안은 속이 빈 원형 i — ic_circle_info는 속이 찬 변형이다
+                  // (랜덤 지역 화면과 같은 에셋)
+                  asset: 'assets/icons/ic_circle_info_outline.svg',
+                  size: 24,
+                  // 시안은 Label/Assistive(28%)다. 에셋 자체는 불투명하니
+                  // 토큰 알파가 그대로 농도가 된다
+                  tintAsset: true,
+                  color: AppColors.labelAssistive,
+                  onTap: () => showQuietestDaySheet(context, day),
+                  semanticLabel: '한산한 요일 안내',
                 ),
               ),
             ),
