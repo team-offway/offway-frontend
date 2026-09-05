@@ -89,9 +89,10 @@ void main() {
     expect(find.byType(AppTooltipBubble), findsNothing);
   });
 
-  testWidgets('화살표가 둥근 모서리를 밟지 않는다', (tester) async {
-    // 모서리 반지름(8) 안쪽에 화살표를 두면 밑동이 곡선에 걸쳐
-    // 양옆이 파여 보인다 — 실제로 그렇게 나갔던 적이 있다
+  testWidgets('화살표를 시안 자리에 둔다', (tester) async {
+    // 시안(18860:76589) 실측 — 툴팁 191 안에서 화살표는 x=163, 폭 20.
+    // 오른쪽 여백 8이 코너 반지름 8과 정확히 만나 겹치지 않는다.
+    // 한때 반지름을 더해 16으로 뒀다가 화살표가 8만큼 왼쪽으로 밀렸다
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
@@ -114,9 +115,8 @@ void main() {
       ),
     );
 
-    // 화살표 오른쪽 끝과 말풍선 오른쪽 끝 사이가 반지름보다 넓어야
-    // 밑동 전체가 평평한 윗변을 딛는다
-    expect(bubble.right - arrow.right, greaterThan(8));
+    expect(bubble.right - arrow.right, closeTo(8, 0.5));
+    expect(arrow.width, 20);
   });
 
   testWidgets('시안 크기를 지킨다', (tester) async {

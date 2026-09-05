@@ -25,10 +25,9 @@ class AppTooltipBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Padding(
-          // 둥근 모서리(8)를 피해 앉힌다. 시안대로 8만 띄우면 화살표
-          // 밑동이 코너 곡선에 걸쳐 양옆이 파여 보인다 — 반지름만큼
-          // 더 들어와야 평평한 윗변을 딛는다
-          padding: const EdgeInsets.symmetric(horizontal: 8 + _bubbleRadius),
+          // 시안 실측: 화살표 오른쪽 끝이 말풍선 오른쪽에서 8이다.
+          // 코너 곡선(반지름 8)이 끝나는 자리와 정확히 만나 겹치지 않는다
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: CustomPaint(
             size: const Size(_arrowWidth, _arrowHeight),
             painter: const _ArrowPainter(),
