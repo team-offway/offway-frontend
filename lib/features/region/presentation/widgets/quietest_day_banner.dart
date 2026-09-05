@@ -33,28 +33,42 @@ class QuietestDayBanner extends StatelessWidget {
         color: AppColors.backgroundElevatedAlternative,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
-        children: [
-          // 시안이 쓰는 bulk 변형 — 기존 ic_clock은 회색 외곽선이라 다르다.
-          // 에셋에 색이 박혀 있어 덮지 않는다
-          SvgPicture.asset(
-            'assets/icons/ic_clock_bulk.svg',
-            width: 24,
-            height: 24,
-          ),
-          const SizedBox(width: 6),
-          Expanded(child: _headline(day)),
-          // 이 숫자가 어디서 왔는지 묻는 자리 — 출처까지 여기서 밝힌다
-          AppIconButton(
-            icon: Icons.info_outline,
-            // 시안은 속이 빈 원형 i — ic_circle_info는 속이 찬 변형이다
-            // (랜덤 지역 화면과 같은 에셋)
-            asset: 'assets/icons/ic_circle_info_outline.svg',
-            size: 24,
-            onTap: () => showQuietestDaySheet(context, day),
-            semanticLabel: '한산한 요일 안내',
-          ),
-        ],
+      // 줄 높이를 24로 못박는다 — i 버튼은 손가락 몫으로 44×44를 차지하는데,
+      // 그대로 두면 카드가 시안(54)보다 20 높아진다. 탭 영역은 그대로 두고
+      // 넘치는 만큼만 위아래로 흘려보낸다
+      child: SizedBox(
+        height: 24,
+        child: Row(
+          children: [
+            // 시안이 쓰는 bulk 변형 — 기존 ic_clock은 회색 외곽선이라 다르다.
+            // 에셋에 색이 박혀 있어 덮지 않는다
+            SvgPicture.asset(
+              'assets/icons/ic_clock_bulk.svg',
+              width: 24,
+              height: 24,
+            ),
+            const SizedBox(width: 6),
+            Expanded(child: _headline(day)),
+            // 이 숫자가 어디서 왔는지 묻는 자리 — 출처까지 여기서 밝힌다.
+            // OverflowBox로 44 탭 영역을 24 줄 안에서 유지한다
+            SizedBox(
+              width: 24,
+              child: OverflowBox(
+                maxHeight: 44,
+                maxWidth: 44,
+                child: AppIconButton(
+                  icon: Icons.info_outline,
+                  // 시안은 속이 빈 원형 i — ic_circle_info는 속이 찬 변형이다
+                  // (랜덤 지역 화면과 같은 에셋)
+                  asset: 'assets/icons/ic_circle_info_outline.svg',
+                  size: 24,
+                  onTap: () => showQuietestDaySheet(context, day),
+                  semanticLabel: '한산한 요일 안내',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -88,57 +102,69 @@ Future<void> showQuietestDaySheet(BuildContext context, QuietestDay day) {
   return showAppBottomSheet<void>(
     context,
     builder: (sheetContext) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      // 시안 실측 — 좌우 23, 위아래 28
+      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 28),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/icons/ic_clock_bulk.svg',
-                width: 24,
-                height: 24,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: AppTypography.headline1Bold.copyWith(
-                      color: AppColors.labelNormal,
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/ic_clock_bulk.svg',
+                      width: 24,
+                      height: 24,
                     ),
-                    children: [
-                      TextSpan(
-                        text: day.label,
-                        style: const TextStyle(color: AppColors.primaryStrong),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text.rich(
+                        TextSpan(
+                          style: AppTypography.headline2Bold.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: day.label,
+                              style: const TextStyle(
+                                color: AppColors.primaryStrong,
+                              ),
+                            ),
+                            const TextSpan(text: '에 가장 한산해요'),
+                          ],
+                        ),
                       ),
-                      const TextSpan(text: '에 가장 한산해요'),
-                    ],
+                    ),
+                  ],
+                ),
+                // 시안 실측: 제목 아래 12
+                const SizedBox(height: 12),
+                Text(
+                  '최근 1년간 방문객 데이터를 보면,\n'
+                  '${day.label} 방문객이 다른 요일보다 '
+                  '약 ${day.percentLessThanOtherDays}% 적어요.',
+                  style: AppTypography.label1NormalMedium.copyWith(
+                    color: AppColors.labelAlternative,
                   ),
                 ),
-              ),
-              AppIconButton.close(
-                onTap: () => Navigator.of(sheetContext).pop(),
-              ),
-            ],
-          ),
-          // 시안 실측: 제목 아래 24
-          const SizedBox(height: 24),
-          Text(
-            '최근 1년간 방문객 데이터를 보면,\n'
-            '${day.label} 방문객이 다른 요일보다 '
-            '약 ${day.percentLessThanOtherDays}% 적어요.',
-            style: AppTypography.label1NormalMedium.copyWith(
-              color: AppColors.labelAlternative,
+                // 시안 실측: 본문 아래 24
+                const SizedBox(height: 24),
+                Text(
+                  '출처 · 관광빅데이터',
+                  style: AppTypography.caption1Medium.copyWith(
+                    color: AppColors.labelAssistive,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            '출처 · 관광빅데이터',
-            style: AppTypography.caption1Medium.copyWith(
-              color: AppColors.labelAssistive,
-            ),
-          ),
+          // 시안은 닫기를 제목 줄이 아니라 **시트 오른쪽 위**에 따로 둔다 —
+          // 제목이 두 줄이 되어도 자리가 안 밀린다
+          const SizedBox(width: 12),
+          AppIconButton.close(onTap: () => Navigator.of(sheetContext).pop()),
         ],
       ),
     ),
