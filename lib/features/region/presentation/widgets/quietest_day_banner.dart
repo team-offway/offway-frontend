@@ -62,6 +62,11 @@ class QuietestDayBanner extends StatelessWidget {
                   // (랜덤 지역 화면과 같은 에셋)
                   asset: 'assets/icons/ic_circle_info_outline.svg',
                   size: 24,
+                  // 에셋은 Label/Alternative(61%)를 품고 있는데 이 시안은
+                  // **Assistive(28%)** 다. 에셋을 고치면 같은 파일을 쓰는
+                  // 랜덤 지역 화면까지 옅어져, 여기서만 덮는다
+                  tintAsset: true,
+                  color: AppColors.labelAssistive,
                   onTap: () => showQuietestDaySheet(context, day),
                   semanticLabel: '한산한 요일 안내',
                 ),
