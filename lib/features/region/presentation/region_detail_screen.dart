@@ -173,17 +173,18 @@ class RegionDetailScreen extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 24),
-        // 언제 가면 덜 붐비는지 (core #438) — 사진 위에 둔다. 값이 없으면
-        // 위젯이 스스로 자리를 비운다
+        _PhotoCarousel(photos: photos),
+        // 언제 가면 덜 붐비는지 (core #438) — 시안은 사진 **아래**다.
+        // 사진으로 지역을 본 다음에 언제 갈지를 묻는 순서다
         if (region['visitMetrics'] case final RegionVisitMetrics m
             when m.quietestDay != null) ...[
-          const SizedBox(height: 16),
+          // 시안 실측: 사진 아래 8
+          const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: QuietestDayBanner(quietestDay: m.quietestDay),
           ),
         ],
-        _PhotoCarousel(photos: photos),
         const SizedBox(height: 36),
         if (spots.isNotEmpty) ...[
           Padding(
@@ -242,7 +243,14 @@ class RegionDetailScreen extends ConsumerWidget {
         ],
         // 시안 실측: 혜택 카드 아래 36
         const SizedBox(height: 36),
-        const _PopulationDeclineNote(),
+        // 추세를 모르면 '안 뜨는 곳' 쪽 문구를 쓴다 — 없는 근거로
+        // "발길이 늘고 있다"고 말하지 않는다
+        _PopulationDeclineNote(
+          rising: switch (region['visitMetrics']) {
+            final RegionVisitMetrics m => m.trend?.rising ?? false,
+            _ => false,
+          },
+        ),
         // 공공데이터 출처 (core #417) — 화면을 맺는 안내 아래에 텍스트 한 줄
         DataSourceNote(
           sources:
@@ -511,8 +519,19 @@ class _SpotNameOverlay extends StatelessWidget {
 /// 예전에는 이 자리에 '기본 정보'(교통편·지정 안내)가 있었다. 시안이
 /// 그 자리를 이 문구로 바꿨다 — 개별 지역의 사실 나열보다, 여기 모인
 /// 지역들이 어떤 곳인지 말하는 편이 이 화면의 끝맺음에 맞는다.
+/// 화면을 맺는 안내 — **인기 상승 여부로 말이 갈린다**(시안 18860:76265 · 76344).
+///
+/// 같은 지역을 두고도 할 말이 다르다. 발길이 느는 곳은 "지금 뜨는 곳"이라
+/// 권하고, 그렇지 않은 곳은 "아직 안 알려진 곳"이라 권한다 — 후자를
+/// "주목받는 곳"이라 부르면 사실과 다르다.
+///
+/// 추세를 **모를 때는 안 뜨는 쪽**으로 본다. 재료가 모자라 서버가 값을
+/// 비웠을 뿐인데 "발길이 늘고 있다"고 말하면 없는 근거를 지어내는 것이다.
 class _PopulationDeclineNote extends StatelessWidget {
-  const _PopulationDeclineNote();
+  const _PopulationDeclineNote({required this.rising});
+
+  /// 최근 인기 상승 칩이 붙는 지역인가
+  final bool rising;
 
   @override
   Widget build(BuildContext context) {
@@ -520,15 +539,29 @@ class _PopulationDeclineNote extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          SvgPicture.asset(
-            'assets/icons/ic_heart_fill.svg',
-            width: 48,
-            height: 48,
-          ),
-          // 시안: 하트 아래 24
+          // 발길이 느는 곳은 별, 아닌 곳은 하트다.
+          //
+          // **별은 180도 뒤집어 쓴다**(시안 그대로) — 원본은 별이 아래고
+          // 획이 위라 떨어지는 모양인데, 뒤집으면 별이 솟아오른다
+          if (rising)
+            RotatedBox(
+              quarterTurns: 2,
+              child: SvgPicture.asset(
+                'assets/icons/ic_ranking.svg',
+                width: 48,
+                height: 48,
+              ),
+            )
+          else
+            SvgPicture.asset(
+              'assets/icons/ic_heart_fill.svg',
+              width: 48,
+              height: 48,
+            ),
+          // 시안: 아이콘 아래 24
           const SizedBox(height: 24),
           Text(
-            '새롭게 주목받는 인구감소지역이에요',
+            rising ? '요즘 발길이 늘고 있는 지역이에요' : '아직 발견할 매력이 많은 지역이에요',
             textAlign: TextAlign.center,
             style: AppTypography.headline2Bold.copyWith(
               color: RegionDetailScreen._noteTitle,
@@ -536,7 +569,9 @@ class _PopulationDeclineNote extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '익숙한 여행지에서 조금 벗어나,\n지역의 새로운 매력을 만나보세요.',
+            rising
+                ? '익숙한 여행지에서 조금 벗어나,\n지역의 새로운 매력을 만나보세요.'
+                : '잘 알려지지 않은 곳에서\n지역만의 숨은 매력을 발견해보세요.',
             textAlign: TextAlign.center,
             style: AppTypography.body2NormalMedium.copyWith(
               color: RegionDetailScreen._noteBody,
