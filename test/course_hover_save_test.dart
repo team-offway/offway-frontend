@@ -105,6 +105,19 @@ void main() {
     expect(ignore.ignoring, isFalse);
   });
 
+  testWidgets('담기 유도 문구는 시안 그대로다', (tester) async {
+    // 시안이 '이 코스로 떠나볼까요?'에서 바꿨다 — 갈 수 있다는 말이 아니라
+    // 마음에 들면 담아 두라는 말이라 결이 다르다
+    await pump(tester);
+
+    await tester.scrollUntilVisible(
+      find.text('코스가 마음에 든다면?'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('내 코스에 담아 여행 계획을 이어가보세요'), findsOneWidget);
+  });
+
   testWidgets('목록 끝의 버튼은 그대로 있다', (tester) async {
     // 떠 있는 버튼은 덤이다 — 끝까지 내려온 사람이 쓰던 자리를 뺏지 않는다
     await pump(tester);
