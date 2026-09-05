@@ -16,6 +16,8 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/data_source_note.dart';
+import '../../region/domain/region_visit_metrics.dart';
+import '../../region/presentation/widgets/quietest_day_banner.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
@@ -479,6 +481,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+              // 언제 가면 덜 붐비는지 (core #438) — 시안이 지도 바로 위에
+              // 둔다. 값이 없으면 위젯이 스스로 자리를 비운다
+              if (course['visitMetrics'] case final RegionVisitMetrics m) ...[
+                QuietestDayBanner(quietestDay: m.quietestDay),
+                if (m.quietestDay != null) const SizedBox(height: 10),
+              ],
               // 도착 안내(무엇을 타고 어디에 내리는지)는 **담은 뒤에** 보인다.
               // 여기는 아직 고르는 자리라 갈 방법보다 코스 자체를 봐야 한다
               ClipRRect(

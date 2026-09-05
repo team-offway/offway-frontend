@@ -18,6 +18,8 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/data_source_note.dart';
+import '../../region/domain/region_visit_metrics.dart';
+import '../../region/presentation/widgets/quietest_day_banner.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -174,6 +176,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     // 실제로는 상세 조회도 같은 조립을 타 값이 온다
                     // (CourseStorageService.get → withBenefits(course, true)).
                     // 설명이 낡은 것으로 보고 값이 있으면 그린다
+                    // 언제 가면 덜 붐비는지 (core #438)
+                    if (course['visitMetrics'] case final RegionVisitMetrics m
+                        when m.quietestDay != null) ...[
+                      QuietestDayBanner(quietestDay: m.quietestDay),
+                      const SizedBox(height: 16),
+                    ],
                     if (course['transitAccess']
                         case final TransitAccess access) ...[
                       TransitAccessCard(access: access),
