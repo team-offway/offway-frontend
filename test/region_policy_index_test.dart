@@ -140,6 +140,20 @@ void main() {
       expect(benefitsForCard(card, index).map((b) => b.policyId), [7]);
     });
 
+    test('서버가 목록째 주면 색인보다 그것을 쓴다', () {
+      // 홈·지역 상세가 benefits[]를 싣기 시작하는 날, 색인이 못 읽은 혜택도
+      // 서버 목록에는 있다
+      final card = {
+        'id': '15',
+        'benefit': {'text': '환급', 'policyId': 1},
+        'benefits': [
+          {'text': '환급', 'policyId': 1},
+          {'text': '서버만 아는 혜택', 'policyId': 9},
+        ],
+      };
+      expect(benefitsForCard(card, index).map((b) => b.policyId), [1, 9]);
+    });
+
     test('대표가 없으면 색인 순서대로다', () {
       expect(benefitsForCard({'id': '15'}, index).map((b) => b.policyId), [
         1,

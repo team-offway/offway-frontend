@@ -91,6 +91,10 @@ List<RegionBenefit> benefitsForCard(
   Map<String, dynamic> card,
   RegionPolicyIndex index,
 ) {
+  // 서버가 목록째 주면 그것이 답이다 — 색인은 대표 하나만 올 때의 보완이다.
+  // 홈·지역 상세가 `benefits[]`를 싣기 시작하면 여기서 바로 그 값을 쓴다
+  final served = RegionBenefit.parseList(card['benefits']);
+  if (served.isNotEmpty) return served;
   final representative = RegionBenefit.tryParse(card['benefit']);
   // 장소 카드는 지역 id를 따로 든다(`id`는 장소 id다)
   final regionId =

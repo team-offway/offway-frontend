@@ -50,11 +50,14 @@ class _BenefitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 열 상세가 없는 혜택(옛 문자열 계약 · policyId 없음)은 누를 수 없다 —
+    // 눌러서 시트만 닫히고 아무것도 안 열리는 행을 남기지 않는다
+    final openable = benefit.policyId != null;
     return Semantics(
-      button: true,
+      button: openable,
       label: benefit.policyName ?? benefit.text,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: openable ? onTap : null,
         behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

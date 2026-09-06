@@ -163,6 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 흘리면 새로고침 Future가 실패해 당김 컨트롤이 접히지 않는다
   Future<void> _refresh() async {
     ref.invalidate(homeSnapshotProvider);
+    // 혜택 색인도 다시 읽는다 — 세션 동안 한 번만 읽는 값이라, 자정을 넘겨
+    // 정책 기간이 바뀌었을 때 당기면 새 값이 오게
+    ref.invalidate(regionPoliciesProvider);
     try {
       await ref.read(homeSnapshotProvider.future);
     } catch (_) {

@@ -52,6 +52,28 @@ void main() {
     expect(find.text('+1'), findsOneWidget);
   });
 
+  testWidgets('정책 id가 없는 행은 눌러도 아무 일도 없다', (tester) async {
+    // 옛 문자열 계약으로 온 혜택 — 상세를 열 수 없는데 시트만 닫히면 고장으로 읽힌다
+    await pump(tester, {
+      'id': '15',
+      'name': '영월군',
+      'sido': '강원특별자치도',
+      'benefit': {'text': '이름만 있는 혜택'},
+      'benefits': [
+        {'text': '이름만 있는 혜택'},
+        two[1],
+      ],
+    });
+    await tester.tap(find.text('+1'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('이름만 있는 혜택').last);
+    await tester.pumpAndSettle();
+
+    // 시트가 그대로 열려 있다
+    expect(find.text('영월군 · 강원특별자치도 혜택'), findsOneWidget);
+  });
+
   testWidgets('하나뿐이면 지금까지처럼 문구만이다', (tester) async {
     await pump(tester, {
       'id': '15',
