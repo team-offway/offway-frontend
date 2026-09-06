@@ -1,9 +1,12 @@
 {
   "rewrites": [
-    { "source": "/r/:token", "destination": "/recommend.html" },
-    { "source": "/m/:token", "destination": "/mycourse.html" },
+    { "source": "/r/:token", "destination": "/api/page?kind=r&token=:token" },
+    { "source": "/m/:token", "destination": "/api/page?kind=m&token=:token" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/support", "destination": "/support.html" }
-  ]
+  ],
+  "functions": {
+    "api/page.js": { "includeFiles": "*.html" }
+  }
 }

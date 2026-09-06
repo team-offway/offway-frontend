@@ -13,6 +13,7 @@
 | `recommend.html` | 추천코스 공유 화면 (`/r/{token}`) |
 | `mycourse.html` | 내 코스 공유 화면 (`/m/{token}`) — 날짜·연차가 붙는다 |
 | `privacy.html` · `terms.html` | 개인정보처리방침 · 이용약관 |
+| `api/page.js` | `/r/`·`/m/` 주소를 받아 **og:title 에 지역 이름을 채운** HTML 을 낸다 — 카톡 미리보기용 |
 | `api/course.js` | 코스를 읽어 오는 통로 (아래 참고) |
 | `api/leave.js` | 사용 연차를 계산해 오는 통로 |
 | `vercel.json` | 주소를 각 페이지로 넘긴다 |
@@ -26,6 +27,14 @@
 - `GET /api/v1/public/courses/{shareToken}` 은 **인증 불필요** (Basic 게이트 예외)
 - 연차 계산 API 는 게이트 뒤라 `api/leave.js` 가 Vercel 환경변수의 자격을 붙여 부른다
 - 서버 주소를 바꿔야 하면 Vercel 환경변수 `API_ORIGIN` 을 쓴다
+
+## 미리보기(og) 에 지역 이름이 들어가는 이유
+
+카톡·슬랙은 JS 를 안 돌리고 HTML 만 읽는다. 그래서 `/r/{token}`·`/m/{token}` 은
+정적 파일이 아니라 `api/page.js` 가 받는다 — 코스를 읽어 `og:title` 을
+"Offway 정선 추천코스" 로 바꾼 HTML 을 내려주고, 화면의 나머지는 지금처럼
+브라우저가 `/api/course` 로 채운다. 코스를 못 읽으면 지역 없이 그대로 낸다.
+`vercel.json` 의 `includeFiles` 가 있어야 함수가 HTML 파일을 읽을 수 있다.
 
 ## 배포 방법
 
