@@ -6,8 +6,9 @@ import 'package:offway/features/course/presentation/widgets/course_place_list.da
 
 /// 대중교통 코스의 첫·끝 칸 — 역·터미널 (core #431).
 ///
-/// 장소 풀에서 온 칸이 아니라 **상세도 사진도 없다**. 코스의 1번이자 마지막
-/// 번호라는 자리는 그대로 쓰되, 없는 것을 있는 척하지 않는다.
+/// 장소 풀에서 온 칸이 아니라 **상세가 없다**. 코스의 1번이자 마지막
+/// 번호라는 자리는 그대로 쓰되, 없는 것을 있는 척하지 않는다. 사진만은
+/// 서버가 지점 이름으로 받아 둔 것이 있으면 실린다(core #466).
 void main() {
   Map<String, dynamic> arrival() => {
     'name': '정선역',
@@ -62,12 +63,32 @@ void main() {
     expect(find.text('3'), findsOneWidget);
   });
 
-  testWidgets('사진 자리를 남기지 않는다', (tester) async {
-    // 역·터미널은 사진이 없다. 빈 회색 자리를 두면 '못 불러온 사진'으로
-    // 읽혀, 데이터가 빠진 것처럼 보인다
+  testWidgets('사진이 없으면 자리를 남기지 않는다', (tester) async {
+    // 안 받아 둔 지점은 imageUrl 없이 온다. 빈 회색 자리를 두면 '못 불러온
+    // 사진'으로 읽혀, 데이터가 빠진 것처럼 보인다
     await pump(tester, [arrival(), sight()]);
 
     // 장소 칸 하나만 썸네일을 가진다
+    expect(find.byType(PlaceThumbnail), findsOneWidget);
+  });
+
+  testWidgets('사진이 오면 다른 칸처럼 그린다 (core #466)', (tester) async {
+    // 서버가 관광사진갤러리에서 지점 이름으로 받아 둔 사진을 붙여 보낸다
+    await pump(tester, [
+      {...arrival(), 'imageUrl': 'https://example.com/station.jpg'},
+      sight(),
+    ]);
+
+    expect(find.byType(PlaceThumbnail), findsNWidgets(2));
+  });
+
+  testWidgets('빈 문자열 사진은 없는 것이다', (tester) async {
+    // TourAPI 원문 정리 뒤 ''가 남을 수 있다 — 자리만 차지하는 빈 칸이 된다
+    await pump(tester, [
+      {...arrival(), 'imageUrl': ''},
+      sight(),
+    ]);
+
     expect(find.byType(PlaceThumbnail), findsOneWidget);
   });
 

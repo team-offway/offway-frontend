@@ -307,6 +307,34 @@ class CourseRepository {
     }
   }
 
+  /// 저장 코스의 대중교통 수단을 바꾼다 (`PATCH /courses/{id}/transit-mode`).
+  ///
+  /// 상세 화면의 '기차로 보기' 버튼이다 (core #456·#458). 서버가 교통 카드와
+  /// Day 1 도착 칸·마지막 날 출발 칸을 그 수단의 지점으로 바꾸고 **값을
+  /// 저장**한다 — 다시 열어도 같은 수단이다. 나머지 장소 순서는 그대로다
+  /// (다시 정렬하려면 재생성이라야 한다).
+  ///
+  /// [transitMode]는 응답 대안 목록(`alternatives[].mode`)에 있는 값을
+  /// 보낸다. 안 닿는 수단이라도 서버가 고른 수단으로 답하며 200이다.
+  /// 자차 코스는 400 — 카드 자체가 안 뜨니 화면에서는 만나지 않는다.
+  ///
+  /// 응답은 상세와 같은 모양이지만 여기서는 버린다 — 화면이 상세
+  /// 프로바이더를 다시 읽는 것이 날짜 변경과 같은 길이라 한 가지로 둔다.
+  Future<void> changeTransitMode({
+    required String courseId,
+    required String transitMode,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(
+        '/api/v1/courses/$courseId/transit-mode',
+        data: {'transitMode': transitMode},
+      );
+      ApiEnvelope.unwrap(response);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 장소 상세 (`GET /pois/{contentId}`) — 주소·운영시간·휴무일·소개·좌표.
   ///
   /// useTime·restDate는 TourAPI 자유 텍스트("매주 월요일", "상시 개방" 등)라

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
@@ -9,6 +11,9 @@ import 'package:offway/features/course/presentation/widgets/transit_access_card.
 ///
 /// 버스·여객선은 **시간표를 못 묻는다** — 요청 시점에 조회가 안 된다.
 /// 그래서 소요시간이 없는 경우가 흔하고, 아는 만큼만 말해야 한다.
+/// 보내기만 받아 주는 콜백 — 버튼이 있는지만 보는 테스트가 쓴다
+Future<void> _accept(TransitOption _) async {}
+
 void main() {
   Map<String, dynamic> raw({
     Object? modeLabel = '시외버스',
@@ -33,11 +38,20 @@ void main() {
     'departures': departures ?? const [],
   };
 
-  Future<void> pump(WidgetTester tester, TransitAccess access) async {
+  Future<void> pump(
+    WidgetTester tester,
+    TransitAccess access, {
+    Future<void> Function(TransitOption option)? onModeSelected = _accept,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: Scaffold(body: TransitAccessCard(access: access)),
+        home: Scaffold(
+          body: TransitAccessCard(
+            access: access,
+            onModeSelected: onModeSelected,
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -174,34 +188,6 @@ void main() {
       // 자차에 대안은 없다 — 전환 버튼이 안 뜬다
       expect(find.textContaining('로 보기'), findsNothing);
     });
-
-    testWidgets('갈아끼우면 거리를 물려받지 않는다', (tester) async {
-      // 출발지→도착 지점의 값이라, 다른 터미널에 내리는 수단으로 바꾸면
-      // 다른 거리다 — 출발지를 안 물려주는 것과 같은 논리
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light,
-          home: Scaffold(
-            body: TransitAccessCard(
-              access: TransitAccess.tryParse(
-                raw(
-                  distanceKm: 200,
-                  alternatives: [
-                    {'modeLabel': '열차', 'toPlace': '민둥산'},
-                  ],
-                ),
-              )!,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('열차로 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('200km'), findsNothing);
-    });
   });
 
   group('화면', () {
@@ -232,30 +218,6 @@ void main() {
 
       expect(find.text('고속버스로 정선까지'), findsOneWidget);
       expect(find.text('서울경부에서 출발 • 150km'), findsOneWidget);
-    });
-
-    testWidgets('갈아끼운 수단에는 출발지를 물려주지 않는다', (tester) async {
-      // 서버가 대안에는 출발 지점을 안 싣는다(TransitOptionResponse).
-      // 대표의 값을 그대로 두면 고속버스로 갈아꼈는데 '청량리에서 출발'이라고
-      // 말하게 된다 — 수단이 다르면 타는 곳도 다르다
-      await pump(
-        tester,
-        TransitAccess.tryParse(
-          raw(
-            modeLabel: '열차',
-            fromPlace: '청량리',
-            alternatives: [
-              {'mode': 'EXPRESS_BUS', 'modeLabel': '고속버스', 'toPlace': '정선'},
-            ],
-          ),
-        )!,
-      );
-      expect(find.text('청량리에서 출발'), findsOneWidget);
-
-      await tester.tap(find.text('고속버스로 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('청량리'), findsNothing);
     });
 
     testWidgets('열차는 편명과 시간까지 보여준다', (tester) async {
@@ -305,6 +267,7 @@ void main() {
           raw(
             alternatives: [
               {
+                'mode': 'TRAIN',
                 'modeLabel': '열차',
                 'fromPlace': '청량리',
                 'toPlace': '민둥산',
@@ -317,76 +280,96 @@ void main() {
       expect(find.text('열차로 보기'), findsOneWidget);
     });
 
-    testWidgets('버튼을 누르면 그 수단으로 갈아끼운다', (tester) async {
+    testWidgets('버튼을 누르면 그 수단을 서버에 보내고 화면은 기다린다', (tester) async {
+      // 화면 안에서 갈아끼우지 않는다 (core #458). 카드만 바꾸면 도착·출발
+      // 칸은 옛 지점 그대로라 한 화면에서 두 값이 어긋난다 — 서버가 코스를
+      // 통째로 바꿔 주면 그 값으로 다시 그린다
+      final sent = <String?>[];
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
             fromPlace: '동서울',
             alternatives: [
-              {'modeLabel': '열차', 'toPlace': '민둥산', 'durationMinutes': 180},
+              {'mode': 'TRAIN', 'modeLabel': '열차', 'toPlace': '민둥산'},
             ],
           ),
         )!,
+        onModeSelected: (option) async => sent.add(option.mode),
       );
 
       await tester.tap(find.text('열차로 보기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('열차로 민둥산까지'), findsOneWidget);
-      expect(find.text('약 3시간'), findsOneWidget);
-      // 되돌아갈 길이 남아야 한다 — 목록에서 빼 버리면 갇힌다
-      expect(find.text('시외버스로 보기'), findsOneWidget);
+      expect(sent, ['TRAIN']);
+      // 답이 오기 전에는 대표가 그대로다 — 카드 혼자 앞서가지 않는다
+      expect(find.text('시외버스로 정선까지'), findsOneWidget);
+      expect(find.text('동서울에서 출발'), findsOneWidget);
     });
 
-    testWidgets('갈아끼우면 출발지를 물려받지 않는다', (tester) async {
-      // 서버는 대안에 fromPlace를 싣지 않는다(TransitOptionResponse).
-      // 지금 값을 그대로 두면 열차로 바꿨는데 '동서울에서 출발'이라 말한다 —
-      // 수단이 다르면 타는 곳도 다르다
+    testWidgets('답이 올 때까지 다시 눌러도 한 번만 보낸다', (tester) async {
+      // 서버가 코스를 바꾸는 동안 두 번 누르면 같은 요청이 두 번 간다
+      final completer = Completer<void>();
+      var calls = 0;
       await pump(
         tester,
         TransitAccess.tryParse(
           raw(
-            fromPlace: '동서울',
+            alternatives: [
+              {'mode': 'TRAIN', 'modeLabel': '열차', 'toPlace': '민둥산'},
+            ],
+          ),
+        )!,
+        onModeSelected: (_) {
+          calls++;
+          return completer.future;
+        },
+      );
+
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pump();
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pump();
+      expect(calls, 1);
+
+      // 답이 오면 다시 누를 수 있다
+      completer.complete();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('열차로 보기'));
+      await tester.pump();
+      expect(calls, 2);
+    });
+
+    testWidgets('보낼 곳이 없으면 버튼이 없다', (tester) async {
+      // 공유 링크처럼 바꿀 권한이 없는 자리 — 눌러도 아무 일이 없는 버튼은
+      // 고장으로 읽힌다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            alternatives: [
+              {'mode': 'TRAIN', 'modeLabel': '열차', 'toPlace': '민둥산'},
+            ],
+          ),
+        )!,
+        onModeSelected: null,
+      );
+      expect(find.textContaining('로 보기'), findsNothing);
+    });
+
+    testWidgets('수단 코드가 없는 대안은 보낼 수 없어 버튼이 없다', (tester) async {
+      // 서버가 대안에 mode를 안 실으면 PATCH에 넣을 값이 없다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
             alternatives: [
               {'modeLabel': '열차', 'toPlace': '민둥산'},
             ],
           ),
         )!,
       );
-
-      await tester.tap(find.text('열차로 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('동서울'), findsNothing);
-    });
-
-    testWidgets('다시 누르면 첫 화면 그대로 돌아온다', (tester) async {
-      // 대표를 대안 목록에 접어 넣는 식으로 맞바꾸면, 서버가 대안에 싣지 않는
-      // 출발지·편명이 그때 사라져 두 번 눌러 돌아왔을 때 '서울에서 출발'이
-      // 빠진 채로 남았다
-      await pump(
-        tester,
-        TransitAccess.tryParse(
-          raw(
-            fromPlace: '동서울',
-            vehicleType: '우등',
-            durationMinutes: 149,
-            alternatives: [
-              {'modeLabel': '열차', 'toPlace': '민둥산', 'durationMinutes': 180},
-            ],
-          ),
-        )!,
-      );
-      final before = tester.widget<Text>(find.text('동서울에서 출발 • 우등 약 2시간 29분'));
-
-      await tester.tap(find.text('열차로 보기'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('시외버스로 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('시외버스로 정선까지'), findsOneWidget);
-      expect(find.text(before.data!), findsOneWidget);
+      expect(find.textContaining('로 보기'), findsNothing);
     });
 
     testWidgets('갈 수 있는 수단이 하나뿐이면 버튼이 없다', (tester) async {
@@ -525,79 +508,34 @@ void main() {
       expect(find.textContaining('→'), findsNothing);
     });
 
-    testWidgets('갈아끼우면 그 수단의 시간표로 바뀐다', (tester) async {
-      // 대표의 시간표가 남으면 시외버스로 갈아꼈는데 무궁화호 시각이 뜬다
+    testWidgets('새 코스가 오면 시간표가 다시 접힌다', (tester) async {
+      // 수단을 바꿔 서버가 새 코스를 주면 다른 수단의 시간표다 — 펼친 채로
+      // 넘어가면 그 시간표가 통째로 펼쳐져 있다
+      TransitAccess access(List<Object> departures) =>
+          TransitAccess.tryParse(raw(modeLabel: '열차', departures: departures))!;
       await pump(
         tester,
-        TransitAccess.tryParse(
-          raw(
-            modeLabel: '열차',
-            departures: [departure()],
-            alternatives: [
-              {
-                'mode': 'INTERCITY_BUS',
-                'modeLabel': '시외버스',
-                'toPlace': '정선',
-                'departures': [
-                  departure(
-                    vehicleType: '우등',
-                    departAt: '2026-09-05T08:10:00',
-                    arriveAt: '2026-09-05T10:40:00',
-                  ),
-                ],
-              },
-            ],
-          ),
-        )!,
-      );
-      expect(find.text('07:20 → 09:49'), findsOneWidget);
-
-      await tester.tap(find.text('시외버스로 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('08:10 → 10:40'), findsOneWidget);
-      expect(find.text('우등'), findsOneWidget);
-      expect(find.text('07:20 → 09:49'), findsNothing);
-    });
-
-    testWidgets('수단을 갈아끼우면 시간표가 다시 접힌다', (tester) async {
-      // 펼친 채로 넘어가면 다른 수단의 시간표가 통째로 펼쳐져 있다
-      await pump(
-        tester,
-        TransitAccess.tryParse(
-          raw(
-            modeLabel: '열차',
-            departures: [
-              departure(),
-              departure(departAt: '2026-09-05T09:05:00'),
-            ],
-            alternatives: [
-              {
-                'mode': 'INTERCITY_BUS',
-                'modeLabel': '시외버스',
-                'toPlace': '정선',
-                'departures': [
-                  departure(
-                    vehicleType: '우등',
-                    departAt: '2026-09-05T08:10:00',
-                    arriveAt: '2026-09-05T10:40:00',
-                  ),
-                  departure(
-                    vehicleType: '우등',
-                    departAt: '2026-09-05T14:10:00',
-                    arriveAt: '2026-09-05T16:40:00',
-                  ),
-                ],
-              },
-            ],
-          ),
-        )!,
+        access([departure(), departure(departAt: '2026-09-05T09:05:00')]),
       );
       await tester.tap(find.text('다음 차 1편 더 보기'));
       await tester.pumpAndSettle();
+      expect(find.text('09:05 → 09:49'), findsOneWidget);
 
-      await tester.tap(find.text('시외버스로 보기'));
-      await tester.pumpAndSettle();
+      await pump(
+        tester,
+        access([
+          departure(
+            vehicleType: '우등',
+            departAt: '2026-09-05T08:10:00',
+            arriveAt: '2026-09-05T10:40:00',
+          ),
+          departure(
+            vehicleType: '우등',
+            departAt: '2026-09-05T14:10:00',
+            arriveAt: '2026-09-05T16:40:00',
+          ),
+        ]),
+      );
 
       expect(find.text('08:10 → 10:40'), findsOneWidget);
       expect(find.text('14:10 → 16:40'), findsNothing);

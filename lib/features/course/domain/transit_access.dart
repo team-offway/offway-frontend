@@ -91,34 +91,6 @@ class TransitAccess {
 
   /// `1시간 30분` · `50분` — 모르면 null
   String? get durationLabel => formatTransitDuration(durationMinutes);
-
-  /// 대안 하나를 대표 자리에 올린 사본 — '시외버스로 보기'를 눌렀을 때.
-  ///
-  /// **출발지와 편명은 물려주지 않는다.** 서버가 대안에 그 둘을 싣지 않는데
-  /// 지금 값을 그대로 두면, 고속버스로 갈아끼웠는데 '청량리에서 출발'이라고
-  /// 말하게 된다 — 수단이 다르면 타는 곳도 다르다.
-  ///
-  /// 되돌아가는 길은 [TransitAccess] 원본을 들고 있는 화면이 맡는다. 대표를
-  /// [TransitOption]으로 접어 목록에 넣으면 담지 못하는 항목(출발지·편명)이
-  /// 그때 사라져, 두 번 눌러 돌아왔을 때 **첫 화면과 달라진다.**
-  TransitAccess swappedWith(TransitOption option) {
-    return TransitAccess(
-      modeLabel: option.modeLabel,
-      mode: option.mode,
-      // 시간표는 대안이 제 것을 들고 온다 — 대표의 것을 남기면 시외버스로
-      // 갈아꼈는데 무궁화호 시각이 뜬다
-      departures: option.departures,
-      // 갈아낀 수단의 시간표를 우리가 물어본 것은 아니다 — 상태는 그대로 둔다
-      status: status,
-      toPlace: option.toPlace ?? toPlace,
-      durationMinutes: option.durationMinutes,
-      // 거리도 물려주지 않는다 — 출발지→도착 지점의 값이라, 다른 터미널에
-      // 내리는 수단으로 바꾸면 다른 거리다 (출발지와 같은 논리)
-      // 갈아낀 뒤 남는 대안은 '원래 것'뿐이다. 화면이 원본을 들고 있으므로
-      // 여기서는 목록을 비우고, 되돌리기는 그쪽이 판단한다
-      alternatives: const [],
-    );
-  }
 }
 
 /// 이 지역에 닿는 수단 하나 — 대표 말고 대안 쪽.

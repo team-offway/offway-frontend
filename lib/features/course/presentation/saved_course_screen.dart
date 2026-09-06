@@ -233,7 +233,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     ],
                     if (course['transitAccess']
                         case final TransitAccess access) ...[
-                      TransitAccessCard(access: access),
+                      TransitAccessCard(
+                        access: access,
+                        onModeSelected: _changeTransitMode,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     _buildMap(places),
@@ -630,6 +633,32 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     }
   }
 
+  /// 교통 카드의 '기차로 보기' — 서버에 보내고 새 코스를 받는다 (core #458).
+  ///
+  /// 카드와 도착·출발 칸이 함께 바뀌므로 카드 안에서 갈아끼우지 않고 상세를
+  /// 통째로 다시 읽는다. **새 값이 올 때까지 기다린다** — 카드가 그동안
+  /// 버튼을 잠가 두어 같은 요청이 두 번 가지 않는다.
+  Future<void> _changeTransitMode(TransitOption option) async {
+    try {
+      await ref
+          .read(courseRepositoryProvider)
+          .changeTransitMode(
+            courseId: widget.savedId,
+            // 카드가 수단 코드 없는 대안에는 버튼을 안 두므로 여기선 있다
+            transitMode: option.mode!,
+          );
+    } on ApiException catch (e) {
+      if (mounted) showAppToast(context, e.detail);
+      return;
+    }
+    ref.invalidate(savedCourseDetailProvider(widget.savedId));
+    try {
+      await ref.read(savedCourseDetailProvider(widget.savedId).future);
+    } on ApiException {
+      // 바뀌긴 했는데 다시 읽기만 실패한 것 — 화면이 에러 뷰와 재시도로 알린다
+    }
+  }
+
   Future<void> _confirmDelete() async {
     // 회원탈퇴·연차 내역 삭제와 같은 DS 모달을 쓴다
     final confirmed = await showAppConfirmDialog(
@@ -948,7 +977,8 @@ class _PlaceRow extends ConsumerWidget {
     final catchphrase = place['catchphrase'] as String?;
     final isStay = place['kind'] == 'STAY';
     // 대중교통 코스의 첫·끝 칸 — 역·터미널이다(core #431). 장소 풀에서 온
-    // 칸이 아니라 상세도 사진도 운영시간도 없다
+    // 칸이 아니라 상세도 운영시간도 없다. 사진만은 서버가 지점 이름으로
+    // 따로 받아 둔 것이 있으면 실린다(core #466)
     final isTransitPoint =
         place['kind'] == 'ARRIVAL' || place['kind'] == 'DEPARTURE';
     final contentId = place['poiContentId'] as String?;
@@ -1075,9 +1105,10 @@ class _PlaceRow extends ConsumerWidget {
             ),
           ),
         ),
-        // 역·터미널은 사진이 없다. 빈 회색 자리를 남기면 '못 불러온 사진'으로
-        // 읽혀, 아예 접고 글이 그 폭을 쓴다
-        if (!isTransitPoint) ...[
+        // 역·터미널은 사진이 없을 수 있다. 빈 회색 자리를 남기면 '못 불러온
+        // 사진'으로 읽혀, 없으면 아예 접고 글이 그 폭을 쓴다. 서버가 받아 둔
+        // 사진이 오면(core #466) 다른 칸과 같이 그린다
+        if (!isTransitPoint || (imageUrl != null && imageUrl.isNotEmpty)) ...[
           const SizedBox(width: 17),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),

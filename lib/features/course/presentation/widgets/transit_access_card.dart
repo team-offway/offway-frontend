@@ -10,25 +10,37 @@ import 'dotted_line.dart';
 /// 코스는 "내린 곳"에서 시작한다(core #127). 그런데 화면은 그 지점을 말한
 /// 적이 없어, 대중교통으로 가는 사람은 첫 장소가 왜 거기인지 알 수 없었다.
 ///
-/// 다른 수단으로도 갈 수 있으면 아래 버튼으로 **갈아끼워 본다.** 예전에는
+/// 다른 수단으로도 갈 수 있으면 아래 버튼으로 **갈아탄다.** 예전에는
 /// 대안을 칩으로 늘어놓았는데, 시안이 한 번에 하나씩 보여 주는 쪽으로
 /// 정리했다 — 나란히 두면 무엇이 지금 기준인지 흐려진다.
+///
+/// **버튼은 화면 안에서 갈아끼우지 않는다** (core #456·#458). 예전엔 대안의
+/// 시간표만 이 자리에서 바꿔 보여 줬는데, 코스의 도착·출발 칸은 옛 지점
+/// 그대로라 한 화면에서 두 값이 어긋났다 — 양양은 역과 터미널이 42km
+/// 떨어져 있다. 지금은 [onModeSelected]로 서버에 보내고, 서버가 카드와
+/// 도착·출발 칸을 함께 바꾼 코스를 돌려주면 그 값으로 다시 그린다.
 class TransitAccessCard extends StatefulWidget {
-  const TransitAccessCard({super.key, required this.access});
+  const TransitAccessCard({
+    super.key,
+    required this.access,
+    this.onModeSelected,
+  });
 
   final TransitAccess access;
+
+  /// 버튼을 눌러 고른 수단을 서버에 보내고, 새 코스를 받아 올 때까지 기다린다.
+  ///
+  /// 돌아올 때까지 버튼을 잠근다 — 그 사이 다시 누르면 같은 요청이 두 번 간다.
+  /// null이면 버튼을 그리지 않는다 (공유 링크처럼 바꿀 권한이 없는 자리).
+  final Future<void> Function(TransitOption option)? onModeSelected;
 
   @override
   State<TransitAccessCard> createState() => _TransitAccessCardState();
 }
 
 class _TransitAccessCardState extends State<TransitAccessCard> {
-  /// 대안으로 갈아낀 상태 — null이면 서버가 준 대표를 그대로 본다.
-  ///
-  /// **원본을 덮지 않고 따로 둔다.** 대표를 대안 목록에 접어 넣는 식으로
-  /// 맞바꾸면, 서버가 대안에 싣지 않는 출발지·편명이 그때 사라져 두 번 눌러
-  /// 돌아왔을 때 첫 화면과 달라진다.
-  TransitOption? _picked;
+  /// 서버에 보내고 답을 기다리는 중인가 — 그동안 버튼은 눌러도 아무 일이 없다
+  bool _busy = false;
 
   /// 시간표를 펼쳤는가 — 기본은 접어 둔다.
   ///
@@ -40,9 +52,8 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
   @override
   void didUpdateWidget(TransitAccessCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 코스를 다시 읽어 새 값이 오면 고른 것을 버리고 대표로 돌아간다
+    // 코스를 다시 읽어 새 값이 오면 다른 수단의 시간표라 다시 접는다
     if (!identical(oldWidget.access, widget.access)) {
-      _picked = null;
       _expanded = false;
     }
   }
@@ -50,21 +61,37 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
   /// 접었을 때 보여 주는 편 수 — 다음 차 하나
   static const _collapsedCount = 1;
 
-  /// 지금 화면에 그릴 것
-  TransitAccess get _shown =>
-      _picked == null ? widget.access : widget.access.swappedWith(_picked!);
+  TransitAccess get _shown => widget.access;
+
+  /// 버튼이 보낼 수단 — 첫 대안.
+  ///
+  /// 수단 코드(`mode`)가 없는 대안은 서버에 보낼 수 없어 건너뛴다. 보낼 곳
+  /// ([TransitAccessCard.onModeSelected])이 없으면 버튼 자체를 두지 않는다 —
+  /// 눌러도 아무 일이 없는 버튼은 고장으로 읽힌다.
+  TransitOption? get _next {
+    if (widget.onModeSelected == null) return null;
+    for (final option in widget.access.alternatives) {
+      if (option.mode != null) return option;
+    }
+    return null;
+  }
+
+  Future<void> _swap(TransitOption option) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await widget.onModeSelected!(option);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // 내리는 곳조차 모르면 할 말이 없다 — 자리를 비운다
     if (!_shown.isPresentable) return const SizedBox.shrink();
 
-    // 갈아낀 상태면 '원래대로', 아니면 첫 대안으로 넘어가는 버튼이다
-    final next = _picked != null
-        ? null
-        : (widget.access.alternatives.isEmpty
-              ? null
-              : widget.access.alternatives.first);
+    final next = _next;
 
     return Container(
       width: double.infinity,
@@ -182,12 +209,8 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
               padding: const EdgeInsets.only(left: 30),
               child: _SwapButton(
                 label: label,
-                // 갈아낀 상태에서 다시 누르면 원본으로 돌아간다
-                onTap: () => setState(() {
-                  _picked = _picked == null ? next : null;
-                  // 수단이 바뀌면 시간표도 다른 것이라 다시 접는다
-                  _expanded = false;
-                }),
+                // 답을 기다리는 동안은 눌러도 아무 일이 없다 — 두 번 보내지 않게
+                onTap: _busy ? null : () => _swap(next!),
               ),
             ),
           ],
@@ -196,11 +219,13 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
     );
   }
 
-  /// 버튼에 쓸 말 — 갈아낄 것도, 돌아갈 곳도 없으면 null이라 버튼을 안 그린다
+  /// 버튼에 쓸 말 — 보낼 수단이 없으면 null이라 버튼을 안 그린다.
+  ///
+  /// 갈아탄 뒤에는 서버가 새 수단을 대표로, 옛 수단을 대안으로 돌려주므로
+  /// 이 줄이 자연히 '돌아가기'가 된다 — 따로 기억할 것이 없다
   String? get _swapLabel {
-    if (_picked != null) return '${widget.access.modeLabel}로 보기';
-    final first = widget.access.alternatives.firstOrNull;
-    return first == null ? null : '${first.modeLabel}로 보기';
+    final next = _next;
+    return next == null ? null : '${next.modeLabel}로 보기';
   }
 
   /// `기차로 정선까지` — 수단 이름은 서버가 정한 한글을 그대로 쓴다
@@ -345,7 +370,9 @@ class _SwapButton extends StatelessWidget {
   const _SwapButton({required this.label, required this.onTap});
 
   final String label;
-  final VoidCallback onTap;
+
+  /// null이면 잠긴 상태 — 모양은 그대로 두고 탭만 흘려보낸다
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
