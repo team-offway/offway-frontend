@@ -23,6 +23,7 @@ import '../../region/presentation/widgets/leave_pick_card.dart';
 import '../../policy/data/region_policies_provider.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
+import '../../course_wizard/presentation/wizard_entry.dart';
 
 /// 홈 API 한 번으로 사용자·추천지역을 함께 받는다.
 /// 온보딩에서 연차를 저장한 뒤에는 invalidate로 다시 불러온다.
@@ -476,7 +477,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             right: -6,
             bottom: -6,
             child: FilledButton(
-              onPressed: () => context.push(AppRoutes.wizardDateGate),
+              // 지난번 고르다 만 값을 비우고 처음부터
+              onPressed: () => startCourseWizard(context, ref),
               style: FilledButton.styleFrom(
                 // TODO(디자인시스템): 디자인이 Atomic Neutral/22를 직접 참조한다.
                 // 이 검정을 가리키는 Semantic 토큰이 생기면 그걸로 교체할 것.
