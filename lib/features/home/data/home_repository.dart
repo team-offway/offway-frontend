@@ -143,6 +143,9 @@ Map<String, dynamic> toPlaceCardMap(
     // 필드를 흩지 않고 통째로 넘겨 화면이 `RegionBenefit`으로 읽는다
     'benefit': ?benefit,
     if (label != null) 'categoryCounts': {label: 1},
+    // 서버 종류 키(SIGHT·EXPERIENCE…)도 그대로 든다 — '전체'에서 관광지·체험을
+    // 앞세우는 규칙이 라벨이 아니라 이 키로 가른다. 라벨은 서버가 바꿀 수 있다
+    'kind': ?kind,
   };
 }
 

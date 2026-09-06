@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -57,12 +60,26 @@ bool leaveOnboardingNeeded(AsyncValue<Map<String, dynamic>> user) {
   return data != null && data['remainingLeaveDays'] == null;
 }
 
+/// '전체'에서 앞자리에 세우는 장소 종류 — 관광지·체험.
+///
+/// 첫 화면에 숙소·식당이 먼저 깔리면 "어디 가 볼까"의 답이 안 된다. 갈 곳을
+/// 먼저 보여주고 묵을 곳·먹을 곳은 뒤로 보낸다. 서버 종류 키로 가른다 —
+/// 한글 라벨은 서버가 바꿀 수 있다
+const homeFeaturedKinds = {'SIGHT', 'EXPERIENCE'};
+
+/// 앞자리 수 — 이만큼은 관광지·체험으로 채우고 그 뒤부터는 원래 순서다
+const homeFeaturedCount = 8;
+
 /// 홈 '이번달 추천 여행지'에 보여줄 장소 카드.
 ///
 /// 칩으로 거른 뒤, **'전체'일 때는 한 줄 소개가 있는 장소만** 남긴다 —
 /// 첫 화면에서 소개 없는 카드가 섞이면 줄이 들쭉날쭉해 성기게 보인다.
 /// 카테고리를 고르면 그 갈래는 소개가 없어도 전부 보여준다(고른 사람은
 /// 그 갈래를 다 보고 싶은 것이고, 숙박·음식은 소개가 늦게 채워진다).
+///
+/// '전체'는 그 위에 **앞 [homeFeaturedCount]장을 관광지·체험으로** 세운다.
+/// 순서를 새로 매기지는 않는다 — 관광지·체험을 원래 차례대로 앞으로 당기고
+/// 나머지는 원래 차례대로 뒤에 둔다. 당겨서 새로고침해 섞인 뒤에도 같다
 List<Map<String, dynamic>> homePlacesForChip(
   List<Map<String, dynamic>> places,
   Map<String, dynamic>? selected,
@@ -74,9 +91,30 @@ List<Map<String, dynamic>> homePlacesForChip(
       return (counts?[selected['label']] as int? ?? 0) > 0;
     }).toList();
   }
-  return places
+  final described = places
       .where((p) => (p['description'] as String?)?.isNotEmpty ?? false)
       .toList();
+  final featured = described
+      .where((p) => homeFeaturedKinds.contains(p['kind']))
+      .take(homeFeaturedCount)
+      .toList();
+  if (featured.isEmpty) return described;
+  final rest = described.where((p) => !featured.contains(p)).toList();
+  return [...featured, ...rest];
+}
+
+/// 당겨서 새로고침한 뒤 카드 순서를 섞는다.
+///
+/// 서버는 같은 순서로 답하므로 다시 읽어도 첫 화면이 그대로다 — 당겼는데
+/// 아무것도 안 바뀌면 새로고침이 된 건지 알 수 없다. 순서만 섞고 내용은
+/// 그대로 둔다. [seed]가 null이면(아직 안 당겼으면) 서버 순서 그대로다.
+/// 씨앗을 받는 이유는 같은 씨앗이면 같은 순서라 테스트가 재현되기 때문이다.
+List<Map<String, dynamic>> shuffledForRefresh(
+  List<Map<String, dynamic>> cards,
+  int? seed,
+) {
+  if (seed == null) return cards;
+  return List.of(cards)..shuffle(Random(seed));
 }
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
@@ -108,6 +146,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 고른 칩 `{key, label}` — null이면 '전체'
   Map<String, dynamic>? _selected;
 
+  /// 당겨서 새로고침한 횟수가 곧 섞는 씨앗 — null이면 아직 안 당겨 서버 순서다.
+  /// 당길 때마다 1씩 올라 매번 다른 순서가 되고, 같은 횟수면 같은 순서라
+  /// 테스트가 재현된다
+  int? _shuffleSeed;
+
+  /// 당겨서 새로고침 — 서버를 다시 읽고, 끝나면 카드 순서를 섞는다.
+  ///
+  /// 다시 읽는 동안 Riverpod이 이전 값을 남겨 두어 카드가 사라지지 않는다.
+  /// 못 읽으면 각 섹션이 제 자리에서 알리므로 여기서는 삼킨다 — 그래도
+  /// 순서는 섞는다. 당겼는데 아무것도 안 바뀌는 것보다 낫다
+  Future<void> _refresh() async {
+    ref.invalidate(homeSnapshotProvider);
+    try {
+      await ref.read(homeSnapshotProvider.future);
+    } on ApiException {
+      // 섹션이 알린다
+    }
+    if (mounted) setState(() => _shuffleSeed = (_shuffleSeed ?? 0) + 1);
+  }
+
   /// 선택된 카테고리의 콘텐츠가 있는 카드만 남긴다 — 더보기 화면과 같은 규칙
   List<Map<String, dynamic>> _filter(List<Map<String, dynamic>> all) =>
       filterCardsByCategory(all, _selected);
@@ -137,8 +195,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // 온다(core HomeResponse.GUEST_NAME). 로그인했으면 /users/me의 이름으로
     // 덮은 값을 쓴다
     final user = ref.watch(currentUserProvider);
-    final regions = ref.watch(homeRegionsProvider);
-    final places = ref.watch(homePlacesProvider);
+    final regions = ref
+        .watch(homeRegionsProvider)
+        .whenData((r) => shuffledForRefresh(r, _shuffleSeed));
+    final places = ref
+        .watch(homePlacesProvider)
+        .whenData((p) => shuffledForRefresh(p, _shuffleSeed));
 
     // 연차를 등록하지 않았으면 온보딩으로 돌려보낸다.
     //
@@ -155,74 +217,88 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       extendBody: true,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.only(top: 10, bottom: 120),
-          children: [
-            _buildTopBar(),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildLeaveCard(user),
-            ),
-            // 시안 실측: 연차 카드~히어로 10
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHeroCard(context, user),
-            ),
-            // 시안 실측: 히어로~섹션 제목 42
-            const SizedBox(height: 42),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Text(
-                    '이번달 추천 여행지',
-                    // 시안은 Headline 1/Bold(18) — heading1Bold(22)와 이름이 한 글자
-                    // 차이라 잘못 집기 쉽다
-                    style: AppTypography.headline1Bold.copyWith(
-                      color: AppColors.labelNormal,
-                    ),
+        child: CustomScrollView(
+          // 내용이 짧아도 당길 수 있어야 새로고침이 되고, 당김 컨트롤은
+          // 튕기는(overscroll) 물리를 전제한다
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            // 당겨서 새로고침 — 사파리·메일과 같은 iOS 시스템 스피너다.
+            // 당기는 만큼 살이 하나씩 드러나고, 넘으면 돌기 시작한다
+            CupertinoSliverRefreshControl(onRefresh: _refresh),
+            SliverPadding(
+              padding: const EdgeInsets.only(top: 10, bottom: 120),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildTopBar(),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildLeaveCard(user),
                   ),
-                  const Spacer(),
-                  // 시안에서 '더보기' 글자는 숨겨지고 쉐브론만 남았다
-                  Semantics(
-                    button: true,
-                    label: '추천 여행지 더 보기',
-                    child: GestureDetector(
-                      key: const Key('home-region-more'),
-                      onTap: () => context.push(AppRoutes.regionList),
-                      behavior: HitTestBehavior.opaque,
-                      child: SvgPicture.asset(
-                        'assets/icons/ic_chevron_right.svg',
-                        // DS 쉐브론(Tight)은 12×24 비율이다
-                        width: 12,
-                        height: 24,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.labelAlternative,
-                          BlendMode.srcIn,
+                  // 시안 실측: 연차 카드~히어로 10
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildHeroCard(context, user),
+                  ),
+                  // 시안 실측: 히어로~섹션 제목 42
+                  const SizedBox(height: 42),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Text(
+                          '이번달 추천 여행지',
+                          // 시안은 Headline 1/Bold(18) — heading1Bold(22)와 이름이 한 글자
+                          // 차이라 잘못 집기 쉽다
+                          style: AppTypography.headline1Bold.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
                         ),
-                      ),
+                        const Spacer(),
+                        // 시안에서 '더보기' 글자는 숨겨지고 쉐브론만 남았다
+                        Semantics(
+                          button: true,
+                          label: '추천 여행지 더 보기',
+                          child: GestureDetector(
+                            key: const Key('home-region-more'),
+                            onTap: () => context.push(AppRoutes.regionList),
+                            behavior: HitTestBehavior.opaque,
+                            child: SvgPicture.asset(
+                              'assets/icons/ic_chevron_right.svg',
+                              // DS 쉐브론(Tight)은 12×24 비율이다
+                              width: 12,
+                              height: 24,
+                              colorFilter: const ColorFilter.mode(
+                                AppColors.labelAlternative,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                  // 시안 실측: 제목~칩 16, 칩~카드 16
+                  const SizedBox(height: 16),
+                  _buildCategoryRow(),
+                  const SizedBox(height: 16),
+                  _buildRegionCards(places, fallback: regions),
+                  const SizedBox(height: _sectionGap),
+                  _buildLeavePicks(regions),
+                  _buildCuratedLinks(),
+                  // 공공데이터 출처 (core #417) — 화면 끝에 텍스트로 한 줄.
+                  // 공모전 규정이 요구하고, 서버가 이 응답에 실제로 쓴 기관만 준다
+                  DataSourceNote(
+                    sources:
+                        ref.watch(homeSnapshotProvider).value?.sources ??
+                        const <DataSource>[],
+                    padding: const EdgeInsets.fromLTRB(20, _sectionGap, 20, 0),
+                  ),
+                ]),
               ),
-            ),
-            // 시안 실측: 제목~칩 16, 칩~카드 16
-            const SizedBox(height: 16),
-            _buildCategoryRow(),
-            const SizedBox(height: 16),
-            _buildRegionCards(places, fallback: regions),
-            const SizedBox(height: _sectionGap),
-            _buildLeavePicks(regions),
-            _buildCuratedLinks(),
-            // 공공데이터 출처 (core #417) — 화면 끝에 텍스트로 한 줄.
-            // 공모전 규정이 요구하고, 서버가 이 응답에 실제로 쓴 기관만 준다
-            DataSourceNote(
-              sources:
-                  ref.watch(homeSnapshotProvider).value?.sources ??
-                  const <DataSource>[],
-              padding: const EdgeInsets.fromLTRB(20, _sectionGap, 20, 0),
             ),
           ],
         ),
@@ -512,7 +588,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         const SizedBox(height: 16),
         SizedBox(
           height: LeavePickCard.height,
-          child: regions.isLoading
+          // 첫 로딩에만 스켈레톤. 당겨서 다시 읽는 동안은 이전 카드가 남아
+          // 있어(hasValue) 그대로 보여준다 — 스켈레톤으로 바꾸면 깜빡인다
+          child: regions.isLoading && !regions.hasValue
               ? ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const NeverScrollableScrollPhysics(),
