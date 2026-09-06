@@ -9,6 +9,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../data/course_repository.dart';
+import '../../course_wizard/presentation/wizard_entry.dart';
 
 /// 내 코스 목록 (`GET /courses?scope=`) — 정렬·범위는 서버가 맡는다.
 /// 담기·삭제 후에는 invalidate로 다시 불러온다.
@@ -190,7 +191,8 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
             ),
             const SizedBox(height: 28),
             GestureDetector(
-              onTap: () => context.push(AppRoutes.wizardDateGate),
+              // 지난번 고르다 만 값을 비우고 처음부터
+              onTap: () => startCourseWizard(context, ref),
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.symmetric(
