@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../application/app_update_provider.dart';
 import '../data/update_prompt_snooze_storage.dart';
@@ -28,7 +29,10 @@ mixin UpdatePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Future<void> _askUpdate(AppUpdate update) async {
     _updateAsked = true;
     final snooze = ref.read(updatePromptSnoozeProvider);
-    if (await snooze.isSnoozedToday(update.storeVersion, DateTime.now())) {
+    // 개발용 강제 모드에서는 미룬 기록을 안 본다 — '나중에'를 눌러 봐도
+    // 다음 진입에 또 떠야 눌러 볼 수 있다
+    if (!AppConfig.forceUpdatePrompt &&
+        await snooze.isSnoozedToday(update.storeVersion, DateTime.now())) {
       return;
     }
     if (!mounted) return;
