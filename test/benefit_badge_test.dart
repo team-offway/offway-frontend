@@ -11,11 +11,19 @@ void main() {
     WidgetTester tester,
     RegionBenefit benefit, {
     BenefitBadgeSize size = BenefitBadgeSize.normal,
+    int extraCount = 0,
   }) => tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light,
       home: Scaffold(
-        body: BenefitBadge(benefit: benefit, size: size),
+        body: Align(
+          alignment: Alignment.topLeft,
+          child: BenefitBadge(
+            benefit: benefit,
+            size: size,
+            extraCount: extraCount,
+          ),
+        ),
       ),
     ),
   );
@@ -68,5 +76,29 @@ void main() {
 
     expect(card.width, lessThan(normal.width));
     expect(card.height, lessThan(normal.height));
+  });
+
+  testWidgets('개수 칩(+N)은 회색 바탕에 옅은 글자다 — 시안 Badge 2', (tester) async {
+    // 혜택 문구는 브랜드색, 개수는 한 단계 낮게. 둘 다 브랜드색이면 개수가
+    // 혜택처럼 읽힌다
+    await pump(
+      tester,
+      const RegionBenefit(text: '입장료 50% 할인', policyId: 7),
+      size: BenefitBadgeSize.card,
+      extraCount: 2,
+    );
+
+    final chips = tester.widgetList<Container>(find.byType(Container)).toList();
+    expect(chips, hasLength(2));
+    final count = chips.last.decoration! as BoxDecoration;
+    expect(count.color, AppColors.fillNormal);
+    expect(
+      tester.widget<Text>(find.text('+2')).style?.color,
+      AppColors.labelAlternative,
+    );
+    // 뱃지 사이 6
+    final a = tester.getRect(find.text('입장료 50% 할인'));
+    final b = tester.getRect(find.text('+2'));
+    expect(b.left - a.right, closeTo(6 + 6 + 6, 0.5)); // 안쪽 6 + 간격 6 + 안쪽 6
   });
 }

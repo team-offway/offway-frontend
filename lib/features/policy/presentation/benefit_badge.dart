@@ -48,13 +48,16 @@ class BenefitBadge extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: extraCount > 0
           // 혜택이 더 있으면 `+1`을 **따로 작은 칩**으로 옆에 둔다. 문구 안에
-          // 붙이면 서버가 준 혜택 문구가 바뀐 것처럼 읽힌다
+          // 붙이면 서버가 준 혜택 문구가 바뀐 것처럼 읽힌다.
+          //
+          // 시안(홈 카드 Badge 2): 회색(Fill/Normal) 바탕에 Label/Alternative
+          // 글자, 뱃지 사이 6 — 혜택 문구가 브랜드색이고 개수는 한 단계 낮다
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _Chip(text: benefit.text, size: size),
-                const SizedBox(width: 4),
-                _Chip(text: '+$extraCount', size: size),
+                const SizedBox(width: 6),
+                _Chip(text: '+$extraCount', size: size, neutral: true),
               ],
             )
           : _Chip(text: benefit.text, size: size),
@@ -63,24 +66,32 @@ class BenefitBadge extends StatelessWidget {
 }
 
 /// 뱃지 한 알 — 브랜드색 8% 배경에 브랜드색 글자(시안 Badge).
-/// 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
+/// 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택 문구에는 안 쓴다.
+///
+/// [neutral]은 개수 칩(`+2`) 자리다 — 시안 Badge 2가 회색 바탕에
+/// Label/Alternative 글자라, 혜택 문구보다 한 단계 낮게 읽힌다
 class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.size});
+  const _Chip({required this.text, required this.size, this.neutral = false});
 
   final String text;
   final BenefitBadgeSize size;
+  final bool neutral;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: size.padding,
       decoration: BoxDecoration(
-        color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
+        color: neutral
+            ? AppColors.fillNormal
+            : AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
         borderRadius: BorderRadius.circular(size.radius),
       ),
       child: Text(
         text,
-        style: size.textStyle.copyWith(color: AppColors.primaryNormal),
+        style: size.textStyle.copyWith(
+          color: neutral ? AppColors.labelAlternative : AppColors.primaryNormal,
+        ),
       ),
     );
   }
