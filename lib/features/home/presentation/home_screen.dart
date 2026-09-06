@@ -18,6 +18,7 @@ import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../../core/utils/nickname.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
+import '../../update/presentation/update_prompt.dart';
 import '../../notification/application/notification_provider.dart'
     show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/category_chip.dart';
@@ -133,7 +134,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with TripOutcomePrompt {
+    with TripOutcomePrompt, UpdatePrompt {
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
 
@@ -221,7 +222,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _redirectIfLeaveMissing(user);
 
     // 시안 노트: 여행 종료 D+1 첫 홈 진입시 "다녀오셨나요?" 모달
-    watchTripOutcomePrompt();
+    final askingTrip = watchTripOutcomePrompt();
+    // 스토어에 새 버전이 있으면 업데이트 시트. "다녀오셨나요?"가 지금 뜨는
+    // 중이면 그쪽이 먼저다 — 모달 둘이 겹치면 하나는 뒤에 가려 못 본다.
+    // 답을 받으면 여행 목록이 다시 읽혀 이 build가 또 돌고, 그때 뜬다
+    if (!askingTrip) watchUpdatePrompt();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
