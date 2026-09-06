@@ -91,10 +91,12 @@ class AppLoadingView extends StatelessWidget {
           children: [
             const AppLoadingIndicator(),
             const SizedBox(height: 32),
+            // 시안(O-07 · 로딩): 제목 Title 3/Bold(24), 부제 Body 1/Medium(16)
+            // Label/Alternative — 예전 Headline 1(18)·Body 2(15)보다 한 단계 크다
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppTypography.headline1Bold.copyWith(
+              style: AppTypography.title3Bold.copyWith(
                 color: AppColors.labelNormal,
               ),
             ),
@@ -102,8 +104,8 @@ class AppLoadingView extends StatelessWidget {
             Text(
               '잠시만 기다려주세요.',
               textAlign: TextAlign.center,
-              style: AppTypography.body2NormalMedium.copyWith(
-                color: AppColors.labelAssistive,
+              style: AppTypography.body1NormalMedium.copyWith(
+                color: AppColors.labelAlternative,
               ),
             ),
           ],

@@ -225,7 +225,11 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         await _reset();
         if (!mounted) return;
         context.push(
-          AppRoutes.coursePath(winner.regionId, desiredDays: desiredDays),
+          AppRoutes.coursePath(
+            winner.regionId,
+            desiredDays: desiredDays,
+            regionName: winner.label,
+          ),
         );
       case _ResultAnswer.backToList:
         context.pop();
