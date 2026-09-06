@@ -440,15 +440,16 @@ class _RisingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        // 혜택 칩과 같은 8% 배경을 쓰되 색을 달리해 둘이 구분된다
-        color: AppColors.primaryStrong.withValues(alpha: AppOpacity.o8),
+        // 시안(18860:76590 Badge 2): 분홍 — Pink/95 바탕에 Pink/60 글자.
+        // 혜택 칩(브랜드 파랑)과 색으로 갈린다. 예전엔 같은 파랑 계열이라
+        // 둘이 붙으면 구분이 안 됐다
+        // TODO(디자인시스템): 분홍의 Semantic 토큰이 생기면 교체한다
+        color: AppPalette.pink95,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         '최근 인기 상승',
-        style: AppTypography.caption1Medium.copyWith(
-          color: AppColors.primaryStrong,
-        ),
+        style: AppTypography.caption1Medium.copyWith(color: AppPalette.pink60),
       ),
     );
   }

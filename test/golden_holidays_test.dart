@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
@@ -71,6 +72,16 @@ void main() {
 
       expect(find.text('2027 황금연휴 알아보기'), findsOneWidget);
       expect(find.text('자세히'), findsOneWidget);
+      // 버튼 꺾쇠는 시안의 16 기본형 — 12×24 Tight를 늘려 쓰면 크고 길쭉하다
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is SvgPicture &&
+              (w.bytesLoader as SvgAssetLoader).assetName ==
+                  'assets/icons/ic_chevron_right_16.svg',
+        ),
+        findsOneWidget,
+      );
       // VoiceOver로도 누를 수 있어야 한다 — 카드가 한 버튼으로 읽히고 탭 동작을 가진다
       final semantics = tester.ensureSemantics();
       expect(
