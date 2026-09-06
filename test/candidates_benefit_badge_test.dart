@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
+import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
 
 /// 후보지역 카드의 뱃지는 혜택이다 — 시안이 한산/인기(crowdLevel) 칩을 혜택
@@ -83,5 +85,27 @@ void main() {
     for (final crowd in const ['한산', '보통', '인기']) {
       expect(find.text(crowd), findsNothing);
     }
+  });
+
+  testWidgets("'최근 인기 상승' 칩은 분홍이다 — 혜택 칩과 색으로 갈린다", (tester) async {
+    await pump(tester, [
+      {
+        'id': '1',
+        'name': '정선군',
+        'sido': '강원특별자치도',
+        'description': '자차 약 2시간 소요',
+        'visitMetrics': RegionVisitMetrics.parse({
+          'trend': {'rising': true, 'percent': 12},
+        }),
+      },
+    ]);
+
+    final chip = find.text('최근 인기 상승');
+    expect(chip, findsOneWidget);
+    expect(tester.widget<Text>(chip).style?.color, AppPalette.pink60);
+    final box = tester.widget<Container>(
+      find.ancestor(of: chip, matching: find.byType(Container)).first,
+    );
+    expect((box.decoration! as BoxDecoration).color, AppPalette.pink95);
   });
 }
