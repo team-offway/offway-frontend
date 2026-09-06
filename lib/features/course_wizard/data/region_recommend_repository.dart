@@ -75,6 +75,9 @@ class RegionRecommendRepository {
       // 서버가 셋을 한 모양(`BenefitResponse`)으로 맞췄으므로(core #418)
       // 필드를 흩지 않고 통째로 넘긴다 — 화면이 `RegionBenefit`으로 읽는다
       if (benefits.isNotEmpty) 'benefit': benefits.first,
+      // 전부도 넘긴다 — 뱃지가 `+1`을 붙이고 고르는 시트를 열 수 있게.
+      // 홈·목록은 서버가 대표만 줘서 앱이 색인을 만들지만, 여기는 목록이 온다
+      'benefits': benefits,
       // 인기 추세 (core #438) — 카드의 '최근 인기 상승' 칩이 이 값을 쓴다.
       // 재료가 모자라면 서버가 비우고, 그때는 칩이 안 붙는다
       'visitMetrics': RegionVisitMetrics.parse(item['visitMetrics']),
