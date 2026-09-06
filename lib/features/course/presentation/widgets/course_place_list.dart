@@ -70,8 +70,9 @@ class _PlaceRow extends StatelessWidget {
     final isStay = place['kind'] == 'STAY';
     // 대중교통 코스의 첫·끝 칸 — 역·터미널이다(core #431).
     //
-    // 장소 풀에서 온 칸이 아니라 **상세도 사진도 없다.** 다른 칸과 같은
-    // 자리를 쓰되(코스의 1번이자 마지막 번호다) 없는 것을 있는 척하지 않는다
+    // 장소 풀에서 온 칸이 아니라 **상세가 없다.** 다른 칸과 같은 자리를
+    // 쓰되(코스의 1번이자 마지막 번호다) 없는 것을 있는 척하지 않는다.
+    // 사진만은 서버가 지점 이름으로 받아 둔 것이 있으면 실린다(core #466)
     final isTransitPoint =
         place['kind'] == 'ARRIVAL' || place['kind'] == 'DEPARTURE';
     final meters = place['distanceFromPrevMeters'] as int?;
@@ -174,9 +175,11 @@ class _PlaceRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // 역·터미널은 사진이 없다. 빈 회색 자리를 남기면 '못 불러온
-                  // 사진'으로 읽혀, 아예 접고 글이 그 폭을 쓴다
-                  if (!isTransitPoint) ...[
+                  // 역·터미널은 사진이 없을 수 있다. 빈 회색 자리를 남기면
+                  // '못 불러온 사진'으로 읽혀, 없으면 아예 접고 글이 그 폭을
+                  // 쓴다. 서버가 받아 둔 사진이 오면(core #466) 같이 그린다
+                  if (!isTransitPoint ||
+                      (imageUrl != null && imageUrl.isNotEmpty)) ...[
                     const SizedBox(width: 16),
                     PlaceThumbnail(imageUrl: imageUrl),
                   ],
