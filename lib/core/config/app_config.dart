@@ -50,6 +50,12 @@ abstract final class AppConfig {
   ///
   /// 레포가 public이므로 실제 값은 절대 커밋하지 말고 --dart-define으로만 주입:
   /// flutter run --dart-define=BASIC_AUTH_USER=... --dart-define=BASIC_AUTH_PASS=...
+  /// 개발용 — 스토어에 없어도 업데이트 모달을 띄운다.
+  /// `--dart-define=FORCE_UPDATE_PROMPT=true`
+  static const bool forceUpdatePrompt = bool.fromEnvironment(
+    'FORCE_UPDATE_PROMPT',
+  );
+
   static const String basicAuthUser = String.fromEnvironment('BASIC_AUTH_USER');
   static const String basicAuthPass = String.fromEnvironment('BASIC_AUTH_PASS');
 
