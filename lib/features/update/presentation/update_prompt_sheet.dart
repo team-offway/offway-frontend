@@ -31,6 +31,9 @@ class _UpdatePromptSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      // 위쪽 안전영역은 안 더한다 — 시트는 아래에 붙어 있는데 상태바 높이가
+      // 위 여백에 얹히면 시안(24)보다 훌쩍 커진다
+      top: false,
       // 시안 실측: 위 24 · 닫기 줄 22 · 19 · 아이콘 · 16 · 제목 · 8 · 문구 · 8 ·
       // 액션 영역(위 20 · 버튼 48 · 8 · 나중에 44) · 홈 인디케이터 34
       child: Padding(

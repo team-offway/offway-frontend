@@ -16,9 +16,14 @@ Future<T?> showAppBottomSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   double? maxHeightRatio,
+  bool useRootNavigator = true,
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    // 홈·내 코스는 탭 셸(ShellRoute) 안에 있다. 셸의 내비게이터에 띄우면
+    // 시트가 하단 탭 메뉴 **아래**에 깔려 메뉴가 시트 위에 떠 보인다.
+    // 루트에 띄워 화면 전체를 덮는다 — 시안의 모달은 메뉴를 가린다
+    useRootNavigator: useRootNavigator,
     backgroundColor: AppColors.backgroundElevated,
     barrierColor: AppColors.materialDimmer,
     shape: const RoundedRectangleBorder(
