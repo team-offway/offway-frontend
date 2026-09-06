@@ -29,6 +29,9 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   /// 다음 프레임이 오면 같은 여행을 두 번 묻게 된다.
   bool _asked = false;
 
+  /// 모달이 지금 떠 있는가 — 다른 모달(업데이트 시트)이 겹치지 않게 알린다
+  bool _tripDialogOpen = false;
+
   /// 기록 토스트에 '보러가기'를 붙일지.
   ///
   /// 내 연차 화면은 그 버튼이 가리키는 곳이 자기 자신이라 끈다 —
@@ -50,24 +53,33 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   ///
   /// [build] 안에서 부른다 — build 도중에는 `showDialog`를 열 수 없어
   /// 다음 프레임으로 미룬다.
-  void watchTripOutcomePrompt() {
+  ///
+  /// 돌려주는 값은 **이 모달이 지금 화면을 차지하는가**다 — 곧 띄우거나 이미
+  /// 떠 있으면 true. 업데이트 시트처럼 같은 자리에 뜨는 다른 모달이 이 값을
+  /// 보고 물러난다. 후보 여행이 있어도 아직 물을 때가 아니면 false다 — 그때
+  /// 다른 모달까지 막으면 아무것도 안 뜬다.
+  bool watchTripOutcomePrompt() {
+    if (_tripDialogOpen) return true;
     // listen이 아니라 watch로 읽는다: 이 화면에 돌아왔을 때 이미 값이
     // 캐시돼 있으면 listen은 '바뀐 적 없다'며 부르지 않는다
     final trip = ref.watch(pendingTripProvider).value;
-    if (trip == null || _asked) return;
+    if (trip == null || _asked) return false;
     // 알림(다음 날 20시)보다 먼저 묻지 않는다 — 자정에 넘어온 여행은
     // 저녁까지 홈에 들어와도 조용하다. 그 여행의 알림을 눌러 왔을 때만 예외
     final fromItsNotification = trip.courseId == notificationCourseId;
-    if (!fromItsNotification && !trip.isAskableAt(DateTime.now())) return;
+    if (!fromItsNotification && !trip.isAskableAt(DateTime.now())) return false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_asked) _ask(trip);
     });
+    return true;
   }
 
   Future<void> _ask(PendingTrip trip) async {
     _asked = true;
+    _tripDialogOpen = true;
     final answer = await showTripOutcomeDialog(context, trip: trip);
+    _tripDialogOpen = false;
     if (!mounted) return;
 
     if (answer == TripOutcomeAnswer.later) {

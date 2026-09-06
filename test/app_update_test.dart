@@ -276,6 +276,39 @@ void main() {
       expect(find.text('업데이트 알림'), findsNothing);
     });
 
+    testWidgets('후보 여행이 있어도 아직 물을 때가 아니면 업데이트 시트는 뜬다', (tester) async {
+      // 어제 끝난 여행은 오늘 20시 전엔 안 묻는다 — 그렇다고 업데이트까지
+      // 막으면 아무것도 안 뜬다(실기기에서 그랬다)
+      final today = DateTime.now();
+      await pump(
+        tester,
+        trip: PendingTrip(
+          courseId: 1,
+          regionName: '횡성군',
+          startDate: today.subtract(const Duration(days: 1)),
+          endDate: today,
+          consumedLeaveDays: 1,
+        ),
+      );
+      expect(find.text('업데이트 알림'), findsOneWidget);
+    });
+
+    testWidgets('"다녀오셨나요?"가 떠 있으면 업데이트 시트는 물러난다', (tester) async {
+      final today = DateTime.now();
+      await pump(
+        tester,
+        trip: PendingTrip(
+          courseId: 1,
+          regionName: '횡성군',
+          startDate: today.subtract(const Duration(days: 5)),
+          endDate: today.subtract(const Duration(days: 3)),
+          consumedLeaveDays: 1,
+        ),
+      );
+      expect(find.textContaining('다녀오셨나요'), findsOneWidget);
+      expect(find.text('업데이트 알림'), findsNothing);
+    });
+
     testWidgets('새 버전이 없으면 안 뜬다', (tester) async {
       await pump(tester, update: null);
       expect(find.text('업데이트 알림'), findsNothing);
