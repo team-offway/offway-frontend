@@ -155,12 +155,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   ///
   /// 다시 읽는 동안 Riverpod이 이전 값을 남겨 두어 카드가 사라지지 않는다.
   /// 못 읽으면 각 섹션이 제 자리에서 알리므로 여기서는 삼킨다 — 그래도
-  /// 순서는 섞는다. 당겼는데 아무것도 안 바뀌는 것보다 낫다
+  /// 순서는 섞는다. 당겼는데 아무것도 안 바뀌는 것보다 낫다.
+  ///
+  /// **종류를 가리지 않고 삼킨다.** 서버 오류(`ApiException`)만이 아니라
+  /// 응답을 카드로 바꾸다 나는 예외도 프로바이더를 거쳐 여기로 온다. 하나라도
+  /// 흘리면 새로고침 Future가 실패해 당김 컨트롤이 접히지 않는다
   Future<void> _refresh() async {
     ref.invalidate(homeSnapshotProvider);
     try {
       await ref.read(homeSnapshotProvider.future);
-    } on ApiException {
+    } catch (_) {
       // 섹션이 알린다
     }
     if (mounted) setState(() => _shuffleSeed = (_shuffleSeed ?? 0) + 1);

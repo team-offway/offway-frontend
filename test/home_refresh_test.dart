@@ -55,9 +55,13 @@ void main() {
     /// 두 번째 읽기를 붙들어 두고 싶을 때 — 도는 동안의 화면을 본다
     Completer<void>? holdSecondFetch;
 
+    /// 두 번째 읽기를 이 오류로 터뜨리고 싶을 때
+    Object? failSecondFetchWith;
+
     Future<void> pump(WidgetTester tester) async {
       fetches = 0;
       holdSecondFetch = null;
+      failSecondFetchWith = null;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -68,6 +72,9 @@ void main() {
               fetches++;
               if (fetches == 2 && holdSecondFetch != null) {
                 await holdSecondFetch!.future;
+              }
+              if (fetches == 2 && failSecondFetchWith != null) {
+                throw failSecondFetchWith!;
               }
               return HomeSnapshot(
                 user: const {'remainingLeaveDays': 12.0},
@@ -153,6 +160,20 @@ void main() {
       holdSecondFetch!.complete();
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoActivityIndicator), findsNothing);
+    });
+
+    testWidgets('다시 읽다 서버 오류가 아닌 예외가 나도 새로고침은 끝난다', (tester) async {
+      // 응답을 카드로 바꾸다 나는 예외는 ApiException이 아니다. 흘리면
+      // 새로고침 Future가 실패해 당김 컨트롤이 접히지 않는다
+      await pump(tester);
+      failSecondFetchWith = StateError('카드 변환 실패');
+
+      await pullToRefresh(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CupertinoActivityIndicator), findsNothing);
+      // 섹션이 제 자리에서 알린다
+      expect(find.text('추천 여행지를 불러오지 못했어요'), findsOneWidget);
     });
 
     testWidgets('당기기 전에는 서버 순서 그대로다', (tester) async {
