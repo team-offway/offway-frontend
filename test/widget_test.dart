@@ -18,6 +18,7 @@ import 'package:offway/features/course/presentation/poi_detail_screen.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
+import 'package:offway/features/policy/data/policy_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/notification/application/push_registration.dart';
@@ -43,6 +44,17 @@ class _FailingSecureStoragePlatform extends TestFlutterSecureStoragePlatform {
 }
 
 /// 테스트는 서버를 부르지 않는다 — 홈은 mock JSON을 그대로 돌려준다
+/// 정책 상세 — 홈이 지역별 혜택 색인을 만들려고 id를 차례로 읽는다. 여기서는
+/// 정책이 없는 서버다(404). 실제 Dio로 나가면 응답을 기다리는 타이머가 남아
+/// 테스트가 끝난 뒤 터진다
+class _FakePolicyRepository extends PolicyRepository {
+  _FakePolicyRepository() : super(Dio());
+
+  @override
+  Future<Map<String, dynamic>> detail(int policyId) async =>
+      throw ApiException(status: 404, code: 'POLICY-404', detail: '정책이 없어요');
+}
+
 class _FakeHomeRepository extends HomeRepository {
   _FakeHomeRepository() : super(Dio());
 
@@ -365,6 +377,7 @@ final _serverOverrides = [
     _FakeNotificationRepository(),
   ),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
+  policyRepositoryProvider.overrideWithValue(_FakePolicyRepository()),
   regionListRepositoryProvider.overrideWithValue(_FakeRegionListRepository()),
   regionDetailRepositoryProvider.overrideWithValue(
     _FakeRegionDetailRepository(),
