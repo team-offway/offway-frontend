@@ -48,9 +48,13 @@ class AppStoreListingRepository {
       if (results is! List || results.isEmpty) return null;
       final first = results.first;
       if (first is! Map<String, dynamic>) return null;
-      final version = first['version'] as String?;
-      final url = first['trackViewUrl'] as String?;
-      if (version == null || url == null) return null;
+      // 형식이 어긋난 응답(숫자 version, 객체 trackViewUrl)도 null이다 —
+      // `as String?` 캐스팅이 던지면 프로바이더가 오류 상태가 되고, 그건
+      // "업데이트 없음"과 달리 화면에 잡음을 남긴다
+      final version = first['version'];
+      final url = first['trackViewUrl'];
+      if (version is! String || url is! String) return null;
+      if (version.isEmpty || url.isEmpty) return null;
       return (version: version, url: url);
     } on DioException {
       return null;

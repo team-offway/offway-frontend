@@ -102,6 +102,23 @@ void main() {
       expect(listing?.url, 'https://apps.apple.com/kr/app/id1');
     });
 
+    test('형식이 어긋난 응답도 null — 던지지 않는다', () async {
+      // 숫자 version, 객체 trackViewUrl. 캐스팅이 던지면 프로바이더가 오류 상태다
+      expect(
+        await lookup(
+          '{"resultCount":1,"results":[{"version":104,'
+          '"trackViewUrl":{"href":"x"}}]}',
+        ),
+        isNull,
+      );
+      expect(
+        await lookup(
+          '{"resultCount":1,"results":[{"version":"","trackViewUrl":"u"}]}',
+        ),
+        isNull,
+      );
+    });
+
     test('스토어에 없으면 null, 못 부르면 null', () async {
       expect(await lookup('{"resultCount":0,"results":[]}'), isNull);
       expect(await lookup('오류', status: 500), isNull);
