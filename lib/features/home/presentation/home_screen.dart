@@ -12,6 +12,8 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../../core/widgets/curated_link_card.dart';
+import '../../../core/widgets/info_card.dart';
+import '../../leave/presentation/widgets/golden_holiday_card.dart';
 import '../../../core/widgets/curated_link_section.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../../core/utils/nickname.dart';
@@ -536,11 +538,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 홈을 아직 못 읽었거나 링크가 없으면 섹션째 접힌다. 로딩 자리도 두지
   /// 않는다 — 추천 카드를 다 본 뒤에 따라오는 것이라, 자리부터 잡아두면
   /// 화면 끝이 빈 채로 기다리게 된다
+  /// '연차 쓰기 전, 확인해보세요' — 황금연휴 카드 하나에 서버 링크 카드들.
+  ///
+  /// 첫 카드는 앱 안 화면(황금연휴)이라 늘 있고, 그 뒤에 서버가 고른 외부
+  /// 링크가 온다. 링크가 비어도 섹션은 남는다 — 첫 카드가 있다
   Widget _buildCuratedLinks() {
     final links =
         ref.watch(homeSnapshotProvider).value?.curatedLinks ??
         const <CuratedLink>[];
-    if (links.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       // 위 섹션(가로 카드)과 붙지 않게 같은 간격을 준다
@@ -548,20 +553,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: _CuratedLinksTitle(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              '연차 쓰기 전, 확인해보세요',
+              style: AppTypography.headline1Bold.copyWith(
+                color: AppColors.labelNormal,
+              ),
+            ),
           ),
           // 시안 실측: 제목~카드 16, 카드 사이 18
           const SizedBox(height: 16),
           SizedBox(
-            height: CuratedLinkCard.height,
+            height: InfoCard.height,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: links.length,
+              itemCount: links.length + 1,
               separatorBuilder: (_, _) => const SizedBox(width: 18),
-              itemBuilder: (context, i) => CuratedLinkCard(link: links[i]),
+              itemBuilder: (context, i) => i == 0
+                  ? const GoldenHolidayCard()
+                  : CuratedLinkCard(link: links[i - 1]),
             ),
           ),
         ],
@@ -714,26 +726,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 /// 두 줄로 접히는 문구라 `RichText` 한 덩이로 둔다. 낱말을 잘라 Row로 늘어
 /// 놓으면 줄바꿈 자리를 앱이 정하게 되어, 기기 폭이 좁아질 때 엉뚱한 데서
 /// 끊긴다.
-class _CuratedLinksTitle extends StatelessWidget {
-  const _CuratedLinksTitle();
-
-  @override
-  Widget build(BuildContext context) {
-    final base = AppTypography.headline1Bold.copyWith(
-      color: AppColors.labelNormal,
-    );
-    return Text.rich(
-      TextSpan(
-        style: base,
-        children: [
-          const TextSpan(text: '지금 유용한 '),
-          TextSpan(
-            text: '혜택과 정보',
-            style: base.copyWith(color: AppColors.primaryStrong),
-          ),
-          const TextSpan(text: '를\n만나보세요'),
-        ],
-      ),
-    );
-  }
-}
