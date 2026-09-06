@@ -24,7 +24,6 @@ void main() {
     Object? durationMinutes,
     Object? distanceKm,
     List<Object>? alternatives,
-    List<Object>? departures,
   }) => {
     'mode': 'INTERCITY_BUS',
     'modeLabel': modeLabel,
@@ -35,7 +34,6 @@ void main() {
     'durationMinutes': durationMinutes,
     'distanceKm': distanceKm,
     'alternatives': alternatives ?? const [],
-    'departures': departures ?? const [],
   };
 
   Future<void> pump(
@@ -379,170 +377,6 @@ void main() {
     });
   });
 
-  group('시간표 — 몇 시 차가 있는가 (core #420)', () {
-    Map<String, dynamic> departure({
-      String? vehicleType = '무궁화호',
-      Object? departAt = '2026-09-05T07:20:00',
-      Object? arriveAt = '2026-09-05T09:49:00',
-      Object? durationMinutes = 149,
-    }) => {
-      'vehicleType': vehicleType,
-      'departAt': departAt,
-      'arriveAt': arriveAt,
-      'durationMinutes': durationMinutes,
-    };
-
-    test('출발·도착 시각과 등급을 읽는다', () {
-      final access = TransitAccess.tryParse(raw(departures: [departure()]))!;
-
-      expect(access.departures, hasLength(1));
-      final d = access.departures.first;
-      expect(d.departAt, DateTime(2026, 9, 5, 7, 20));
-      expect(d.arriveAt, DateTime(2026, 9, 5, 9, 49));
-      expect(d.vehicleType, '무궁화호');
-      expect(d.durationMinutes, 149);
-    });
-
-    test('시각은 24시간 두 자리로 그린다 — 세로로 훑을 때 자리가 맞아야 한다', () {
-      final d = TransitDeparture.tryParse(
-        departure(departAt: '2026-09-05T07:05:00', arriveAt: null),
-      )!;
-
-      expect(d.departLabel, '07:05');
-      // 도착을 모르면 출발만 말한다 — 화살표만 남기면 어디로 가는지 모른다
-      expect(d.rangeLabel, '07:05');
-    });
-
-    test('출발 시각이 없는 편은 버린다 — 답할 질문이 없다', () {
-      expect(TransitDeparture.tryParse(departure(departAt: null)), isNull);
-      expect(TransitDeparture.tryParse(departure(departAt: '엉뚱한 값')), isNull);
-    });
-
-    test('타임존을 붙이지 않는다 — 9시간 밀리면 다른 날 차가 된다', () {
-      // 서버가 한국 시각으로 내리고 사용자도 한국에서 본다
-      final d = TransitDeparture.tryParse(departure())!;
-      expect(d.departAt.isUtc, isFalse);
-      expect(d.departAt.hour, 7);
-    });
-
-    test('목록이 없거나 모양이 다르면 빈 목록이다', () {
-      // 창 밖 날짜·운행 없음·막차 지남이 모두 이 경우다 — 정상이다
-      expect(TransitDeparture.parseList(null), isEmpty);
-      expect(TransitDeparture.parseList('아무 값'), isEmpty);
-      expect(TransitAccess.tryParse(raw())!.departures, isEmpty);
-    });
-
-    testWidgets('접힌 채로 다음 차 한 편만 보여준다', (tester) async {
-      // 여섯 편이 다 펼쳐지면 카드가 화면 절반을 먹어 정작 코스가 안 보인다.
-      // 그래도 한 편은 남긴다 — 표를 끊으려면 결국 시각을 봐야 한다
-      await pump(
-        tester,
-        TransitAccess.tryParse(
-          raw(
-            departures: [
-              departure(),
-              departure(
-                vehicleType: 'KTX-이음',
-                departAt: '2026-09-05T09:05:00',
-                arriveAt: '2026-09-05T10:31:00',
-              ),
-            ],
-          ),
-        )!,
-      );
-
-      expect(find.text('07:20 → 09:49'), findsOneWidget);
-      expect(find.text('무궁화호'), findsOneWidget);
-      expect(find.text('09:05 → 10:31'), findsNothing);
-      // 몇 편이 더 있는지 알려야 누를 값어치를 판단한다
-      expect(find.text('다음 차 1편 더 보기'), findsOneWidget);
-    });
-
-    testWidgets('버튼을 누르면 나머지가 펼쳐지고 다시 접힌다', (tester) async {
-      await pump(
-        tester,
-        TransitAccess.tryParse(
-          raw(
-            departures: [
-              departure(),
-              departure(
-                vehicleType: 'KTX-이음',
-                departAt: '2026-09-05T09:05:00',
-                arriveAt: '2026-09-05T10:31:00',
-              ),
-            ],
-          ),
-        )!,
-      );
-
-      await tester.tap(find.text('다음 차 1편 더 보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('09:05 → 10:31'), findsOneWidget);
-      expect(find.text('KTX-이음'), findsOneWidget);
-
-      await tester.tap(find.text('접기'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('09:05 → 10:31'), findsNothing);
-    });
-
-    testWidgets('한 편뿐이면 버튼이 없다 — 펼칠 것이 없다', (tester) async {
-      await pump(
-        tester,
-        TransitAccess.tryParse(raw(departures: [departure()]))!,
-      );
-
-      expect(find.text('07:20 → 09:49'), findsOneWidget);
-      expect(find.textContaining('더 보기'), findsNothing);
-    });
-
-    testWidgets('시간표가 없으면 그 줄만 접는다 — 소요시간은 그대로 그린다', (tester) async {
-      // "가끔 안 나온다"가 아니라 "그 날짜엔 원래 없다"다
-      await pump(
-        tester,
-        TransitAccess.tryParse(raw(fromPlace: '동서울', durationMinutes: 149))!,
-      );
-
-      expect(find.text('동서울에서 출발 • 약 2시간 29분'), findsOneWidget);
-      expect(find.textContaining('→'), findsNothing);
-    });
-
-    testWidgets('새 코스가 오면 시간표가 다시 접힌다', (tester) async {
-      // 수단을 바꿔 서버가 새 코스를 주면 다른 수단의 시간표다 — 펼친 채로
-      // 넘어가면 그 시간표가 통째로 펼쳐져 있다
-      TransitAccess access(List<Object> departures) =>
-          TransitAccess.tryParse(raw(modeLabel: '열차', departures: departures))!;
-      await pump(
-        tester,
-        access([departure(), departure(departAt: '2026-09-05T09:05:00')]),
-      );
-      await tester.tap(find.text('다음 차 1편 더 보기'));
-      await tester.pumpAndSettle();
-      expect(find.text('09:05 → 09:49'), findsOneWidget);
-
-      await pump(
-        tester,
-        access([
-          departure(
-            vehicleType: '우등',
-            departAt: '2026-09-05T08:10:00',
-            arriveAt: '2026-09-05T10:40:00',
-          ),
-          departure(
-            vehicleType: '우등',
-            departAt: '2026-09-05T14:10:00',
-            arriveAt: '2026-09-05T16:40:00',
-          ),
-        ]),
-      );
-
-      expect(find.text('08:10 → 10:40'), findsOneWidget);
-      expect(find.text('14:10 → 16:40'), findsNothing);
-      expect(find.text('다음 차 1편 더 보기'), findsOneWidget);
-    });
-  });
-
   group('출발지를 모르는 코스 (core #423)', () {
     // 좌표 없이 저장된 옛 코스다. 예전에는 `transitAccess` 필드가 통째로
     // 빠져 "값을 모르는 옛 서버"와 구분되지 않았다. 서버가 상태를 만들어
@@ -557,7 +391,6 @@ void main() {
       'durationMinutes': null,
       'distanceKm': null,
       'alternatives': const [],
-      'departures': const [],
     };
 
     test('카드를 그리지 않는다 — 수단도 내리는 곳도 없다', () {

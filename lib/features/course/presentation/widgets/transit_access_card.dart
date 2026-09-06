@@ -15,7 +15,7 @@ import 'dotted_line.dart';
 /// 정리했다 — 나란히 두면 무엇이 지금 기준인지 흐려진다.
 ///
 /// **버튼은 화면 안에서 갈아끼우지 않는다** (core #456·#458). 예전엔 대안의
-/// 시간표만 이 자리에서 바꿔 보여 줬는데, 코스의 도착·출발 칸은 옛 지점
+/// 값만 이 자리에서 바꿔 보여 줬는데, 코스의 도착·출발 칸은 옛 지점
 /// 그대로라 한 화면에서 두 값이 어긋났다 — 양양은 역과 터미널이 42km
 /// 떨어져 있다. 지금은 [onModeSelected]로 서버에 보내고, 서버가 카드와
 /// 도착·출발 칸을 함께 바꾼 코스를 돌려주면 그 값으로 다시 그린다.
@@ -41,25 +41,6 @@ class TransitAccessCard extends StatefulWidget {
 class _TransitAccessCardState extends State<TransitAccessCard> {
   /// 서버에 보내고 답을 기다리는 중인가 — 그동안 버튼은 눌러도 아무 일이 없다
   bool _busy = false;
-
-  /// 시간표를 펼쳤는가 — 기본은 접어 둔다.
-  ///
-  /// 여섯 편이 다 펼쳐지면 카드가 화면 절반을 먹어 정작 코스가 안 보인다.
-  /// **접어도 다음 차 한 편은 남긴다** — 표를 끊으려면 결국 시각을 봐야 하고,
-  /// 한 편도 안 보이면 몇 시 차가 있는지 알려고 반드시 한 번 더 눌러야 한다
-  bool _expanded = false;
-
-  @override
-  void didUpdateWidget(TransitAccessCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 코스를 다시 읽어 새 값이 오면 다른 수단의 시간표라 다시 접는다
-    if (!identical(oldWidget.access, widget.access)) {
-      _expanded = false;
-    }
-  }
-
-  /// 접었을 때 보여 주는 편 수 — 다음 차 하나
-  static const _collapsedCount = 1;
 
   TransitAccess get _shown => widget.access;
 
@@ -156,47 +137,19 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 아는 만큼만 말한다. 시간표까지 없으면 빈 문자열이라도
+                      // 아는 만큼만 말한다. 아무것도 모르면 빈 문자열이라도
                       // 줘야 줄 높이가 잡혀 점선이 그려진다 — 자리는 점선이
-                      // 지킨다. 시간표가 있으면 그쪽이 높이를 만드므로 빈
-                      // 줄을 남기지 않는다: 남기면 시간표가 아래로 떠 보인다
-                      if (_detail case final String detail)
-                        Text(
-                          detail,
-                          style: AppTypography.label1NormalMedium.copyWith(
-                            color: AppColors.labelAlternative,
-                          ),
-                        )
-                      else if (_shown.departures.isEmpty)
-                        Text(
-                          '',
-                          style: AppTypography.label1NormalMedium.copyWith(
-                            color: AppColors.labelAlternative,
-                          ),
+                      // 지킨다.
+                      //
+                      // 예전에는 이 아래에 탈 수 있는 편들(시간표, core #420)이
+                      // 붙었다. 내 코스에서 빼 달라는 요청으로 걷어냈고 서버
+                      // 응답의 `departures`는 읽지 않는다
+                      Text(
+                        _detail ?? '',
+                        style: AppTypography.label1NormalMedium.copyWith(
+                          color: AppColors.labelAlternative,
                         ),
-                      // 몇 시 차가 있는지 (core #420). 점선 **안쪽**에 둔다 —
-                      // 밖으로 빼면 같은 구간을 말하는데 선이 끊겨 따로 노는
-                      // 정보처럼 보인다
-                      if (_shown.departures.isNotEmpty) ...[
-                        if (_detail != null) const SizedBox(height: 8),
-                        _DepartureList(
-                          departures: _expanded
-                              ? _shown.departures
-                              : _shown.departures
-                                    .take(_collapsedCount)
-                                    .toList(),
-                        ),
-                        // 접힌 편이 남아 있을 때만 버튼을 둔다
-                        if (_shown.departures.length > _collapsedCount) ...[
-                          const SizedBox(height: 8),
-                          _MoreDeparturesButton(
-                            expanded: _expanded,
-                            hiddenCount:
-                                _shown.departures.length - _collapsedCount,
-                            onTap: () => setState(() => _expanded = !_expanded),
-                          ),
-                        ],
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -251,114 +204,6 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
     ];
     if (parts.isEmpty) return null;
     return parts.join(' • ');
-  }
-}
-
-/// 탈 수 있는 편들 — `07:20 → 09:49 · 무궁화호`.
-///
-/// **출발 순으로 세로로 붙인다.** 카드 위쪽의 소요시간은 가장 빨리 닿는 편에서
-/// 오지만, 이 줄이 답하는 질문은 "다음 차가 몇 시인가"라 순서가 다르다.
-/// 가로로 늘어놓으면 시각이 화면 밖으로 밀려 뒤쪽 편을 못 본다.
-class _DepartureList extends StatelessWidget {
-  const _DepartureList({required this.departures});
-
-  final List<TransitDeparture> departures;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final (i, d) in departures.indexed) ...[
-          if (i > 0) const SizedBox(height: 4),
-          Row(
-            children: [
-              // 시각 열은 폭을 고정한다 — 등급 이름 길이에 따라 흔들리면
-              // 세로로 훑을 때 시각이 들쭉날쭉해 다음 차를 찾기 어렵다.
-              // 자릿수가 같은 값이라 폭도 하나로 잡힌다
-              Text(
-                d.rangeLabel,
-                style: AppTypography.label2Medium.copyWith(
-                  color: AppColors.labelNeutral,
-                  // 시각을 고정폭 숫자로 그린다 — 1과 8의 폭이 달라 세로로
-                  // 훑을 때 콜론 자리가 어긋나는 것을 막는다. 폭을 px로
-                  // 박으면 글자 배율을 키운 기기에서 시각이 잘린다
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (d.vehicleType case final String type)
-                Flexible(
-                  child: Text(
-                    type,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.label2Medium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// `다음 차 5편 더 보기` — 시간표를 펼치고 접는다.
-///
-/// 수단을 갈아끼우는 [_SwapButton]과 생김새를 일부러 다르게 뒀다. 그쪽은
-/// **다른 것을 보는** 버튼이라 테두리를 두르고, 이쪽은 **같은 것을 더 보는**
-/// 자리라 글자와 화살표만 남긴다. 둘이 나란히 붙는데 모양까지 같으면 무엇이
-/// 무엇인지 구분되지 않는다.
-class _MoreDeparturesButton extends StatelessWidget {
-  const _MoreDeparturesButton({
-    required this.expanded,
-    required this.hiddenCount,
-    required this.onTap,
-  });
-
-  final bool expanded;
-
-  /// 접혀 있는 편 수 — 몇 편이 더 있는지 알려야 누를 값어치를 판단한다
-  final int hiddenCount;
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = expanded ? '접기' : '다음 차 $hiddenCount편 더 보기';
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          // 글자만 있는 버튼이라 위아래로 눌리는 자리를 넓혀 둔다
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppTypography.label2Bold.copyWith(
-                  color: AppColors.labelAlternative,
-                ),
-              ),
-              const SizedBox(width: 2),
-              Icon(
-                expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                size: 16,
-                color: AppColors.labelAlternative,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
