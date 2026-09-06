@@ -71,6 +71,17 @@ void main() {
 
       expect(find.text('2027 황금연휴 알아보기'), findsOneWidget);
       expect(find.text('자세히'), findsOneWidget);
+      // VoiceOver로도 누를 수 있어야 한다 — 카드가 한 버튼으로 읽히고 탭 동작을 가진다
+      final semantics = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(GoldenHolidayCard)),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: '2027 황금연휴 알아보기 보기',
+        ),
+      );
+      semantics.dispose();
       // 시안 순서: 버튼이 제목 위에, 제목이 소개 위에
       final button = tester.getTopLeft(find.text('자세히')).dy;
       final title = tester.getTopLeft(find.text('2027 황금연휴 알아보기')).dy;

@@ -56,6 +56,9 @@ class InfoCard extends StatelessWidget {
       button: true,
       label: semanticsLabel,
       container: true,
+      // 하위 제스처의 접근성 정보를 지우므로 탭 동작은 여기서 다시 준다 —
+      // 없으면 VoiceOver가 카드를 누를 수 없다
+      onTap: onTap,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
