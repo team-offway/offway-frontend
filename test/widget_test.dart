@@ -19,6 +19,7 @@ import 'package:offway/features/course/presentation/my_courses_screen.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
+import 'package:offway/features/update/application/app_update_provider.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 import 'package:offway/features/notification/application/push_registration.dart';
@@ -378,6 +379,8 @@ final _serverOverrides = [
   ),
   homeRepositoryProvider.overrideWithValue(_FakeHomeRepository()),
   policyRepositoryProvider.overrideWithValue(_FakePolicyRepository()),
+  // 업데이트 확인은 애플을 부른다 — 여기서는 새 버전이 없는 것으로 둔다
+  availableUpdateProvider.overrideWith((ref) async => null),
   regionListRepositoryProvider.overrideWithValue(_FakeRegionListRepository()),
   regionDetailRepositoryProvider.overrideWithValue(
     _FakeRegionDetailRepository(),
