@@ -149,7 +149,9 @@
   /* 앱 홈의 캐릭터가 카드 뒤에서 고개를 내민다 — 몸통이 밑단에서 잘린
      그림이라 카드 윗변에 걸치면 뒤에 서 있는 것처럼 보인다 */
   .demo-buddy {
-    position: absolute; right: 26px; bottom: calc(100% - 8px);
+    /* 디자이너 노트(9/7): 조금 올려 달라 — 폰 카드 위로 8px 걸치던 것을
+       카드 윗선에 아랫선이 딱 닿게 올린다 */
+    position: absolute; right: 26px; bottom: 100%;
     width: clamp(118px, 15vw, 158px); height: auto;
     pointer-events: none; user-select: none;
   }
@@ -273,7 +275,7 @@
   /* 캐리어도 밑단이 잘린 그림 — 배너 바닥에 세워 둔다 */
   .get-lug {
     position: absolute; right: clamp(20px, 6vw, 56px); bottom: 0;
-    width: clamp(120px, 17vw, 168px); height: auto;
+    width: clamp(200px, 26vw, 300px); height: auto;
     pointer-events: none;
   }
   /* 좁은 화면에서는 글과 겹친다 — 그림을 접는다 */
@@ -316,22 +318,18 @@
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">인구감소지역 여행 추천</p>
+        <p class="eyebrow">인구감소지역으로 떠나는 여행</p>
         <h1>남은 연차 <em>3일</em>,<br>어디까지 갈 수 있을까</h1>
-        <p class="lede">
-          연차 일수와 이동수단을 넣으면 도달할 수 있는 지역과
-          날짜별 코스를 짜 드려요.
-        </p>
+        <p class="lede">남은 연차와 이동수단에 맞춰 떠나기 좋은 지역과 여행 코스를 추천해드려요.</p>
         <div class="cta">
-          <a class="btn btn-primary" href="https://apps.apple.com/app/id6793610290">App Store에서 받기</a>
-          <a class="btn btn-ghost" href="#how">어떻게 쓰나요</a>
-          <p class="cta-note">iPhone에서 이용할 수 있습니다.</p>
+          <a class="btn btn-primary" href="https://apps.apple.com/app/id6793610290">오프웨이 시작하기</a>
+          <p class="cta-note">현재 iOS에서 만나볼 수 있어요.</p>
         </div>
       </div>
 
       <div class="demo">
         <img class="demo-buddy" src="/assets/hero-character.svg" alt="" aria-hidden="true">
-        <p class="demo-q">연차를 며칠 쓸 수 있나요?</p>
+        <p class="demo-q">연차 며칠 쓸까요?</p>
         <div class="picker" role="group" aria-label="연차 일수 선택">
           <button type="button" data-d="1" aria-pressed="false">1일</button>
           <button type="button" data-d="2" aria-pressed="false">2일</button>
@@ -345,25 +343,23 @@
 
   <section id="how">
     <div class="wrap">
-      <h2>연차에서 시작합니다</h2>
-      <p class="sub">
-        가고 싶은 곳을 먼저 고르는 대신, 쓸 수 있는 시간에서 거꾸로 좁혀 갑니다.
-      </p>
+      <h2>남은 연차로 갈 수 있는 코스를 찾아드려요</h2>
+      <p class="sub">쓸 수 있는 연차부터 이동수단, 여행 스타일에 맞춰 나만의 코스를 추천해드려요.</p>
       <div class="cards">
         <div class="card">
           <div class="card-ico"><i style="--ico: url('/assets/ic-calendar.svg')"></i></div>
-          <h3>남은 연차를 넣습니다</h3>
-          <p>반차까지 0.5일 단위로. 주말을 붙일지, 평일만 쓸지도 함께 고릅니다.</p>
+          <h3>쓸 수 있는 연차를 골라요</h3>
+          <p>반차부터 3일까지, 이번 여행에 쓸 연차를 선택해요.</p>
         </div>
         <div class="card">
           <div class="card-ico"><i style="--ico: url('/assets/ic-car.svg')"></i></div>
-          <h3>닿는 곳만 남깁니다</h3>
-          <p>현재 위치에서 편도 7시간 안에 갈 수 있는 지역만 후보로 올립니다.</p>
+          <h3>여행 스타일을 알려주세요</h3>
+          <p>대중교통·자차부터 원하는 여행 스타일과 일정 밀도까지 선택해요.</p>
         </div>
         <div class="card">
           <div class="card-ico"><i style="--ico: url('/assets/ic-route.svg')"></i></div>
-          <h3>날짜별로 짭니다</h3>
-          <p>하루에 몇 곳을 볼지 밀도를 고르면 1일차·2일차 순서로 코스가 나옵니다.</p>
+          <h3>딱 맞는 코스를 추천해드려요</h3>
+          <p>조건에 맞는 지역을 찾고, 여행 기간에 맞춰 날짜별 코스를 짜드려요.</p>
         </div>
       </div>
     </div>
@@ -371,23 +367,20 @@
 
   <section id="why">
     <div class="wrap">
-      <h2>왜 인구감소지역인가</h2>
-      <p class="sub">
-        좋은 콘텐츠가 있어도 알려지지 않으면 사람이 오지 않고,
-        사람이 오지 않으면 더 알려지지 않습니다.
-      </p>
+      <h2>왜 인구감소지역인가요?</h2>
+      <p class="sub">offway는 익숙한 여행지 너머, 아직 잘 알려지지 않은 지역의 새로운 매력에 집중했어요.</p>
       <div class="cards">
         <div class="card">
-          <h3>검색으로는 안 나옵니다</h3>
-          <p>어디로 갈지 정해야 검색이 되는데, 이름을 모르는 지역은 후보에 오르지 못합니다.</p>
+          <h3>새로운 여행지를 발견해요</h3>
+          <p>평소 검색으로는 만나기 어려웠던 인구감소지역을 새로운 여행지로 추천해드려요.</p>
         </div>
         <div class="card">
-          <h3>최대 2박 3일로 끊습니다</h3>
-          <p>콘텐츠가 얇은 지역에서 4일 이상 코스는 빈약해집니다. 짧게 제대로 보는 편이 낫습니다.</p>
+          <h3>짧게 떠나도 충분하도록</h3>
+          <p>반차부터 최대 2박 3일까지, 짧은 연차로 지역의 매력을 알차게 경험할 수 있는 코스를 추천해드려요.</p>
         </div>
         <div class="card">
-          <h3>혜택을 함께 봅니다</h3>
-          <p>지자체가 운영하는 숙박·입장 지원을 코스 안에서 같이 보여줍니다.</p>
+          <h3>지역의 혜택까지 챙겨드려요</h3>
+          <p>숙박 할인부터 여행 지원까지, 지역에서 받을 수 있는 혜택을 함께 알려드려요.</p>
         </div>
       </div>
     </div>
@@ -395,14 +388,12 @@
 
   <section id="data">
     <div class="wrap">
-      <h2>공공데이터로 만듭니다</h2>
-      <p class="sub">
-        한국관광공사 관광정보와 행정안전부 인구감소지역 지정 자료를 씁니다.
-      </p>
+      <h2>믿을 수 있는 여행 정보를 담았어요</h2>
+      <p class="sub">한국관광공사와 행정안전부의 공공데이터를 활용해, 지역과 여행 정보를 꼼꼼하게 추천해드려요.</p>
       <div class="stats">
-        <div class="stat"><b>89</b><span>인구감소지역</span></div>
-        <div class="stat"><b>7시간</b><span>편도 도달 한계</span></div>
-        <div class="stat"><b>2박 3일</b><span>코스 상한</span></div>
+        <div class="stat"><b>89곳</b><span>인구감소지역</span></div>
+        <div class="stat"><b>7시간 이내</b><span>편도 이동시간</span></div>
+        <div class="stat"><b>최대 2박 3일</b><span>추천 여행 일정</span></div>
       </div>
       <p class="src">
         출처 · 한국관광공사 국문 관광정보 서비스(KorService2), 행정안전부 인구감소지역 지정 고시.
@@ -414,10 +405,11 @@
   <section id="get">
     <div class="wrap">
       <div class="get-band">
-        <h2>다음 연차, 어디로 갈까요?</h2>
-        <p>남은 연차만 넣으면 도착지부터 날짜별 코스까지 오프웨이가 짜 드립니다.</p>
-        <a class="btn btn-primary" href="https://apps.apple.com/app/id6793610290">App Store에서 받기</a>
-        <img class="get-lug" src="/assets/hero-luggage.svg" alt="" aria-hidden="true">
+        <h2>다음 연차, 어디로 떠날까요?</h2>
+        <p>지금 오프웨이에서 나에게 맞는 여행지와 코스를 찾아보세요.</p>
+        <a class="btn btn-primary" href="https://apps.apple.com/app/id6793610290">오프웨이 시작하기</a>
+        <!-- 디자이너 노트(9/7): 일러스트 교체 — 시안 18941:74631, 611×392 -->
+        <img class="get-lug" src="/assets/cta-illust.svg" alt="" aria-hidden="true">
       </div>
     </div>
   </section>
