@@ -31,7 +31,9 @@ class GoldenHolidayCard extends StatelessWidget {
       description: '샌드위치 연휴부터 연차 쓰기 좋은 날까지 미리 확인해보세요.',
       title: title,
       buttonLabel: '자세히',
-      buttonIconAsset: 'assets/icons/ic_chevron_right.svg',
+      // 시안(18900:72093) 버튼의 꺾쇠는 16 상자 안의 작은 기본형이다.
+      // 홈 제목 옆의 12×24 Tight 꺾쇠를 16으로 늘리면 더 크고 길쭉해진다
+      buttonIconAsset: 'assets/icons/ic_chevron_right_16.svg',
       semanticsLabel: '$title 보기',
       onTap: () => context.push(AppRoutes.goldenHolidays),
     );
