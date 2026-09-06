@@ -123,9 +123,17 @@ abstract final class AppRoutes {
   /// 코스확정. `:regionId` 경로 파라미터 + `days` 쿼리 파라미터 사용
   static const course = '/course/:regionId';
 
-  /// 한글 지역 ID의 플랫폼별 URL 인코딩 불일치를 피하기 위해 명시적으로 인코딩한다
-  static String coursePath(String regionId, {required int desiredDays}) =>
-      '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays';
+  /// 한글 지역 ID의 플랫폼별 URL 인코딩 불일치를 피하기 위해 명시적으로 인코딩한다.
+  ///
+  /// [regionName]은 코스가 오기 전 로딩 문구("정선군 여행 코스를 만들고
+  /// 있어요..")에 쓴다 — 코스 응답이 와야 이름을 아는데 그 사이가 곧 로딩이다
+  static String coursePath(
+    String regionId, {
+    required int desiredDays,
+    String? regionName,
+  }) =>
+      '/course/${Uri.encodeComponent(regionId)}?days=$desiredDays'
+      '${regionName == null ? '' : '&region=${Uri.encodeComponent(regionName)}'}';
 
   /// 담기 직전 여행 날짜 지정 (프리셋 경로 전용). 시작일을 pop 결과로 돌려준다
   static const courseSaveDate = '/course-save-date';
@@ -383,6 +391,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             regionId: regionId,
             desiredDays:
                 int.tryParse(state.uri.queryParameters['days'] ?? '') ?? 1,
+            regionName: state.uri.queryParameters['region'],
           );
         },
       ),

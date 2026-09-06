@@ -480,6 +480,8 @@ class _CandidateCard extends ConsumerWidget {
           AppRoutes.coursePath(
             region['id'] as String,
             desiredDays: desiredDays,
+            // 코스가 오기 전 로딩 문구에 지역 이름을 쓴다
+            regionName: region['name'] as String?,
           ),
         );
       },

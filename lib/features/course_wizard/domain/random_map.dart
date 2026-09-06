@@ -36,8 +36,10 @@ abstract final class RandomBoard {
   static const pinRest = Offset(201, 658);
 
   /// 핀 지름 — 어느 단계든 같다. 시안 프레임의 92.9·78.2는 기울인 정사각형의
-  /// 바깥 상자 크기지 핀이 커진 게 아니다
-  static const pinDiameter = 67.7;
+  /// 바깥 상자 크기지 핀이 커진 게 아니다.
+  ///
+  /// 시안 노트(18941:74060): 67 → **60**으로 줄였다
+  static const pinDiameter = 60.0;
 
   /// 착지 후 줌인 배율. 시안 실측은 1.7(지도 383 → 653)인데 실기기에서
   /// 밋밋해 보여 더 당긴다

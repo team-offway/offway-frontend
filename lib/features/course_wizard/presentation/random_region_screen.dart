@@ -225,7 +225,11 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         await _reset();
         if (!mounted) return;
         context.push(
-          AppRoutes.coursePath(winner.regionId, desiredDays: desiredDays),
+          AppRoutes.coursePath(
+            winner.regionId,
+            desiredDays: desiredDays,
+            regionName: winner.label,
+          ),
         );
       case _ResultAnswer.backToList:
         context.pop();
@@ -515,9 +519,9 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 
   Widget _buildPin() {
-    // 핀 크기는 어느 단계든 67.7 그대로다(시안 프레임의 92.9·78.2는 기울인
-    // 사각형의 바깥 상자일 뿐이다). 내려앉으면 칩이 파랗게 굳고 핀은
-    // 사라진다 — 남아 있으면 지역을 가린다
+    // 핀 크기는 어느 단계든 같다(시안 프레임의 92.9·78.2는 기울인 사각형의
+    // 바깥 상자일 뿐이다). 내려앉으면 칩이 파랗게 굳고 핀은 사라진다 —
+    // 남아 있으면 지역을 가린다
     final landed = _phase == _Phase.landing || _phase == _Phase.result;
     final heading = _phase == _Phase.idle
         ? _spin.value * 2 * math.pi
@@ -539,22 +543,31 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
           child: Semantics(
             button: true,
             label: '핀. 꾹 눌렀다 떼면 지역을 랜덤으로 고릅니다',
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.backgroundNormal,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppPalette.offway50, width: 5),
-              ),
-              child: Center(
-                // 에셋(vuesax direct-right)은 오른쪽을 보는 종이비행기다 —
-                // 90°를 빼야 위를 향하고, 거기에 조준 방향을 더한다. 조준
-                // 점선이 이 앞머리에서 시작한다
-                child: Transform.rotate(
-                  angle: heading - math.pi / 2,
+            // 시안 노트: 돌아가는 건 **원 전체**다. 예전엔 원은 두고 안의
+            // 비행기만 돌렸는데, 비행기가 원 한가운데가 아니라 살짝 비껴
+            // 있어(시안 inset) 제자리에서 도는 게 어색했다.
+            //
+            // 에셋(vuesax direct-right)은 오른쪽을 보는 종이비행기다 — 90°를
+            // 빼야 위를 향하고, 거기에 조준 방향을 더한다. 조준 점선이 이
+            // 앞머리에서 시작한다
+            child: Transform.rotate(
+              angle: heading - math.pi / 2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundNormal,
+                  shape: BoxShape.circle,
+                  // 시안 실측 3.3
+                  border: Border.all(color: AppPalette.offway50, width: 3.3),
+                ),
+                child: Align(
+                  // 시안 inset(위 16%·오른쪽 15%·아래 20%·왼쪽 21%) — 비행기
+                  // 상자가 원 한가운데서 오른쪽·위로 조금 비껴 있다
+                  alignment: const Alignment(0.06, -0.04),
                   child: SvgPicture.asset(
                     'assets/icons/ic_paper_plane.svg',
-                    width: 37,
-                    height: 37,
+                    // 시안 실측: 원 지름의 63%
+                    width: d * 0.63,
+                    height: d * 0.63,
                   ),
                 ),
               ),
