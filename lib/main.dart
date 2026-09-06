@@ -7,6 +7,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import 'app/app.dart';
 import 'core/network/dio_client.dart';
+import 'core/network/provider_retry.dart';
 import 'core/router/app_router.dart';
 import 'core/storage/secure_storage.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -47,6 +48,8 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
+      // 실패한 프로바이더를 언제 다시 부를지 — 서버가 답한 오류는 안 되묻는다
+      retry: providerRetry,
       overrides: [
         // 401을 만난 요청이 토큰을 되살릴 수 있게 연결한다. core가 인증 기능을
         // 직접 참조하면 순환 import가 되므로 여기서 이어 붙인다
