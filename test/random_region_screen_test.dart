@@ -85,4 +85,26 @@ void main() {
 
     expect(find.text('어떤 지역이 나오나요?'), findsOneWidget);
   });
+
+  testWidgets('핀은 60이고 돌아가는 건 원 전체다 (시안 노트)', (tester) async {
+    await pump(tester);
+    const pin = '핀. 꾹 눌렀다 떼면 지역을 랜덤으로 고릅니다';
+    expect(tester.getSize(find.bySemanticsLabel(pin)), const Size(60, 60));
+
+    // 회전(Transform)이 원(DecoratedBox) 바깥에 있어야 원째 돈다 — 예전엔
+    // 원은 두고 안의 비행기만 돌아 어색했다
+    final circle = find.descendant(
+      of: find.bySemanticsLabel(pin),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            (w.decoration as BoxDecoration).shape == BoxShape.circle,
+      ),
+    );
+    expect(circle, findsOneWidget);
+    expect(
+      find.ancestor(of: circle, matching: find.byType(Transform)),
+      findsWidgets,
+    );
+  });
 }
