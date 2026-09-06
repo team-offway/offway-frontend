@@ -6,6 +6,8 @@ import 'package:offway/features/policy/presentation/benefit_badge.dart';
 import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
+import 'package:offway/features/policy/data/region_policies_provider.dart';
+import 'package:offway/features/policy/domain/region_benefit.dart';
 
 /// 지역 상세 — 시안(코스_상세)의 순서와 접힘 규칙을 고정한다.
 void main() {
@@ -21,10 +23,13 @@ void main() {
     String? story = longStory,
     List<Map<String, dynamic>> spots = const [],
     Object? visitMetrics,
+    RegionPolicyIndex policyIndex = const {},
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // 혜택 색인은 서버를 부른다 — 여기서는 준 값만 쓴다
+          regionPoliciesProvider.overrideWith((ref) async => policyIndex),
           regionDetailProvider('정선').overrideWith(
             (ref) async => {
               'id': '정선',
@@ -210,5 +215,33 @@ void main() {
       await scrollToNote(tester, '아직 발견할 매력이 많은 지역이에요');
       expect(find.text('요즘 발길이 늘고 있는 지역이에요'), findsNothing);
     });
+  });
+
+  testWidgets('혜택이 여럿이면 뱃지 옆에 +1이 붙고, 누르면 고르는 시트가 뜬다', (tester) async {
+    // 서버는 대표 하나만 주고, 나머지는 앱이 정책 상세를 모은 색인에서 온다
+    await pump(
+      tester,
+      policyIndex: const {
+        '정선': [
+          RegionBenefit(text: '숙박 할인', policyId: 3),
+          RegionBenefit(
+            text: '여행경비 50% 환급',
+            policyId: 1,
+            policyName: '지역사랑 휴가지원(반값여행)',
+          ),
+        ],
+      },
+    );
+    await tester.pumpAndSettle();
+
+    // 뱃지와 아래 혜택 카드가 같은 문구를 쓴다 — 대표는 서버 값 그대로다
+    expect(find.text('숙박 할인'), findsNWidgets(2));
+    expect(find.text('+1'), findsOneWidget);
+
+    await tester.tap(find.text('+1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('정선 · 강원 혜택'), findsOneWidget);
+    expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
   });
 }

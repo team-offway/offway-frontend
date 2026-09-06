@@ -11,6 +11,7 @@ import '../../../core/widgets/data_source_note.dart';
 import '../../home/presentation/home_screen.dart'
     show homePlacesProvider, homeSnapshotProvider;
 import '../data/region_list_repository.dart';
+import '../../policy/data/region_policies_provider.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
 
@@ -176,9 +177,20 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
             const RegionCardSkeleton(style: RegionCardStyle.plain),
       );
     }
+    // 한 지역의 혜택 전부 — 홈과 같은 색인이다. 서버는 대표 하나만 주므로
+    // 카드에 붙여 뱃지가 `+1`을 그릴 수 있게 한다. 색인이 아직 없으면 대표뿐
+    final index = ref.watch(regionPoliciesProvider).value;
+    List<Map<String, dynamic>> withBenefits(List<Map<String, dynamic>> cards) =>
+        index == null
+        ? cards
+        : [
+            for (final card in cards)
+              {...card, 'benefits': benefitsForCard(card, index)},
+          ];
+
     if (places.value case final List<Map<String, dynamic>> served
         when served.isNotEmpty) {
-      final list = filterCardsByCategory(served, _selected);
+      final list = withBenefits(filterCardsByCategory(served, _selected));
       if (list.isEmpty) return _buildEmpty();
       return _buildGrid(
         cardExtent,
@@ -221,13 +233,14 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
 
     // 마지막 줄에 다음 장을 기다리는 자리를 둔다
     final tail = _loading ? 2 : 0;
+    final regions = withBenefits(_regions);
     return _buildGrid(
       cardExtent,
       controller: _scroll,
-      itemCount: _regions.length + tail,
-      builder: (context, i) => i >= _regions.length
+      itemCount: regions.length + tail,
+      builder: (context, i) => i >= regions.length
           ? const RegionCardSkeleton(style: RegionCardStyle.plain)
-          : RegionCard(region: _regions[i], style: RegionCardStyle.plain),
+          : RegionCard(region: regions[i], style: RegionCardStyle.plain),
     );
   }
 

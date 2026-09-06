@@ -8,7 +8,14 @@ class RegionBenefit {
     this.policyType,
     this.policyId,
     this.applyUrl,
+    this.policyName,
   });
+
+  /// 혜택 목록(`benefits[]`) → 화면이 읽는 형태. 목록이 아니면 빈 목록이다
+  static List<RegionBenefit> parseList(Object? raw) {
+    if (raw is! List) return const [];
+    return [for (final item in raw) ?tryParse(item)];
+  }
 
   /// 응답의 혜택 값 → 화면이 읽는 형태.
   ///
@@ -29,6 +36,7 @@ class RegionBenefit {
       policyType: map['policyType'] as String?,
       policyId: (map['policyId'] as num?)?.toInt(),
       applyUrl: map['applyUrl'] as String?,
+      policyName: map['policyName'] as String?,
     );
   }
 
@@ -43,4 +51,9 @@ class RegionBenefit {
 
   /// 지자체 신청 페이지. **아직 안 적은 정책이 있어 null이 정상이다**(core #418)
   final String? applyUrl;
+
+  /// 정책 이름('지역사랑 휴가지원(반값여행)'). 서버 혜택 값에는 없고, 앱이
+  /// 정책 상세에서 모은 목록([RegionPolicyIndex])에만 실린다 — 고르는 시트가
+  /// 뱃지 문구만으로는 무엇인지 알기 어려워 이름을 함께 보여준다
+  final String? policyName;
 }

@@ -16,6 +16,7 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../region/domain/region_visit_metrics.dart';
 import '../../policy/presentation/benefit_badge.dart';
+import '../../policy/presentation/region_benefits_sheet.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -462,7 +463,11 @@ class _CandidateCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final imageUrl = region['imageUrl'] as String?;
-    final benefit = RegionBenefit.tryParse(region['benefit']);
+    // 추천 응답은 혜택을 목록으로 준다 — 대표가 맨 앞. 옛 값(`benefit`)만
+    // 있어도 그린다
+    final benefits = RegionBenefit.parseList(region['benefits']);
+    final benefit =
+        benefits.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
     // 리포지토리가 파싱해 넘기지만, 캐스팅으로 두면 모양이 다를 때 카드가
     // 통째로 죽는다 — 지표는 덤이라 그렇게까지 할 값이 아니다
     final metrics = region['visitMetrics'];
@@ -508,9 +513,19 @@ class _CandidateCard extends ConsumerWidget {
               runSpacing: 6,
               children: [
                 if (benefit != null)
+                  // 혜택이 여럿이면 `+1`을 붙이고 먼저 고르는 시트를 연다
                   BenefitBadge(
                     benefit: benefit,
                     size: BenefitBadgeSize.candidate,
+                    extraCount: benefits.length > 1 ? benefits.length - 1 : 0,
+                    onTap: benefits.length > 1
+                        ? () => showRegionBenefitsSheet(
+                            context,
+                            regionLabel:
+                                '${region['name']} · ${region['sido']}',
+                            benefits: benefits,
+                          )
+                        : null,
                   ),
                 if (trend?.rising == true) const _RisingChip(),
               ],

@@ -16,12 +16,22 @@ class BenefitBadge extends StatelessWidget {
     super.key,
     required this.benefit,
     this.size = BenefitBadgeSize.normal,
+    this.extraCount = 0,
+    this.onTap,
   });
 
   final RegionBenefit benefit;
 
   /// 놓이는 자리에 맞는 크기. 시안이 카드와 상세에서 다르게 잡았다
   final BenefitBadgeSize size;
+
+  /// 이 지역에 혜택이 더 있으면 그 수 — 문구 뒤에 `+1`로 붙는다.
+  /// 0이면 지금까지처럼 문구만이다
+  final int extraCount;
+
+  /// 눌렀을 때. 비우면 이 혜택의 정책 상세를 연다. 혜택이 여럿인 카드는
+  /// 고르는 시트를 여는 쪽으로 바꿔 끼운다
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -30,22 +40,47 @@ class BenefitBadge extends StatelessWidget {
       // 카드 전체 탭(코스·지역)보다 안쪽이라 여기서 제스처를 먼저 받는다.
       // policyId가 없으면 열 상세가 없어 탭을 막는다 — 눌러도 아무 일도
       // 안 일어나는 자리를 남기지 않는다
-      onTap: policyId == null
-          ? null
-          : () => showPolicyDetailSheet(context, policyId),
+      onTap:
+          onTap ??
+          (policyId == null
+              ? null
+              : () => showPolicyDetailSheet(context, policyId)),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: size.padding,
-        decoration: BoxDecoration(
-          // 혜택 뱃지는 브랜드색 8% 배경에 브랜드색 글자다(시안 Badge).
-          // 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
-          color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
-          borderRadius: BorderRadius.circular(size.radius),
-        ),
-        child: Text(
-          benefit.text,
-          style: size.textStyle.copyWith(color: AppColors.primaryNormal),
-        ),
+      child: extraCount > 0
+          // 혜택이 더 있으면 `+1`을 **따로 작은 칩**으로 옆에 둔다. 문구 안에
+          // 붙이면 서버가 준 혜택 문구가 바뀐 것처럼 읽힌다
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Chip(text: benefit.text, size: size),
+                const SizedBox(width: 4),
+                _Chip(text: '+$extraCount', size: size),
+              ],
+            )
+          : _Chip(text: benefit.text, size: size),
+    );
+  }
+}
+
+/// 뱃지 한 알 — 브랜드색 8% 배경에 브랜드색 글자(시안 Badge).
+/// 회색(Fill/Normal)은 분류용 뱃지 색이라 혜택이 눈에 안 띈다
+class _Chip extends StatelessWidget {
+  const _Chip({required this.text, required this.size});
+
+  final String text;
+  final BenefitBadgeSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: size.padding,
+      decoration: BoxDecoration(
+        color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
+        borderRadius: BorderRadius.circular(size.radius),
+      ),
+      child: Text(
+        text,
+        style: size.textStyle.copyWith(color: AppColors.primaryNormal),
       ),
     );
   }

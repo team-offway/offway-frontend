@@ -5,6 +5,7 @@ import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
 import 'package:offway/features/region/presentation/widgets/category_chip.dart';
+import 'package:offway/features/policy/data/region_policies_provider.dart';
 
 /// 홈 '이번달 추천 여행지' 더보기 — 홈 위 섹션이 장소 카드라 여기도 장소다.
 ///
@@ -58,6 +59,8 @@ void main() {
           filters: filters,
         ),
       ),
+      // 혜택 색인은 서버를 부른다 — 여기서 볼 것이 아니라 비운다
+      regionPoliciesProvider.overrideWith((ref) async => {}),
     ],
     child: const MaterialApp(home: RegionListScreen()),
   );

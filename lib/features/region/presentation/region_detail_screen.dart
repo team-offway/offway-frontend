@@ -14,7 +14,9 @@ import '../../course/presentation/widgets/expandable_description.dart';
 import '../domain/region_visit_metrics.dart';
 import 'widgets/quietest_day_banner.dart';
 import '../../policy/domain/region_benefit.dart';
+import '../../policy/data/region_policies_provider.dart';
 import '../../policy/presentation/benefit_badge.dart';
+import '../../policy/presentation/region_benefits_sheet.dart';
 import '../../policy/presentation/region_benefit_card.dart';
 import '../data/region_detail_repository.dart';
 import '../../../core/network/api_envelope.dart';
@@ -112,7 +114,7 @@ class RegionDetailScreen extends ConsumerWidget {
                     description: '조금만 기다려 주세요',
                   ),
                 )
-              : _buildBody(context, data),
+              : _buildBody(context, ref, data),
         ),
       ),
       // 가이드에 이 화면은 하단 탭이 없다 — 상세는 뒤로가기로 돌아가는
@@ -120,12 +122,23 @@ class RegionDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, Map<String, dynamic> region) {
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> region,
+  ) {
     final photos = (region['photos'] as List?)?.cast<String>() ?? const [];
     final spots =
         (region['highlightSpots'] as List?)?.cast<Map<String, dynamic>>() ??
         const [];
-    final benefit = RegionBenefit.tryParse(region['benefit']);
+    // 이 지역의 혜택 전부 — 서버는 대표 하나만 주므로 앱이 모은 색인을 붙여
+    // 뱃지가 `+1`을 그린다. 색인이 아직 없으면 대표뿐이다
+    final index = ref.watch(regionPoliciesProvider).value;
+    final benefits = index == null
+        ? RegionBenefit.parseList(region['benefits'])
+        : benefitsForCard(region, index);
+    final benefit =
+        benefits.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
 
     return ListView(
       // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
@@ -148,9 +161,18 @@ class RegionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
+                  // 혜택이 여럿이면 `+1`을 붙이고 먼저 고르는 시트를 연다
                   child: BenefitBadge(
                     benefit: benefit,
                     size: BenefitBadgeSize.regionDetail,
+                    extraCount: benefits.length > 1 ? benefits.length - 1 : 0,
+                    onTap: benefits.length > 1
+                        ? () => showRegionBenefitsSheet(
+                            context,
+                            regionLabel: region['name'] as String? ?? '',
+                            benefits: benefits,
+                          )
+                        : null,
                   ),
                 ),
               ],

@@ -20,6 +20,7 @@ import '../../notification/application/notification_provider.dart'
     show hasUnreadNotificationsProvider;
 import '../../region/presentation/widgets/category_chip.dart';
 import '../../region/presentation/widgets/leave_pick_card.dart';
+import '../../policy/data/region_policies_provider.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../data/home_repository.dart';
 
@@ -162,6 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 흘리면 새로고침 Future가 실패해 당김 컨트롤이 접히지 않는다
   Future<void> _refresh() async {
     ref.invalidate(homeSnapshotProvider);
+    // 혜택 색인도 다시 읽는다 — 세션 동안 한 번만 읽는 값이라, 자정을 넘겨
+    // 정책 기간이 바뀌었을 때 당기면 새 값이 오게
+    ref.invalidate(regionPoliciesProvider);
     try {
       await ref.read(homeSnapshotProvider.future);
     } catch (_) {
@@ -658,9 +662,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         // 장소 배치(core #305)가 아직 안 돈 지역이 있다. 그럴 때 빈 칸을
         // 두느니 예전처럼 지역 카드를 보여준다 — 배치가 채우면 저절로 바뀐다
         final usingPlaces = served.isNotEmpty;
-        final list = usingPlaces
+        final shown = usingPlaces
             ? homePlacesForChip(served, _selected)
             : _filter(fallback?.value ?? served);
+        // 한 지역의 혜택 전부 — 서버는 대표 하나만 주므로 앱이 모은 색인을
+        // 붙인다. 색인이 아직 없으면(첫 로딩·실패) 대표 하나 그대로다
+        final index = ref.watch(regionPoliciesProvider).value;
+        final list = index == null
+            ? shown
+            : [
+                for (final card in shown)
+                  {...card, 'benefits': benefitsForCard(card, index)},
+              ];
         if (list.isEmpty) {
           return SizedBox(
             height: placeholderHeight,

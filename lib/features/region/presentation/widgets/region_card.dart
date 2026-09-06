@@ -6,6 +6,7 @@ import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/place_thumbnail.dart';
 import '../../../policy/domain/region_benefit.dart';
 import '../../../policy/presentation/benefit_badge.dart';
+import '../../../policy/presentation/region_benefits_sheet.dart';
 
 /// 지역 카드 표시 형태
 enum RegionCardStyle {
@@ -53,8 +54,11 @@ class RegionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 혜택 — 서버가 홈·상세를 한 모양으로 맞췄다(core #418)
-    final benefit = RegionBenefit.tryParse(region['benefit']);
+    // 혜택 — 서버가 홈·상세를 한 모양으로 맞췄다(core #418). 대표 하나는
+    // `benefit`, 그 지역의 전부는 `benefits`(있으면, 대표가 맨 앞)다
+    final benefits = RegionBenefit.parseList(region['benefits']);
+    final benefit =
+        benefits.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
     // 장소 카드(홈 위 섹션)면 이름이 들어 있다. 지역 카드는 null이다
     final placeName = region['placeName'] as String?;
     final content = Column(
@@ -124,8 +128,20 @@ class RegionCard extends StatelessWidget {
         if (benefit != null) ...[
           const SizedBox(height: 6),
           // 뱃지를 누르면 혜택 상세가 열린다 — 카드 전체 탭(지역 상세)보다
-          // 안쪽이라 뱃지가 제스처를 먼저 받는다
-          BenefitBadge(benefit: benefit, size: BenefitBadgeSize.card),
+          // 안쪽이라 뱃지가 제스처를 먼저 받는다. 혜택이 여럿이면 `+1`을
+          // 붙이고, 먼저 고르는 시트를 연다
+          BenefitBadge(
+            benefit: benefit,
+            size: BenefitBadgeSize.card,
+            extraCount: benefits.length > 1 ? benefits.length - 1 : 0,
+            onTap: benefits.length > 1
+                ? () => showRegionBenefitsSheet(
+                    context,
+                    regionLabel: _regionLabel(region),
+                    benefits: benefits,
+                  )
+                : null,
+          ),
         ],
       ],
     );
