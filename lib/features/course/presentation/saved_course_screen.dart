@@ -27,6 +27,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
@@ -112,11 +113,16 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(savedCourseDetailProvider(widget.savedId));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(
+      savedCourseDetailProvider(widget.savedId),
+      retryFailureToast(context),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
-        child: detail.when(
+        child: detail.whenRetryable(
           loading: () => const AppCircularLoadingView(),
           error: (e, _) => AppErrorView(
             description: e is ApiException ? e.detail : '잠시 후 다시 시도해 주세요',

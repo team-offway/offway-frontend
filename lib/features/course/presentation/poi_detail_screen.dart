@@ -12,6 +12,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/place_thumbnail.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../data/course_repository.dart';
@@ -46,6 +47,8 @@ class PoiDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(poiDetailProvider(contentId));
+    // 다시 시도가 또 실패하면 알린다 — 오류 화면이 그대로면 눌린 줄 모른다
+    ref.listen(poiDetailProvider(contentId), retryFailureToast(context));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -54,7 +57,7 @@ class PoiDetailScreen extends ConsumerWidget {
           children: [
             _buildHeader(context),
             Expanded(
-              child: detail.when(
+              child: detail.whenRetryable(
                 loading: () => const AppCircularLoadingView(),
                 // 서버 detail이 사용자 문구면 그대로, 그 외에는 기본 안내로
                 error: (e, _) => AppErrorView(

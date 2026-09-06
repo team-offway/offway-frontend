@@ -10,6 +10,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
@@ -60,6 +61,9 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
     final leave = ref.watch(myLeaveProvider);
     final remaining = leave.value?.remainingDays;
     final usagesAsync = ref.watch(leaveUsagesProvider);
+    // 다시 시도가 또 실패하면 알린다. 다시 읽는 동안은 isLoading 분기가
+    // 먼저라 로딩이 보인다
+    ref.listen(leaveUsagesProvider, retryFailureToast(context));
     final all = usagesAsync.value ?? const <LeaveUsage>[];
     // 이 화면은 훑어보는 자리다 — 다 쌓아 두면 아래 '총 연차일수 수정하기'가
     // 한참 밑으로 밀려 보이지 않는다. 나머지는 '더보기'가 맡는다

@@ -13,6 +13,7 @@ import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../course/application/pending_trip_provider.dart';
 import '../../course/data/course_repository.dart';
 import '../../course/presentation/my_courses_screen.dart'
@@ -72,6 +73,9 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(leaveUsagesProvider);
+    // 다시 시도가 또 실패하면 알린다. 다시 읽는 동안은 isLoading 분기가
+    // 먼저라 로딩이 보인다
+    ref.listen(leaveUsagesProvider, retryFailureToast(context));
     final usages = async.value ?? const <LeaveUsage>[];
     // 'New'는 가장 최근 등록 하나에만 — 내 연차 화면과 같은 규칙
     final newest = LeaveUsage.newest(usages, DateTime.now());
