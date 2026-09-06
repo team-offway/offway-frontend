@@ -22,6 +22,7 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/my/presentation/my_screen.dart';
 import '../../features/my/presentation/withdraw_screen.dart';
 import '../../features/leave/presentation/leave_register_screen.dart';
+import '../../features/leave/presentation/golden_holidays_screen.dart';
 import '../../features/leave/presentation/leave_usages_screen.dart';
 import '../../features/leave/presentation/my_leave_screen.dart';
 import '../../features/leave/presentation/total_leave_screen.dart';
@@ -52,6 +53,9 @@ abstract final class AppRoutes {
       : '/leave?from=notification&courseId=$courseId';
   static const leaveRegister = '/leave/register';
   static const leaveUsages = '/leave/usages';
+
+  /// 황금연휴 — 홈 '연차 쓰기 전, 확인해보세요'의 첫 카드에서 들어온다
+  static const goldenHolidays = '/leave/golden-holidays';
 
   /// 마이 > 내 연차 관리 — 총 연차일수를 고치는 자리
   static const totalLeave = '/leave/total';
@@ -257,6 +261,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.leaveRegister,
         name: 'leaveRegister',
         builder: (context, state) => const LeaveRegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.goldenHolidays,
+        name: 'goldenHolidays',
+        builder: (context, state) => const GoldenHolidaysScreen(),
       ),
       GoRoute(
         path: AppRoutes.leaveUsages,

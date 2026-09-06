@@ -201,9 +201,9 @@ void main() {
   });
 
   group('홈 카드', () {
-    testWidgets('사진 위에 소개와 제목을 얹는다', (tester) async {
-      // 홈은 목록이 아니라 가로로 넘기는 큰 카드다 — 화면 끝에 붙는 덤이
-      // 아니라 위 '이번 연차엔 여기 어때요?'와 나란한 한 줄이다
+    testWidgets('그림 아래에 소개·제목·버튼을 쌓는다', (tester) async {
+      // 홈은 목록이 아니라 가로로 넘기는 큰 카드다 — 황금연휴 카드와 같은
+      // 틀(InfoCard)이라 한 줄로 읽힌다
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
@@ -221,10 +221,58 @@ void main() {
 
       expect(find.text('코레일 승차권 예매'), findsOneWidget);
       expect(find.text('한국철도공사 공식 예매.'), findsOneWidget);
-      // 시안 실측 — 255×220
+      // 바깥으로 나가는 카드임을 버튼이 말한다
+      expect(find.text('웹사이트'), findsOneWidget);
+      // 시안 실측 — 255×309 (그림 154 + 캡션)
       final card = tester.getRect(find.byType(CuratedLinkCard));
       expect(card.width, 255);
-      expect(card.height, 220);
+      expect(card.height, 309);
+    });
+
+    testWidgets('그림 아랫단은 DS 이징(0.25, 0.1, 0.25, 1)으로 카드색에 녹는다', (tester) async {
+      // 직선으로 두면 위쪽이 급하게 어두워진다 — 시안 Gradient/Solid의 곡선
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: CuratedLinkCard(link: CuratedLink.parseList([link()]).first),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fade = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((w) => w.decoration)
+          .whereType<BoxDecoration>()
+          .map((d) => d.gradient)
+          .whereType<LinearGradient>()
+          .firstWhere((g) => g.colors.length > 2);
+      expect(fade.colors.first.a, closeTo(0, 0.001));
+      expect(fade.colors.last.a, closeTo(1, 0.001));
+      // 가운데(t=0.5)는 직선이면 0.5, ease면 그보다 크다(0.8 근처)
+      final mid = fade.colors[fade.colors.length ~/ 2].a;
+      expect(mid, closeTo(Curves.ease.transform(0.5), 0.01));
+      expect(mid, greaterThan(0.7));
+      // 페이드 높이 30
+      final band = tester.getRect(
+        find
+            .ancestor(
+              of: find.byWidget(
+                tester.widget(
+                  find.byWidgetPredicate(
+                    (w) =>
+                        w is DecoratedBox &&
+                        w.decoration is BoxDecoration &&
+                        (w.decoration as BoxDecoration).gradient == fade,
+                  ),
+                ),
+              ),
+              matching: find.byType(Positioned),
+            )
+            .first,
+      );
+      expect(band.height, 30);
     });
 
     testWidgets('소개문이 없으면 제목만 남는다', (tester) async {
