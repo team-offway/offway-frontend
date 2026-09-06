@@ -11,6 +11,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../application/notification_provider.dart';
 import '../application/push_registration.dart';
 import '../data/notification_repository.dart';
@@ -61,6 +62,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
     // 사용자를 설정으로 헛걸음시킨다
     final enabled = ref.watch(notificationEnabledProvider).value ?? true;
     final feed = ref.watch(notificationFeedProvider);
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(notificationFeedProvider, retryFailureToast(context));
 
     // 목록을 읽을 때마다 배지를 맞춘다 — 읽고 나왔는데 배지가 남아 있으면
     // 눌러도 새 알림이 없어 사용자를 속인다
@@ -87,7 +90,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                       AsyncData(:final value) => _buildList(
                         value.notifications,
                       ),
-                      AsyncError() => AppErrorView(
+                      // 오류에서 다시 읽는 중은 AsyncError(isLoading: true)다 —
+                      // 로딩 분기로 흘려보내야 '다시 시도'가 눌린 게 보인다
+                      AsyncError() when !feed.isLoading => AppErrorView(
                         onRetry: () => ref.invalidate(notificationFeedProvider),
                       ),
                       _ => const Center(child: AppCircularLoading()),

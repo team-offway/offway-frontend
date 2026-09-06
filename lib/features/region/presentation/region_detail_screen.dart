@@ -24,6 +24,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// 지역 상세 — `GET /regions/{id}` 하나로 채운다(core #307).
 ///
@@ -95,13 +96,15 @@ class RegionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final region = ref.watch(regionDetailProvider(regionId));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(regionDetailProvider(regionId), retryFailureToast(context));
 
     return Scaffold(
       backgroundColor: Colors.white,
       extendBody: true,
       body: SafeArea(
         bottom: false,
-        child: region.when(
+        child: region.whenRetryable(
           loading: () => const AppCircularLoadingView(),
           error: (e, _) => AppErrorView(
             onRetry: () => ref.invalidate(regionDetailProvider(regionId)),

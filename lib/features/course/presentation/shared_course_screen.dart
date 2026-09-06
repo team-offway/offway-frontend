@@ -10,6 +10,7 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../data/course_repository.dart';
@@ -47,6 +48,11 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
   @override
   Widget build(BuildContext context) {
     final course = ref.watch(sharedCourseProvider(widget.shareToken));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(
+      sharedCourseProvider(widget.shareToken),
+      retryFailureToast(context),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -56,7 +62,7 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
         child: Column(
           children: [
             Expanded(
-              child: course.when(
+              child: course.whenRetryable(
                 loading: () => const AppCircularLoadingView(),
                 error: (e, _) => AppErrorView(
                   description: switch (e) {

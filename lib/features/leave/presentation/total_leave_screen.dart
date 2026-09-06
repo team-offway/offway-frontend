@@ -10,6 +10,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../core/widgets/async_retry.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
@@ -134,6 +135,8 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   @override
   Widget build(BuildContext context) {
     final leave = ref.watch(myLeaveProvider);
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(myLeaveProvider, retryFailureToast(context));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -151,7 +154,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
             children: [
               _buildTopBar(),
               Expanded(
-                child: leave.when(
+                child: leave.whenRetryable(
                   loading: () => const AppCircularLoadingView(),
                   error: (_, _) => AppErrorView(
                     onRetry: () => ref.invalidate(myLeaveProvider),
