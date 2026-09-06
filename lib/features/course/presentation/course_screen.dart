@@ -77,10 +77,14 @@ class CourseScreen extends ConsumerStatefulWidget {
     super.key,
     required this.regionId,
     required this.desiredDays,
+    this.regionName,
   });
 
   final String regionId;
   final int desiredDays;
+
+  /// 로딩 문구에 쓸 지역 이름 — 후보·랜덤 화면이 넘겨준다. 없으면 이름 없이
+  final String? regionName;
 
   @override
   ConsumerState<CourseScreen> createState() => _CourseScreenState();
@@ -404,7 +408,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       body: SafeArea(
         child: course.when(
           // 실제 코스 생성이라 몇 초 걸릴 수 있다 — O-07 로딩 디자인을 쓴다
-          loading: () => const AppLoadingView(title: '나만의 여행 코스를\n만들고 있어요..'),
+          // 시안(O-07): "{지역} 여행 코스를 만들고 있어요.."
+          loading: () => AppLoadingView(
+            title: widget.regionName == null
+                ? '여행 코스를\n만들고 있어요..'
+                : '${widget.regionName} 여행 코스를\n만들고 있어요..',
+          ),
           // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
           error: (e, _) => Center(
             child: Text(
