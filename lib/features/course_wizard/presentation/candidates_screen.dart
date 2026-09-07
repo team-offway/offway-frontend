@@ -17,6 +17,7 @@ import '../../policy/domain/region_benefit.dart';
 import '../../region/domain/region_visit_metrics.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../../policy/presentation/region_benefits_sheet.dart';
+import '../../region/presentation/widgets/rising_chip.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
@@ -428,33 +429,6 @@ class _SortChip extends StatelessWidget {
   }
 }
 
-/// `최근 인기 상승` — 작년 같은 기간보다 사람이 늘고 있는 지역 (core #438).
-///
-/// **눌러도 아무 일이 없다**(시안 Note). 혜택 칩은 정책 상세로 가지만 이쪽은
-/// 열어 보일 상세가 없다 — 근거는 지역 상세의 지표 배너가 답한다.
-class _RisingChip extends StatelessWidget {
-  const _RisingChip();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        // 시안(18860:76590 Badge 2): 분홍 — Pink/95 바탕에 Pink/60 글자.
-        // 혜택 칩(브랜드 파랑)과 색으로 갈린다. 예전엔 같은 파랑 계열이라
-        // 둘이 붙으면 구분이 안 됐다
-        // TODO(디자인시스템): 분홍의 Semantic 토큰이 생기면 교체한다
-        color: AppPalette.pink95,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '최근 인기 상승',
-        style: AppTypography.caption1Medium.copyWith(color: AppPalette.pink60),
-      ),
-    );
-  }
-}
-
 /// 후보 지역 카드 — 16:9 썸네일 + 혜택 뱃지 + 지역명 + 설명
 class _CandidateCard extends ConsumerWidget {
   const _CandidateCard({required this.region});
@@ -530,7 +504,8 @@ class _CandidateCard extends ConsumerWidget {
                           )
                         : null,
                   ),
-                if (trend?.rising == true) const _RisingChip(),
+                if (trend?.rising == true)
+                  const RisingChip(size: BenefitBadgeSize.candidate),
               ],
             ),
             const SizedBox(height: 6),
