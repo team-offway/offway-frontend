@@ -194,6 +194,30 @@ void main() {
       expect(find.textContaining('익숙한 여행지에서 조금 벗어나'), findsOneWidget);
     });
 
+    testWidgets("발길이 느는 지역이면 지역명 아래 '최근 인기 상승' 칩도 붙는다", (tester) async {
+      // 시안(18860:76194): 혜택 칩 옆에 나란히. 마무리 안내와 같은 값을 본다
+      await pump(
+        tester,
+        visitMetrics: const {
+          'trend': {'percent': 3, 'rising': true},
+        },
+      );
+
+      expect(find.text('최근 인기 상승'), findsOneWidget);
+      expect(find.byType(BenefitBadge), findsOneWidget);
+    });
+
+    testWidgets('안 느는 지역이면 칩이 없다', (tester) async {
+      await pump(
+        tester,
+        visitMetrics: const {
+          'trend': {'percent': -5, 'rising': false},
+        },
+      );
+
+      expect(find.text('최근 인기 상승'), findsNothing);
+    });
+
     testWidgets('안 느는 지역이면 숨은 매력으로 권한다', (tester) async {
       // 이쪽을 "주목받는 곳"이라 부르면 사실과 다르다
       await pump(

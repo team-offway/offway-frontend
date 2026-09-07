@@ -13,6 +13,7 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../../course/presentation/widgets/expandable_description.dart';
 import '../domain/region_visit_metrics.dart';
 import 'widgets/quietest_day_banner.dart';
+import 'widgets/rising_chip.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/data/region_policies_provider.dart';
 import '../../policy/presentation/benefit_badge.dart';
@@ -142,6 +143,12 @@ class RegionDetailScreen extends ConsumerWidget {
         : benefitsForCard(region, index);
     final benefit =
         benefits.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
+    // 추세를 모르면 안 뜨는 쪽으로 본다 — 없는 근거로 "발길이 늘고 있다"고
+    // 말하지 않는다. 상단 칩과 마무리 안내가 같은 값을 본다
+    final rising = switch (region['visitMetrics']) {
+      final RegionVisitMetrics m => m.trend?.rising ?? false,
+      _ => false,
+    };
 
     return ListView(
       // 120은 하단 탭에 가리지 않기 위한 값이었다 — 탭을 뺐으니(가이드)
@@ -160,23 +167,33 @@ class RegionDetailScreen extends ConsumerWidget {
                 // 가이드는 Heading 1/Bold(22·w600)다 — w700로 두면 더 두껍게 보인다
                 style: AppTypography.heading1Bold.copyWith(color: _labelNormal),
               ),
-              if (benefit != null) ...[
+              // 혜택 칩과 '최근 인기 상승' 칩이 나란히 놓인다(시안
+              // 18860:76194) — 둘 다 없으면 줄째 사라진다
+              if (benefit != null || rising) ...[
                 const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  // 혜택이 여럿이면 `+1`을 붙이고 먼저 고르는 시트를 연다
-                  child: BenefitBadge(
-                    benefit: benefit,
-                    size: BenefitBadgeSize.regionDetail,
-                    extraCount: benefits.length > 1 ? benefits.length - 1 : 0,
-                    onTap: benefits.length > 1
-                        ? () => showRegionBenefitsSheet(
-                            context,
-                            regionLabel: region['name'] as String? ?? '',
-                            benefits: benefits,
-                          )
-                        : null,
-                  ),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (benefit != null)
+                      // 혜택이 여럿이면 `+1`을 붙이고 먼저 고르는 시트를 연다
+                      BenefitBadge(
+                        benefit: benefit,
+                        size: BenefitBadgeSize.regionDetail,
+                        extraCount: benefits.length > 1
+                            ? benefits.length - 1
+                            : 0,
+                        onTap: benefits.length > 1
+                            ? () => showRegionBenefitsSheet(
+                                context,
+                                regionLabel: region['name'] as String? ?? '',
+                                benefits: benefits,
+                              )
+                            : null,
+                      ),
+                    if (rising)
+                      const RisingChip(size: BenefitBadgeSize.regionDetail),
+                  ],
                 ),
               ],
             ],
@@ -268,14 +285,7 @@ class RegionDetailScreen extends ConsumerWidget {
         ],
         // 시안 실측: 혜택 카드 아래 36
         const SizedBox(height: 36),
-        // 추세를 모르면 '안 뜨는 곳' 쪽 문구를 쓴다 — 없는 근거로
-        // "발길이 늘고 있다"고 말하지 않는다
-        _PopulationDeclineNote(
-          rising: switch (region['visitMetrics']) {
-            final RegionVisitMetrics m => m.trend?.rising ?? false,
-            _ => false,
-          },
-        ),
+        _PopulationDeclineNote(rising: rising),
         // 공공데이터 출처 (core #417) — 화면을 맺는 안내 아래에 텍스트 한 줄
         DataSourceNote(
           sources:
