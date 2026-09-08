@@ -13,6 +13,7 @@ class TransitAccess {
     this.mode,
     this.fromPlace,
     this.toPlace,
+    this.viaPlace,
     this.vehicleType,
     this.durationMinutes,
     this.distanceKm,
@@ -34,6 +35,7 @@ class TransitAccess {
       status: TransitStatus.parse(raw['status'] as String?),
       fromPlace: _text(raw['fromPlace']),
       toPlace: _text(raw['toPlace']),
+      viaPlace: _text(raw['viaPlace']),
       vehicleType: _text(raw['vehicleType']),
       durationMinutes: (raw['durationMinutes'] as num?)?.toInt(),
       distanceKm: (raw['distanceKm'] as num?)?.toInt(),
@@ -62,6 +64,14 @@ class TransitAccess {
   /// 어디에 내리는지 (역·터미널·항구) — 모르면 null
   final String? toPlace;
 
+  /// 갈아타는 지점 — 직통이 없어 허브를 한 번 거칠 때만 온다 (core #508).
+  ///
+  /// 이때 [durationMinutes]는 두 구간의 합에 환승 대기(40분)를 더한 값이다.
+  /// **null을 "직통"으로 읽으면 안 된다** (core #517) — 노선이 없거나
+  /// 그날 차가 없을 때도 null이다. 직통 여부는 [status]가 말하고, 이 값은
+  /// "경유가 붙었는가"만 말한다
+  final String? viaPlace;
+
   /// `KTX`처럼 구체적인 편명 — 열차만 온다
   final String? vehicleType;
 
@@ -88,14 +98,16 @@ class TransitAccess {
 
 /// 이 지역에 닿는 수단 하나 — 대표 말고 대안 쪽.
 ///
-/// **서버가 네 가지만 준다** — `mode`·`modeLabel`·`toPlace`·`durationMinutes`.
-/// 출발지와 편명은 일부러 뺐다(core `TransitOptionResponse`). 수단이 다르면
-/// 타는 곳도 다르므로, 대표의 값을 물려받으면 **틀린 터미널**을 말하게 된다.
+/// **서버가 다섯 가지만 준다** — `mode`·`modeLabel`·`toPlace`·`status`·
+/// `durationMinutes`. 출발지와 편명은 일부러 뺐다(core `TransitOptionResponse`).
+/// 수단이 다르면 타는 곳도 다르므로, 대표의 값을 물려받으면 **틀린
+/// 터미널**을 말하게 된다.
 class TransitOption {
   const TransitOption({
     required this.modeLabel,
     this.mode,
     this.toPlace,
+    this.status = TransitStatus.pointOnly,
     this.durationMinutes,
   });
 
@@ -106,18 +118,31 @@ class TransitOption {
       modeLabel: label,
       mode: _text(json['mode']),
       toPlace: _text(json['toPlace']),
+      // 옛 서버는 안 실었다 — 그때는 "지점만 안다"로 본다. 노선이 없다고
+      // 지레짐작해 버튼에서 빼면 멀쩡한 수단이 사라진다
+      status: json['status'] == null
+          ? TransitStatus.pointOnly
+          : TransitStatus.parse(json['status'] as String?),
       durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
     );
   }
 
   final String modeLabel;
 
+  /// 이 수단의 상태 (core #513) — 소요시간이 비어 있는 **이유**를 여기서
+  /// 읽는다. 아직 안 잰 것([TransitStatus.pointOnly])과 노선이 없는 것
+  /// ([TransitStatus.noRoute])은 화면이 할 일이 다르다
+  final TransitStatus status;
+
+  /// 갈아탈 수 있는 수단인가 — 노선이 없는 수단은 버튼에 올리지 않는다.
+  /// 눌러 보내면 서버가 없는 길로 코스를 다시 짜게 된다
+  bool get isSelectable => mode != null && status != TransitStatus.noRoute;
+
   /// 수단 계약 키 — [TransitAccess.mode]와 같은 값 공간이다
   final String? mode;
   final String? toPlace;
 
-  /// **대개 비어 있다.** 서버는 대안의 구간을 재지 않는다 — 열차 대안만
-  /// 값이 오고 버스·여객선은 null로 고정이다(`RegionAccessService.alternativesTo`)
+  /// 잰 구간이면 온다 (core #513부터 버스도 실린다) — 안 잰 구간은 null
   final int? durationMinutes;
 
   String? get durationLabel => formatTransitDuration(durationMinutes);
@@ -137,6 +162,16 @@ enum TransitStatus {
 
   /// 그날 갈 수 있는 편이 없다
   noServiceOnDate('NO_SERVICE_ON_DATE'),
+
+  /// 두 지점을 잇는 **노선 자체가 없다** (core #508·#513).
+  ///
+  /// [noServiceOnDate]와 갈라야 한다 — 그쪽은 "그날 차가 없다"라 날짜를
+  /// 바꾸면 되고, 이쪽은 다른 수단을 봐야 한다. 예전엔 서버가 여기서도
+  /// "아직 안 물었다"로 답해 서울에서 봉화까지 고속버스로 가라는 안내가
+  /// 나갔다 — 봉화행 노선은 어디에도 없는데. **없는 길을 안내하는 것은
+  /// 아무 안내도 안 하는 것보다 나쁘다.** 화면은 출발지·거리를 지우고
+  /// 노선이 없다고 적는다
+  noRoute('NO_ROUTE'),
 
   /// 출발지를 몰라 답할 수 없다 (core #423).
   ///

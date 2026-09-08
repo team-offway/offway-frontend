@@ -20,6 +20,7 @@ void main() {
     Object? status = 'POINT_ONLY',
     Object? fromPlace,
     Object? toPlace = '정선',
+    Object? viaPlace,
     Object? vehicleType,
     Object? durationMinutes,
     Object? distanceKm,
@@ -30,6 +31,7 @@ void main() {
     'status': status,
     'fromPlace': fromPlace,
     'toPlace': toPlace,
+    'viaPlace': viaPlace,
     'vehicleType': vehicleType,
     'durationMinutes': durationMinutes,
     'distanceKm': distanceKm,
@@ -95,6 +97,38 @@ void main() {
       // 서버가 상태를 늘려도 화면이 통째로 안 뜨는 일은 없어야 한다
       final a = TransitAccess.tryParse(raw(status: 'SOMETHING_NEW'))!;
       expect(a.status, TransitStatus.unavailable);
+    });
+
+    test('노선이 없는 상태를 가려 읽는다 (core #513)', () {
+      // 예전엔 모르는 값이라 '조회 실패'로 뭉개졌다 — 그러면 카드가 없는
+      // 길을 직통처럼 말한다
+      final a = TransitAccess.tryParse(raw(status: 'NO_ROUTE'))!;
+      expect(a.status, TransitStatus.noRoute);
+    });
+
+    test('경유지를 읽는다 (core #508)', () {
+      final a = TransitAccess.tryParse(raw(viaPlace: '대전복합'))!;
+      expect(a.viaPlace, '대전복합');
+      // 비어 오면 null — 직통이라는 뜻은 아니다(core #517)
+      expect(TransitAccess.tryParse(raw(viaPlace: ''))!.viaPlace, isNull);
+    });
+
+    test('대안의 상태를 읽고, 노선 없는 대안은 고를 수 없다', () {
+      final a = TransitAccess.tryParse(
+        raw(
+          alternatives: [
+            {'mode': 'EXPRESS_BUS', 'modeLabel': '고속버스', 'status': 'NO_ROUTE'},
+            {'mode': 'TRAIN', 'modeLabel': '열차', 'status': 'POINT_ONLY'},
+            // 옛 서버 — 상태를 안 실었다. 지레 빼면 멀쩡한 수단이 사라진다
+            {'mode': 'FERRY', 'modeLabel': '여객선'},
+          ],
+        ),
+      )!;
+      expect(a.alternatives[0].status, TransitStatus.noRoute);
+      expect(a.alternatives[0].isSelectable, isFalse);
+      expect(a.alternatives[1].isSelectable, isTrue);
+      expect(a.alternatives[2].status, TransitStatus.pointOnly);
+      expect(a.alternatives[2].isSelectable, isTrue);
     });
 
     test('대안 수단을 함께 읽는다', () {
@@ -233,6 +267,111 @@ void main() {
       );
       expect(find.text('열차로 민둥산까지'), findsOneWidget);
       expect(find.text('청량리에서 출발 • KTX 약 3시간'), findsOneWidget);
+    });
+
+    testWidgets('노선이 없으면 출발지·거리 대신 그렇게 말한다 (core #513)', (tester) async {
+      // 서울에서 봉화까지 고속버스 노선은 어디에도 없다. 예전엔 여기서
+      // '센트럴시티에서 출발 • 200km'가 떠 직통처럼 읽혔다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '고속버스',
+            status: 'NO_ROUTE',
+            fromPlace: '센트럴시티(서울)',
+            toPlace: '봉화',
+            distanceKm: 200,
+          ),
+        )!,
+      );
+
+      expect(find.text('고속버스로 봉화까지'), findsOneWidget);
+      expect(find.text(noRouteMessage), findsOneWidget);
+      expect(find.textContaining('에서 출발'), findsNothing);
+      expect(find.textContaining('200km'), findsNothing);
+    });
+
+    testWidgets('노선이 없어도 대표는 그대로다 — 갈아탈 수단을 버튼이 준다', (tester) async {
+      // 서버는 대표를 '가장 가까운 지점'으로 먼저 고르고 그 뒤에 노선 유무를
+      // 본다(RegionAccessService.viaOrHonest). 그래서 노선 없는 버스가 대표로
+      // 남고 열차는 대안으로 오는 응답이 실제로 나간다 — 그때 이 카드가
+      // "노선이 없어요"와 '열차로 보기'를 함께 보여야 사용자가 갈 길을 찾는다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '고속버스',
+            status: 'NO_ROUTE',
+            fromPlace: '센트럴시티(서울)',
+            toPlace: '봉화',
+            alternatives: [
+              {'mode': 'TRAIN', 'modeLabel': '열차', 'status': 'POINT_ONLY'},
+            ],
+          ),
+        )!,
+      );
+
+      expect(find.text(noRouteMessage), findsOneWidget);
+      expect(find.text('열차로 보기'), findsOneWidget);
+    });
+
+    testWidgets('경유하면 어디서 갈아타는지 말한다 (core #508)', (tester) async {
+      // 소요시간은 두 구간 합에 환승 대기 40분을 더한 값이다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            modeLabel: '고속버스',
+            fromPlace: '서울경부',
+            toPlace: '무주',
+            viaPlace: '대전복합',
+            durationMinutes: 190,
+          ),
+        )!,
+      );
+
+      expect(find.text('서울경부에서 출발 • 대전복합 경유 • 약 3시간 10분'), findsOneWidget);
+    });
+
+    testWidgets('노선 없는 대안은 건너뛰고 다음 수단을 버튼에 올린다', (tester) async {
+      // 첫 대안이 노선 없음이면 그걸 보내 봐야 없는 길로 코스를 다시 짠다
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            alternatives: [
+              {
+                'mode': 'EXPRESS_BUS',
+                'modeLabel': '고속버스',
+                'status': 'NO_ROUTE',
+              },
+              {'mode': 'TRAIN', 'modeLabel': '열차', 'status': 'POINT_ONLY'},
+            ],
+          ),
+        )!,
+      );
+
+      expect(find.text('열차로 보기'), findsOneWidget);
+      expect(find.text('고속버스로 보기'), findsNothing);
+    });
+
+    testWidgets('대안이 전부 노선 없음이면 버튼을 두지 않는다', (tester) async {
+      await pump(
+        tester,
+        TransitAccess.tryParse(
+          raw(
+            alternatives: [
+              {
+                'mode': 'EXPRESS_BUS',
+                'modeLabel': '고속버스',
+                'status': 'NO_ROUTE',
+              },
+            ],
+          ),
+        )!,
+      );
+
+      expect(find.textContaining('로 보기'), findsNothing);
     });
 
     testWidgets('내리는 곳을 모르면 통째로 접는다', (tester) async {

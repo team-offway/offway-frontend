@@ -44,15 +44,16 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
 
   TransitAccess get _shown => widget.access;
 
-  /// 버튼이 보낼 수단 — 첫 대안.
+  /// 버튼이 보낼 수단 — 갈아탈 수 있는 첫 대안.
   ///
-  /// 수단 코드(`mode`)가 없는 대안은 서버에 보낼 수 없어 건너뛴다. 보낼 곳
-  /// ([TransitAccessCard.onModeSelected])이 없으면 버튼 자체를 두지 않는다 —
-  /// 눌러도 아무 일이 없는 버튼은 고장으로 읽힌다.
+  /// 수단 코드(`mode`)가 없는 대안은 서버에 보낼 수 없고, **노선이 없는
+  /// 대안**(core #513)은 보내면 없는 길로 코스를 다시 짜게 되니 둘 다
+  /// 건너뛴다. 보낼 곳([TransitAccessCard.onModeSelected])이 없으면 버튼
+  /// 자체를 두지 않는다 — 눌러도 아무 일이 없는 버튼은 고장으로 읽힌다.
   TransitOption? get _next {
     if (widget.onModeSelected == null) return null;
     for (final option in widget.access.alternatives) {
-      if (option.mode != null) return option;
+      if (option.isSelectable) return option;
     }
     return null;
   }
@@ -188,9 +189,17 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
   ///
   /// 버스·여객선은 시간표를 못 물어(요청 시점에 조회가 안 된다) 소요시간이
   /// 없을 수 있다. 그때는 출발지만이라도 알린다.
+  ///
+  /// **노선이 없으면 그렇게만 말한다** (core #513). 출발지·거리를 그대로
+  /// 두면 "센트럴시티에서 출발"이 없는 길을 직통처럼 읽히게 한다 — 서버가
+  /// 고친 것을 화면이 되돌리는 셈이다.
   String? get _detail {
+    if (_shown.status == TransitStatus.noRoute) return noRouteMessage;
     final parts = <String>[
       if (_shown.fromPlace != null) '${_shown.fromPlace}에서 출발',
+      // 허브를 한 번 거친다(core #508). 소요시간은 두 구간 합에 환승 대기를
+      // 더한 값이라 뒤에 오는 '약 N시간'이 그 길 전체를 말한다
+      if (_shown.viaPlace case final String via) '$via 경유',
       if (_shown.vehicleType case final String type)
         if (_shown.durationLabel case final String duration)
           '$type 약 $duration'
@@ -206,6 +215,10 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
     return parts.join(' • ');
   }
 }
+
+/// 노선이 없는 구간의 둘째 줄 (core #513) — 날짜를 바꾸면 되는 '그날 미운행'과
+/// 다르다. 다른 수단을 봐야 하는 사정이라 갈아타는 버튼이 그 답이 된다
+const noRouteMessage = '이 구간은 노선이 없어요';
 
 /// `시외버스로 보기` — 다른 수단으로 갈아끼우는 버튼.
 ///
