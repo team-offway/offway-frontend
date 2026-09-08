@@ -195,6 +195,9 @@
   }
   /* 번호 열은 점선이 지나가므로 행 사이 여백을 여기서 만들지 않는다 */
   .place + .place { margin-top: 0; }
+  /* 역·터미널 칸은 사진이 없으면 자리째 접는다(앱과 같다) — 빈 회색 자리를
+     두면 '못 불러온 사진'으로 읽힌다. 글이 그 폭을 쓴다 */
+  .place.no-thumb { grid-template-columns: 24px 1fr; }
 
   .rail { position: relative; display: flex; justify-content: center; }
   .no {
@@ -534,6 +537,11 @@
         return;
       }
       placesEl.innerHTML = items.map(function (it, i) {
+        // 대중교통 코스의 첫·끝 칸(역·터미널). 장소가 아니라 상세도 없고
+        // 사진은 서버가 받아 둔 것이 있을 때만 온다 — 없으면 앱처럼 자리를
+        // 접는다(빈 회색 자리는 '못 불러온 사진'으로 읽힌다)
+        var isTransitPoint = it.kind === 'ARRIVAL' || it.kind === 'DEPARTURE';
+        var noThumb = isTransitPoint && !it.imageUrl;
         var thumb = it.imageUrl
           ? '<img src="' + esc(it.imageUrl) + '" alt="" loading="lazy">'
           : PLACEHOLDER;
@@ -555,10 +563,10 @@
                '</div>';
         }
         var last = (i === items.length - 1) ? ' data-last' : '';
-        return km + '<div class="place"' + last + '>' +
+        return km + '<div class="place' + (noThumb ? ' no-thumb' : '') + '"' + last + '>' +
           '<div class="rail"><div class="no" data-kind="' + esc(it.kind) + '">' + (i + 1) + '</div></div>' +
           '<div class="info"><p class="name">' + esc(it.title) + '</p>' + why + cat + '</div>' +
-          '<div class="thumb">' + thumb + '</div>' +
+          (noThumb ? '' : '<div class="thumb">' + thumb + '</div>') +
         '</div>';
       }).join('');
     }
