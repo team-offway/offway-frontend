@@ -281,6 +281,75 @@
   /* 좁은 화면에서는 글과 겹친다 — 그림을 접는다 */
   @media (max-width: 620px) { .get-lug { display: none; } }
 
+  /* ── 큐레이션 캐러셀 — 앱 홈의 '연차 쓰기 전, 확인해보세요' 카드 ───── */
+  /* 카드 한 장씩 넘긴다: 넓은 화면은 한 번에 3장이 보이고, 좁은 화면은 1장.
+     스크롤 스냅이라 손가락·트랙패드로도 넘어가고, 4초마다 다음 카드로
+     돈다. 읽는 중(호버·포커스·터치)엔 멈추고, '동작 줄이기'면 안 돈다 */
+  .carousel { position: relative; }
+  .car-track {
+    display: grid; grid-auto-flow: column; gap: 16px;
+    grid-auto-columns: 100%;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    /* 가로 스크롤 요소는 세로도 자른다 — 카드 테두리·포커스 링이 위아래로
+       잘리지 않게 숨을 자리를 두고, 그만큼 바깥 여백을 당긴다 */
+    padding: 4px 0 6px;
+    margin: -4px 0 -6px;
+  }
+  .car-track::-webkit-scrollbar { display: none; }
+  @media (min-width: 720px) {
+    .car-track { grid-auto-columns: calc((100% - 32px) / 3); }
+  }
+  .car-slide {
+    scroll-snap-align: start;
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden;
+    color: inherit; text-decoration: none;
+    transition: border-color .2s ease;
+  }
+  /* 떠오르는 효과는 두지 않는다 — 트랙이 넘침을 잘라 위 테두리가 사라진다 */
+  .car-slide:hover { border-color: var(--brand); }
+  .car-slide:focus-visible { outline: 2px solid var(--brand-deep); outline-offset: 2px; }
+  /* 앱 카드(255×154)와 같은 비율로 사진이 위, 없으면 브랜드 연한색 면만 둔다.
+     어드민이 올리는 썸네일이 이 비율이라 16:9로 두면 위아래가 깎인다 */
+  .car-thumb {
+    aspect-ratio: 255 / 154; background: var(--brand-wash);
+    display: grid; place-items: center;
+  }
+  .car-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .car-thumb i {
+    display: block; width: 28px; height: 28px; background: var(--brand-deep);
+    -webkit-mask: url(/assets/ic-route.svg) center / contain no-repeat;
+    mask: url(/assets/ic-route.svg) center / contain no-repeat;
+  }
+  .car-body { padding: 16px 18px 18px; display: grid; gap: 6px; }
+  .car-chip {
+    justify-self: start; font-size: 12px; font-weight: 700; color: var(--brand-deep);
+    background: var(--brand-wash); border-radius: 999px; padding: 3px 9px;
+  }
+  .car-body h3 { margin: 4px 0 0; font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+  .car-body p {
+    margin: 0; font-size: 14px; color: var(--ink-3); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .car-dots { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+  .car-dots button {
+    width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px;
+    background: var(--line); cursor: pointer; transition: width .2s ease;
+  }
+  .car-dots button[aria-current="true"] { background: var(--brand-deep); width: 20px; }
+  .car-nav {
+    position: absolute; top: calc(50% - 20px); transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    display: grid; place-items: center; cursor: pointer; font-size: 20px; line-height: 1;
+  }
+  .car-nav[data-dir="prev"] { left: -18px; }
+  .car-nav[data-dir="next"] { right: -18px; }
+  @media (max-width: 719px) { .car-nav { display: none; } }
+
   /* ── 푸터 ───────────────────────────────── */
   footer { border-top: 1px solid var(--line); padding: 34px 0 46px; }
   footer .wrap {
@@ -386,6 +455,17 @@
     </div>
   </section>
 
+  <section id="gallery" aria-label="여행 정보와 혜택" hidden>
+    <div class="wrap">
+      <div class="carousel" id="carousel">
+        <div class="car-track" id="car-track" tabindex="0"></div>
+        <button type="button" class="car-nav" data-dir="prev" aria-label="이전">&#8249;</button>
+        <button type="button" class="car-nav" data-dir="next" aria-label="다음">&#8250;</button>
+        <div class="car-dots" id="car-dots" role="tablist" aria-label="카드 위치"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="data">
     <div class="wrap">
       <h2>믿을 수 있는 여행 정보를 담았어요</h2>
@@ -477,6 +557,123 @@
     });
 
     render(3);
+  })();
+
+  // ── 큐레이션 캐러셀: 서버 목록으로 채우고 4초마다 한 장씩, 끝이면 처음으로 ──
+  (function () {
+    var section = document.getElementById('gallery');
+    var root = document.getElementById('carousel');
+    var track = document.getElementById('car-track');
+    var dots = document.getElementById('car-dots');
+    if (!section || !root || !track) return;
+    var INTERVAL_MS = 4000;
+    var timer = null;
+    var paused = false;
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function slide(link) {
+      var thumb = link.thumbnailUrl
+        ? '<img src="' + esc(link.thumbnailUrl) + '" alt="" loading="lazy">'
+        : '<i aria-hidden="true"></i>';
+      var chip = link.chipText ? '<span class="car-chip">' + esc(link.chipText) + '</span>' : '';
+      return '<a class="car-slide" href="' + esc(link.linkUrl) + '" target="_blank" rel="noopener">' +
+        '<div class="car-thumb">' + thumb + '</div>' +
+        '<div class="car-body">' + chip + '<h3>' + esc(link.title) + '</h3>' +
+        (link.description ? '<p>' + esc(link.description) + '</p>' : '') + '</div>' +
+      '</a>';
+    }
+
+    // 한 장의 폭 + 간격 — 이 단위로 넘긴다
+    function step() {
+      var first = track.firstElementChild;
+      if (!first) return track.clientWidth;
+      var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      return first.getBoundingClientRect().width + gap;
+    }
+    // 멈출 수 있는 자리 수 — 한 화면에 3장이 보이면 마지막 두 장은 첫 자리가 못 된다
+    function positions() {
+      var n = track.children.length;
+      var perView = Math.max(1, Math.round(track.clientWidth / step()));
+      return Math.max(1, n - perView + 1);
+    }
+    function current() { return Math.min(positions() - 1, Math.round(track.scrollLeft / step())); }
+    function goTo(i, smooth) {
+      var n = positions();
+      var p = ((i % n) + n) % n;
+      track.scrollTo({ left: p * step(), behavior: smooth === false ? 'auto' : 'smooth' });
+      // 점은 스크롤이 끝나길 기다리지 않고 바로 옮긴다
+      renderDots(p);
+    }
+    function renderDots(pos) {
+      var n = positions(), cur = pos == null ? current() : pos;
+      var html = '';
+      for (var i = 0; i < n; i++) {
+        html += '<button type="button" role="tab" data-pos="' + i + '" aria-label="' + (i + 1) + '번째"' +
+                (i === cur ? ' aria-current="true"' : '') + '></button>';
+      }
+      dots.innerHTML = html;
+      // 한 자리뿐이면 넘길 것이 없다 — 점과 화살표를 숨긴다
+      var single = n <= 1;
+      dots.hidden = single;
+      root.querySelectorAll('.car-nav').forEach(function (b) { b.hidden = single; });
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function restart() {
+      stop();
+      if (positions() <= 1) return;
+      // 동작 줄이기가 켜져 있으면 자동으로 안 돈다 — 손으로만 넘긴다
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      timer = setInterval(function () { if (!paused) goTo(current() + 1); }, INTERVAL_MS);
+    }
+
+    function mount(links) {
+      track.innerHTML = links.map(slide).join('');
+      section.hidden = false;
+
+      dots.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        goTo(Number(b.dataset.pos)); restart();
+      });
+      root.querySelectorAll('.car-nav').forEach(function (b) {
+        b.addEventListener('click', function () {
+          goTo(current() + (b.dataset.dir === 'next' ? 1 : -1)); restart();
+        });
+      });
+      // 읽는 중에는 안 넘긴다
+      ['pointerenter', 'focusin', 'touchstart'].forEach(function (ev) {
+        root.addEventListener(ev, function () { paused = true; }, { passive: true });
+      });
+      ['pointerleave', 'focusout', 'touchend', 'touchcancel'].forEach(function (ev) {
+        root.addEventListener(ev, function () { paused = false; }, { passive: true });
+      });
+      // 탭이 안 보이면 멈춘다 — 돌아왔을 때 몇 장이 훌쩍 넘어가 있지 않게
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop(); else restart();
+      });
+      var scrollTick = null;
+      track.addEventListener('scroll', function () {
+        clearTimeout(scrollTick);
+        scrollTick = setTimeout(function () { renderDots(); }, 80);
+      }, { passive: true });
+      window.addEventListener('resize', function () { goTo(current(), false); restart(); });
+
+      renderDots(0);
+      restart();
+    }
+
+    // 목록은 서버가 준다(앱 홈과 같은 것). 못 받으면 섹션을 안 보인다 —
+    // 빈 캐러셀보다 없는 편이 낫다
+    fetch('/api/curated')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (body) {
+        var links = body && body.data && body.data.curatedLinks;
+        if (Array.isArray(links) && links.length) mount(links);
+      })
+      .catch(function () { /* 섹션은 숨긴 채 둔다 */ });
   })();
 </script>
 
