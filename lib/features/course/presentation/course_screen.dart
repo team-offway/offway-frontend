@@ -300,8 +300,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       }
 
       final sent = await KakaoShare.sendCourse(
-        title: '$regionName 여행, $duration',
-        description: '연차로 떠나는 로컬 여행 — 코스를 확인해보세요',
+        // 링크 미리보기(og)와 같은 말을 쓴다 — 공유 버튼으로 보낸 카드와
+        // 링크만 붙인 미리보기가 다른 소리를 하면 같은 코스로 안 읽힌다
+        title: '$regionName 추천코스, $duration',
+        description: '연차로 떠나기 좋은 로컬 여행지를 만나보세요.',
         linkUrl: link,
         shareToken: token,
         kind: SharedCourseKind.recommend,
