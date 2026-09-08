@@ -8,28 +8,53 @@
 // 코스를 못 읽거나 늦으면(3초) 지역 없이 원래 HTML을 그대로 낸다 —
 // 미리보기 한 줄 때문에 페이지가 안 열리면 안 된다.
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 const API_ORIGIN = process.env.API_ORIGIN ?? 'https://api.offway.cloud';
 const PAGES = { r: 'recommend.html', m: 'mycourse.html' };
 const FETCH_TIMEOUT_MS = 3000;
 
-/** 이 함수 파일이 있는 `api/`의 부모 — `includeFiles`가 HTML을 실어 두는 자리 */
-const SITE_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/**
+ * HTML 파일이 있을 만한 자리들.
+ *
+ * **`import.meta.url`은 쓰지 않는다.** 이 폴더에 `package.json`이 없어 Vercel이
+ * 함수를 CommonJS로 묶는데, 그 모드에서는 `import.meta`가 빈 값이라 모듈을
+ * 읽는 순간 터진다 — 모든 요청이 500이 됐다(#249 뒤). `typeof __dirname`은
+ * 두 모드 어디서도 안전하다: CommonJS면 함수 파일의 폴더고, ESM이면 undefined다.
+ */
+function pageCandidates(file) {
+  const roots = [];
+  // eslint-disable-next-line no-undef
+  if (typeof __dirname === 'string') roots.push(join(__dirname, '..'));
+  roots.push(process.cwd(), '/var/task');
+  return roots.map((root) => join(root, file));
+}
 
 /**
- * HTML 파일을 찾는다.
+ * 정적 HTML을 구한다 — 파일이 없으면 **자기 도메인에서 HTTP로** 받는다.
  *
- * **`process.cwd()`만 믿으면 안 된다.** 배포된 함수의 작업 디렉터리는 로컬과
- * 달라, 거기서 `recommend.html`을 열면 ENOENT로 함수가 통째로 죽었다
- * (500 FUNCTION_INVOCATION_FAILED). 파일은 함수 파일 위치를 기준으로
- * 찾는 게 어디서 돌든 같고, 그래도 없으면 cwd 도 한 번 본다.
+ * 배포된 함수의 작업 디렉터리에는 `includeFiles`로 실은 HTML이 없었다
+ * (`readFileSync`가 ENOENT로 함수를 죽였다). 번들이 파일을 어디에 두든
+ * 정적 파일은 같은 도메인에서 늘 서비스되므로, 그쪽에서 받으면 구조와
+ * 무관하게 동작한다. 캐시가 붙어 있어 비용도 작다.
  */
-function findPage(file) {
-  const candidates = [join(SITE_ROOT, file), join(process.cwd(), file)];
+async function loadPage(file, host) {
+  const candidates = pageCandidates(file);
   const found = candidates.find((path) => existsSync(path));
-  return { path: found ?? null, candidates };
+  if (found) return { html: readFileSync(found, 'utf8'), tried: candidates };
+  if (host) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const upstream = await fetch(`https://${host}/${file}`, { signal: controller.signal });
+      if (upstream.ok) return { html: await upstream.text(), tried: candidates };
+    } catch {
+      // 아래에서 못 찾았다고 답한다
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return { html: null, tried: candidates };
 }
 
 /** 코스 응답에서 지역 이름 — 앱과 같은 자리(첫 날 첫 칸의 regionName) */
@@ -87,17 +112,17 @@ export default async function handler(req, res) {
     res.status(404).send('not found');
     return;
   }
-  const page = findPage(file);
-  if (!page.path) {
+  const page = await loadPage(file, req.headers?.host);
+  if (!page.html) {
     // 죽지 말고 무엇을 못 찾았는지 남긴다 — 로그 없이 배포 환경의 경로를
-    // 알 방법이 이것뿐이다. 미리보기 한 줄 때문에 페이지가 안 열리면 안 된다
-    console.error('공유 페이지 HTML 을 찾지 못했습니다', page.candidates);
+    // 알 방법이 이것뿐이다
+    console.error('공유 페이지 HTML 을 찾지 못했습니다', page.tried);
     res.status(500);
     res.setHeader('content-type', 'text/plain; charset=utf-8');
-    res.send(`page not found: ${page.candidates.join(', ')}`);
+    res.send(`page not found: ${page.tried.join(', ')}`);
     return;
   }
-  const html = readFileSync(page.path, 'utf8');
+  const html = page.html;
   const course = typeof token === 'string' && token ? await fetchCourse(token) : null;
 
   res.status(200);
