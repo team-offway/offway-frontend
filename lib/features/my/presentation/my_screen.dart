@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../application/app_version_provider.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/image_cache.dart';
 import '../../../core/router/app_router.dart';
@@ -83,6 +84,9 @@ class MyScreen extends ConsumerWidget {
               label: '회원탈퇴',
               onTap: () => context.push(AppRoutes.withdraw),
             ),
+            // 앱 버전 — 테스터가 어느 빌드인지 바로 말할 수 있게 맨 아래에 작게.
+            // 메뉴가 아니라 정보라 쉐브론 없이, 못 읽으면 줄을 지운다
+            _AppVersionLine(),
           ],
         ),
       ),
@@ -291,6 +295,28 @@ class _MenuRow extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// `v1.0.4 (32)` — 메뉴 아래 작은 회색 한 줄.
+class _AppVersionLine extends ConsumerWidget {
+  const _AppVersionLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = ref.watch(appVersionProvider).value ?? '';
+    if (version.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      // 메뉴 행과 같은 좌우 20. 마지막 행이 아래 26을 이미 달고 있다
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Text(
+        'v$version',
+        // Assistive(28%)는 너무 연해 안 읽힌다 — 한 단계 진한 Alternative
+        style: AppTypography.caption1Regular.copyWith(
+          color: AppColors.labelAlternative,
         ),
       ),
     );
