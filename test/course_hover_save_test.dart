@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 
 /// 코스 확정 화면 하단에 떠 있는 '내 코스에 담기' (시안 18860:77008).
@@ -103,6 +104,45 @@ void main() {
           .first,
     );
     expect(ignore.ignoring, isFalse);
+  });
+
+  testWidgets('떠 있는 버튼은 시안 크기다 — 151×48', (tester) async {
+    await pump(tester);
+
+    final size = tester.getSize(
+      find.ancestor(of: hoverButton(), matching: find.byType(Ink)).first,
+    );
+    expect(size.height, 48);
+    expect(size.width, closeTo(151, 4));
+  });
+
+  testWidgets('공유 버튼을 가리키는 툴팁이 뜬다', (tester) async {
+    await pump(tester);
+
+    expect(find.byType(AppTooltipBubble), findsOneWidget);
+    expect(find.text('코스를 공유해보세요'), findsOneWidget);
+  });
+
+  testWidgets('툴팁 화살표가 공유 아이콘 가운데를 가리킨다', (tester) async {
+    await pump(tester);
+
+    final share = tester.getRect(find.bySemanticsLabel('공유하기'));
+    final arrow = tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.size == const Size(20, 8),
+      ),
+    );
+
+    expect(arrow.center.dx, closeTo(share.center.dx, 0.5));
+  });
+
+  testWidgets('툴팁 닫기를 누르면 사라진다', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.bySemanticsLabel('안내 닫기'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(AppTooltipBubble), findsNothing);
   });
 
   testWidgets('담기 유도 문구는 시안 그대로다', (tester) async {
