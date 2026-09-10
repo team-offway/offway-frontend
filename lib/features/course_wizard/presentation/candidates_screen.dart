@@ -440,9 +440,11 @@ class _CandidateCard extends ConsumerWidget {
     final imageUrl = region['imageUrl'] as String?;
     // 추천 응답은 혜택을 목록으로 준다 — 대표가 맨 앞. 옛 값(`benefit`)만
     // 있어도 그린다
-    final benefits = RegionBenefit.parseList(region['benefits']);
+    final served = RegionBenefit.parseList(region['benefits']);
     final benefit =
-        benefits.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
+        served.firstOrNull ?? RegionBenefit.tryParse(region['benefit']);
+    // 목록이 안 오는 옛 서버에서는 대표 하나가 곧 전부다
+    final benefits = served.isNotEmpty ? served : [?benefit];
     // 리포지토리가 파싱해 넘기지만, 캐스팅으로 두면 모양이 다를 때 카드가
     // 통째로 죽는다 — 지표는 덤이라 그렇게까지 할 값이 아니다
     final metrics = region['visitMetrics'];
@@ -483,26 +485,27 @@ class _CandidateCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           // 혜택 칩과 인기 상승 칩이 나란히 놓인다(시안) — 둘 다 없으면
-          // 줄째 사라져 사진과 지역명이 붙는다
+          // 줄째 사라져 사진과 지역명이 붙는다.
+          //
+          // **여기서는 혜택을 전부 편다**(QA 9/9). 홈은 카드가 좁아 `+2`로
+          // 접지만 이 화면은 카드가 넓어 줄바꿈으로 다 보인다
           if (benefit != null || trend?.rising == true) ...[
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
-                if (benefit != null)
-                  // 혜택이 여럿이면 `+1`을 붙이고 먼저 고르는 시트를 연다
+                for (final b in benefits)
                   BenefitBadge(
-                    benefit: benefit,
+                    benefit: b,
                     size: BenefitBadgeSize.candidate,
-                    extraCount: benefits.length > 1 ? benefits.length - 1 : 0,
-                    onTap: benefits.length > 1
-                        ? () => showRegionBenefitsSheet(
+                    onTap: b.policyId == null
+                        ? null
+                        : () => showRegionBenefitsSheet(
                             context,
                             regionLabel:
                                 '${region['name']} · ${region['sido']}',
-                            benefits: benefits,
-                          )
-                        : null,
+                            benefits: [b],
+                          ),
                   ),
                 if (trend?.rising == true)
                   const RisingChip(size: BenefitBadgeSize.candidate),
