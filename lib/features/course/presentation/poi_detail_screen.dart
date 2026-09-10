@@ -26,7 +26,7 @@ final poiDetailProvider = FutureProvider.autoDispose
           ref.watch(courseRepositoryProvider).poiDetail(contentId),
     );
 
-/// 장소 하나의 상세 — 대표 이미지·소개·기본정보·위치와 길 찾기.
+/// 장소 하나의 상세 — 대표 이미지·소개·기본정보·위치와 지도 열기.
 ///
 /// [name]은 목록에서 넘어온 장소명 그대로 본문 제목에 쓴다.
 /// [regionName]이 있으면 상단바에 지역명을 띄운다 — 지역 상세에서 들어온
@@ -220,7 +220,7 @@ class _Body extends StatelessWidget {
                 child: FilledButton(
                   onPressed: lat == null || lng == null
                       ? null
-                      : () => _openDirections(context, lat, lng),
+                      : () => _openPlaceOnMap(context, lat, lng),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryNormal,
                     disabledBackgroundColor: AppColors.interactionDisable,
@@ -231,7 +231,7 @@ class _Body extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text('길 찾기', style: AppTypography.body1NormalBold),
+                  child: Text('지도에서 보기', style: AppTypography.body1NormalBold),
                 ),
               ),
               // 공공데이터 출처 (core #417) — 장소마다 갈린다. 인허가 장소는
@@ -302,21 +302,27 @@ class _Body extends StatelessWidget {
     );
   }
 
-  /// 외부 지도 앱으로 길 찾기 — 목적지 좌표만 넘기고 출발지는 지도 앱이
-  /// 현재 위치로 잡는다. 네이버지도가 없으면 OS 기본 지도로 넘어간다
+  /// 외부 지도 앱에서 **그 장소를 바로 연다**.
+  ///
+  /// 길찾기로 열면 지도 앱이 경로부터 잡아 보여, 어디인지 확인하려던
+  /// 사용자가 한 번 더 빠져나와야 했다. 좌표에 핀만 찍어 준다.
+  /// 네이버지도가 없으면 OS 기본 지도로 넘어간다
   /// (iOS 애플 지도 · Android 지도 인텐트).
-  Future<void> _openDirections(
+  Future<void> _openPlaceOnMap(
     BuildContext context,
     double lat,
     double lng,
   ) async {
     final naver = Uri.parse(
-      'nmap://route/car?dlat=$lat&dlng=$lng'
-      '&dname=${Uri.encodeComponent(name)}&appname=com.nth.offway',
+      'nmap://place?lat=$lat&lng=$lng'
+      '&name=${Uri.encodeComponent(name)}&appname=com.nth.offway',
     );
     final fallback = Theme.of(context).platform == TargetPlatform.android
         ? Uri.parse('geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(name)})')
-        : Uri.parse('https://maps.apple.com/?daddr=$lat,$lng');
+        : Uri.parse(
+            'https://maps.apple.com/?ll=$lat,$lng'
+            '&q=${Uri.encodeComponent(name)}',
+          );
     try {
       // launchUrl은 실패해도 예외 대신 false를 줄 수 있어 반환값까지 본다
       if (await canLaunchUrl(naver) && await launchUrl(naver)) return;

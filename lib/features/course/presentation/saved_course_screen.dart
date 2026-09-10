@@ -1195,7 +1195,7 @@ class _PlaceSheet extends ConsumerWidget {
       // 운영시간이 여러 줄인 장소(도서관 등)는 시트를 넘긴다 — 넘칠 때만
       // 스크롤되고, 짧으면 내용만큼만 차지한다
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
+        padding: const EdgeInsets.fromLTRB(20, 35, 20, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1224,7 +1224,7 @@ class _PlaceSheet extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.label2Medium.copyWith(
-                              color: AppColors.labelAlternative,
+                              color: AppColors.labelStrong,
                             ),
                           ),
                         ],
@@ -1232,9 +1232,9 @@ class _PlaceSheet extends ConsumerWidget {
                     ),
                   ),
                   SvgPicture.asset(
-                    'assets/icons/ic_chevron_right.svg',
-                    width: 12,
-                    height: 24,
+                    'assets/icons/ic_chevron_right_16.svg',
+                    width: 16,
+                    height: 16,
                     colorFilter: const ColorFilter.mode(
                       AppColors.labelAlternative,
                       BlendMode.srcIn,
