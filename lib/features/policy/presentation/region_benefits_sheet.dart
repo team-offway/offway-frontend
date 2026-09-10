@@ -67,8 +67,10 @@ class _BenefitRow extends StatelessWidget {
                 'assets/icons/ic_link.svg',
                 width: 24,
                 height: 24,
+                // 시안 실측 (71,72,76) — 제목과 같은 Label/Neutral이다.
+                // 오른쪽 쉐브론(Alternative)보다 진하다
                 colorFilter: const ColorFilter.mode(
-                  AppColors.labelAlternative,
+                  AppColors.labelNeutral,
                   BlendMode.srcIn,
                 ),
               ),

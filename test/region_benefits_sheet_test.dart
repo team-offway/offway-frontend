@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
 import 'package:offway/features/region/presentation/widgets/region_card.dart';
 
@@ -95,6 +96,13 @@ void main() {
               'assets/icons/ic_link.svg',
     );
     expect(links, findsNWidgets(2), reason: '혜택 두 건이면 아이콘도 둘');
+
+    // 시안 실측 (71,72,76) — 오른쪽 쉐브론(Alternative)보다 진하다
+    final icon = tester.widget<SvgPicture>(links.first);
+    expect(
+      icon.colorFilter,
+      const ColorFilter.mode(AppColors.labelNeutral, BlendMode.srcIn),
+    );
   });
 
   testWidgets('하나뿐이면 지금까지처럼 문구만이다', (tester) async {
