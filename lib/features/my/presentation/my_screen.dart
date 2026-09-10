@@ -241,10 +241,9 @@ class _LeaveCard extends StatelessWidget {
             ),
             const Spacer(),
             SvgPicture.asset(
-              'assets/icons/ic_chevron_right.svg',
-              // DS 쉐브론(Tight)은 12×24 비율이다
-              width: 12,
-              height: 24,
+              'assets/icons/ic_chevron_right_16.svg',
+              width: 16,
+              height: 16,
               colorFilter: const ColorFilter.mode(
                 AppColors.labelAlternative,
                 BlendMode.srcIn,
@@ -281,17 +280,16 @@ class _MenuRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.headline1Medium.copyWith(
+                  style: AppTypography.headline2Medium.copyWith(
                     color: AppColors.labelNeutral,
                   ),
                 ),
               ),
-              // DS 쉐브론(Tight)은 12×24 비율이다 — 24로 두면 가로로 늘어난다.
               // 에셋이 Label/Alternative를 품고 있어 색을 덧입히지 않는다
               SvgPicture.asset(
-                'assets/icons/ic_chevron_right.svg',
-                width: 12,
-                height: 24,
+                'assets/icons/ic_chevron_right_16.svg',
+                width: 16,
+                height: 16,
               ),
             ],
           ),

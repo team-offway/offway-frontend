@@ -4,22 +4,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/region/domain/region_visit_metrics.dart';
 
 /// 저장 코스 화면의 공유 유도 툴팁 (시안 18860:76589).
 ///
 /// **신규 기능의 위치를 한 번 알리는 자리**다(DS Tooltip 사용 예시).
 /// 코스를 읽기 시작하면 할 일을 다 한 셈이라 사라지고, 다시 뜨지 않는다.
 void main() {
-  ({Map<String, dynamic> saved, Map<String, dynamic> course}) detail() => (
+  ({Map<String, dynamic> saved, Map<String, dynamic> course}) detail({
+    bool leaveDeducted = false,
+    String travelDate = '2026-09-10',
+  }) => (
     saved: {
       'id': '1',
       'regionName': '정선군',
-      'travelDate': '2026-09-10',
+      'travelDate': travelDate,
+      'startDate': travelDate,
+      'endDate': travelDate,
       'shareToken': 'abc',
-      'leaveDeducted': false,
+      'leaveDeducted': leaveDeducted,
     },
     course: {
       'regionName': '정선군',
+      'visitMetrics': RegionVisitMetrics.parse(const {
+        'quietestDay': {'label': '화요일', 'percentLessThanOtherDays': 24},
+      }),
       'durationDays': 1,
       'travelDate': '2026-09-10',
       'days': [
@@ -42,14 +51,21 @@ void main() {
     },
   );
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool leaveDeducted = false,
+    String travelDate = '2026-09-10',
+  }) async {
     tester.view.physicalSize = const Size(402 * 3, 874 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          savedCourseDetailProvider('1').overrideWith((ref) async => detail()),
+          savedCourseDetailProvider('1').overrideWith(
+            (ref) async =>
+                detail(leaveDeducted: leaveDeducted, travelDate: travelDate),
+          ),
         ],
         child: MaterialApp(
           theme: AppTheme.light,
@@ -65,7 +81,7 @@ void main() {
     await pump(tester);
 
     expect(find.byType(AppTooltipBubble), findsOneWidget);
-    expect(find.text('여행 메이트에게 공유해보세요'), findsOneWidget);
+    expect(find.text('코스를 공유해보세요'), findsOneWidget);
   });
 
   testWidgets('스크롤을 내리면 사라진다', (tester) async {
@@ -89,6 +105,36 @@ void main() {
     expect(find.byType(AppTooltipBubble), findsNothing);
   });
 
+  testWidgets('닫기를 누르면 사라진다', (tester) async {
+    await pump(tester);
+    expect(find.byType(AppTooltipBubble), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('안내 닫기'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(AppTooltipBubble), findsNothing);
+  });
+
+  testWidgets('이미 다녀온 여행이면 안 뜬다 — 앞으로 갈 사람에게만 쓸모가 있다', (tester) async {
+    await pump(tester, travelDate: '2020-01-01');
+
+    expect(find.byType(AppTooltipBubble), findsNothing);
+  });
+
+  testWidgets('아직 안 끝난 여행에는 뜬다 — 목록의 다녀온 여행 탭과 같은 기준', (tester) async {
+    // 서버는 종료일이 오늘보다 이전인 코스만 '다녀온 여행'으로 본다.
+    // 연차를 미리 차감했어도 여행이 안 끝났으면 공유할 이유가 있다
+    await pump(tester, leaveDeducted: true);
+
+    expect(find.byType(AppTooltipBubble), findsOneWidget);
+  });
+
+  testWidgets('내 코스에서는 한산한 요일을 안 보여준다 — 담은 순간 날짜가 정해진다', (tester) async {
+    await pump(tester);
+
+    expect(find.textContaining('화요일'), findsNothing);
+  });
+
   testWidgets('화살표를 시안 자리에 둔다', (tester) async {
     // 시안(18860:76589) 실측 — 툴팁 191 안에서 화살표는 x=163, 폭 20.
     // 오른쪽 여백 8이 코너 반지름 8과 정확히 만나 겹치지 않는다.
@@ -99,7 +145,7 @@ void main() {
         home: const Scaffold(
           body: Align(
             alignment: Alignment.centerRight,
-            child: AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+            child: AppTooltipBubble(text: '코스를 공유해보세요'),
           ),
         ),
       ),
@@ -119,24 +165,38 @@ void main() {
     expect(arrow.width, 20);
   });
 
+  testWidgets('화살표가 공유 아이콘 가운데를 가리킨다', (tester) async {
+    await pump(tester);
+
+    final share = tester.getRect(find.bySemanticsLabel('공유하기'));
+    final arrow = tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.size == const Size(20, 8),
+      ),
+    );
+
+    expect(arrow.center.dx, closeTo(share.center.dx, 0.5));
+  });
+
   testWidgets('시안 크기를 지킨다', (tester) async {
     // 말풍선이 부모 폭을 다 먹으면 화살표가 붙을 자리를 잃는다
     // 테마를 줘야 Pretendard로 잰다 — 기본 서체는 폭이 달라 시안과 어긋난다
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: const Scaffold(
+        home: Scaffold(
           body: Align(
             alignment: Alignment.centerRight,
-            child: AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+            child: AppTooltipBubble(text: '코스를 공유해보세요', onClose: () {}),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
+    // 시안 실측 162.2×44 — 글자 115 + 여백 12·12 + 간격 6 + 닫기 19.2
     final size = tester.getSize(find.byType(AppTooltipBubble));
-    expect(size.width, closeTo(191, 2));
+    expect(size.width, closeTo(162, 3));
     expect(size.height, 44);
   });
 }

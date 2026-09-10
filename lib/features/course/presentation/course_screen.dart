@@ -20,6 +20,7 @@ import '../../region/domain/region_visit_metrics.dart';
 import '../../region/presentation/widgets/quietest_day_banner.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -123,6 +124,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   /// 목록 끝의 버튼과 같은 동작을 부르므로 여기서 담아도 결과가 같다
   bool _hoverVisible = true;
 
+  /// 공유 버튼을 가리키는 툴팁이 보이는가.
+  ///
+  /// **한 번 사라지면 다시 안 뜬다.** 내 코스 상세와 같은 규칙이다 —
+  /// 코스를 읽기 시작하면 위치를 알린 셈이라 그때부터는 잔소리가 된다
+  bool _shareTipVisible = true;
+
   @override
   void initState() {
     super.initState();
@@ -146,6 +153,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     if (!_scroll.hasClients) return;
     final atTop = _scroll.offset <= _hoverHideOffset;
     if (atTop != _hoverVisible) setState(() => _hoverVisible = atTop);
+    if (_shareTipVisible && _scroll.offset > _hoverHideOffset) {
+      setState(() => _shareTipVisible = false);
+    }
   }
 
   /// 이만큼 내려가면 감춘다 — 손가락이 살짝 스친 정도로는 안 사라진다
@@ -480,7 +490,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  /// 시안 Button/Button — 아이콘 + 글, 좌우 28·상하 12, 반경 12
+  /// 시안 Button/Button — 151×48(좌우 16.5·상하 12), 아이콘 20·간격 6, 반경 12.
+  /// 색은 Cool Neutral/60 — 브랜드색은 목록 끝의 주 버튼이 쓴다
   Widget _buildHoverSaveButton(Map<String, dynamic> course) {
     return Material(
       color: Colors.transparent,
@@ -489,7 +500,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.primaryNormal,
+            color: AppPalette.coolNeutral60,
             borderRadius: BorderRadius.circular(12),
             // 목록 위에 떠 있어 글이 겹쳐 보이지 않게 그림자를 준다 —
             // 시안에는 없지만 시안은 흰 배경 위 정지 상태다
@@ -501,14 +512,14 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16.5, vertical: 12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.download,
-                size: 20,
-                color: AppColors.staticWhite,
+              SvgPicture.asset(
+                'assets/icons/ic_save_course.svg',
+                width: 20,
+                height: 20,
               ),
               const SizedBox(width: 6),
               Text(
@@ -578,6 +589,24 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
             ],
           ),
         ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          alignment: Alignment.topCenter,
+          child: _shareTipVisible
+              ? Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    // 화살표 가운데가 공유 아이콘(44) 가운데와 만나게 한다.
+                    // 상단바 좌우 여백이 10이라 내 코스 상세(12)와 값이 다르다
+                    padding: const EdgeInsets.only(right: 14, bottom: 4),
+                    child: AppTooltipBubble(
+                      text: '코스를 공유해보세요',
+                      onClose: () => setState(() => _shareTipVisible = false),
+                    ),
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
         Expanded(
           child: ListView(
             controller: _scroll,
@@ -606,7 +635,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               // 둔다. 값이 없으면 위젯이 스스로 자리를 비운다
               if (course['visitMetrics'] case final RegionVisitMetrics m) ...[
                 QuietestDayBanner(quietestDay: m.quietestDay),
-                if (m.quietestDay != null) const SizedBox(height: 10),
+                if (m.quietestDay != null) const SizedBox(height: 8),
               ],
               // 도착 안내(무엇을 타고 어디에 내리는지)는 **담은 뒤에** 보인다.
               // 여기는 아직 고르는 자리라 갈 방법보다 코스 자체를 봐야 한다

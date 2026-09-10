@@ -79,6 +79,39 @@ void main() {
       expect(shown.skip(8), ['2', '4', '11', '12', '13']);
     });
 
+    test('관광지와 체험을 번갈아 세운다 — 전체와 관광지 칩이 같은 장소로 시작하지 않게', () {
+      // QA 9/9 #3: 서버가 관광지를 앞에 몰아 주면 '전체'의 앞줄이 '관광지'
+      // 칩과 똑같아져, 번갈아 눌러도 바뀐 게 없어 보였다
+      final places = [
+        place('1', 'SIGHT'),
+        place('2', 'SIGHT'),
+        place('3', 'SIGHT'),
+        place('4', 'EXPERIENCE'),
+        place('5', 'EXPERIENCE'),
+        place('6', 'EXPERIENCE'),
+        place('7', 'FOOD'),
+      ];
+      expect(homePlacesForChip(places, null).map((p) => p['id']), [
+        '1',
+        '4',
+        '2',
+        '5',
+        '3',
+        '6',
+        '7',
+      ]);
+    });
+
+    test('한쪽이 먼저 떨어지면 남은 갈래로 8장을 채운다', () {
+      final places = [
+        place('1', 'EXPERIENCE'),
+        for (var i = 2; i <= 10; i++) place('$i', 'SIGHT'),
+      ];
+      final shown = homePlacesForChip(places, null).map((p) => p['id']);
+      expect(shown.take(8), ['2', '1', '3', '4', '5', '6', '7', '8']);
+      expect(shown.skip(8), ['9', '10']);
+    });
+
     test('관광지·체험이 8장이 안 되면 있는 만큼만 앞에 둔다', () {
       final places = [
         place('1', 'FOOD'),

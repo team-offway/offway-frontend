@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/tokens/tokens.dart';
 
@@ -7,14 +8,21 @@ import '../theme/tokens/tokens.dart';
 /// 어떤 버튼이 무엇을 하는지 한 번 알려 주고 사라지는 자리다. 어두운 배경에
 /// 흰 글씨라 화면 위에 떠 있어도 뒤 내용과 섞이지 않는다.
 class AppTooltipBubble extends StatelessWidget {
-  const AppTooltipBubble({super.key, required this.text});
+  const AppTooltipBubble({super.key, required this.text, this.onClose});
 
   final String text;
+
+  /// 닫기(X)를 누르면 부른다. null이면 버튼을 두지 않는다 —
+  /// 눌러도 아무 일이 없는 자리를 남기지 않는다
+  final VoidCallback? onClose;
 
   /// 시안 실측 — 화살표 20×8
   static const _arrowWidth = 20.0;
   static const _arrowHeight = 8.0;
   static const _bubbleRadius = 8.0;
+
+  /// 시안 실측 — 닫기 아이콘 19.2
+  static const _closeSize = 19.2;
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +48,39 @@ class AppTooltipBubble extends StatelessWidget {
             color: _bubbleColor,
             borderRadius: BorderRadius.circular(_bubbleRadius),
           ),
-          child: Text(
-            text,
-            style: AppTypography.label1NormalMedium.copyWith(
-              color: AppColors.inverseLabel,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  text,
+                  style: AppTypography.label1NormalMedium.copyWith(
+                    color: AppColors.inverseLabel,
+                  ),
+                ),
+              ),
+              if (onClose != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onClose,
+                  behavior: HitTestBehavior.opaque,
+                  child: Semantics(
+                    button: true,
+                    label: '안내 닫기',
+                    child: SvgPicture.asset(
+                      'assets/icons/ic_circle_close.svg',
+                      width: _closeSize,
+                      height: _closeSize,
+                      excludeFromSemantics: true,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.inverseLabel,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],

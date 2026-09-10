@@ -441,9 +441,9 @@ class _RegisterRow extends StatelessWidget {
             ),
             const Spacer(),
             SvgPicture.asset(
-              'assets/icons/ic_chevron_right.svg',
-              width: 12,
-              height: 24,
+              'assets/icons/ic_chevron_right_16.svg',
+              width: 16,
+              height: 16,
               colorFilter: const ColorFilter.mode(
                 AppColors.labelAlternative,
                 BlendMode.srcIn,

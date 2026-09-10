@@ -261,7 +261,7 @@ class RegionDetailScreen extends ConsumerWidget {
         //
         // **혜택이 있는 지역에만 뜬다.** 예전에는 이 자리에 큐레이션 링크
         // (대한민국 구석구석·국가유산포털)를 그렸는데, 그 둘은 모든 지역에
-        // 똑같이 붙는 고정 링크라 혜택이 없는 지역에서도 "혜택이 있어요"라고
+        // 똑같이 붙는 고정 링크라 혜택이 없는 지역에서도 혜택이 있다고
         // 말했다. 시안(18761:72093)이 여기에 두는 것은 혜택 카드 하나다
         if (benefit != null) ...[
           const SizedBox(height: 44),
@@ -271,7 +271,7 @@ class RegionDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '이 지역에서 누릴 수 있는 혜택이 있어요',
+                  '이 지역에서 누릴 수 있는 혜택',
                   style: AppTypography.headline2Bold.copyWith(
                     color: _labelNormal,
                   ),
@@ -291,7 +291,7 @@ class RegionDetailScreen extends ConsumerWidget {
           sources:
               (region['_sources'] as List?)?.cast<DataSource>() ??
               const <DataSource>[],
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
         ),
       ],
     );

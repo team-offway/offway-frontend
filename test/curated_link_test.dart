@@ -303,7 +303,7 @@ void main() {
   group('지역 상세 — 혜택 카드가 그 자리를 쓴다', () {
     // 예전에는 여기에 큐레이션 링크를 그렸다. 그런데 대한민국 구석구석·
     // 국가유산포털은 **모든 지역에 똑같이 붙는 고정 링크**라, 혜택이 없는
-    // 지역에서도 "혜택이 있어요"라고 말했다. 시안(18761:72093)이 이 자리에
+    // 지역에서도 혜택이 있다고 말했다. 시안(18761:72093)이 이 자리에
     // 두는 것은 혜택 카드 하나다
     Future<void> pumpRegion(
       WidgetTester tester, {
@@ -342,7 +342,7 @@ void main() {
       await pumpRegion(tester, benefit: const {'text': '숙박 할인', 'policyId': 3});
 
       await tester.scrollUntilVisible(
-        find.text('이 지역에서 누릴 수 있는 혜택이 있어요'),
+        find.text('이 지역에서 누릴 수 있는 혜택'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
@@ -360,7 +360,7 @@ void main() {
     testWidgets('혜택이 없으면 섹션째 없다 — 없는 혜택을 있다고 말하지 않는다', (tester) async {
       await pumpRegion(tester);
 
-      expect(find.text('이 지역에서 누릴 수 있는 혜택이 있어요'), findsNothing);
+      expect(find.text('이 지역에서 누릴 수 있는 혜택'), findsNothing);
       expect(find.byType(RegionBenefitCard), findsNothing);
     });
 

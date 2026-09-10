@@ -19,8 +19,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/data_source_note.dart';
-import '../../region/domain/region_visit_metrics.dart';
-import '../../region/presentation/widgets/quietest_day_banner.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -153,6 +151,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         ? null
         : calendarDaysBetween(DateUtils.dateOnly(DateTime.now()), start);
 
+    // 이미 다녀온 여행 — 내 코스 목록의 '다녀온 여행' 탭과 같은 기준이다.
+    // 서버는 **종료일이 오늘보다 이전**인 코스를 그렇게 본다(findPastByEndDate).
+    // 시작일이나 차감 여부로 가르면 목록과 상세가 어긋난다
+    final today = DateUtils.dateOnly(DateTime.now());
+    final past = end != null && DateUtils.dateOnly(end).isBefore(today);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,13 +167,18 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           alignment: Alignment.topCenter,
-          child: _shareTipVisible
+          child: _shareTipVisible && !past
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
-                    // 화살표가 공유 아이콘(우측 끝에서 22) 아래에 오게 한다
-                    padding: const EdgeInsets.only(right: 12, bottom: 4),
-                    child: const AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+                    // 화살표 가운데가 공유 아이콘 가운데와 만나게 한다.
+                    // 버튼(44) 중심은 화면 오른쪽에서 28, 화살표는 말풍선
+                    // 오른쪽에서 18이라 그 차 10을 오른쪽 여백으로 둔다
+                    padding: const EdgeInsets.only(right: 10, bottom: 4),
+                    child: AppTooltipBubble(
+                      text: '코스를 공유해보세요',
+                      onClose: () => setState(() => _shareTipVisible = false),
+                    ),
                   ),
                 )
               : const SizedBox(width: double.infinity),
@@ -231,19 +240,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     // 실제로는 상세 조회도 같은 조립을 타 값이 온다
                     // (CourseStorageService.get → withBenefits(course, true)).
                     // 설명이 낡은 것으로 보고 값이 있으면 그린다
-                    // 언제 가면 덜 붐비는지 (core #438)
-                    if (course['visitMetrics'] case final RegionVisitMetrics m
-                        when m.quietestDay != null) ...[
-                      QuietestDayBanner(quietestDay: m.quietestDay),
-                      const SizedBox(height: 16),
-                    ],
                     if (course['transitAccess']
                         case final TransitAccess access) ...[
                       TransitAccessCard(
                         access: access,
                         onModeSelected: _changeTransitMode,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                     ],
                     _buildMap(places),
                   ],
@@ -614,7 +617,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             // 시안 실측: 상단바 끝에서 첫 항목까지 19
             const SizedBox(height: 19),
             _EditSheetRow(
-              iconAsset: 'assets/icons/ic_calendar.svg',
+              iconAsset: 'assets/icons/ic_calendar_20.svg',
               label: '여행날짜 수정',
               onTap: () => Navigator.of(sheetContext).pop('reschedule'),
             ),
@@ -1192,7 +1195,7 @@ class _PlaceSheet extends ConsumerWidget {
       // 운영시간이 여러 줄인 장소(도서관 등)는 시트를 넘긴다 — 넘칠 때만
       // 스크롤되고, 짧으면 내용만큼만 차지한다
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
+        padding: const EdgeInsets.fromLTRB(20, 35, 20, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1215,7 +1218,7 @@ class _PlaceSheet extends ConsumerWidget {
                           ),
                         ),
                         if (place['catchphrase'] case final String phrase) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             phrase,
                             maxLines: 1,
@@ -1229,9 +1232,9 @@ class _PlaceSheet extends ConsumerWidget {
                     ),
                   ),
                   SvgPicture.asset(
-                    'assets/icons/ic_chevron_right.svg',
-                    width: 12,
-                    height: 24,
+                    'assets/icons/ic_chevron_right_16.svg',
+                    width: 16,
+                    height: 16,
                     colorFilter: const ColorFilter.mode(
                       AppColors.labelAlternative,
                       BlendMode.srcIn,
@@ -1240,7 +1243,7 @@ class _PlaceSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 30),
             _buildInfoRow(
               // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
               // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘

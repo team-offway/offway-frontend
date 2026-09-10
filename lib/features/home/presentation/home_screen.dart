@@ -82,9 +82,8 @@ const homeFeaturedCount = 8;
 /// 카테고리를 고르면 그 갈래는 소개가 없어도 전부 보여준다(고른 사람은
 /// 그 갈래를 다 보고 싶은 것이고, 숙박·음식은 소개가 늦게 채워진다).
 ///
-/// '전체'는 그 위에 **앞 [homeFeaturedCount]장을 관광지·체험으로** 세운다.
-/// 순서를 새로 매기지는 않는다 — 관광지·체험을 원래 차례대로 앞으로 당기고
-/// 나머지는 원래 차례대로 뒤에 둔다. 당겨서 새로고침해 섞인 뒤에도 같다
+/// '전체'는 그 위에 **앞 [homeFeaturedCount]장을 관광지·체험으로** 번갈아
+/// 세운다. 각 갈래 안의 차례는 그대로고, 나머지는 원래 차례대로 뒤에 둔다
 List<Map<String, dynamic>> homePlacesForChip(
   List<Map<String, dynamic>> places,
   Map<String, dynamic>? selected,
@@ -99,10 +98,18 @@ List<Map<String, dynamic>> homePlacesForChip(
   final described = places
       .where((p) => (p['description'] as String?)?.isNotEmpty ?? false)
       .toList();
-  final featured = described
-      .where((p) => homeFeaturedKinds.contains(p['kind']))
-      .take(homeFeaturedCount)
+  final sights = described.where((p) => p['kind'] == 'SIGHT').toList();
+  final experiences = described
+      .where((p) => p['kind'] == 'EXPERIENCE')
       .toList();
+  final featured = <Map<String, dynamic>>[];
+  for (var i = 0; featured.length < homeFeaturedCount; i++) {
+    final s = i < sights.length ? sights[i] : null;
+    final e = i < experiences.length ? experiences[i] : null;
+    if (s == null && e == null) break;
+    if (s != null) featured.add(s);
+    if (e != null && featured.length < homeFeaturedCount) featured.add(e);
+  }
   if (featured.isEmpty) return described;
   final rest = described.where((p) => !featured.contains(p)).toList();
   return [...featured, ...rest];
@@ -248,7 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildTopBar(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 21),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _buildLeaveCard(user),
@@ -324,7 +331,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 3, 20, 0),
       child: Row(
         children: [
           SvgPicture.asset(
@@ -400,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 color: AppColors.labelNormal,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 4),
             Text(
               // 서버가 double로 주므로(반차 0.5 단위) 15.0일로 보이지 않게 다듬는다
               days == null ? '-' : '${formatLeaveDays(days as num)}일',
@@ -410,10 +417,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const Spacer(),
             SvgPicture.asset(
-              'assets/icons/ic_chevron_right.svg',
-              // DS 쉐브론(Tight)은 12×24 비율이다
-              width: 12,
-              height: 24,
+              'assets/icons/ic_chevron_right_16.svg',
+              width: 16,
+              height: 16,
               colorFilter: const ColorFilter.mode(
                 AppColors.labelAlternative,
                 BlendMode.srcIn,
