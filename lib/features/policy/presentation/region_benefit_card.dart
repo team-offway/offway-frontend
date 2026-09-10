@@ -58,14 +58,10 @@ class RegionBenefitCard extends ConsumerWidget {
               // 눌러도 아무 일도 안 일어나는 자리를 남기지 않는다
               if (applyUri != null)
                 SvgPicture.asset(
-                  'assets/icons/ic_link.svg',
+                  'assets/icons/ic_link_disable.svg',
                   width: 24,
                   height: 24,
                   excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.labelAlternative,
-                    BlendMode.srcIn,
-                  ),
                 ),
             ],
           ),
@@ -118,7 +114,7 @@ class RegionBenefitCard extends ConsumerWidget {
   }
 }
 
-/// 혜택 뱃지 — 카드 안쪽이라 [BenefitBadge]보다 크다(시안 8·5, 반경 8)
+/// 혜택 뱃지 — 시안 실측 6·4, 반경 6, 12pt (58×24)
 class _Badge extends StatelessWidget {
   const _Badge({required this.text});
 
@@ -127,14 +123,14 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         text,
-        style: AppTypography.label2Medium.copyWith(
+        style: AppTypography.caption1Medium.copyWith(
           color: AppColors.primaryNormal,
         ),
       ),
