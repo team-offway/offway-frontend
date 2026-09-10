@@ -617,7 +617,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             // 시안 실측: 상단바 끝에서 첫 항목까지 19
             const SizedBox(height: 19),
             _EditSheetRow(
-              iconAsset: 'assets/icons/ic_calendar.svg',
+              iconAsset: 'assets/icons/ic_calendar_20.svg',
               label: '여행날짜 수정',
               onTap: () => Navigator.of(sheetContext).pop('reschedule'),
             ),
