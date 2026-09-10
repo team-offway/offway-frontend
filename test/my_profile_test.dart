@@ -15,6 +15,31 @@ void main() {
     child: const MaterialApp(home: MyScreen()),
   );
 
+  testWidgets('메뉴 쉐브론은 DS small(16)이다', (tester) async {
+    await tester.pumpWidget(wrap({'nickname': '영찬'}));
+    await tester.pumpAndSettle();
+
+    // 프로필 아이콘·연차 카드 타이머를 뺀 나머지가 쉐브론이다
+    final chevrons = find
+        .byType(SvgPicture)
+        .evaluate()
+        .map((e) => tester.getSize(find.byWidget(e.widget)))
+        .where((s) => s.width == 16)
+        .toList();
+    expect(chevrons.length, 5, reason: '연차 카드 1 + 메뉴 4');
+    for (final s in chevrons) {
+      expect(s.height, 16);
+    }
+  });
+
+  testWidgets('메뉴 타이포는 headline 2다', (tester) async {
+    await tester.pumpWidget(wrap({'nickname': '영찬'}));
+    await tester.pumpAndSettle();
+
+    final text = tester.widget<Text>(find.text('이용약관'));
+    expect(text.style?.fontSize, 17);
+  });
+
   testWidgets('닉네임을 인사말에 넣는다', (tester) async {
     await tester.pumpWidget(wrap({'nickname': '영찬'}));
     await tester.pump();
