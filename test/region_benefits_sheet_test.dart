@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
@@ -72,6 +73,28 @@ void main() {
 
     // 시트가 그대로 열려 있다
     expect(find.text('영월군 · 강원특별자치도 혜택'), findsOneWidget);
+  });
+
+  testWidgets('혜택 행마다 링크 아이콘이 앞에 붙는다', (tester) async {
+    // 시안: 링크 아이콘(24) + 간격 8 + 이름, 오른쪽에 쉐브론
+    await pump(tester, {
+      'id': '15',
+      'name': '영월군',
+      'sido': '강원특별자치도',
+      'benefit': two[0],
+      'benefits': two,
+    });
+    await tester.tap(find.text('+1'));
+    await tester.pumpAndSettle();
+
+    final links = find.byWidgetPredicate(
+      (w) =>
+          w is SvgPicture &&
+          w.width == 24 &&
+          (w.bytesLoader as SvgAssetLoader).assetName ==
+              'assets/icons/ic_link.svg',
+    );
+    expect(links, findsNWidgets(2), reason: '혜택 두 건이면 아이콘도 둘');
   });
 
   testWidgets('하나뿐이면 지금까지처럼 문구만이다', (tester) async {
