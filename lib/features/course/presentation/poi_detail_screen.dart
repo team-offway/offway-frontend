@@ -177,7 +177,7 @@ class _Body extends StatelessWidget {
                 Text(
                   catchphrase,
                   style: AppTypography.headline2Bold.copyWith(
-                    color: AppColors.labelNeutral,
+                    color: AppColors.labelStrong,
                   ),
                 ),
               ],

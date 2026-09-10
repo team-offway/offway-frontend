@@ -1218,13 +1218,13 @@ class _PlaceSheet extends ConsumerWidget {
                           ),
                         ),
                         if (place['catchphrase'] case final String phrase) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             phrase,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.label2Medium.copyWith(
-                              color: AppColors.labelStrong,
+                              color: AppColors.labelAlternative,
                             ),
                           ),
                         ],
@@ -1243,7 +1243,7 @@ class _PlaceSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 30),
             _buildInfoRow(
               // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
               // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘
