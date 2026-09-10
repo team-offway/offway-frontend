@@ -16,7 +16,7 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../region/domain/region_visit_metrics.dart';
 import '../../policy/presentation/benefit_badge.dart';
-import '../../policy/presentation/region_benefits_sheet.dart';
+import '../../policy/presentation/policy_detail_sheet.dart';
 import '../../region/presentation/widgets/rising_chip.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
@@ -498,14 +498,11 @@ class _CandidateCard extends ConsumerWidget {
                   BenefitBadge(
                     benefit: b,
                     size: BenefitBadgeSize.candidate,
+                    // 칩 하나가 곧 혜택 하나다 — 고르는 시트를 거치지 않고
+                    // 그 혜택 상세를 바로 연다
                     onTap: b.policyId == null
                         ? null
-                        : () => showRegionBenefitsSheet(
-                            context,
-                            regionLabel:
-                                '${region['name']} · ${region['sido']}',
-                            benefits: [b],
-                          ),
+                        : () => showPolicyDetailSheet(context, b.policyId!),
                   ),
                 if (trend?.rising == true)
                   const RisingChip(size: BenefitBadgeSize.candidate),
