@@ -81,7 +81,7 @@ void main() {
     await pump(tester);
 
     expect(find.byType(AppTooltipBubble), findsOneWidget);
-    expect(find.text('여행 메이트에게 공유해보세요'), findsOneWidget);
+    expect(find.text('코스를 공유해보세요'), findsOneWidget);
   });
 
   testWidgets('스크롤을 내리면 사라진다', (tester) async {
@@ -145,7 +145,7 @@ void main() {
         home: const Scaffold(
           body: Align(
             alignment: Alignment.centerRight,
-            child: AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+            child: AppTooltipBubble(text: '코스를 공유해보세요'),
           ),
         ),
       ),
@@ -171,18 +171,19 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: const Scaffold(
+        home: Scaffold(
           body: Align(
             alignment: Alignment.centerRight,
-            child: AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+            child: AppTooltipBubble(text: '코스를 공유해보세요', onClose: () {}),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
+    // 시안 실측 162.2×44 — 글자 115 + 여백 12·12 + 간격 6 + 닫기 19.2
     final size = tester.getSize(find.byType(AppTooltipBubble));
-    expect(size.width, closeTo(191, 2));
+    expect(size.width, closeTo(162, 3));
     expect(size.height, 44);
   });
 }

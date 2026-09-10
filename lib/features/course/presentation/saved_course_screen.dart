@@ -174,7 +174,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     // 화살표가 공유 아이콘(우측 끝에서 22) 아래에 오게 한다
                     padding: const EdgeInsets.only(right: 12, bottom: 4),
                     child: AppTooltipBubble(
-                      text: '여행 메이트에게 공유해보세요',
+                      text: '코스를 공유해보세요',
                       onClose: () => setState(() => _shareTipVisible = false),
                     ),
                   ),
