@@ -102,10 +102,12 @@ class DateGateScreen extends ConsumerWidget {
 
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다 —
+      // 위저드의 다른 단계와 같은 자리에 선다
+      padding: const EdgeInsets.fromLTRB(6, 10, 16, 10),
       child: Row(
         children: [
-          AppBackButton(onTap: () => context.pop(), alignLeft: true),
+          AppBackButton(onTap: () => context.pop()),
           const Spacer(),
           Text(
             '1/4',
