@@ -1,3 +1,4 @@
+import '../../../core/utils/region_name.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../course/data/course_repository.dart';
@@ -44,7 +45,8 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
         .savedCourseCards();
     final names = {
       for (final c in courses)
-        if (c['id'] != null) c['id'].toString(): c['regionName'] as String?,
+        if (c['id'] != null)
+          c['id'].toString(): regionTripLabel(c['regionName'] as String?),
     };
     return [
       for (final u in usages)

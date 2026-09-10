@@ -1,3 +1,5 @@
+import '../../../core/utils/region_name.dart';
+
 /// 홈에서 "다녀오셨나요?"라고 물어볼 지난 여행 하나
 /// (`GET /courses/pending-trips`의 `trips[]`).
 ///
@@ -63,26 +65,8 @@ class PendingTrip {
     return region == null ? '이 여행, 다녀오셨나요?' : '$region 여행, 다녀오셨나요?';
   }
 
-  static const _suffixes = ['특별자치시', '특별자치도', '광역시', '특별시', '시', '군', '구'];
-
-  /// 접미사를 떼고도 남아야 할 최소 글자 수.
-  ///
-  /// '중구'에서 '구'를 떼면 '중'만 남아 어느 지역인지 알아볼 수 없다.
-  /// 두 글자 이상 남을 때만 뗀다.
-  static const _minNameLength = 2;
-
   /// 행정구역 접미사를 뗀 지역명 (`정선군` → `정선`). 지역이 없으면 null.
   ///
-  /// 시안이 '정선 여행'이고 '정선군 여행'은 말맛이 어색하다.
   /// 모달 제목과 기록 토스트가 함께 쓴다.
-  String? get shortRegionName {
-    final name = regionName?.trim();
-    if (name == null || name.isEmpty) return null;
-    for (final suffix in _suffixes) {
-      if (!name.endsWith(suffix)) continue;
-      final stem = name.substring(0, name.length - suffix.length);
-      return stem.length >= _minNameLength ? stem : name;
-    }
-    return name;
-  }
+  String? get shortRegionName => shortRegionNameOf(regionName);
 }
