@@ -19,8 +19,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/data_source_note.dart';
-import '../../region/domain/region_visit_metrics.dart';
-import '../../region/presentation/widgets/quietest_day_banner.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -153,6 +151,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         ? null
         : calendarDaysBetween(DateUtils.dateOnly(DateTime.now()), start);
 
+    // 이미 다녀온 여행 — 내 코스 목록의 '다녀온 여행' 탭과 같은 기준이다.
+    // 서버는 **종료일이 오늘보다 이전**인 코스를 그렇게 본다(findPastByEndDate).
+    // 시작일이나 차감 여부로 가르면 목록과 상세가 어긋난다
+    final today = DateUtils.dateOnly(DateTime.now());
+    final past = end != null && DateUtils.dateOnly(end).isBefore(today);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,13 +167,16 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           alignment: Alignment.topCenter,
-          child: _shareTipVisible
+          child: _shareTipVisible && !past
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
                     // 화살표가 공유 아이콘(우측 끝에서 22) 아래에 오게 한다
                     padding: const EdgeInsets.only(right: 12, bottom: 4),
-                    child: const AppTooltipBubble(text: '여행 메이트에게 공유해보세요'),
+                    child: AppTooltipBubble(
+                      text: '여행 메이트에게 공유해보세요',
+                      onClose: () => setState(() => _shareTipVisible = false),
+                    ),
                   ),
                 )
               : const SizedBox(width: double.infinity),
@@ -231,19 +238,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     // 실제로는 상세 조회도 같은 조립을 타 값이 온다
                     // (CourseStorageService.get → withBenefits(course, true)).
                     // 설명이 낡은 것으로 보고 값이 있으면 그린다
-                    // 언제 가면 덜 붐비는지 (core #438)
-                    if (course['visitMetrics'] case final RegionVisitMetrics m
-                        when m.quietestDay != null) ...[
-                      QuietestDayBanner(quietestDay: m.quietestDay),
-                      const SizedBox(height: 16),
-                    ],
                     if (course['transitAccess']
                         case final TransitAccess access) ...[
                       TransitAccessCard(
                         access: access,
                         onModeSelected: _changeTransitMode,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                     ],
                     _buildMap(places),
                   ],

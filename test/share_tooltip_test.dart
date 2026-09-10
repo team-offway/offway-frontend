@@ -4,22 +4,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/region/domain/region_visit_metrics.dart';
 
 /// 저장 코스 화면의 공유 유도 툴팁 (시안 18860:76589).
 ///
 /// **신규 기능의 위치를 한 번 알리는 자리**다(DS Tooltip 사용 예시).
 /// 코스를 읽기 시작하면 할 일을 다 한 셈이라 사라지고, 다시 뜨지 않는다.
 void main() {
-  ({Map<String, dynamic> saved, Map<String, dynamic> course}) detail() => (
+  ({Map<String, dynamic> saved, Map<String, dynamic> course}) detail({
+    bool leaveDeducted = false,
+    String travelDate = '2026-09-10',
+  }) => (
     saved: {
       'id': '1',
       'regionName': '정선군',
-      'travelDate': '2026-09-10',
+      'travelDate': travelDate,
+      'startDate': travelDate,
+      'endDate': travelDate,
       'shareToken': 'abc',
-      'leaveDeducted': false,
+      'leaveDeducted': leaveDeducted,
     },
     course: {
       'regionName': '정선군',
+      'visitMetrics': RegionVisitMetrics.parse(const {
+        'quietestDay': {'label': '화요일', 'percentLessThanOtherDays': 24},
+      }),
       'durationDays': 1,
       'travelDate': '2026-09-10',
       'days': [
@@ -42,14 +51,21 @@ void main() {
     },
   );
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool leaveDeducted = false,
+    String travelDate = '2026-09-10',
+  }) async {
     tester.view.physicalSize = const Size(402 * 3, 874 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          savedCourseDetailProvider('1').overrideWith((ref) async => detail()),
+          savedCourseDetailProvider('1').overrideWith(
+            (ref) async =>
+                detail(leaveDeducted: leaveDeducted, travelDate: travelDate),
+          ),
         ],
         child: MaterialApp(
           theme: AppTheme.light,
@@ -87,6 +103,36 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppTooltipBubble), findsNothing);
+  });
+
+  testWidgets('닫기를 누르면 사라진다', (tester) async {
+    await pump(tester);
+    expect(find.byType(AppTooltipBubble), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('안내 닫기'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(AppTooltipBubble), findsNothing);
+  });
+
+  testWidgets('이미 다녀온 여행이면 안 뜬다 — 앞으로 갈 사람에게만 쓸모가 있다', (tester) async {
+    await pump(tester, travelDate: '2020-01-01');
+
+    expect(find.byType(AppTooltipBubble), findsNothing);
+  });
+
+  testWidgets('아직 안 끝난 여행에는 뜬다 — 목록의 다녀온 여행 탭과 같은 기준', (tester) async {
+    // 서버는 종료일이 오늘보다 이전인 코스만 '다녀온 여행'으로 본다.
+    // 연차를 미리 차감했어도 여행이 안 끝났으면 공유할 이유가 있다
+    await pump(tester, leaveDeducted: true);
+
+    expect(find.byType(AppTooltipBubble), findsOneWidget);
+  });
+
+  testWidgets('내 코스에서는 한산한 요일을 안 보여준다 — 담은 순간 날짜가 정해진다', (tester) async {
+    await pump(tester);
+
+    expect(find.textContaining('화요일'), findsNothing);
   });
 
   testWidgets('화살표를 시안 자리에 둔다', (tester) async {
