@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 
@@ -106,14 +107,25 @@ void main() {
     expect(ignore.ignoring, isFalse);
   });
 
-  testWidgets('떠 있는 버튼은 시안 크기다 — 151×48', (tester) async {
+  testWidgets('떠 있는 버튼은 시안 높이 48이다', (tester) async {
+    // 폭은 글자 폭을 따라간다 — 시안 서체(Pretendard JP)와 앱 서체가 달라
+    // 시안 151을 그대로 박으면 글자가 잘린다. 여백 28·12가 시안값이다
     await pump(tester);
 
     final size = tester.getSize(
       find.ancestor(of: hoverButton(), matching: find.byType(Ink)).first,
     );
     expect(size.height, 48);
-    expect(size.width, closeTo(151, 4));
+  });
+
+  testWidgets('떠 있는 버튼은 회색이다 — 목록 끝의 주 버튼과 위계를 가른다', (tester) async {
+    await pump(tester);
+
+    final ink = tester.widget<Ink>(
+      find.ancestor(of: hoverButton(), matching: find.byType(Ink)).first,
+    );
+    final decoration = ink.decoration! as BoxDecoration;
+    expect(decoration.color, AppPalette.coolNeutral60);
   });
 
   testWidgets('공유 버튼을 가리키는 툴팁이 뜬다', (tester) async {

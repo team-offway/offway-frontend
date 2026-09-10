@@ -490,7 +490,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  /// 시안 Button/Button — 151×48, 좌우 16.5·상하 12, 아이콘 20·간격 6, 반경 12
+  /// 시안 Button/Button — 좌우 28·상하 12, 아이콘 20·간격 6, 반경 12.
+  /// 색은 Cool Neutral/60 — 브랜드색은 목록 끝의 주 버튼이 쓴다
   Widget _buildHoverSaveButton(Map<String, dynamic> course) {
     return Material(
       color: Colors.transparent,
@@ -499,7 +500,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.primaryNormal,
+            color: AppPalette.coolNeutral60,
             borderRadius: BorderRadius.circular(12),
             // 목록 위에 떠 있어 글이 겹쳐 보이지 않게 그림자를 준다 —
             // 시안에는 없지만 시안은 흰 배경 위 정지 상태다
@@ -511,7 +512,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16.5, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
