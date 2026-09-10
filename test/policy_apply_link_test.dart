@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
@@ -58,6 +59,20 @@ void main() {
     await tester.pumpAndSettle();
     return launcher;
   }
+
+  testWidgets('닫기(X)는 화면 오른쪽에서 16에 선다 — 혜택 고르는 시트와 같은 자리', (tester) async {
+    await openSheet(tester);
+
+    // 버튼(44)이 아니라 아이콘(24) 기준이다 — 시안이 재는 자리다
+    final icon = tester.getRect(
+      find.descendant(
+        of: find.bySemanticsLabel('닫기'),
+        matching: find.byType(SvgPicture),
+      ),
+    );
+    final screen = tester.getRect(find.byType(MaterialApp));
+    expect(screen.right - icon.right, closeTo(16, 0.5));
+  });
 
   testWidgets('신청 페이지는 앱 안 브라우저로 연다', (tester) async {
     final launcher = await openSheet(

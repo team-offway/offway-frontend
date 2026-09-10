@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../domain/region_benefit.dart';
-import 'benefit_badge.dart';
 import 'policy_detail_sheet.dart';
 
 /// 혜택이 여럿인 지역의 뱃지(`… +1`)를 누르면 올라오는 **고르는 시트**.
@@ -60,33 +59,31 @@ class _BenefitRow extends StatelessWidget {
         onTap: openable ? onTap : null,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          // 시안 실측: 좌우 24 · 행 높이 24 · 행 사이 24
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
             children: [
+              SvgPicture.asset(
+                'assets/icons/ic_link.svg',
+                width: 24,
+                height: 24,
+                // 시안 실측 (71,72,76) — 제목과 같은 Label/Neutral이다.
+                // 오른쪽 쉐브론(Alternative)보다 진하다
+                colorFilter: const ColorFilter.mode(
+                  AppColors.labelNeutral,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 이름을 모르는 혜택(서버 대표 값)은 뱃지 문구가 이름이다
-                    Text(
-                      benefit.policyName ?? benefit.text,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body1NormalMedium.copyWith(
-                        color: AppColors.labelNormal,
-                      ),
-                    ),
-                    if (benefit.policyName != null) ...[
-                      const SizedBox(height: 6),
-                      // 눌리는 건 행 전체다 — 뱃지가 따로 시트를 열면 두 겹이 된다
-                      IgnorePointer(
-                        child: BenefitBadge(
-                          benefit: benefit,
-                          size: BenefitBadgeSize.candidate,
-                        ),
-                      ),
-                    ],
-                  ],
+                // 이름을 모르는 혜택(서버 대표 값)은 뱃지 문구가 이름이다
+                child: Text(
+                  benefit.policyName ?? benefit.text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body1NormalMedium.copyWith(
+                    color: AppColors.labelNeutral,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
