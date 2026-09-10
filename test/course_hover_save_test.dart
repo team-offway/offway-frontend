@@ -107,15 +107,15 @@ void main() {
     expect(ignore.ignoring, isFalse);
   });
 
-  testWidgets('떠 있는 버튼은 시안 높이 48이다', (tester) async {
-    // 폭은 글자 폭을 따라간다 — 시안 서체(Pretendard JP)와 앱 서체가 달라
-    // 시안 151을 그대로 박으면 글자가 잘린다. 여백 28·12가 시안값이다
+  testWidgets('떠 있는 버튼은 시안 크기다 — 151×48', (tester) async {
+    // 시안 구조: 좌우 16.5 + 내용 118(아이콘 20 + 간격 6 + 글자 92)
     await pump(tester);
 
     final size = tester.getSize(
       find.ancestor(of: hoverButton(), matching: find.byType(Ink)).first,
     );
     expect(size.height, 48);
+    expect(size.width, closeTo(151, 2));
   });
 
   testWidgets('떠 있는 버튼은 회색이다 — 목록 끝의 주 버튼과 위계를 가른다', (tester) async {

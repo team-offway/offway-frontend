@@ -490,7 +490,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
     );
   }
 
-  /// 시안 Button/Button — 좌우 28·상하 12, 아이콘 20·간격 6, 반경 12.
+  /// 시안 Button/Button — 151×48(좌우 16.5·상하 12), 아이콘 20·간격 6, 반경 12.
   /// 색은 Cool Neutral/60 — 브랜드색은 목록 끝의 주 버튼이 쓴다
   Widget _buildHoverSaveButton(Map<String, dynamic> course) {
     return Material(
@@ -512,7 +512,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16.5, vertical: 12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
