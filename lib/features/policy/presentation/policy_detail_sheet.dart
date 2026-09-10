@@ -81,7 +81,10 @@ class _PolicyDetailSheet extends ConsumerWidget {
                   ),
                 ),
                 Positioned(
-                  right: 0,
+                  // 버튼(44)이 아이콘(24)보다 넓다 — 시트 여백 20과 버튼
+                  // 안쪽 10을 되돌려 아이콘이 화면 오른쪽에서 16에 서게 한다.
+                  // 혜택 고르는 시트(AppSheetTitleBar)와 같은 자리다
+                  right: -14,
                   child: AppIconButton.close(
                     onTap: () => Navigator.of(context).pop(),
                   ),
