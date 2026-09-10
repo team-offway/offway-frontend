@@ -251,6 +251,9 @@ class _Body extends StatelessWidget {
   }
 
   Widget _buildInfoCard() {
+    // 서버는 운영 정보를 타입별 블록에 담는다 — 최상위만 읽으면 늘 비어 있다.
+    // 코스의 장소 모달과 같은 규칙을 쓴다
+    final schedule = poiScheduleOf(poi);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -263,9 +266,9 @@ class _Body extends StatelessWidget {
         children: [
           _buildInfoRow('주소', poi['address'] as String?),
           const SizedBox(height: 12),
-          _buildInfoRow('운영시간', poi['useTime'] as String?),
+          _buildInfoRow('운영시간', schedule.useTime),
           const SizedBox(height: 12),
-          _buildInfoRow('휴무일', poi['restDate'] as String?),
+          _buildInfoRow('휴무일', schedule.restDate),
         ],
       ),
     );

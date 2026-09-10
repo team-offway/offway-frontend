@@ -376,42 +376,9 @@ class CourseRepository {
   }
 
   /// 장소의 운영 정보만 — 여행 당일 휴무일·운영시간 안내에 쓴다.
-  ///
-  /// 서버는 타입별 블록에 값을 담고 최상위는 비워 둔다 — 관광지·문화·레포츠는
-  /// `useTime`, 식당은 `food.openTime`, 숙소는 체크인/아웃이다. 최상위만 읽으면
-  /// 식당·숙소는 늘 빈 줄로 보인다.
   Future<({String? useTime, String? restDate})> poiSchedule(
     String contentId,
-  ) async {
-    final data = await poiDetail(contentId);
-    Map<String, dynamic>? block(String key) =>
-        data[key] as Map<String, dynamic>?;
-
-    final food = block('food');
-    final stay = block('stay');
-    final typed = block('sight') ?? block('culture') ?? block('leports');
-
-    final stayHours = stay == null
-        ? null
-        : switch ((stay['checkIn'], stay['checkOut'])) {
-            (final String i, final String o) => '체크인 $i · 체크아웃 $o',
-            (final String i, _) => '체크인 $i',
-            (_, final String o) => '체크아웃 $o',
-            _ => null,
-          };
-
-    return (
-      useTime:
-          data['useTime'] as String? ??
-          typed?['useTime'] as String? ??
-          food?['openTime'] as String? ??
-          stayHours,
-      restDate:
-          data['restDate'] as String? ??
-          typed?['restDate'] as String? ??
-          food?['restDate'] as String?,
-    );
-  }
+  ) async => poiScheduleOf(await poiDetail(contentId));
 
   Future<Map<String, dynamic>> _fetchCourse(int courseId) async {
     try {
@@ -621,4 +588,38 @@ class CourseRepository {
     if (items.isEmpty) return '';
     return (items.first as Map<String, dynamic>)['regionName'] as String? ?? '';
   }
+}
+
+/// 장소 상세 응답에서 운영시간·휴무일을 꺼낸다.
+///
+/// **서버는 타입별 블록에 값을 담고 최상위는 비워 둔다** — 관광지·문화·레포츠는
+/// `useTime`, 식당은 `food.openTime`, 숙소는 체크인/아웃이다. 최상위만 읽으면
+/// 늘 빈 줄로 보인다. 모달과 상세 화면이 같은 값을 말하도록 규칙을 한곳에 둔다
+({String? useTime, String? restDate}) poiScheduleOf(Map<String, dynamic> data) {
+  Map<String, dynamic>? block(String key) => data[key] as Map<String, dynamic>?;
+
+  final food = block('food');
+  final stay = block('stay');
+  final typed = block('sight') ?? block('culture') ?? block('leports');
+
+  final stayHours = stay == null
+      ? null
+      : switch ((stay['checkIn'], stay['checkOut'])) {
+          (final String i, final String o) => '체크인 $i · 체크아웃 $o',
+          (final String i, _) => '체크인 $i',
+          (_, final String o) => '체크아웃 $o',
+          _ => null,
+        };
+
+  return (
+    useTime:
+        data['useTime'] as String? ??
+        typed?['useTime'] as String? ??
+        food?['openTime'] as String? ??
+        stayHours,
+    restDate:
+        data['restDate'] as String? ??
+        typed?['restDate'] as String? ??
+        food?['restDate'] as String?,
+  );
 }

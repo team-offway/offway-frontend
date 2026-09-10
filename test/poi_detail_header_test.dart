@@ -49,6 +49,22 @@ void main() {
     expect(find.text('금수사'), findsOneWidget);
   });
 
+  testWidgets('운영시간·휴무일을 타입별 블록에서 읽어 기본정보에 그린다', (tester) async {
+    // 서버는 최상위를 비우고 culture·food·stay 블록에 담아 준다 —
+    // 최상위만 읽던 때는 늘 '정보없음'이었다
+    await tester.pumpWidget(
+      wrap(
+        extra: const {
+          'culture': {'useTime': '화요일~금요일 09:00~22:00', 'restDate': '매주 월요일'},
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('화요일~금요일 09:00~22:00'), findsOneWidget);
+    expect(find.text('매주 월요일'), findsOneWidget);
+  });
+
   testWidgets('지도 버튼은 길찾기가 아니라 장소를 연다고 말한다', (tester) async {
     // 길찾기로 열면 지도 앱이 경로부터 잡아, 어디인지 보려던 사용자가
     // 한 번 더 빠져나와야 했다
