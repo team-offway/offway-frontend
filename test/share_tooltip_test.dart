@@ -165,6 +165,19 @@ void main() {
     expect(arrow.width, 20);
   });
 
+  testWidgets('화살표가 공유 아이콘 가운데를 가리킨다', (tester) async {
+    await pump(tester);
+
+    final share = tester.getRect(find.bySemanticsLabel('공유하기'));
+    final arrow = tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.size == const Size(20, 8),
+      ),
+    );
+
+    expect(arrow.center.dx, closeTo(share.center.dx, 0.5));
+  });
+
   testWidgets('시안 크기를 지킨다', (tester) async {
     // 말풍선이 부모 폭을 다 먹으면 화살표가 붙을 자리를 잃는다
     // 테마를 줘야 Pretendard로 잰다 — 기본 서체는 폭이 달라 시안과 어긋난다

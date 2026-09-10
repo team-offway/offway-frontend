@@ -171,8 +171,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
-                    // 화살표가 공유 아이콘(우측 끝에서 22) 아래에 오게 한다
-                    padding: const EdgeInsets.only(right: 12, bottom: 4),
+                    // 화살표 가운데가 공유 아이콘 가운데와 만나게 한다.
+                    // 버튼(44) 중심은 화면 오른쪽에서 28, 화살표는 말풍선
+                    // 오른쪽에서 18이라 그 차 10을 오른쪽 여백으로 둔다
+                    padding: const EdgeInsets.only(right: 10, bottom: 4),
                     child: AppTooltipBubble(
                       text: '코스를 공유해보세요',
                       onClose: () => setState(() => _shareTipVisible = false),
