@@ -110,11 +110,12 @@ class WizardChoiceStep extends StatelessWidget {
   /// 뒤로가기 + 단계 표시. 단계는 오른쪽에 옅게 둔다.
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
-      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
+      // 시안은 상단바 콘텐츠를 왼쪽에서 16에 세운다 — 아이콘을 누르는
+      // 범위(44)의 왼쪽 끝에 붙여 그 자리에 맞춘다
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Row(
         children: [
-          AppBackButton(onTap: () => context.pop()),
+          AppBackButton(onTap: () => context.pop(), alignLeft: true),
           const Spacer(),
           Text(
             stepLabel,
