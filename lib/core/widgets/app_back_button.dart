@@ -14,11 +14,18 @@ class AppBackButton extends StatelessWidget {
     // DS 상단 내비게이션 기준 — 진한 검정은 제목보다 튄다
     this.color = AppColors.labelAlternative,
     this.semanticLabel = '뒤로 가기',
+    this.alignLeft = false,
   });
 
   final VoidCallback onTap;
   final Color color;
   final String semanticLabel;
+
+  /// 아이콘을 누르는 범위(44)의 왼쪽 끝에 붙인다.
+  ///
+  /// 시안은 상단바 콘텐츠를 화면 왼쪽에서 16에 세우는데, 아이콘(12)을 44
+  /// 가운데 두면 그만큼 안쪽으로 밀린다. 여백 없이 두는 화면이 쓴다
+  final bool alignLeft;
 
   /// 손가락으로 눌러 빗나가지 않는 최소 크기
   static const _minTapTarget = 44.0;
@@ -40,11 +47,14 @@ class AppBackButton extends StatelessWidget {
         width: _minTapTarget,
         height: _minTapTarget,
       ),
-      icon: SvgPicture.asset(
-        'assets/icons/ic_chevron_left.svg',
-        width: 12,
-        height: 24,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      icon: Align(
+        alignment: alignLeft ? Alignment.centerLeft : Alignment.center,
+        child: SvgPicture.asset(
+          'assets/icons/ic_chevron_left.svg',
+          width: 12,
+          height: 24,
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        ),
       ),
     );
   }

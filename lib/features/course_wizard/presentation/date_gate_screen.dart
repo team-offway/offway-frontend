@@ -105,7 +105,7 @@ class DateGateScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          AppBackButton(onTap: () => context.pop()),
+          AppBackButton(onTap: () => context.pop(), alignLeft: true),
           const Spacer(),
           Text(
             '1/4',
