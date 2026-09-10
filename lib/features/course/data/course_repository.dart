@@ -598,28 +598,35 @@ class CourseRepository {
 ({String? useTime, String? restDate}) poiScheduleOf(Map<String, dynamic> data) {
   Map<String, dynamic>? block(String key) => data[key] as Map<String, dynamic>?;
 
+  // **빈 문자열은 없는 값으로 본다.** 서버가 최상위를 `""`로 채워 보내면
+  // null만 걸러서는 그 빈 값이 이겨, 블록에 든 진짜 운영시간이 묻힌다
+  String? text(Object? value) {
+    final s = (value as String?)?.trim();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
   final food = block('food');
   final stay = block('stay');
   final typed = block('sight') ?? block('culture') ?? block('leports');
 
-  final stayHours = stay == null
-      ? null
-      : switch ((stay['checkIn'], stay['checkOut'])) {
-          (final String i, final String o) => '체크인 $i · 체크아웃 $o',
-          (final String i, _) => '체크인 $i',
-          (_, final String o) => '체크아웃 $o',
-          _ => null,
-        };
+  final checkIn = text(stay?['checkIn']);
+  final checkOut = text(stay?['checkOut']);
+  final stayHours = switch ((checkIn, checkOut)) {
+    (final String i, final String o) => '체크인 $i · 체크아웃 $o',
+    (final String i, _) => '체크인 $i',
+    (_, final String o) => '체크아웃 $o',
+    _ => null,
+  };
 
   return (
     useTime:
-        data['useTime'] as String? ??
-        typed?['useTime'] as String? ??
-        food?['openTime'] as String? ??
+        text(data['useTime']) ??
+        text(typed?['useTime']) ??
+        text(food?['openTime']) ??
         stayHours,
     restDate:
-        data['restDate'] as String? ??
-        typed?['restDate'] as String? ??
-        food?['restDate'] as String?,
+        text(data['restDate']) ??
+        text(typed?['restDate']) ??
+        text(food?['restDate']),
   );
 }
