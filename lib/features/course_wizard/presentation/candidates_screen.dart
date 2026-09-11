@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -488,16 +491,18 @@ class _CandidateCard extends ConsumerWidget {
           // 줄째 사라져 사진과 지역명이 붙는다.
           //
           // **여기서는 혜택을 전부 편다**(QA 9/9). 홈은 카드가 좁아 `+2`로
-          // 접지만 이 화면은 카드가 넓어 줄바꿈으로 다 보인다
+          // 접지만 이 화면은 카드가 넓어 줄바꿈으로 다 보인다.
+          //
+          // 한 줄에 최대 셋까지만 둔다(시안) — `Wrap`은 폭이 남으면 넷도
+          // 밀어 넣는데, 시안은 줄당 셋을 넘지 않는다
           if (benefit != null || trend?.rising == true) ...[
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
+            _ChipRows(
+              chips: [
                 for (final b in benefits)
                   BenefitBadge(
                     benefit: b,
                     size: BenefitBadgeSize.candidate,
+                    leadingIcon: true,
                     // 칩 하나가 곧 혜택 하나다 — 고르는 시트를 거치지 않고
                     // 그 혜택 상세를 바로 연다
                     onTap: b.policyId == null
@@ -533,6 +538,172 @@ class _CandidateCard extends ConsumerWidget {
   }
 }
 
-/// 지역 성격을 한 단어로 짚는 뱃지 (예: 인기)
-/// 혜택 뱃지 — 홈 카드와 같은 첫 번째 혜택(시안 Badge: 브랜드색 8% 바탕에
-/// 브랜드색 12px). 누르면 정책 상세 시트가 열린다.
+/// 칩을 놓되 **한 줄에 셋을 넘기지 않는다**.
+///
+/// 폭이 남으면 `Wrap`이 알아서 접어 주고(시안은 칩이 길어 2+2로 떨어진다),
+/// 칩이 짧아 넷이 들어갈 때만 이 규칙이 개입해 셋에서 끊는다.
+/// `Wrap`에 그런 옵션이 없어, 줄을 직접 재어 셋째 뒤에 줄바꿈을 끼운다.
+class _ChipRows extends StatelessWidget {
+  const _ChipRows({required this.chips});
+
+  final List<Widget> chips;
+
+  /// 한 줄에 놓을 수 있는 칩 수 (시안)
+  static const _perRow = 3;
+
+  /// 칩 사이·줄 사이 간격 (시안)
+  static const _gap = 6.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MaxPerRowWrap(
+      spacing: _gap,
+      runSpacing: _gap,
+      maxPerRow: _perRow,
+      children: chips,
+    );
+  }
+}
+
+/// 폭이 모자랄 때뿐 아니라 **줄당 개수가 찼을 때도** 줄을 바꾸는 `Wrap`.
+///
+/// `Wrap`을 그대로 두면 폭이 남는 만큼 넷째까지 밀어 넣는다. 여기서는
+/// 자식 수를 같이 세어, 둘 중 먼저 걸리는 쪽에서 줄을 바꾼다.
+class _MaxPerRowWrap extends MultiChildRenderObjectWidget {
+  const _MaxPerRowWrap({
+    required this.spacing,
+    required this.runSpacing,
+    required this.maxPerRow,
+    required super.children,
+  });
+
+  final double spacing;
+  final double runSpacing;
+  final int maxPerRow;
+
+  @override
+  _RenderMaxPerRowWrap createRenderObject(BuildContext context) {
+    return _RenderMaxPerRowWrap(
+      spacing: spacing,
+      runSpacing: runSpacing,
+      maxPerRow: maxPerRow,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderMaxPerRowWrap renderObject,
+  ) {
+    renderObject
+      ..spacing = spacing
+      ..runSpacing = runSpacing
+      ..maxPerRow = maxPerRow;
+  }
+}
+
+class _WrapParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderMaxPerRowWrap extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _WrapParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _WrapParentData> {
+  _RenderMaxPerRowWrap({
+    required double spacing,
+    required double runSpacing,
+    required int maxPerRow,
+  }) : _spacing = spacing,
+       _runSpacing = runSpacing,
+       _maxPerRow = maxPerRow;
+
+  double _spacing;
+  set spacing(double value) {
+    if (_spacing == value) return;
+    _spacing = value;
+    markNeedsLayout();
+  }
+
+  double _runSpacing;
+  set runSpacing(double value) {
+    if (_runSpacing == value) return;
+    _runSpacing = value;
+    markNeedsLayout();
+  }
+
+  int _maxPerRow;
+  set maxPerRow(int value) {
+    if (_maxPerRow == value) return;
+    _maxPerRow = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _WrapParentData) {
+      child.parentData = _WrapParentData();
+    }
+  }
+
+  /// 줄을 나눠 놓고 크기를 낸다. [place]가 참이면 자식 위치도 적는다
+  Size _run(BoxConstraints constraints, {required bool place}) {
+    final maxWidth = constraints.maxWidth;
+    var rowWidth = 0.0; // 지금 줄에 쌓인 폭(간격 포함)
+    var rowHeight = 0.0;
+    var rowCount = 0;
+    var y = 0.0;
+    var widest = 0.0;
+
+    // 지금 줄을 닫고 다음 줄로 넘어간다
+    void newRow() {
+      widest = math.max(widest, rowWidth);
+      y += rowHeight + _runSpacing;
+      rowWidth = 0;
+      rowHeight = 0;
+      rowCount = 0;
+    }
+
+    var child = firstChild;
+    while (child != null) {
+      final size = place
+          ? (child..layout(const BoxConstraints(), parentUsesSize: true)).size
+          : child.getDryLayout(const BoxConstraints());
+      final lead = rowCount == 0 ? 0.0 : _spacing;
+      // 폭이 모자라거나 줄당 개수가 찼으면 줄을 바꾼다
+      final overflows = rowCount > 0 && rowWidth + lead + size.width > maxWidth;
+      if (overflows || rowCount >= _maxPerRow) newRow();
+
+      if (place) {
+        (child.parentData! as _WrapParentData).offset = Offset(
+          rowCount == 0 ? 0 : rowWidth + _spacing,
+          y,
+        );
+      }
+      rowWidth += (rowCount == 0 ? 0 : _spacing) + size.width;
+      rowHeight = math.max(rowHeight, size.height);
+      rowCount += 1;
+      child = (child.parentData! as _WrapParentData).nextSibling;
+    }
+    widest = math.max(widest, rowWidth);
+    return Size(
+      math.min(widest, maxWidth),
+      firstChild == null ? 0 : y + rowHeight,
+    );
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) =>
+      _run(constraints, place: false);
+
+  @override
+  void performLayout() {
+    size = constraints.constrain(_run(constraints, place: true));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
+}
