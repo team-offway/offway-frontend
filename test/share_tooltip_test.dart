@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/features/course/data/course_tooltip_storage.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
@@ -10,7 +12,19 @@ import 'package:offway/features/region/domain/region_visit_metrics.dart';
 ///
 /// **신규 기능의 위치를 한 번 알리는 자리**다(DS Tooltip 사용 예시).
 /// 코스를 읽기 시작하면 할 일을 다 한 셈이라 사라지고, 다시 뜨지 않는다.
+///
+/// 공유 안내는 **재진입부터** 나온다 — 담고 처음 열면 '눌러서 자세히 보기'가
+/// 먼저다(시안 1505:56078). 여기서는 그 안내를 이미 본 상태로 두고 잰다.
 void main() {
+  setUp(() async {
+    FlutterSecureStorage.setMockInitialValues({});
+    // 담고 처음 열면 '눌러서 자세히 보기'가 먼저다 — 공유 안내를 재려면
+    // 그 단계를 지난 상태여야 한다
+    await CourseTooltipStorage(
+      const FlutterSecureStorage(),
+    ).markDetailHintDone('1');
+  });
+
   /// 오늘에서 [days]일 떨어진 날짜. **고정 날짜를 쓰면 그날이 지나는 순간
   /// 테스트가 깨진다** — 툴팁은 종료일이 오늘보다 이전인지로 갈린다
   String dateFrom(int days) {
@@ -86,6 +100,8 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+    // 노출 이력을 Keychain 에서 읽어 온 뒤에야 어느 안내를 띄울지 정해진다
+    await tester.pumpAndSettle();
   }
 
   testWidgets('들어오면 공유 버튼을 가리켜 알린다', (tester) async {

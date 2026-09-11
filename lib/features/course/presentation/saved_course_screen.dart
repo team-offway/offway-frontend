@@ -100,26 +100,42 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 가리키는 카드가 화면 밖에 있어 무엇을 누르라는 것인지 안 보인다
   bool _scrolledToPlaces = false;
 
+  /// 노출 이력을 읽었는가 — 빌드가 여러 번 돌아도 한 번만 읽는다
+  bool _tooltipStateLoaded = false;
+
+  /// 읽는 중인가 — 빌드가 여러 번 도는 동안 중복 호출을 막는다
+  bool _tooltipStateLoading = false;
+
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    _loadTooltipState();
   }
 
   /// 이 코스에 어떤 안내가 남았는지 읽는다.
   ///
   /// 담고 처음 열면 '눌러서 자세히 보기', 그 다음부터는 공유 안내다(시안
   /// 메모의 화면별 역할 분리). 공유 안내를 이미 닫았다면 그것도 안 뜬다
-  Future<void> _loadTooltipState() async {
+  Future<void> _loadTooltipState({required bool hasHintTarget}) async {
     final storage = ref.read(courseTooltipStorageProvider);
-    final detailDone = await storage.isDetailHintDone(widget.savedId);
-    final shareClosed = await storage.isSharePromptClosed();
+    // 읽기가 실패해도(Keychain 접근 불가 등) 안내는 나와야 한다 — 못 읽으면
+    // '아직 안 봤다'로 친다. 여기서 멈추면 툴팁이 영영 안 뜬다
+    var detailDone = false;
+    var shareClosed = false;
+    try {
+      detailDone = await storage.isDetailHintDone(widget.savedId);
+      shareClosed = await storage.isSharePromptClosed();
+    } on Object catch (e) {
+      debugPrint('툴팁 이력 읽기 실패: $e');
+    }
     if (!mounted) return;
     setState(() {
-      _detailHintPending = !detailDone;
+      // 가리킬 카드가 없으면(장소 한 곳짜리 코스) 상세 안내는 그려질 자리가
+      // 없다. 대기로 두면 공유 안내까지 막혀 **둘 다 안 뜬다**
+      _detailHintPending = !detailDone && hasHintTarget;
       if (shareClosed) _shareTipVisible = false;
     });
+    _tooltipStateLoaded = true;
   }
 
   /// 장소 상세로 들어갔다 — 이 코스의 '눌러서 자세히 보기'는 할 일을 마쳤다
@@ -155,10 +171,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     }
     // 한 번이라도 손으로 내렸는가 — 시안이 '스크롤링 이후'로 잡은 자리다.
     //
-    // **거리로 재지 않는다.** 코스가 짧으면 끝까지 내려도 몇 십 px 밖에 안
-    // 움직여, 고정값을 두면 그런 코스에서는 영영 안 뜬다. 목록을 보러 내린
+    // **거리로 재지 않는다.** 코스가 짧으면 끝까지 내려도 몇 px 밖에 안
+    // 움직여, 문턱을 두면 그런 코스에서는 영영 안 뜬다. 목록을 보러 내린
     // 것 자체가 신호다
-    if (_detailHintPending && !_scrolledToPlaces && _scroll.offset > 24) {
+    if (_detailHintPending && !_scrolledToPlaces && _scroll.offset > 0) {
       setState(() => _scrolledToPlaces = true);
     }
   }
@@ -198,6 +214,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       orElse: () => days.first,
     );
     final places = (day['places'] as List).cast<Map<String, dynamic>>();
+    // 노출 이력은 장소 수를 알아야 정해진다 — 가리킬 카드가 없으면 상세
+    // 안내를 걸지 않는다. 코스가 오는 시점이 그것을 아는 첫 순간이라
+    // `initState`가 아니라 여기서 한 번 부른다
+    if (!_tooltipStateLoaded && !_tooltipStateLoading) {
+      _tooltipStateLoading = true;
+      _loadTooltipState(
+        hasHintTarget: places.length > _SavedPlaceList.hintTargetIndex,
+      );
+    }
     final regionName = saved['regionName'] as String? ?? '';
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
@@ -224,7 +249,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           alignment: Alignment.topCenter,
           // 안내가 겹치지 않게 한 번에 하나만 — '눌러서 자세히 보기'가
           // 남아 있으면 공유 안내는 그 다음 차례다
-          child: _shareTipVisible && !past && !_detailHintPending
+          child:
+              _tooltipStateLoaded &&
+                  _shareTipVisible &&
+                  !past &&
+                  !_detailHintPending
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -1010,7 +1039,7 @@ class _SavedPlaceList extends StatelessWidget {
   ///
   /// 첫 장소는 역·터미널인 경우가 많아(도착 안내) 눌러도 열 것이 없다.
   /// 시안이 둘째를 가리키는 이유이고, 장소가 하나뿐이면 띄우지 않는다
-  static const _hintTargetIndex = 1;
+  static const hintTargetIndex = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -1038,7 +1067,7 @@ class _SavedPlaceList extends StatelessWidget {
               // 가리킬 카드의 **사진 바로 아래**에 겹쳐 띄운다. 화살표가
               // 위를 향하므로 그 사진을 짚는다. 자리를 차지하면 목록이
               // 밀려 시안과 어긋나므로 높이는 0이다
-              if (i == _hintTargetIndex && detailHint != null)
+              if (i == hintTargetIndex && detailHint != null)
                 _OverlapHint(child: detailHint!),
             ],
           ],

@@ -147,10 +147,18 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   /// 예전에 닫기를 누른 적이 있으면 아예 띄우지 않는다
   Future<void> _loadSharePromptState() async {
-    final closed = await ref
-        .read(courseTooltipStorageProvider)
-        .isSharePromptClosed();
-    if (!mounted || !closed) return;
+    // 읽기가 실패해도(Keychain 접근 불가 등) 안내는 나와야 한다 — 못 읽으면
+    // '아직 안 닫았다'로 친다. 여기서 멈추면 툴팁이 영영 안 뜬다
+    var closed = false;
+    try {
+      closed = await ref
+          .read(courseTooltipStorageProvider)
+          .isSharePromptClosed();
+    } on Object catch (e) {
+      debugPrint('툴팁 이력 읽기 실패: $e');
+    }
+    if (!mounted) return;
+    if (!closed) return;
     setState(() => _shareTipVisible = false);
   }
 

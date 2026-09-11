@@ -48,7 +48,11 @@ void main() {
   group('내 코스 화면', () {
     const travelDate = '2026-12-25'; // 아직 안 간 여행
 
-    Future<void> pump(WidgetTester tester, {String savedId = '1'}) async {
+    Future<void> pump(
+      WidgetTester tester, {
+      String savedId = '1',
+      int placeCount = 6,
+    }) async {
       tester.view.physicalSize = const Size(402 * 3, 874 * 3);
       tester.view.devicePixelRatio = 3;
       addTearDown(tester.view.reset);
@@ -76,7 +80,7 @@ void main() {
                       'date': travelDate,
                       'dayOfWeek': '금',
                       'places': [
-                        for (var i = 1; i <= 6; i++)
+                        for (var i = 1; i <= placeCount; i++)
                           {
                             'name': '장소 $i',
                             'category': '관광',
@@ -174,6 +178,25 @@ void main() {
 
       final storage = CourseTooltipStorage(const FlutterSecureStorage());
       expect(await storage.isDetailHintDone('1'), isTrue);
+    });
+
+    testWidgets('장소가 하나면 공유 안내로 넘어간다 — 둘 다 안 뜨면 안 된다', (tester) async {
+      // 가리킬 둘째 카드가 없어 상세 안내는 그려질 자리가 없다. 그대로
+      // 대기시키면 공유 안내까지 막혀 **아무것도 안 뜬다**
+      await pump(tester, placeCount: 1);
+
+      expect(tip('눌러서 자세히 보기'), findsNothing);
+      expect(tip('코스를 공유해보세요'), findsOneWidget);
+    });
+
+    testWidgets('조금만 내려도 안내가 나온다 — 짧은 코스도 마찬가지다', (tester) async {
+      // 문턱을 두면 최대 스크롤이 그보다 짧은 코스에서 영영 안 뜬다
+      await pump(tester, placeCount: 3);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -30));
+      await tester.pumpAndSettle();
+
+      expect(tip('눌러서 자세히 보기'), findsOneWidget);
     });
 
     testWidgets('재진입 — 공유 안내로 바뀐다', (tester) async {
