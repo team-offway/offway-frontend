@@ -7,6 +7,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/tour_text.dart';
 import '../../../core/widgets/curated_link_section.dart';
+import '../../policy/domain/region_benefit.dart';
 import '../domain/transit_access.dart';
 import '../../region/domain/region_visit_metrics.dart';
 
@@ -447,8 +448,14 @@ class CourseRepository {
           },
       ],
       // 코스에 걸린 혜택 — 서버가 홈·상세와 같은 모양으로 준다(core #418).
-      // 지금 코스 화면은 안 그리지만, 그릴 때 다시 꺼내지 않도록 통째로 둔다
-      if (benefits.isNotEmpty) 'benefit': benefits.first,
+      //
+      // 대표 하나(`benefit`)는 장소 상세가, 목록(`benefits`)은 코스 확정
+      // 화면의 '이 지역에서 누릴 수 있는 혜택'이 쓴다. 시안이 카드를 둘
+      // 그리므로 첫 건만 남기면 나머지를 다시 부를 곳이 없다
+      if (benefits.isNotEmpty) ...{
+        'benefit': benefits.first,
+        'benefits': RegionBenefit.parseList(benefits),
+      },
       // 이 코스와 함께 보면 좋은 공식 사이트 (core #350). 코스를 만드는 여섯
       // 경로가 모두 이 함수를 지나므로 여기서 한 번만 꺼낸다
       'curatedLinks': CuratedLink.parseList(course['curatedLinks']),

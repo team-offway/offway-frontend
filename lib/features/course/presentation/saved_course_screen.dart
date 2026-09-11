@@ -30,6 +30,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import 'widgets/place_info_sheet.dart';
 import '../domain/transit_access.dart';
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
@@ -49,13 +50,6 @@ final savedCourseDetailProvider = FutureProvider.autoDispose
     >(
       (ref, savedId) =>
           ref.watch(courseRepositoryProvider).savedCourseDetail(savedId),
-    );
-
-/// 장소 운영 정보 — 여행 당일 휴무일·운영시간 안내에만 조회한다
-final poiScheduleProvider = FutureProvider.autoDispose
-    .family<({String? useTime, String? restDate}), String>(
-      (ref, contentId) =>
-          ref.watch(courseRepositoryProvider).poiSchedule(contentId),
     );
 
 /// 내 코스에서 선택해 들어온 코스 상세.
@@ -583,23 +577,18 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
-    showAppBottomSheet<void>(
+    showPlaceInfoSheet(
       context,
-      // 운영시간이 긴 장소는 시트가 길어진다 — 화면의 3/4까지만 쓴다
-      maxHeightRatio: 0.75,
-      builder: (sheetContext) => _PlaceSheet(
-        place: place,
-        isToday: isToday,
-        onOpenDetail: () {
-          Navigator.of(sheetContext).pop();
-          final contentId = place['poiContentId'] as String?;
-          if (contentId != null) {
-            context.push(
-              AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
-            );
-          }
-        },
-      ),
+      place: place,
+      isToday: isToday,
+      onOpenDetail: () {
+        final contentId = place['poiContentId'] as String?;
+        if (contentId != null) {
+          context.push(
+            AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
+          );
+        }
+      },
     );
   }
 
@@ -1069,23 +1058,15 @@ class _PlaceRow extends ConsumerWidget {
                 ),
                 if (catchphrase != null) ...[
                   const SizedBox(height: 4),
-                  Text.rich(
-                    TextSpan(
-                      style: AppTypography.label1ReadingMedium.copyWith(
-                        color: AppColors.labelNeutral,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: '추천 ',
-                          style: AppTypography.label1ReadingMedium.copyWith(
-                            color: AppColors.primaryStrong,
-                          ),
-                        ),
-                        TextSpan(text: catchphrase),
-                      ],
-                    ),
+                  // 앞에 붙던 '추천 '을 뺐다(QA 9/11) — 코스에 실린 장소는
+                  // 전부 추천이라 줄마다 되뇌는 말이 됐다
+                  Text(
+                    catchphrase,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label1ReadingMedium.copyWith(
+                      color: AppColors.labelNeutral,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 4),
@@ -1126,184 +1107,6 @@ class _PlaceRow extends ConsumerWidget {
             child: PlaceThumbnail(imageUrl: imageUrl),
           ),
         ],
-      ],
-    );
-  }
-}
-
-/// 장소 운영 정보 시트 — 이름·추천 문구와 운영시간·휴무일.
-///
-/// 여행 당일에는 값 대신 경고 문구가 빨간색으로 나온다
-/// ("오늘은 휴무일이에요" / "오늘 운영이 끝났어요").
-class _PlaceSheet extends ConsumerWidget {
-  const _PlaceSheet({
-    required this.place,
-    required this.isToday,
-    required this.onOpenDetail,
-  });
-
-  final Map<String, dynamic> place;
-  final bool isToday;
-  final VoidCallback onOpenDetail;
-
-  /// 운영시간 문자열 끝의 마감 시각(HH:MM)이 이미 지났는지.
-  /// 18:00~02:00처럼 자정을 넘기는 표기는 확신할 수 없어 판정하지 않는다.
-  static bool closingPassed(String useTime, DateTime now) {
-    final matches = RegExp(r'(\d{1,2}):(\d{2})').allMatches(useTime).toList();
-    if (matches.isEmpty) return false;
-    int minutesOf(RegExpMatch m) =>
-        int.parse(m.group(1)!) * 60 + int.parse(m.group(2)!);
-    final closing = minutesOf(matches.last);
-    if (matches.length >= 2 && closing < minutesOf(matches.first)) {
-      return false;
-    }
-    return now.hour * 60 + now.minute >= closing;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final contentId = place['poiContentId'] as String?;
-    final schedule = contentId == null
-        ? null
-        : ref.watch(poiScheduleProvider(contentId));
-    final loading = schedule?.isLoading ?? false;
-    final useTime = schedule?.value?.useTime;
-    final restDate = schedule?.value?.restDate;
-    final now = DateTime.now();
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-
-    // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
-    var useValue = loading ? '—' : (useTime ?? '정보없음');
-    var useEmpty = !loading && useTime == null;
-    var useDanger = false;
-    if (isToday && useTime != null && closingPassed(useTime, now)) {
-      useValue = '오늘 운영이 끝났어요';
-      useEmpty = false;
-      useDanger = true;
-    }
-    var restValue = loading ? '—' : (restDate ?? '정보없음');
-    final restEmpty = !loading && restDate == null;
-    var restDanger = false;
-    if (isToday &&
-        restDate != null &&
-        restDate.contains('${weekdays[now.weekday - 1]}요일')) {
-      restValue = '오늘은 휴무일이에요';
-      restDanger = true;
-    }
-
-    return SafeArea(
-      // 운영시간이 여러 줄인 장소(도서관 등)는 시트를 넘긴다 — 넘칠 때만
-      // 스크롤되고, 짧으면 내용만큼만 차지한다
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 35, 20, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: onOpenDetail,
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place['name'] as String,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.headline1Bold.copyWith(
-                            color: AppColors.labelNormal,
-                          ),
-                        ),
-                        if (place['catchphrase'] case final String phrase) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            phrase,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.label2Medium.copyWith(
-                              color: AppColors.labelAlternative,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/icons/ic_chevron_right_16.svg',
-                    width: 16,
-                    height: 16,
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.labelAlternative,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            _buildInfoRow(
-              // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
-              // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘
-              iconAsset: 'assets/icons/ic_clock_outline.svg',
-              label: '운영시간',
-              value: useValue,
-              danger: useDanger,
-              empty: useEmpty,
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              iconAsset: 'assets/icons/ic_calendar.svg',
-              label: '휴무일',
-              value: restValue,
-              danger: restDanger,
-              empty: restEmpty,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required String iconAsset,
-    required String label,
-    required String value,
-    required bool danger,
-    bool empty = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 시안 에셋이 Label/Alternative(61%)를 이미 품고 있다 —
-        // 여기서 또 칠하면 투명도가 겹쳐 흐려진다
-        SvgPicture.asset(iconAsset, width: 24, height: 24),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 64,
-          child: Text(
-            label,
-            style: AppTypography.body2NormalMedium.copyWith(
-              color: AppColors.labelAlternative,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTypography.body2NormalMedium.copyWith(
-              // 값이 없을 때는 실제 정보와 구분되게 한 단계 옅힌다
-              color: danger
-                  ? AppColors.statusNegative
-                  : empty
-                  ? AppColors.labelAssistive
-                  : AppColors.labelNeutral,
-            ),
-          ),
-        ),
       ],
     );
   }
