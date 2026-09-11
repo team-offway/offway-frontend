@@ -11,9 +11,17 @@ import 'package:offway/features/region/domain/region_visit_metrics.dart';
 /// **신규 기능의 위치를 한 번 알리는 자리**다(DS Tooltip 사용 예시).
 /// 코스를 읽기 시작하면 할 일을 다 한 셈이라 사라지고, 다시 뜨지 않는다.
 void main() {
+  /// 오늘에서 [days]일 떨어진 날짜. **고정 날짜를 쓰면 그날이 지나는 순간
+  /// 테스트가 깨진다** — 툴팁은 종료일이 오늘보다 이전인지로 갈린다
+  String dateFrom(int days) {
+    final d = DateUtils.dateOnly(DateTime.now()).add(Duration(days: days));
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
   ({Map<String, dynamic> saved, Map<String, dynamic> course}) detail({
     bool leaveDeducted = false,
-    String travelDate = '2026-09-10',
+    required String travelDate,
   }) => (
     saved: {
       'id': '1',
@@ -30,11 +38,11 @@ void main() {
         'quietestDay': {'label': '화요일', 'percentLessThanOtherDays': 24},
       }),
       'durationDays': 1,
-      'travelDate': '2026-09-10',
+      'travelDate': travelDate,
       'days': [
         {
           'day': 1,
-          'date': '2026-09-10',
+          'date': travelDate,
           'dayOfWeek': '목',
           'places': [
             for (var i = 1; i <= 8; i++)
@@ -54,7 +62,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     bool leaveDeducted = false,
-    String travelDate = '2026-09-10',
+    String? travelDate,
   }) async {
     tester.view.physicalSize = const Size(402 * 3, 874 * 3);
     tester.view.devicePixelRatio = 3;
@@ -63,8 +71,11 @@ void main() {
       ProviderScope(
         overrides: [
           savedCourseDetailProvider('1').overrideWith(
-            (ref) async =>
-                detail(leaveDeducted: leaveDeducted, travelDate: travelDate),
+            (ref) async => detail(
+              leaveDeducted: leaveDeducted,
+              // 기본은 내일 — 아직 안 끝난 여행이다
+              travelDate: travelDate ?? dateFrom(1),
+            ),
           ),
         ],
         child: MaterialApp(
@@ -116,7 +127,7 @@ void main() {
   });
 
   testWidgets('이미 다녀온 여행이면 안 뜬다 — 앞으로 갈 사람에게만 쓸모가 있다', (tester) async {
-    await pump(tester, travelDate: '2020-01-01');
+    await pump(tester, travelDate: dateFrom(-2));
 
     expect(find.byType(AppTooltipBubble), findsNothing);
   });
