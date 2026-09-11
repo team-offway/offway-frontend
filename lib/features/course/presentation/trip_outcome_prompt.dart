@@ -22,12 +22,16 @@ import 'widgets/trip_outcome_dialog.dart';
 ///
 /// 쓰는 쪽은 [build] 안에서 [watchTripOutcomePrompt]를 한 번 부르면 된다.
 mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
-  /// 이번 진입에서 이미 물었는지.
+  /// 방금 물은 여행의 코스 id — 같은 여행을 두 번 묻지 않으려는 자물쇠.
   ///
   /// 프로바이더가 다시 읽힐 때마다(연차 갱신 등) 모달이 또 뜨는 걸 막는다.
   /// '나중에 할게요'는 저장소가 하루를 기억하지만, 그 저장이 끝나기 전에
   /// 다음 프레임이 오면 같은 여행을 두 번 묻게 된다.
-  bool _asked = false;
+  ///
+  /// **여행마다 따로 센다.** 예전에는 한 번 물었다는 사실만 참·거짓으로
+  /// 들고 있어, 밀린 여행이 둘 이상이면 첫 답 뒤 나머지가 묻히고 다른
+  /// 메뉴를 다녀와야 나왔다
+  int? _askedCourseId;
 
   /// 모달이 지금 떠 있는가 — 다른 모달(업데이트 시트)이 겹치지 않게 알린다
   bool _tripDialogOpen = false;
@@ -63,20 +67,20 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     // listen이 아니라 watch로 읽는다: 이 화면에 돌아왔을 때 이미 값이
     // 캐시돼 있으면 listen은 '바뀐 적 없다'며 부르지 않는다
     final trip = ref.watch(pendingTripProvider).value;
-    if (trip == null || _asked) return false;
+    if (trip == null || trip.courseId == _askedCourseId) return false;
     // 알림(다음 날 20시)보다 먼저 묻지 않는다 — 자정에 넘어온 여행은
     // 저녁까지 홈에 들어와도 조용하다. 그 여행의 알림을 눌러 왔을 때만 예외
     final fromItsNotification = trip.courseId == notificationCourseId;
     if (!fromItsNotification && !trip.isAskableAt(DateTime.now())) return false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_asked) _ask(trip);
+      if (mounted && trip.courseId != _askedCourseId) _ask(trip);
     });
     return true;
   }
 
   Future<void> _ask(PendingTrip trip) async {
-    _asked = true;
+    _askedCourseId = trip.courseId;
     _tripDialogOpen = true;
     final answer = await showTripOutcomeDialog(context, trip: trip);
     _tripDialogOpen = false;
@@ -87,6 +91,10 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       await ref
           .read(tripOutcomeSnoozeProvider)
           .snooze(trip.courseId, DateTime.now());
+      if (!mounted) return;
+      // 미룬 것은 **이 여행 하나**다. 다른 밀린 여행이 있으면 이어서 묻는다 —
+      // 여기서 멈추면 다음 것은 화면을 나갔다 와야 나온다
+      ref.invalidate(pendingTripProvider);
       return;
     }
 
