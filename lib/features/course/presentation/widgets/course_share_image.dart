@@ -284,23 +284,17 @@ class CourseShareImage extends StatelessWidget {
                   ),
                   if (catchphrase != null) ...[
                     const SizedBox(height: 10),
-                    Text.rich(
-                      TextSpan(
-                        style: AppTypography.headline1Bold.copyWith(
-                          color: AppColors.labelNeutral,
-                          fontSize: 35,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: '추천 ',
-                            style: TextStyle(color: AppColors.primaryStrong),
-                          ),
-                          TextSpan(text: catchphrase),
-                        ],
-                      ),
+                    // 앞에 붙던 '추천 '을 뺐다(QA 9/11) — 화면 목록과 같은
+                    // 줄을 그리는 자리라 여기만 남기면 어긋나 보인다
+                    Text(
+                      catchphrase,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: AppTypography.headline1Bold.copyWith(
+                        color: AppColors.labelNeutral,
+                        fontSize: 35,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 10),

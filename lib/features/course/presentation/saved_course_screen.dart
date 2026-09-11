@@ -1069,23 +1069,15 @@ class _PlaceRow extends ConsumerWidget {
                 ),
                 if (catchphrase != null) ...[
                   const SizedBox(height: 4),
-                  Text.rich(
-                    TextSpan(
-                      style: AppTypography.label1ReadingMedium.copyWith(
-                        color: AppColors.labelNeutral,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: '추천 ',
-                          style: AppTypography.label1ReadingMedium.copyWith(
-                            color: AppColors.primaryStrong,
-                          ),
-                        ),
-                        TextSpan(text: catchphrase),
-                      ],
-                    ),
+                  // 앞에 붙던 '추천 '을 뺐다(QA 9/11) — 코스에 실린 장소는
+                  // 전부 추천이라 줄마다 되뇌는 말이 됐다
+                  Text(
+                    catchphrase,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label1ReadingMedium.copyWith(
+                      color: AppColors.labelNeutral,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 4),

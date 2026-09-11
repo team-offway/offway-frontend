@@ -26,7 +26,9 @@ import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
+import '../../policy/domain/region_benefit.dart';
 import '../data/course_repository.dart';
+import 'widgets/course_benefit_section.dart';
 import 'my_courses_screen.dart' show savedCoursesProvider;
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
@@ -664,6 +666,15 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 // 여행 날짜가 없어 그 시트에 담을 내용이 없다 — 바로 상세로 간다
                 onTapPlace: _openPlaceDetail,
               ),
+              // 이 지역에서 누릴 수 있는 혜택 (QA 9/11) — 담을지 정하기
+              // 직전 자리라 "가면 뭘 받나"가 결정에 붙는다. 혜택이 없으면
+              // 위젯이 스스로 자리를 비운다
+              if (RegionBenefit.parseList(course['benefits']) case final bs
+                  when bs.isNotEmpty) ...[
+                // 시안: 장소 목록 끝에서 구분 띠까지 36
+                const SizedBox(height: 36),
+                CourseBenefitSection(benefits: bs),
+              ],
               // 안내 문구·버튼은 화면에 고정하지 않고 목록 끝에 따라온다 —
               // 고정하면 늘 떠 있어 코스를 보는 화면을 좁힌다
               // 시안: 장소 목록 끝에서 유도 블록까지 50
