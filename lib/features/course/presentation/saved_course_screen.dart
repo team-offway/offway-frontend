@@ -141,21 +141,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 맞춘다. 목록 좌우 여백이 20이고 썸네일이 그 안 오른쪽 끝에 붙으므로
   /// 같은 20을 준다. 닫기 버튼은 없다 — 눌러 보면 끝나는 안내라 X가 없어도
   /// 스스로 사라진다
-  Widget _buildDetailHint() {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      alignment: Alignment.topCenter,
-      child: _detailHintPending && _scrolledToPlaces
-          ? const Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: EdgeInsets.only(right: 20, bottom: 4),
-                child: AppTooltipBubble(text: '눌러서 자세히 보기'),
-              ),
-            )
-          : const SizedBox(width: double.infinity),
-    );
-  }
+  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다(시안 좌표: 툴팁 254~382,
+  /// 썸네일 312~382). 목록이 이미 좌우 20 안에 있으므로 여백을 더 주지 않는다
+  Widget _buildDetailHint() => const AppTooltipBubble(text: '눌러서 자세히 보기');
 
   @override
   void dispose() {
@@ -171,17 +159,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     if (_shareTipVisible && _scroll.offset > 24) {
       setState(() => _shareTipVisible = false);
     }
-    // 장소 목록이 화면에 들어올 만큼 내려왔는가 — 시안이 '스크롤링 이후'로
-    // 잡은 자리다. 지도·요약을 지나야 목록이 보이기 시작한다
-    if (_detailHintPending &&
-        !_scrolledToPlaces &&
-        _scroll.offset > _placesReachedOffset) {
+    // 한 번이라도 손으로 내렸는가 — 시안이 '스크롤링 이후'로 잡은 자리다.
+    //
+    // **거리로 재지 않는다.** 코스가 짧으면 끝까지 내려도 몇 십 px 밖에 안
+    // 움직여, 고정값을 두면 그런 코스에서는 영영 안 뜬다. 목록을 보러 내린
+    // 것 자체가 신호다
+    if (_detailHintPending && !_scrolledToPlaces && _scroll.offset > 24) {
       setState(() => _scrolledToPlaces = true);
     }
   }
-
-  /// 이만큼 내려오면 장소 목록이 보인다 — 지도(198)와 요약을 지난 자리
-  static const _placesReachedOffset = 240.0;
 
   @override
   Widget build(BuildContext context) {
@@ -374,21 +360,16 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 첫 장소 카드를 가리켜 "눌러 볼 수 있다"고 알린다
-                    // (시안 1505:56078). 담고 처음 열었을 때, 목록까지
-                    // 내려온 뒤에만 나온다
-                    _buildDetailHint(),
-                    _SavedPlaceList(
-                      places: places,
-                      // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
-                      showOpeningWarnings: dDay == 0,
-                      onTapPlace: (place) =>
-                          _showPlaceSheet(place, isToday: dDay == 0),
-                    ),
-                  ],
+                child: _SavedPlaceList(
+                  places: places,
+                  // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
+                  showOpeningWarnings: dDay == 0,
+                  onTapPlace: (place) =>
+                      _showPlaceSheet(place, isToday: dDay == 0),
+                  // 담고 처음 열었을 때, 목록까지 내려온 뒤에만 나온다
+                  detailHint: _detailHintPending && _scrolledToPlaces
+                      ? _buildDetailHint()
+                      : null,
                 ),
               ),
               // 공공데이터 출처 (core #417) — 코스가 장소·날씨를 빌려 온다
@@ -971,11 +952,41 @@ class _WeatherChip extends StatelessWidget {
 ///
 /// 코스확정 화면의 목록과 달리 장소 사이 이동거리를 보여주고, 숙소는 번호
 /// 색으로 구분한다.
+/// 자리를 차지하지 않고 **위로 띄우는** 말풍선 자리.
+///
+/// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
+/// 0으로 두고 자식을 위로 끌어올려, 앞 카드 위에 겹치게 한다.
+class _OverlapHint extends StatelessWidget {
+  const _OverlapHint({required this.child});
+
+  final Widget child;
+
+  /// 말풍선(44)에 시안의 카드 간격 4를 더해 위로 올린다
+  static const _lift = 48.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 0,
+      width: double.infinity,
+      child: OverflowBox(
+        maxHeight: _lift,
+        // 폭을 물려받으면 말풍선이 목록 전체로 늘어난다 — 글자만큼만 넓히고
+        // 오른쪽에 붙인다
+        maxWidth: double.infinity,
+        alignment: Alignment.bottomRight,
+        child: Padding(padding: const EdgeInsets.only(bottom: 4), child: child),
+      ),
+    );
+  }
+}
+
 class _SavedPlaceList extends StatelessWidget {
   const _SavedPlaceList({
     required this.places,
     required this.showOpeningWarnings,
     required this.onTapPlace,
+    this.detailHint,
   });
 
   final List<Map<String, dynamic>> places;
@@ -985,9 +996,22 @@ class _SavedPlaceList extends StatelessWidget {
 
   final ValueChanged<Map<String, dynamic>> onTapPlace;
 
+  /// '눌러서 자세히 보기' 말풍선 — 없으면 안 그린다.
+  ///
+  /// **두 번째 장소를 가리키며 첫 장소 카드 위에 겹친다**(시안 1505:56078).
+  /// 자리를 차지하지 않으므로 목록이 밀리지 않는다
+  final Widget? detailHint;
+
+  /// 툴팁이 가리키는 장소 — 둘째 칸이다(시안).
+  ///
+  /// 첫 장소는 역·터미널인 경우가 많아(도착 안내) 눌러도 열 것이 없다.
+  /// 시안이 둘째를 가리키는 이유이고, 장소가 하나뿐이면 띄우지 않는다
+  static const _hintTargetIndex = 1;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         // 번호들을 관통하는 세로 점선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
         const Positioned(
@@ -1001,6 +1025,10 @@ class _SavedPlaceList extends StatelessWidget {
           children: [
             for (var i = 0; i < places.length; i++) ...[
               if (i > 0) _buildDistanceChip(places[i]),
+              // 가리킬 카드 바로 위에 겹쳐 띄운다 — 자리를 차지하면 목록이
+              // 밀려 시안과 어긋난다
+              if (i == _hintTargetIndex && detailHint != null)
+                _OverlapHint(child: detailHint!),
               _PlaceRow(
                 index: i + 1,
                 place: places[i],

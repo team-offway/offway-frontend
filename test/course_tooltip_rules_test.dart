@@ -80,6 +80,7 @@ void main() {
                             'kind': 'SIGHT',
                             'poiContentId': '$i',
                             'catchphrase': '설명 $i',
+                            if (i > 1) 'distanceFromPrevMeters': 11500,
                           },
                       ],
                     },
@@ -164,6 +165,57 @@ void main() {
 
       final bubble = tester.widget<AppTooltipBubble>(tip('눌러서 자세히 보기'));
       expect(bubble.onClose, isNull);
+    });
+
+    testWidgets('두 번째 장소를 가리킨다 — 첫 장소는 역·터미널이라 열 것이 없다', (tester) async {
+      await pump(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      final bubble = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('눌러서 자세히 보기'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final first = tester.getRect(find.text('장소 1'));
+      final second = tester.getRect(find.text('장소 2'));
+
+      expect(bubble.top, greaterThan(first.top));
+      expect(bubble.bottom, lessThan(second.top));
+    });
+
+    testWidgets('말풍선이 자리를 차지하지 않는다 — 목록이 밀리지 않는다', (tester) async {
+      await pump(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      final p1 = tester.getRect(find.text('장소 1')).top;
+      final p2 = tester.getRect(find.text('장소 2')).top;
+      final p3 = tester.getRect(find.text('장소 3')).top;
+
+      // 툴팁이 낀 구간(1→2)과 없는 구간(2→3)의 간격이 같아야 한다
+      expect(p2 - p1, p3 - p2);
+    });
+
+    testWidgets('말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다', (tester) async {
+      await pump(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      final bubble = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('눌러서 자세히 보기'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      // 시안 좌표: 툴팁 254~382, 썸네일 312~382 — 목록 여백 20 안쪽이다
+      expect(402 - bubble.right, 20);
+      expect(bubble.width, closeTo(128, 2.5));
     });
   });
 
