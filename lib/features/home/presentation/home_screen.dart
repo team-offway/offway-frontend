@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -141,7 +143,30 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with TripOutcomePrompt, UpdatePrompt {
+    with TripOutcomePrompt, UpdatePrompt, WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // 홈에 들어올 때마다 종의 점을 다시 맞춘다 — 로그인 직후이거나 앞선
+    // 조회가 실패했을 수 있다. 가벼운 요청 하나다
+    unawaited(ref.read(hasUnreadNotificationsProvider.notifier).refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 백그라운드에 둔 사이 알림이 쌓였을 수 있다. 푸시 배너를 못 봤거나
+    // 알림을 꺼 둔 사용자는 이 경로 말고는 점이 켜질 길이 없다
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(ref.read(hasUnreadNotificationsProvider.notifier).refresh());
+  }
+
   /// 로딩 중 깔아둘 지역 카드 자리 수 — 첫 화면에 걸쳐 보이는 만큼만
   static const _skeletonCardCount = 3;
 
