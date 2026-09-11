@@ -135,18 +135,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     ref.read(courseTooltipStorageProvider).closeSharePrompt();
   }
 
-  /// '눌러서 자세히 보기' — 첫 장소 카드 위에 얹는 안내.
-  ///
-  /// 시안(1505:56078)은 말풍선 오른쪽 끝을 **첫 장소의 썸네일 오른쪽 끝**에
-  /// 맞춘다. 목록 좌우 여백이 20이고 썸네일이 그 안 오른쪽 끝에 붙으므로
-  /// 같은 20을 준다. 닫기 버튼은 없다 — 눌러 보면 끝나는 안내라 X가 없어도
-  /// 스스로 사라진다
-  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다(시안 좌표: 툴팁 254~382,
-  /// 썸네일 312~382). 목록이 이미 좌우 20 안에 있으므로 여백을 더 주지 않는다
-  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만나고, **화살표가 아래를 향해
-  /// 둘째 장소를 가리킨다.** 목록이 이미 좌우 20 안에 있어 여백을 더 주지 않는다
-  Widget _buildDetailHint() =>
-      const AppTooltipBubble(text: '눌러서 자세히 보기', arrowAtBottom: true);
+  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다. 화살표는 위를 향하고,
+  /// 말풍선이 **둘째 장소 아래**에 놓여 그 카드를 짚는다
+  Widget _buildDetailHint() => const AppTooltipBubble(text: '눌러서 자세히 보기');
 
   @override
   void dispose() {
@@ -959,26 +950,36 @@ class _WeatherChip extends StatelessWidget {
 ///
 /// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
 /// 0으로 두고 자식을 위로 끌어올려, 앞 카드 위에 겹치게 한다.
+/// 자리를 차지하지 않고 **아래로 늘어뜨리는** 말풍선 자리.
+///
+/// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
+/// 0으로 두고 자식을 그 지점부터 아래로 그려, 바로 위 카드에 화살표가 닿게
+/// 한다.
+///
+/// `OverflowBox`의 정렬은 부모 중심을 기준으로 하므로 높이 0에서는 자식이
+/// 위아래로 반씩 걸친다 — 기준점을 눈으로 좇기 어렵다. 대신 `Stack`으로
+/// 위쪽에 못 박는다.
 class _OverlapHint extends StatelessWidget {
   const _OverlapHint({required this.child});
 
   final Widget child;
 
-  /// 말풍선(44)에 카드와의 간격 4를 더한 높이 — 위로 띄워 바로 아래 카드를 가리킨다
-  static const _lift = 48.0;
+  /// 카드 끝에서 말풍선까지 — **음수로 끌어올린다**.
+  ///
+  /// 카드는 글자 아래로 여백을 갖는데, 말풍선을 그 끝에 붙이면 다음 카드와
+  /// 겹친다. 썸네일(70) 바로 아래에 오도록 끌어올려, 화살표가 그 사진을
+  /// 짚게 한다
+  static const _gap = -44.0;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 0,
       width: double.infinity,
-      child: OverflowBox(
-        maxHeight: _lift,
-        // 폭을 물려받으면 말풍선이 목록 전체로 늘어난다 — 글자만큼만 넓히고
-        // 오른쪽에 붙인다
-        maxWidth: double.infinity,
-        alignment: Alignment.bottomRight,
-        child: Padding(padding: const EdgeInsets.only(bottom: 4), child: child),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topRight,
+        children: [Positioned(top: _gap, right: 0, child: child)],
       ),
     );
   }
@@ -1028,16 +1029,17 @@ class _SavedPlaceList extends StatelessWidget {
           children: [
             for (var i = 0; i < places.length; i++) ...[
               if (i > 0) _buildDistanceChip(places[i]),
-              // 가리킬 카드 바로 위에 겹쳐 띄운다 — 자리를 차지하면 목록이
-              // 밀려 시안과 어긋난다
-              if (i == _hintTargetIndex && detailHint != null)
-                _OverlapHint(child: detailHint!),
               _PlaceRow(
                 index: i + 1,
                 place: places[i],
                 showOpeningWarning: showOpeningWarnings,
                 onTap: () => onTapPlace(places[i]),
               ),
+              // 가리킬 카드 **바로 아래**에 겹쳐 띄운다. 화살표가 위를
+              // 향하므로 말풍선이 밑에 있어야 그 카드를 짚는다. 자리를
+              // 차지하면 목록이 밀려 시안과 어긋나므로 높이는 0이다
+              if (i == _hintTargetIndex && detailHint != null)
+                _OverlapHint(child: detailHint!),
             ],
           ],
         ),

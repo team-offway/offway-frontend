@@ -180,20 +180,20 @@ void main() {
             )
             .first,
       );
-      final first = tester.getRect(find.text('장소 1'));
       final second = tester.getRect(find.text('장소 2'));
+      final third = tester.getRect(find.text('장소 3'));
 
-      expect(bubble.top, greaterThan(first.top));
-      expect(bubble.bottom, lessThan(second.top));
-
-      // 화살표가 아래를 향해 둘째 칸을 짚는다 — 위를 향하면 첫 칸을 가리킨다
+      // 말풍선이 둘째 칸 **아래**에 놓이고, 화살표는 위를 향해 그 칸을 짚는다
       final widget = tester.widget<AppTooltipBubble>(
         find.byType(AppTooltipBubble),
       );
-      expect(widget.arrowAtBottom, isTrue);
+      expect(widget.arrowAtBottom, isFalse, reason: '화살표는 위를 향한다');
+
       final whole = tester.getRect(find.byType(AppTooltipBubble));
-      expect(whole.bottom, greaterThan(bubble.bottom));
-      expect(second.top - whole.bottom, 16);
+      expect(whole.top - second.bottom, 16);
+      // 셋째 칸을 덮지 않는다
+      expect(whole.bottom, lessThan(third.top));
+      expect(bubble.width, closeTo(128, 2.5));
     });
 
     testWidgets('말풍선이 자리를 차지하지 않는다 — 목록이 밀리지 않는다', (tester) async {
