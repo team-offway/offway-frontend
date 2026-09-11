@@ -30,6 +30,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import '../data/course_tooltip_storage.dart';
 import 'widgets/distance_chip.dart';
 import 'widgets/place_info_sheet.dart';
 import '../domain/transit_access.dart';
@@ -83,11 +84,76 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 맨 위로 돌아올 때마다 다시 뜨면 그때부터는 잔소리가 된다
   bool _shareTipVisible = true;
 
+  /// '눌러서 자세히 보기'를 띄울 차례인가 (시안 1505:56078).
+  ///
+  /// **담고 나서 처음 열었을 때만** 나온다. 목록이 그냥 글줄처럼 보여 눌러
+  /// 볼 생각을 못 하는 자리라, 한 번은 알려 줘야 한다. 상세로 들어가 보면
+  /// 알게 된 것이므로 그 코스에는 다시 안 띄운다.
+  ///
+  /// 이 값이 참인 동안에는 공유 툴팁을 접는다 — 둘이 같이 뜨면 무엇을
+  /// 보라는 말인지 알 수 없다.
+  bool _detailHintPending = false;
+
+  /// 스크롤을 내려 장소 목록에 닿았는가.
+  ///
+  /// 시안 노트가 "스크롤링 이후" 노출이라고 못박는다. 맨 위에서 띄우면
+  /// 가리키는 카드가 화면 밖에 있어 무엇을 누르라는 것인지 안 보인다
+  bool _scrolledToPlaces = false;
+
+  /// 노출 이력을 읽었는가 — 빌드가 여러 번 돌아도 한 번만 읽는다
+  bool _tooltipStateLoaded = false;
+
+  /// 읽는 중인가 — 빌드가 여러 번 도는 동안 중복 호출을 막는다
+  bool _tooltipStateLoading = false;
+
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
   }
+
+  /// 이 코스에 어떤 안내가 남았는지 읽는다.
+  ///
+  /// 담고 처음 열면 '눌러서 자세히 보기', 그 다음부터는 공유 안내다(시안
+  /// 메모의 화면별 역할 분리). 공유 안내를 이미 닫았다면 그것도 안 뜬다
+  Future<void> _loadTooltipState({required bool hasHintTarget}) async {
+    final storage = ref.read(courseTooltipStorageProvider);
+    // 읽기가 실패해도(Keychain 접근 불가 등) 안내는 나와야 한다 — 못 읽으면
+    // '아직 안 봤다'로 친다. 여기서 멈추면 툴팁이 영영 안 뜬다
+    var detailDone = false;
+    var shareClosed = false;
+    try {
+      detailDone = await storage.isDetailHintDone(widget.savedId);
+      shareClosed = await storage.isSharePromptClosed();
+    } on Object catch (e) {
+      debugPrint('툴팁 이력 읽기 실패: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      // 가리킬 카드가 없으면(장소 한 곳짜리 코스) 상세 안내는 그려질 자리가
+      // 없다. 대기로 두면 공유 안내까지 막혀 **둘 다 안 뜬다**
+      _detailHintPending = !detailDone && hasHintTarget;
+      if (shareClosed) _shareTipVisible = false;
+    });
+    _tooltipStateLoaded = true;
+  }
+
+  /// 장소 상세로 들어갔다 — 이 코스의 '눌러서 자세히 보기'는 할 일을 마쳤다
+  void _markDetailHintDone() {
+    if (!_detailHintPending) return;
+    setState(() => _detailHintPending = false);
+    ref.read(courseTooltipStorageProvider).markDetailHintDone(widget.savedId);
+  }
+
+  /// 닫기(X) — 이 화면에서 감추고, 다음부터도 안 뜨게 남긴다
+  void _closeShareTip() {
+    setState(() => _shareTipVisible = false);
+    ref.read(courseTooltipStorageProvider).closeSharePrompt();
+  }
+
+  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다. 화살표는 위를 향하고,
+  /// 말풍선이 **둘째 장소 아래**에 놓여 그 카드를 짚는다
+  Widget _buildDetailHint() => const AppTooltipBubble(text: '눌러서 자세히 보기');
 
   @override
   void dispose() {
@@ -98,9 +164,19 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   }
 
   void _onScroll() {
-    if (!_shareTipVisible || !_scroll.hasClients) return;
+    if (!_scroll.hasClients) return;
     // 손가락이 살짝 스친 정도로는 안 사라진다
-    if (_scroll.offset > 24) setState(() => _shareTipVisible = false);
+    if (_shareTipVisible && _scroll.offset > 24) {
+      setState(() => _shareTipVisible = false);
+    }
+    // 한 번이라도 손으로 내렸는가 — 시안이 '스크롤링 이후'로 잡은 자리다.
+    //
+    // **거리로 재지 않는다.** 코스가 짧으면 끝까지 내려도 몇 px 밖에 안
+    // 움직여, 문턱을 두면 그런 코스에서는 영영 안 뜬다. 목록을 보러 내린
+    // 것 자체가 신호다
+    if (_detailHintPending && !_scrolledToPlaces && _scroll.offset > 0) {
+      setState(() => _scrolledToPlaces = true);
+    }
   }
 
   @override
@@ -138,6 +214,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       orElse: () => days.first,
     );
     final places = (day['places'] as List).cast<Map<String, dynamic>>();
+    // 노출 이력은 장소 수를 알아야 정해진다 — 가리킬 카드가 없으면 상세
+    // 안내를 걸지 않는다. 코스가 오는 시점이 그것을 아는 첫 순간이라
+    // `initState`가 아니라 여기서 한 번 부른다
+    if (!_tooltipStateLoaded && !_tooltipStateLoading) {
+      _tooltipStateLoading = true;
+      _loadTooltipState(
+        hasHintTarget: places.length > _SavedPlaceList.hintTargetIndex,
+      );
+    }
     final regionName = saved['regionName'] as String? ?? '';
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
@@ -162,7 +247,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           alignment: Alignment.topCenter,
-          child: _shareTipVisible && !past
+          // 안내가 겹치지 않게 한 번에 하나만 — '눌러서 자세히 보기'가
+          // 남아 있으면 공유 안내는 그 다음 차례다
+          child:
+              _tooltipStateLoaded &&
+                  _shareTipVisible &&
+                  !past &&
+                  !_detailHintPending
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -172,7 +263,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     padding: const EdgeInsets.only(right: 10, bottom: 4),
                     child: AppTooltipBubble(
                       text: '코스를 공유해보세요',
-                      onClose: () => setState(() => _shareTipVisible = false),
+                      onClose: _closeShareTip,
                     ),
                   ),
                 )
@@ -298,6 +389,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                   showOpeningWarnings: dDay == 0,
                   onTapPlace: (place) =>
                       _showPlaceSheet(place, isToday: dDay == 0),
+                  // 담고 처음 열었을 때, 목록까지 내려온 뒤에만 나온다
+                  detailHint: _detailHintPending && _scrolledToPlaces
+                      ? _buildDetailHint()
+                      : null,
                 ),
               ),
               // 공공데이터 출처 (core #417) — 코스가 장소·날씨를 빌려 온다
@@ -584,11 +679,14 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       isToday: isToday,
       onOpenDetail: () {
         final contentId = place['poiContentId'] as String?;
-        if (contentId != null) {
-          context.push(
-            AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
-          );
-        }
+        if (contentId == null) return;
+        // **상세 화면에 들어간 순간** 안내는 할 일을 마쳤다(시안 메모).
+        // 시트를 여는 것만으로는 끝내지 않는다 — 운영시간만 보고 닫았다면
+        // 눌러서 더 볼 수 있다는 것을 아직 모른다
+        _markDetailHintDone();
+        context.push(
+          AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
+        );
       },
     );
   }
@@ -877,11 +975,51 @@ class _WeatherChip extends StatelessWidget {
 ///
 /// 코스확정 화면의 목록과 달리 장소 사이 이동거리를 보여주고, 숙소는 번호
 /// 색으로 구분한다.
+/// 자리를 차지하지 않고 **위로 띄우는** 말풍선 자리.
+///
+/// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
+/// 0으로 두고 자식을 위로 끌어올려, 앞 카드 위에 겹치게 한다.
+/// 자리를 차지하지 않고 **아래로 늘어뜨리는** 말풍선 자리.
+///
+/// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
+/// 0으로 두고 자식을 그 지점부터 아래로 그려, 바로 위 카드에 화살표가 닿게
+/// 한다.
+///
+/// `OverflowBox`의 정렬은 부모 중심을 기준으로 하므로 높이 0에서는 자식이
+/// 위아래로 반씩 걸친다 — 기준점을 눈으로 좇기 어렵다. 대신 `Stack`으로
+/// 위쪽에 못 박는다.
+class _OverlapHint extends StatelessWidget {
+  const _OverlapHint({required this.child});
+
+  final Widget child;
+
+  /// 카드 끝에서 말풍선까지 — 음수로 끌어올린다.
+  ///
+  /// **사진 밑단에 화살표를 맞댄다.** 화살표가 위를 향하므로 그 위의 사진을
+  /// 짚는다. 시안(1505:56078)은 사진 끝(829)과 화살표 시작(829)이 같은
+  /// 자리라 살짝 겹쳐 보인다 — 띄우면 어느 사진 것인지 흐려진다
+  static const _gap = -15.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 0,
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topRight,
+        children: [Positioned(top: _gap, right: 0, child: child)],
+      ),
+    );
+  }
+}
+
 class _SavedPlaceList extends StatelessWidget {
   const _SavedPlaceList({
     required this.places,
     required this.showOpeningWarnings,
     required this.onTapPlace,
+    this.detailHint,
   });
 
   final List<Map<String, dynamic>> places;
@@ -891,9 +1029,22 @@ class _SavedPlaceList extends StatelessWidget {
 
   final ValueChanged<Map<String, dynamic>> onTapPlace;
 
+  /// '눌러서 자세히 보기' 말풍선 — 없으면 안 그린다.
+  ///
+  /// **두 번째 장소를 가리키며 첫 장소 카드 위에 겹친다**(시안 1505:56078).
+  /// 자리를 차지하지 않으므로 목록이 밀리지 않는다
+  final Widget? detailHint;
+
+  /// 툴팁이 가리키는 장소 — 둘째 칸이다(시안).
+  ///
+  /// 첫 장소는 역·터미널인 경우가 많아(도착 안내) 눌러도 열 것이 없다.
+  /// 시안이 둘째를 가리키는 이유이고, 장소가 하나뿐이면 띄우지 않는다
+  static const hintTargetIndex = 1;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         // 번호들을 관통하는 세로 점선 — 거리 칩이 흰 배경으로 선을 가리며 얹힌다
         const Positioned(
@@ -913,6 +1064,11 @@ class _SavedPlaceList extends StatelessWidget {
                 showOpeningWarning: showOpeningWarnings,
                 onTap: () => onTapPlace(places[i]),
               ),
+              // 가리킬 카드의 **사진 바로 아래**에 겹쳐 띄운다. 화살표가
+              // 위를 향하므로 그 사진을 짚는다. 자리를 차지하면 목록이
+              // 밀려 시안과 어긋나므로 높이는 0이다
+              if (i == hintTargetIndex && detailHint != null)
+                _OverlapHint(child: detailHint!),
             ],
           ],
         ),

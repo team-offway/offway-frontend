@@ -28,6 +28,7 @@ import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../data/course_repository.dart';
+import '../data/course_tooltip_storage.dart';
 import 'widgets/course_benefit_section.dart';
 import 'widgets/place_info_sheet.dart';
 import 'my_courses_screen.dart' show savedCoursesProvider;
@@ -129,14 +130,42 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
   /// 공유 버튼을 가리키는 툴팁이 보이는가.
   ///
-  /// **한 번 사라지면 다시 안 뜬다.** 내 코스 상세와 같은 규칙이다 —
-  /// 코스를 읽기 시작하면 위치를 알린 셈이라 그때부터는 잔소리가 된다
+  /// **이 화면 안에서 한 번 사라지면 다시 안 뜬다.** 코스를 읽기 시작하면
+  /// 위치를 알린 셈이라 그때부터는 잔소리가 된다.
+  ///
+  /// 닫기(X)를 누르면 여기서 그치지 않고 **다음부터 아예 안 뜬다**(시안
+  /// 1505:55696) — 직접 지운 것은 "봤고 알았다"는 뜻이라, 다른 코스를 볼
+  /// 때마다 되풀이할 이유가 없다. 스크롤로 감춘 것은 그와 다르다
   bool _shareTipVisible = true;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    _loadSharePromptState();
+  }
+
+  /// 예전에 닫기를 누른 적이 있으면 아예 띄우지 않는다
+  Future<void> _loadSharePromptState() async {
+    // 읽기가 실패해도(Keychain 접근 불가 등) 안내는 나와야 한다 — 못 읽으면
+    // '아직 안 닫았다'로 친다. 여기서 멈추면 툴팁이 영영 안 뜬다
+    var closed = false;
+    try {
+      closed = await ref
+          .read(courseTooltipStorageProvider)
+          .isSharePromptClosed();
+    } on Object catch (e) {
+      debugPrint('툴팁 이력 읽기 실패: $e');
+    }
+    if (!mounted) return;
+    if (!closed) return;
+    setState(() => _shareTipVisible = false);
+  }
+
+  /// 닫기(X) — 이 화면에서 감추고, 다음부터도 안 뜨게 남긴다
+  void _closeShareTip() {
+    setState(() => _shareTipVisible = false);
+    ref.read(courseTooltipStorageProvider).closeSharePrompt();
   }
 
   @override
@@ -621,7 +650,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                     padding: const EdgeInsets.only(right: 14, bottom: 4),
                     child: AppTooltipBubble(
                       text: '코스를 공유해보세요',
-                      onClose: () => setState(() => _shareTipVisible = false),
+                      onClose: _closeShareTip,
                     ),
                   ),
                 )
