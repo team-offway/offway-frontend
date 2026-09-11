@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/place_thumbnail.dart';
+import 'distance_chip.dart';
 import 'dotted_line.dart';
 
 /// 하루치 코스의 장소 목록.
@@ -236,7 +237,11 @@ class _PlaceRow extends StatelessWidget {
     );
   }
 
-  /// 점선 위에 흰 배경으로 얹히는 거리 칩
+  /// 점선 옆에 놓이는 거리 칩.
+  ///
+  /// **여백은 내 코스 상세와 다르다.** 이 목록에서 거리가 보이는 것은 공유받은
+  /// 저장 코스뿐이고, 9/11 QA 시안(18991:85115)은 내 코스 화면만 다뤘다 —
+  /// 칩 모양만 맞추고 배치는 건드리지 않는다
   Widget _buildDistanceChip(int meters) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -245,25 +250,7 @@ class _PlaceRow extends StatelessWidget {
           // 점선(x=11.4)을 가운데로 지나가게 두되 칩은 그 폭에 갇히지 않는다
           Transform.translate(
             offset: const Offset(-12, 0),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundNormal,
-                  border: Border.all(color: AppColors.lineNormalNeutral),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${(meters / 1000).toStringAsFixed(1)}km',
-                  style: AppTypography.caption1Regular.copyWith(
-                    color: AppColors.labelAlternative,
-                  ),
-                ),
-              ),
-            ),
+            child: Center(child: DistanceChip(meters: meters)),
           ),
         ],
       ),
