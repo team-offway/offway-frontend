@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
+import 'package:offway/core/widgets/place_thumbnail.dart';
 import 'package:offway/features/course/data/course_tooltip_storage.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
@@ -180,23 +181,22 @@ void main() {
             )
             .first,
       );
-      final first = tester.getRect(find.text('장소 1'));
-      final second = tester.getRect(find.text('장소 2'));
-
-      // 말풍선이 첫째와 둘째 **사이**에 놓이고, 화살표는 위를 향한다.
-      // 아래로 이어지는 꼬리가 둘째 칸을 짚는 모양이다(시안 1505:56078)
+      // 화살표는 위를 향하고, 말풍선은 **둘째 장소 사진 바로 아래**에 선다.
+      // 그래야 꼭짓점이 그 사진을 짚는다(시안 1505:56078)
       final widget = tester.widget<AppTooltipBubble>(
         find.byType(AppTooltipBubble),
       );
       expect(widget.arrowAtBottom, isFalse, reason: '화살표는 위를 향한다');
 
       final whole = tester.getRect(find.byType(AppTooltipBubble));
-      expect(whole.top, greaterThan(first.bottom), reason: '첫째 칸 아래');
-      expect(whole.bottom, lessThan(second.top), reason: '둘째 칸 위');
-      // **가리킬 칸 쪽에 붙는다.** 두 카드 한가운데 두면 어느 쪽 안내인지
-      // 읽히지 않는다 — 화살표가 위를 향하는 모양이라 더욱 그렇다
-      expect(second.top - whole.bottom, lessThan(10));
-      expect(whole.top - first.bottom, greaterThan(30));
+      final thumbs = find.byType(PlaceThumbnail);
+      final secondThumb = tester.getRect(thumbs.at(1));
+      final thirdThumb = tester.getRect(thumbs.at(2));
+
+      // 둘째 사진 밑단에 붙는다
+      expect(whole.top - secondThumb.bottom, closeTo(4, 2));
+      // 셋째 사진을 덮지 않는다
+      expect(whole.bottom, lessThan(thirdThumb.top));
       expect(bubble.width, closeTo(128, 2.5));
     });
 

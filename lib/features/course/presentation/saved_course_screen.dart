@@ -964,14 +964,12 @@ class _OverlapHint extends StatelessWidget {
 
   final Widget child;
 
-  /// 앞 카드 끝에서 말풍선까지 — 음수로 끌어올린다.
+  /// 카드 끝에서 말풍선까지 — 음수로 끌어올린다.
   ///
-  /// **가리킬 카드 쪽에 붙인다.** 두 카드 한가운데 두면 어느 쪽 안내인지
-  /// 읽히지 않는다. 화살표가 위를 향하는 모양이라 더욱 그렇다 — 위로 뜬
-  /// 꼭짓점이 앞 카드를 짚는 것처럼 보인다.
-  ///
-  /// 사이를 거리 칩이 지나가므로 그 옆을 스치는 선까지만 내린다
-  static const _gap = -6.0;
+  /// **사진 바로 아래에 붙인다.** 화살표가 위를 향하므로 그 위의 사진을
+  /// 짚는다. 카드(128)에서 사진은 13~83 자리라, 카드 끝에서 32 올리면
+  /// 화살표 꼭짓점이 사진 밑단에 닿는다
+  static const _gap = -11.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1030,11 +1028,6 @@ class _SavedPlaceList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (var i = 0; i < places.length; i++) ...[
-              // 가리킬 카드 **바로 위**에 겹쳐 띄운다. 화살표가 위를 향하니
-              // 말풍선이 그 카드 앞에 와야 짚는 대상이 맞는다. 자리를
-              // 차지하면 목록이 밀려 시안과 어긋나므로 높이는 0이다
-              if (i == _hintTargetIndex && detailHint != null)
-                _OverlapHint(child: detailHint!),
               if (i > 0) _buildDistanceChip(places[i]),
               _PlaceRow(
                 index: i + 1,
@@ -1042,6 +1035,11 @@ class _SavedPlaceList extends StatelessWidget {
                 showOpeningWarning: showOpeningWarnings,
                 onTap: () => onTapPlace(places[i]),
               ),
+              // 가리킬 카드의 **사진 바로 아래**에 겹쳐 띄운다. 화살표가
+              // 위를 향하므로 그 사진을 짚는다. 자리를 차지하면 목록이
+              // 밀려 시안과 어긋나므로 높이는 0이다
+              if (i == _hintTargetIndex && detailHint != null)
+                _OverlapHint(child: detailHint!),
             ],
           ],
         ),
