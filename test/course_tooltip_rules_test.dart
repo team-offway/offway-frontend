@@ -193,8 +193,9 @@ void main() {
       final secondThumb = tester.getRect(thumbs.at(1));
       final thirdThumb = tester.getRect(thumbs.at(2));
 
-      // 둘째 사진 밑단에 붙는다
-      expect(whole.top - secondThumb.bottom, closeTo(4, 2));
+      // 둘째 사진 밑단에 **맞닿는다** — 시안은 사진 끝과 화살표 시작이
+      // 같은 자리다. 띄우면 어느 사진 것인지 흐려진다
+      expect(whole.top - secondThumb.bottom, closeTo(0, 1.5));
       // 셋째 사진을 덮지 않는다
       expect(whole.bottom, lessThan(thirdThumb.top));
       expect(bubble.width, closeTo(128, 2.5));
