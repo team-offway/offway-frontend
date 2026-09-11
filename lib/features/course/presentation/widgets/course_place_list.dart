@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/place_thumbnail.dart';
+import 'distance_chip.dart';
 import 'dotted_line.dart';
 
 /// 하루치 코스의 장소 목록.
@@ -245,25 +246,7 @@ class _PlaceRow extends StatelessWidget {
           // 점선(x=11.4)을 가운데로 지나가게 두되 칩은 그 폭에 갇히지 않는다
           Transform.translate(
             offset: const Offset(-12, 0),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundNormal,
-                  border: Border.all(color: AppColors.lineNormalNeutral),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${(meters / 1000).toStringAsFixed(1)}km',
-                  style: AppTypography.caption1Regular.copyWith(
-                    color: AppColors.labelAlternative,
-                  ),
-                ),
-              ),
-            ),
+            child: Center(child: DistanceChip(meters: meters)),
           ),
         ],
       ),

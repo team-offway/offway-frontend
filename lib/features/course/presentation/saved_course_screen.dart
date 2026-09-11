@@ -30,6 +30,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import 'widgets/distance_chip.dart';
 import 'widgets/place_info_sheet.dart';
 import '../domain/transit_access.dart';
 import '../data/kakao_share.dart';
@@ -925,21 +926,7 @@ class _SavedPlaceList extends StatelessWidget {
     if (meters == null) return const SizedBox(height: 16);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        // 가이드보다 넓어 칩이 커 보였다 — 글자에 맞춰 좁힌다
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundNormal,
-          border: Border.all(color: AppColors.lineNormalNeutral),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '${(meters / 1000).toStringAsFixed(1)}km',
-          style: AppTypography.caption1Regular.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
-      ),
+      child: DistanceChip(meters: meters),
     );
   }
 }
