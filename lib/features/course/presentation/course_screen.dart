@@ -669,7 +669,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               // 이 지역에서 누릴 수 있는 혜택 (QA 9/11) — 담을지 정하기
               // 직전 자리라 "가면 뭘 받나"가 결정에 붙는다. 혜택이 없으면
               // 위젯이 스스로 자리를 비운다
-              if (RegionBenefit.parseList(course['benefits']) case final bs
+              // 리포지토리가 이미 파싱해 넘긴다 — 여기서 또 `parseList`를
+              // 부르면 `RegionBenefit`을 못 알아보고 전부 버린다
+              if (course['benefits'] case final List<RegionBenefit> bs
                   when bs.isNotEmpty) ...[
                 // 시안: 장소 목록 끝에서 구분 띠까지 36
                 const SizedBox(height: 36),

@@ -5,6 +5,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/course_benefit_section.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
+import 'package:offway/features/policy/domain/region_benefit.dart';
 import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 
 /// 코스 확정 화면 아래의 '이 지역에서 누릴 수 있는 혜택' (시안 1482:53418).
@@ -12,7 +13,11 @@ import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 /// 위 장소 목록에서 스친 혜택을, 담을지 정하기 직전 자리에서 카드로 한 번 더
 /// 보여준다. 혜택이 없는 지역에서는 통째로 사라진다.
 void main() {
-  Map<String, dynamic> course({List<Map<String, dynamic>>? benefits}) => {
+  /// 리포지토리(`_toCourseMap`)가 화면에 넘기는 것과 **같은 형태**를 만든다.
+  ///
+  /// 혜택은 거기서 이미 `RegionBenefit`으로 파싱돼 온다. 원시 Map 을 넣고
+  /// 재면 화면이 한 번 더 파싱하는 실수를 잡지 못한다 — 실제로 그랬다.
+  Map<String, dynamic> course({List<RegionBenefit>? benefits}) => {
     'regionName': '정선군',
     'durationDays': 1,
     'travelDate': '2026-09-10',
@@ -37,7 +42,7 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
-    List<Map<String, dynamic>>? benefits,
+    List<RegionBenefit>? benefits,
   }) async {
     tester.view.physicalSize = const Size(402 * 3, 1400 * 3);
     tester.view.devicePixelRatio = 3;
@@ -72,9 +77,9 @@ void main() {
   testWidgets('혜택이 여럿이면 카드를 그만큼 편다', (tester) async {
     await pump(
       tester,
-      benefits: [
-        {'text': '숙박 할인', 'policyId': 1},
-        {'text': '체험 할인', 'policyId': 2},
+      benefits: const [
+        RegionBenefit(text: '숙박 할인', policyId: 1),
+        RegionBenefit(text: '체험 할인', policyId: 2),
       ],
     );
 
@@ -96,9 +101,7 @@ void main() {
   testWidgets('혜택 섹션은 장소 목록 뒤, 담기 유도 앞에 온다', (tester) async {
     await pump(
       tester,
-      benefits: [
-        {'text': '숙박 할인', 'policyId': 1},
-      ],
+      benefits: const [RegionBenefit(text: '숙박 할인', policyId: 1)],
     );
 
     final place = tester.getRect(find.text('삼탄아트마인'));
@@ -111,9 +114,9 @@ void main() {
   testWidgets('시안 치수 — 카드 폭 362·높이 108, 카드 사이 10', (tester) async {
     await pump(
       tester,
-      benefits: [
-        {'text': '숙박 할인', 'policyId': 1},
-        {'text': '체험 할인', 'policyId': 2},
+      benefits: const [
+        RegionBenefit(text: '숙박 할인', policyId: 1),
+        RegionBenefit(text: '체험 할인', policyId: 2),
       ],
     );
 
@@ -133,9 +136,7 @@ void main() {
   testWidgets('구분 띠는 목록 여백을 거슬러 화면 폭을 꽉 채운다', (tester) async {
     await pump(
       tester,
-      benefits: [
-        {'text': '숙박 할인', 'policyId': 1},
-      ],
+      benefits: const [RegionBenefit(text: '숙박 할인', policyId: 1)],
     );
 
     // 목록은 좌우 20 패딩인데 띠는 0부터 402까지다
@@ -155,9 +156,7 @@ void main() {
     // QA 9/11 — 코스에 실린 장소는 전부 추천이라 줄마다 되뇌는 말이었다
     await pump(
       tester,
-      benefits: [
-        {'text': '숙박 할인', 'policyId': 1},
-      ],
+      benefits: const [RegionBenefit(text: '숙박 할인', policyId: 1)],
     );
 
     expect(find.text('폐광촌 예술 체험 공간'), findsOneWidget);
