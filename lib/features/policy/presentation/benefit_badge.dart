@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/tokens/tokens.dart';
 import '../domain/region_benefit.dart';
@@ -18,12 +19,17 @@ class BenefitBadge extends StatelessWidget {
     this.size = BenefitBadgeSize.normal,
     this.extraCount = 0,
     this.onTap,
+    this.leadingIcon = false,
   });
 
   final RegionBenefit benefit;
 
   /// 놓이는 자리에 맞는 크기. 시안이 카드와 상세에서 다르게 잡았다
   final BenefitBadgeSize size;
+
+  /// 칩 앞에 태그 아이콘(16)을 붙인다 — 혜택 칩임을 한눈에 알리는 자리.
+  /// 개수 칩(`+2`)에는 안 붙는다(시안)
+  final bool leadingIcon;
 
   /// 이 지역에 혜택이 더 있으면 그 수 — 문구 뒤에 `+1`로 붙는다.
   /// 0이면 지금까지처럼 문구만이다
@@ -55,12 +61,12 @@ class BenefitBadge extends StatelessWidget {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _Chip(text: benefit.text, size: size),
+                _Chip(text: benefit.text, size: size, icon: leadingIcon),
                 const SizedBox(width: 6),
                 _Chip(text: '+$extraCount', size: size, neutral: true),
               ],
             )
-          : _Chip(text: benefit.text, size: size),
+          : _Chip(text: benefit.text, size: size, icon: leadingIcon),
     );
   }
 }
@@ -71,14 +77,29 @@ class BenefitBadge extends StatelessWidget {
 /// [neutral]은 개수 칩(`+2`) 자리다 — 시안 Badge 2가 회색 바탕에
 /// Label/Alternative 글자라, 혜택 문구보다 한 단계 낮게 읽힌다
 class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.size, this.neutral = false});
+  const _Chip({
+    required this.text,
+    required this.size,
+    this.neutral = false,
+    this.icon = false,
+  });
 
   final String text;
   final BenefitBadgeSize size;
   final bool neutral;
+  final bool icon;
+
+  /// 시안 실측 — 아이콘 16, 글자와 4 띄운다
+  static const _iconSize = 16.0;
 
   @override
   Widget build(BuildContext context) {
+    final label = Text(
+      text,
+      style: size.textStyle.copyWith(
+        color: neutral ? AppColors.labelAlternative : AppColors.primaryNormal,
+      ),
+    );
     return Container(
       padding: size.padding,
       decoration: BoxDecoration(
@@ -87,12 +108,22 @@ class _Chip extends StatelessWidget {
             : AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
         borderRadius: BorderRadius.circular(size.radius),
       ),
-      child: Text(
-        text,
-        style: size.textStyle.copyWith(
-          color: neutral ? AppColors.labelAlternative : AppColors.primaryNormal,
-        ),
-      ),
+      child: icon
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 에셋이 브랜드색을 품고 있어 색을 덧입히지 않는다
+                SvgPicture.asset(
+                  'assets/icons/ic_tag.svg',
+                  width: _iconSize,
+                  height: _iconSize,
+                  excludeFromSemantics: true,
+                ),
+                const SizedBox(width: 4),
+                label,
+              ],
+            )
+          : label,
     );
   }
 }
@@ -113,17 +144,19 @@ enum BenefitBadgeSize {
 
   EdgeInsets get padding => switch (this) {
     card => const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-    candidate => const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
     normal => const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    // 후보 지역 칩은 태그 아이콘이 붙으면서 지역 상세와 같은 크기가 됐다
+    // (시안 1482:53577) — 높이 28, 반경 8
+    candidate ||
     regionDetail => const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
   };
 
   TextStyle get textStyle => switch (this) {
     card => AppTypography.caption2Medium,
-    candidate || normal => AppTypography.caption1Medium,
+    normal => AppTypography.caption1Medium,
     // 가이드는 Label 2/Medium(13·w500)이다 — w600은 더 두껍다
-    regionDetail => AppTypography.label2Medium,
+    candidate || regionDetail => AppTypography.label2Medium,
   };
 
-  double get radius => this == regionDetail ? 8 : 6;
+  double get radius => this == regionDetail || this == candidate ? 8 : 6;
 }
