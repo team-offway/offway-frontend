@@ -193,9 +193,10 @@ void main() {
       final whole = tester.getRect(find.byType(AppTooltipBubble));
       expect(whole.top, greaterThan(first.bottom), reason: '첫째 칸 아래');
       expect(whole.bottom, lessThan(second.top), reason: '둘째 칸 위');
-      // 시안 실측: 앞 장소 글자 끝에서 44 아래. 앞 칸에 캐치프레이즈가
-      // 있으면 줄 높이가 달라져 2 안쪽에서 흔들린다
-      expect(whole.top - first.bottom, closeTo(44, 2.5));
+      // **가리킬 칸 쪽에 붙는다.** 두 카드 한가운데 두면 어느 쪽 안내인지
+      // 읽히지 않는다 — 화살표가 위를 향하는 모양이라 더욱 그렇다
+      expect(second.top - whole.bottom, lessThan(10));
+      expect(whole.top - first.bottom, greaterThan(30));
       expect(bubble.width, closeTo(128, 2.5));
     });
 
