@@ -143,7 +143,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 스스로 사라진다
   /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만난다(시안 좌표: 툴팁 254~382,
   /// 썸네일 312~382). 목록이 이미 좌우 20 안에 있으므로 여백을 더 주지 않는다
-  Widget _buildDetailHint() => const AppTooltipBubble(text: '눌러서 자세히 보기');
+  /// 말풍선 오른쪽 끝이 썸네일 오른쪽 끝과 만나고, **화살표가 아래를 향해
+  /// 둘째 장소를 가리킨다.** 목록이 이미 좌우 20 안에 있어 여백을 더 주지 않는다
+  Widget _buildDetailHint() =>
+      const AppTooltipBubble(text: '눌러서 자세히 보기', arrowAtBottom: true);
 
   @override
   void dispose() {
@@ -961,7 +964,7 @@ class _OverlapHint extends StatelessWidget {
 
   final Widget child;
 
-  /// 말풍선(44)에 시안의 카드 간격 4를 더해 위로 올린다
+  /// 말풍선(44)에 카드와의 간격 4를 더한 높이 — 위로 띄워 바로 아래 카드를 가리킨다
   static const _lift = 48.0;
 
   @override

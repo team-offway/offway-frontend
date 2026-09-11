@@ -185,6 +185,15 @@ void main() {
 
       expect(bubble.top, greaterThan(first.top));
       expect(bubble.bottom, lessThan(second.top));
+
+      // 화살표가 아래를 향해 둘째 칸을 짚는다 — 위를 향하면 첫 칸을 가리킨다
+      final widget = tester.widget<AppTooltipBubble>(
+        find.byType(AppTooltipBubble),
+      );
+      expect(widget.arrowAtBottom, isTrue);
+      final whole = tester.getRect(find.byType(AppTooltipBubble));
+      expect(whole.bottom, greaterThan(bubble.bottom));
+      expect(second.top - whole.bottom, 16);
     });
 
     testWidgets('말풍선이 자리를 차지하지 않는다 — 목록이 밀리지 않는다', (tester) async {
