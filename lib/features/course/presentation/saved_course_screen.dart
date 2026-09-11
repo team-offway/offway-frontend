@@ -644,20 +644,20 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
-    // 눌러 본 순간 안내는 할 일을 마쳤다 — 상세까지 들어가야 끝내면, 시트만
-    // 보고 닫은 사람에게 같은 말이 계속 따라붙는다
-    _markDetailHintDone();
     showPlaceInfoSheet(
       context,
       place: place,
       isToday: isToday,
       onOpenDetail: () {
         final contentId = place['poiContentId'] as String?;
-        if (contentId != null) {
-          context.push(
-            AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
-          );
-        }
+        if (contentId == null) return;
+        // **상세 화면에 들어간 순간** 안내는 할 일을 마쳤다(시안 메모).
+        // 시트를 여는 것만으로는 끝내지 않는다 — 운영시간만 보고 닫았다면
+        // 눌러서 더 볼 수 있다는 것을 아직 모른다
+        _markDetailHintDone();
+        context.push(
+          AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
+        );
       },
     );
   }

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/core/widgets/place_thumbnail.dart';
 import 'package:offway/features/course/data/course_tooltip_storage.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
 
 /// 화면별 툴팁 역할 분리 (시안 1505:55696 · 1505:56078).
 ///
@@ -90,9 +92,23 @@ void main() {
               ),
             ),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             theme: AppTheme.light,
-            home: SavedCourseScreen(savedId: savedId),
+            // 상세로 '이동'했는지 보려면 라우터가 있어야 한다 —
+            // 화면 자체는 필요 없고 그 경로에 닿았는지만 확인한다
+            routerConfig: GoRouter(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (_, _) => SavedCourseScreen(savedId: savedId),
+                ),
+                GoRoute(
+                  path: '/pois/:id',
+                  builder: (_, _) =>
+                      const Scaffold(body: Center(child: Text('장소 상세'))),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -123,13 +139,37 @@ void main() {
       expect(tip('코스를 공유해보세요'), findsNothing);
     });
 
-    testWidgets('장소를 눌러 보면 끝난다 — 다시 열어도 안 뜬다', (tester) async {
+    testWidgets('시트만 열어서는 안 끝난다 — 운영시간만 보고 닫았을 수 있다', (tester) async {
+      // 시안 메모는 "상세 화면으로 진입 이후에는 다시 노출 X"다.
+      // 시트는 상세로 가는 길목일 뿐이라 여기서 끝내면 안내가 일찍 사라진다
       await pump(tester);
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pumpAndSettle();
       expect(tip('눌러서 자세히 보기'), findsOneWidget);
 
       await tester.tap(find.text('장소 1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlaceInfoSheet), findsOneWidget);
+
+      final storage = CourseTooltipStorage(const FlutterSecureStorage());
+      expect(await storage.isDetailHintDone('1'), isFalse);
+    });
+
+    testWidgets('상세 화면에 들어가면 끝난다 — 다시 열어도 안 뜬다', (tester) async {
+      await pump(tester);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('장소 1'));
+      await tester.pumpAndSettle();
+
+      // 시트 안 제목을 눌러 상세로 간다
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PlaceInfoSheet),
+          matching: find.text('장소 1'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final storage = CourseTooltipStorage(const FlutterSecureStorage());
