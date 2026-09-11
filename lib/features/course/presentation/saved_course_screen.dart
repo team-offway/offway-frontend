@@ -964,12 +964,11 @@ class _OverlapHint extends StatelessWidget {
 
   final Widget child;
 
-  /// 카드 끝에서 말풍선까지 — **음수로 끌어올린다**.
+  /// 앞 카드 끝에서 말풍선까지.
   ///
-  /// 카드는 글자 아래로 여백을 갖는데, 말풍선을 그 끝에 붙이면 다음 카드와
-  /// 겹친다. 썸네일(70) 바로 아래에 오도록 끌어올려, 화살표가 그 사진을
-  /// 짚게 한다
-  static const _gap = -44.0;
+  /// 시안(1505:56078) 실측 — 앞 장소 글자 끝에서 44 아래, 가리킬 장소
+  /// 글자에서 16 위다. 그 사이에 거리 칩이 지나가므로 말풍선은 칩 옆에 선다
+  static const _gap = -14.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1028,6 +1027,11 @@ class _SavedPlaceList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (var i = 0; i < places.length; i++) ...[
+              // 가리킬 카드 **바로 위**에 겹쳐 띄운다. 화살표가 위를 향하니
+              // 말풍선이 그 카드 앞에 와야 짚는 대상이 맞는다. 자리를
+              // 차지하면 목록이 밀려 시안과 어긋나므로 높이는 0이다
+              if (i == _hintTargetIndex && detailHint != null)
+                _OverlapHint(child: detailHint!),
               if (i > 0) _buildDistanceChip(places[i]),
               _PlaceRow(
                 index: i + 1,
@@ -1035,11 +1039,6 @@ class _SavedPlaceList extends StatelessWidget {
                 showOpeningWarning: showOpeningWarnings,
                 onTap: () => onTapPlace(places[i]),
               ),
-              // 가리킬 카드 **바로 아래**에 겹쳐 띄운다. 화살표가 위를
-              // 향하므로 말풍선이 밑에 있어야 그 카드를 짚는다. 자리를
-              // 차지하면 목록이 밀려 시안과 어긋나므로 높이는 0이다
-              if (i == _hintTargetIndex && detailHint != null)
-                _OverlapHint(child: detailHint!),
             ],
           ],
         ),

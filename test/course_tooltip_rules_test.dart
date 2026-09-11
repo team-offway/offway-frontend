@@ -180,19 +180,22 @@ void main() {
             )
             .first,
       );
+      final first = tester.getRect(find.text('장소 1'));
       final second = tester.getRect(find.text('장소 2'));
-      final third = tester.getRect(find.text('장소 3'));
 
-      // 말풍선이 둘째 칸 **아래**에 놓이고, 화살표는 위를 향해 그 칸을 짚는다
+      // 말풍선이 첫째와 둘째 **사이**에 놓이고, 화살표는 위를 향한다.
+      // 아래로 이어지는 꼬리가 둘째 칸을 짚는 모양이다(시안 1505:56078)
       final widget = tester.widget<AppTooltipBubble>(
         find.byType(AppTooltipBubble),
       );
       expect(widget.arrowAtBottom, isFalse, reason: '화살표는 위를 향한다');
 
       final whole = tester.getRect(find.byType(AppTooltipBubble));
-      expect(whole.top - second.bottom, 16);
-      // 셋째 칸을 덮지 않는다
-      expect(whole.bottom, lessThan(third.top));
+      expect(whole.top, greaterThan(first.bottom), reason: '첫째 칸 아래');
+      expect(whole.bottom, lessThan(second.top), reason: '둘째 칸 위');
+      // 시안 실측: 앞 장소 글자 끝에서 44 아래. 앞 칸에 캐치프레이즈가
+      // 있으면 줄 높이가 달라져 2 안쪽에서 흔들린다
+      expect(whole.top - first.bottom, closeTo(44, 2.5));
       expect(bubble.width, closeTo(128, 2.5));
     });
 
