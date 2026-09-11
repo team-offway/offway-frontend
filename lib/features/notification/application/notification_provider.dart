@@ -40,19 +40,34 @@ final hasUnreadNotificationsProvider =
     );
 
 class UnreadNotificationsBadge extends Notifier<bool> {
+  /// 지금 서버에 묻고 있는가 — 화면이 여럿 겹쳐도 왕복은 한 번이다
+  bool _loading = false;
+
   @override
   bool build() {
-    unawaited(_load());
+    unawaited(refresh());
     return false;
   }
 
-  Future<void> _load() async {
+  /// 서버에 안읽음 수를 다시 묻는다.
+  ///
+  /// **처음 한 번으로는 모자란다.** 앱을 백그라운드에 둔 사이 알림이 쌓이면
+  /// 돌아와도 점이 꺼져 있고, 로그인 직후에는 앞 계정 기준이 남는다. 조회가
+  /// 실패했을 때도 다시 시도할 길이 없었다.
+  ///
+  /// 가벼운 요청 하나이므로 화면이 뜰 때마다 불러도 된다. 겹쳐 부르면
+  /// [_loading]이 뒤 호출을 흘린다.
+  Future<void> refresh() async {
+    if (_loading) return;
+    _loading = true;
     try {
       final feed = await ref.read(notificationRepositoryProvider).fetch();
       state = feed.unreadCount > 0;
       unawaited(syncAppIconBadge(feed.unreadCount));
     } on ApiException {
-      // 배지는 덤이다 — 못 읽었으면 끈 채로 둔다
+      // 배지는 덤이다 — 못 읽었으면 그대로 둔다. 다음 기회에 다시 묻는다
+    } finally {
+      _loading = false;
     }
   }
 
