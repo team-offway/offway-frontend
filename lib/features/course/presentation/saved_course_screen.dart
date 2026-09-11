@@ -30,6 +30,7 @@ import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
+import '../data/course_tooltip_storage.dart';
 import 'widgets/distance_chip.dart';
 import 'widgets/place_info_sheet.dart';
 import '../domain/transit_access.dart';
@@ -83,10 +84,77 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   /// 맨 위로 돌아올 때마다 다시 뜨면 그때부터는 잔소리가 된다
   bool _shareTipVisible = true;
 
+  /// '눌러서 자세히 보기'를 띄울 차례인가 (시안 1505:56078).
+  ///
+  /// **담고 나서 처음 열었을 때만** 나온다. 목록이 그냥 글줄처럼 보여 눌러
+  /// 볼 생각을 못 하는 자리라, 한 번은 알려 줘야 한다. 상세로 들어가 보면
+  /// 알게 된 것이므로 그 코스에는 다시 안 띄운다.
+  ///
+  /// 이 값이 참인 동안에는 공유 툴팁을 접는다 — 둘이 같이 뜨면 무엇을
+  /// 보라는 말인지 알 수 없다.
+  bool _detailHintPending = false;
+
+  /// 스크롤을 내려 장소 목록에 닿았는가.
+  ///
+  /// 시안 노트가 "스크롤링 이후" 노출이라고 못박는다. 맨 위에서 띄우면
+  /// 가리키는 카드가 화면 밖에 있어 무엇을 누르라는 것인지 안 보인다
+  bool _scrolledToPlaces = false;
+
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    _loadTooltipState();
+  }
+
+  /// 이 코스에 어떤 안내가 남았는지 읽는다.
+  ///
+  /// 담고 처음 열면 '눌러서 자세히 보기', 그 다음부터는 공유 안내다(시안
+  /// 메모의 화면별 역할 분리). 공유 안내를 이미 닫았다면 그것도 안 뜬다
+  Future<void> _loadTooltipState() async {
+    final storage = ref.read(courseTooltipStorageProvider);
+    final detailDone = await storage.isDetailHintDone(widget.savedId);
+    final shareClosed = await storage.isSharePromptClosed();
+    if (!mounted) return;
+    setState(() {
+      _detailHintPending = !detailDone;
+      if (shareClosed) _shareTipVisible = false;
+    });
+  }
+
+  /// 장소 상세로 들어갔다 — 이 코스의 '눌러서 자세히 보기'는 할 일을 마쳤다
+  void _markDetailHintDone() {
+    if (!_detailHintPending) return;
+    setState(() => _detailHintPending = false);
+    ref.read(courseTooltipStorageProvider).markDetailHintDone(widget.savedId);
+  }
+
+  /// 닫기(X) — 이 화면에서 감추고, 다음부터도 안 뜨게 남긴다
+  void _closeShareTip() {
+    setState(() => _shareTipVisible = false);
+    ref.read(courseTooltipStorageProvider).closeSharePrompt();
+  }
+
+  /// '눌러서 자세히 보기' — 첫 장소 카드 위에 얹는 안내.
+  ///
+  /// 시안(1505:56078)은 말풍선 오른쪽 끝을 **첫 장소의 썸네일 오른쪽 끝**에
+  /// 맞춘다. 목록 좌우 여백이 20이고 썸네일이 그 안 오른쪽 끝에 붙으므로
+  /// 같은 20을 준다. 닫기 버튼은 없다 — 눌러 보면 끝나는 안내라 X가 없어도
+  /// 스스로 사라진다
+  Widget _buildDetailHint() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      alignment: Alignment.topCenter,
+      child: _detailHintPending && _scrolledToPlaces
+          ? const Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: EdgeInsets.only(right: 20, bottom: 4),
+                child: AppTooltipBubble(text: '눌러서 자세히 보기'),
+              ),
+            )
+          : const SizedBox(width: double.infinity),
+    );
   }
 
   @override
@@ -98,10 +166,22 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   }
 
   void _onScroll() {
-    if (!_shareTipVisible || !_scroll.hasClients) return;
+    if (!_scroll.hasClients) return;
     // 손가락이 살짝 스친 정도로는 안 사라진다
-    if (_scroll.offset > 24) setState(() => _shareTipVisible = false);
+    if (_shareTipVisible && _scroll.offset > 24) {
+      setState(() => _shareTipVisible = false);
+    }
+    // 장소 목록이 화면에 들어올 만큼 내려왔는가 — 시안이 '스크롤링 이후'로
+    // 잡은 자리다. 지도·요약을 지나야 목록이 보이기 시작한다
+    if (_detailHintPending &&
+        !_scrolledToPlaces &&
+        _scroll.offset > _placesReachedOffset) {
+      setState(() => _scrolledToPlaces = true);
+    }
   }
+
+  /// 이만큼 내려오면 장소 목록이 보인다 — 지도(198)와 요약을 지난 자리
+  static const _placesReachedOffset = 240.0;
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +242,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           alignment: Alignment.topCenter,
-          child: _shareTipVisible && !past
+          // 안내가 겹치지 않게 한 번에 하나만 — '눌러서 자세히 보기'가
+          // 남아 있으면 공유 안내는 그 다음 차례다
+          child: _shareTipVisible && !past && !_detailHintPending
               ? Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -172,7 +254,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                     padding: const EdgeInsets.only(right: 10, bottom: 4),
                     child: AppTooltipBubble(
                       text: '코스를 공유해보세요',
-                      onClose: () => setState(() => _shareTipVisible = false),
+                      onClose: _closeShareTip,
                     ),
                   ),
                 )
@@ -292,12 +374,21 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _SavedPlaceList(
-                  places: places,
-                  // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
-                  showOpeningWarnings: dDay == 0,
-                  onTapPlace: (place) =>
-                      _showPlaceSheet(place, isToday: dDay == 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 첫 장소 카드를 가리켜 "눌러 볼 수 있다"고 알린다
+                    // (시안 1505:56078). 담고 처음 열었을 때, 목록까지
+                    // 내려온 뒤에만 나온다
+                    _buildDetailHint(),
+                    _SavedPlaceList(
+                      places: places,
+                      // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
+                      showOpeningWarnings: dDay == 0,
+                      onTapPlace: (place) =>
+                          _showPlaceSheet(place, isToday: dDay == 0),
+                    ),
+                  ],
                 ),
               ),
               // 공공데이터 출처 (core #417) — 코스가 장소·날씨를 빌려 온다
@@ -578,6 +669,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
+    // 눌러 본 순간 안내는 할 일을 마쳤다 — 상세까지 들어가야 끝내면, 시트만
+    // 보고 닫은 사람에게 같은 말이 계속 따라붙는다
+    _markDetailHintDone();
     showPlaceInfoSheet(
       context,
       place: place,
