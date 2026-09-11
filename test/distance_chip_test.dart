@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/distance_chip.dart';
 
 /// 장소 사이의 이동 거리 칩 (시안 18991:85155, QA 9/11).
@@ -76,5 +78,77 @@ void main() {
 
     await pump(tester, 800);
     expect(find.text('0.8km'), findsOneWidget);
+  });
+
+  testWidgets('내 코스 상세 — 시안 간격(블록 128, 분류→칩 12, 칩→다음 14)', (tester) async {
+    // 칩은 앞 장소 블록에 바로 붙고 아래로만 2를 띄운다. 장소 줄이 위아래
+    // 12씩 갖고 있어 눈에 보이는 간격이 12·14가 된다 (시안 18991:85115)
+    tester.view.physicalSize = const Size(402 * 3, 1800 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    const travelDate = '2026-09-15';
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          savedCourseDetailProvider('1').overrideWith(
+            (ref) async => (
+              saved: {
+                'id': '1',
+                'regionName': '태안군',
+                'travelDate': travelDate,
+                'startDate': travelDate,
+                'endDate': travelDate,
+                'shareToken': 'abc',
+                'leaveDeducted': false,
+              },
+              course: {
+                'regionName': '태안군',
+                'durationDays': 1,
+                'travelDate': travelDate,
+                'days': [
+                  {
+                    'day': 1,
+                    'date': travelDate,
+                    'dayOfWeek': '화',
+                    'places': [
+                      {
+                        'name': '민어도선착장',
+                        'category': '관광',
+                        'kind': 'SIGHT',
+                        'poiContentId': '1',
+                        'catchphrase': '차박을 즐길 수 있는 선착장',
+                      },
+                      {
+                        'name': '학암포해수욕장',
+                        'category': '관광',
+                        'kind': 'SIGHT',
+                        'poiContentId': '2',
+                        'catchphrase': '아름다운 낙조가 일품인 해수욕장',
+                        'distanceFromPrevMeters': 4400,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: SavedCourseScreen(savedId: '1')),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final first = tester.getRect(find.text('민어도선착장'));
+    final category = tester.getRect(find.text('관광').first);
+    final chip = tester.getRect(find.byType(DistanceChip).first);
+    final second = tester.getRect(find.text('학암포해수욕장'));
+
+    expect(second.top - first.top, 128, reason: '시안 장소 블록 간격');
+    expect(chip.top - category.bottom, 12);
+    expect(second.top - chip.bottom, 14);
+    // 칩은 목록 왼쪽 끝에 선다 — 점선(x=11.4)보다 오른쪽이다
+    expect(chip.left, 20);
   });
 }

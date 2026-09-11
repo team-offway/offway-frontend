@@ -237,7 +237,11 @@ class _PlaceRow extends StatelessWidget {
     );
   }
 
-  /// 점선 위에 흰 배경으로 얹히는 거리 칩
+  /// 점선 옆에 놓이는 거리 칩.
+  ///
+  /// **여백은 내 코스 상세와 다르다.** 이 목록에서 거리가 보이는 것은 공유받은
+  /// 저장 코스뿐이고, 9/11 QA 시안(18991:85115)은 내 코스 화면만 다뤘다 —
+  /// 칩 모양만 맞추고 배치는 건드리지 않는다
   Widget _buildDistanceChip(int meters) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),

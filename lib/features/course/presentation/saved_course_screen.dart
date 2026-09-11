@@ -924,8 +924,10 @@ class _SavedPlaceList extends StatelessWidget {
   Widget _buildDistanceChip(Map<String, dynamic> place) {
     final meters = place['distanceFromPrevMeters'] as int?;
     if (meters == null) return const SizedBox(height: 16);
+    // 시안 실측(18991:85115) — 칩은 앞 장소 블록에 바로 붙고 아래로만 2를
+    // 띄운다. 장소 줄이 위아래 12씩 갖고 있어 눈에 보이는 간격은 12·14다
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 2),
       child: DistanceChip(meters: meters),
     );
   }
