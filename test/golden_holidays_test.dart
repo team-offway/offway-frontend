@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/leave/domain/golden_holiday.dart';
 import 'package:offway/features/leave/presentation/golden_holidays_screen.dart';
 import 'package:offway/features/leave/presentation/widgets/golden_holiday_card.dart';
@@ -70,9 +71,47 @@ void main() {
         expect(find.text('$i'), findsWidgets, reason: '$i번 행의 순번');
       }
 
-      // 시안 실측: 번호와 글 사이 20
+      // 시안 실측: 번호칸(12)과 글 사이 20. 번호는 칸 안에서 가운데
+      // 정렬이라 글자 오른쪽이 아니라 칸 오른쪽을 기준으로 잰다
       final number = tester.getRect(find.text('1').first);
-      expect(name.left - number.right, closeTo(20, 0.5));
+      expect(name.left - number.right, greaterThan(19));
+      expect(name.left - number.right, lessThan(27));
+
+      // 시안(1535:45144)은 앞 세 줄만 순번을 파랗게 두고 4·5는 회색이다
+      Color colorOf(int order) =>
+          tester.widget<Text>(find.text('$order').first).style!.color!;
+      for (var i = 1; i <= 3; i++) {
+        expect(colorOf(i), AppColors.primaryNormal, reason: '$i번은 강조');
+      }
+      for (var i = 4; i <= kGoldenHolidays.length; i++) {
+        expect(colorOf(i), AppPalette.neutral80, reason: '$i번은 회색');
+      }
+
+      // 줄이 바뀌어도 글 시작점은 한 줄로 맞는다 — 번호 폭을 고정한 이유
+      final lefts = <double>{
+        for (final h in kGoldenHolidays)
+          tester.getRect(find.text(h.rangeLabel).first).left.roundToDouble(),
+      };
+      expect(lefts, hasLength(1), reason: '행마다 글 시작점이 같다');
+
+      // 줄마다 카드를 두르지 않는다 — 시안(1535:45146)은 안쪽 여백만 있고
+      // 바탕이 없다. 색을 하나 집어 막으면 다른 회색으로 되살아나므로
+      // '행 안에 칠해진 상자가 없을 것'으로 잡는다.
+      //
+      // 상단 히어로 카드에는 시안에도 노란 바탕이 있으므로, 행 텍스트를
+      // 기점으로 그 행 안쪽만 훑는다
+      for (final holiday in kGoldenHolidays) {
+        final filled = find.ancestor(
+          of: find.text(holiday.rangeLabel).first,
+          matching: find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            final d = w.decoration;
+            return w.color != null ||
+                (d is BoxDecoration && (d.color != null || d.gradient != null));
+          }),
+        );
+        expect(filled, findsNothing, reason: '${holiday.label} 행에 바탕');
+      }
     });
   });
 

@@ -38,13 +38,19 @@ class GoldenHolidaysScreen extends StatelessWidget {
             // 시안 실측: 시계 24, 글자와 8 띄운다(아이콘 0~24, 글자 32)
             Row(
               children: [
+                // 시안은 bulk 변형(테두리 없는 두 톤)이다 — ic_clock은
+                // 외곽선형이라 같은 자리에 놓으면 더 진하고 얇게 보인다.
+                //
+                // 에셋의 원반에 opacity 0.4가 박혀 있고 srcIn 색의 알파와
+                // 곱해진다. labelAlternative(0.61)를 그대로 씌우면
+                // 원반 0.244 → #CECFCF 로 시안 실측 #CECFD0과 맞는다
                 SvgPicture.asset(
-                  'assets/icons/ic_clock.svg',
+                  'assets/icons/ic_clock_bulk.svg',
                   width: 24,
                   height: 24,
                   excludeFromSemantics: true,
                   colorFilter: const ColorFilter.mode(
-                    AppColors.labelNormal,
+                    AppColors.labelAlternative,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -169,6 +175,14 @@ class _HeroCard extends StatelessWidget {
 
 /// 목록 한 행 — 왼쪽에 기간과 무슨 연휴인지, 오른쪽에 쓰는 연차와 총 일수.
 class _HolidayRow extends StatelessWidget {
+  /// 앞에서 몇 등까지 순번을 파랗게 둘 것인가 — 시안(1535:45144)은 1~3만
+  /// primary, 4·5는 회색이다. 위쪽이 더 쓸 만한 구간이라는 표시다
+  static const _highlightedRanks = 3;
+
+  /// 4등 아래 순번 색 — 시안 실측 #B0B0B0.
+  /// TODO(디자인시스템): Semantic 토큰이 생기면 교체한다
+  static const _dimmedRank = AppPalette.neutral80;
+
   const _HolidayRow({required this.holiday, required this.order});
 
   final GoldenHoliday holiday;
@@ -178,21 +192,30 @@ class _HolidayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // 시안 실측(1534:44705): 안쪽 12·11. 높이를 고정하지 않는다 —
-      // 글자가 한 줄 늘거나 서체가 바뀌면 그 안에서 넘친다
+    return Padding(
+      // 시안 실측(1535:45146): 안쪽 12·11. 높이를 고정하지 않는다 —
+      // 글자가 한 줄 늘거나 서체가 바뀌면 그 안에서 넘친다.
+      //
+      // **바탕을 깔지 않는다.** 예전 시안은 회색 카드였는데 지금은 글만
+      // 놓인다 — 줄마다 상자를 두르면 다섯 줄이 무거워진다
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundNormalAlternative,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 순번 — 고른 순서가 곧 추천 순서다(시안 1534:44705)
-          Text(
-            '$order',
-            style: AppTypography.headline1Bold.copyWith(
-              color: AppColors.primaryNormal,
+          // 순번 — 고른 순서가 곧 추천 순서다(시안 1534:44705).
+          //
+          // 시안은 번호 폭을 글자마다 다르게 두지만(9~12) 그러면 줄마다
+          // 글 시작점이 어긋난다. 가장 넓은 값으로 고정해 왼쪽을 맞춘다
+          SizedBox(
+            width: 12,
+            child: Text(
+              '$order',
+              textAlign: TextAlign.center,
+              style: AppTypography.headline1Bold.copyWith(
+                color: order <= _highlightedRanks
+                    ? AppColors.primaryNormal
+                    : _dimmedRank,
+              ),
             ),
           ),
           // 시안 실측: 번호와 글 사이 20
