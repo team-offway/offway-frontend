@@ -35,16 +35,33 @@ class GoldenHolidaysScreen extends StatelessWidget {
             _HeroCard(holiday: hero, background: _heroBackground),
             // 시안 실측: 상단 카드 아래 32 → 제목 → 16 → 목록(행 사이 8)
             const SizedBox(height: 32),
-            Text(
-              '연차 쓰기 좋은 날',
-              style: AppTypography.headline1Bold.copyWith(
-                color: AppColors.labelNormal,
-              ),
+            // 시안 실측: 시계 24, 글자와 8 띄운다(아이콘 0~24, 글자 32)
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/ic_clock.svg',
+                  width: 24,
+                  height: 24,
+                  excludeFromSemantics: true,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.labelNormal,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$kGoldenHolidayYear년 연차 쓰기 좋은 날',
+                  style: AppTypography.headline1Bold.copyWith(
+                    color: AppColors.labelNormal,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             for (final (i, holiday) in kGoldenHolidays.indexed) ...[
-              if (i > 0) const SizedBox(height: 8),
-              _HolidayRow(holiday: holiday),
+              // 시안 실측: 행 사이 12
+              if (i > 0) const SizedBox(height: 12),
+              _HolidayRow(holiday: holiday, order: i + 1),
             ],
           ],
         ),
@@ -118,28 +135,16 @@ class _HeroCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icons/ic_clock.svg',
-                      width: 18,
-                      height: 18,
-                      excludeFromSemantics: true,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.labelNeutral,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$kGoldenHolidayYear년 연차 황금 타이밍',
-                      style: AppTypography.label1ReadingBold.copyWith(
-                        color: AppColors.labelNeutral,
-                      ),
-                    ),
-                  ],
+                // 시안(1534:44652)이 시계를 여기서 빼고 아래 목록 제목으로
+                // 옮겼다 — 카드는 날짜를 앞세우는 자리다
+                Text(
+                  '$kGoldenHolidayYear년 연차 황금 타이밍',
+                  style: AppTypography.label1ReadingBold.copyWith(
+                    color: AppColors.labelNeutral,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                // 시안 실측: 제목 아래 12 (0~18 → 30)
+                const SizedBox(height: 12),
                 Text(
                   holiday.heroRangeLabel,
                   style: AppTypography.title3Bold.copyWith(
@@ -164,40 +169,60 @@ class _HeroCard extends StatelessWidget {
 
 /// 목록 한 행 — 왼쪽에 기간과 무슨 연휴인지, 오른쪽에 쓰는 연차와 총 일수.
 class _HolidayRow extends StatelessWidget {
-  const _HolidayRow({required this.holiday});
+  const _HolidayRow({required this.holiday, required this.order});
 
   final GoldenHoliday holiday;
+
+  /// 목록에서 몇 번째인가 — 1부터 센다
+  final int order;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      // 시안 실측(1534:44705): 안쪽 12·11. 높이를 고정하지 않는다 —
+      // 글자가 한 줄 늘거나 서체가 바뀌면 그 안에서 넘친다
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
         color: AppColors.backgroundNormalAlternative,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                holiday.rangeLabel,
-                style: AppTypography.body2NormalBold.copyWith(
-                  color: AppColors.labelNeutral,
+          // 순번 — 고른 순서가 곧 추천 순서다(시안 1534:44705)
+          Text(
+            '$order',
+            style: AppTypography.headline1Bold.copyWith(
+              color: AppColors.primaryNormal,
+            ),
+          ),
+          // 시안 실측: 번호와 글 사이 20
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 시안이 이름을 위로 올렸다 — 무슨 연휴인지 먼저 읽힌다
+                Text(
+                  holiday.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption1Regular.copyWith(
+                    color: AppColors.labelAlternative,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                holiday.label,
-                style: AppTypography.caption1Medium.copyWith(
-                  color: AppColors.labelAlternative,
+                const SizedBox(height: 2),
+                Text(
+                  holiday.rangeLabel,
+                  // 한 줄로 둔다 — 접히면 행이 두 배로 길어져 시안과 어긋난다
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body2NormalMedium.copyWith(
+                    color: AppColors.labelNeutral,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -205,15 +230,15 @@ class _HolidayRow extends StatelessWidget {
             children: [
               Text(
                 '사용 연차 ${holiday.leaveDays}일',
-                style: AppTypography.label2Bold.copyWith(
-                  color: AppColors.labelNeutral,
+                style: AppTypography.label2Medium.copyWith(
+                  color: AppColors.labelAlternative,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 '총 ${holiday.totalDays}일 연휴',
-                style: AppTypography.label2Bold.copyWith(
-                  color: AppColors.primaryStrong,
+                style: AppTypography.label2Medium.copyWith(
+                  color: AppColors.primaryNormal,
                 ),
               ),
             ],

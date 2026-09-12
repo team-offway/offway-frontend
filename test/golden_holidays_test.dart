@@ -40,13 +40,36 @@ void main() {
       expect(find.text('2027년 연차 황금 타이밍'), findsOneWidget);
       expect(find.text('10.2(토)-10.11(월)'), findsOneWidget);
       expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요'), findsOneWidget);
-      expect(find.text('연차 쓰기 좋은 날'), findsOneWidget);
+      expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
       for (final label in const ['개천절·한글날', '추석 연휴', '노동절·어린이날', '설날 연휴']) {
         expect(find.text(label), findsOneWidget);
       }
       expect(find.text('총 10일 연휴'), findsOneWidget);
       expect(find.text('총 9일 연휴'), findsNWidgets(2));
       expect(find.text('사용 연차 1일'), findsOneWidget);
+    });
+
+    testWidgets('행마다 순번이 붙고, 이름이 구간보다 위다', (tester) async {
+      // 시안 1534:44705 — 고른 순서가 곧 추천 순서다. 무슨 연휴인지 먼저
+      // 읽히도록 이름을 구간 위로 올렸다
+      tester.view.physicalSize = const Size(402 * 3, 1400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(const MaterialApp(home: GoldenHolidaysScreen()));
+      await tester.pumpAndSettle();
+
+      final first = kGoldenHolidays.first;
+      final name = tester.getRect(find.text(first.label));
+      final range = tester.getRect(find.text(first.rangeLabel));
+      expect(name.top, lessThan(range.top), reason: '이름이 위');
+
+      for (var i = 1; i <= kGoldenHolidays.length; i++) {
+        expect(find.text('$i'), findsWidgets, reason: '$i번 행의 순번');
+      }
+
+      // 시안 실측: 번호와 글 사이 20
+      final number = tester.getRect(find.text('1').first);
+      expect(name.left - number.right, closeTo(20, 0.5));
     });
   });
 
@@ -103,7 +126,7 @@ void main() {
       await tester.tap(find.text('자세히'));
       await tester.pumpAndSettle();
 
-      expect(find.text('연차 쓰기 좋은 날'), findsOneWidget);
+      expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
     });
   });
 }
