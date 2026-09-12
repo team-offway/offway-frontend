@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/leave/domain/golden_holiday.dart';
 import 'package:offway/features/leave/presentation/golden_holidays_screen.dart';
 import 'package:offway/features/leave/presentation/widgets/golden_holiday_card.dart';
@@ -11,17 +12,19 @@ import 'package:offway/features/leave/presentation/widgets/golden_holiday_card.d
 /// 황금연휴 — 홈 카드에서 들어가는 '연차 쓰기 좋은 날' (시안 18900:72317).
 void main() {
   group('값', () {
-    test('시안의 네 구간 그대로다 — 요일·총 일수를 날짜에서 계산한다', () {
+    test('시안의 다섯 구간 그대로다 — 요일·총 일수를 날짜에서 계산한다', () {
       // 2027년 달력 기준. 요일이 틀리면 시안 문구와 어긋난다
       expect(kGoldenHolidays.map((h) => h.rangeLabel), [
         '10.2(토) – 10.11(월)',
-        '9.11(토) – 9.19(일)',
+        '2.5(금) – 2.14(일)',
         '5.1(토) – 5.9(일)',
+        '9.11(토) – 9.16(목)',
         '2.5(금) – 2.9(화)',
       ]);
-      // 5.1~5.9는 시안이 10일이라 적었지만 달력으로 9일이다 — 달력을 따른다
-      expect(kGoldenHolidays.map((h) => h.totalDays), [10, 9, 9, 5]);
-      expect(kGoldenHolidays.map((h) => h.leaveDays), [4, 2, 3, 1]);
+      // 개천절만 시안 목록('총 9일')을 안 따랐다 — 달력으로 10일이고 같은
+      // 시안의 상단 카드도 '최대 10일'이다
+      expect(kGoldenHolidays.map((h) => h.totalDays), [10, 10, 9, 6, 5]);
+      expect(kGoldenHolidays.map((h) => h.leaveDays), [4, 4, 3, 1, 1]);
     });
 
     test('상단 카드 표기는 붙여 쓴다', () {
@@ -30,7 +33,7 @@ void main() {
   });
 
   group('화면', () {
-    testWidgets('첫 구간을 위에 크게, 아래에 네 줄을 그린다', (tester) async {
+    testWidgets('첫 구간을 위에 크게, 아래에 다섯 줄을 그린다', (tester) async {
       await tester.pumpWidget(
         MaterialApp(theme: AppTheme.light, home: const GoldenHolidaysScreen()),
       );
@@ -40,13 +43,75 @@ void main() {
       expect(find.text('2027년 연차 황금 타이밍'), findsOneWidget);
       expect(find.text('10.2(토)-10.11(월)'), findsOneWidget);
       expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요'), findsOneWidget);
-      expect(find.text('연차 쓰기 좋은 날'), findsOneWidget);
-      for (final label in const ['개천절·한글날', '추석 연휴', '노동절·어린이날', '설날 연휴']) {
-        expect(find.text(label), findsOneWidget);
+      expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
+      // 설날은 길고 짧은 두 구간이 함께 있다(시안 2·5번)
+      expect(find.text('개천절·한글날'), findsOneWidget);
+      expect(find.text('노동절·어린이날'), findsOneWidget);
+      expect(find.text('추석 연휴'), findsOneWidget);
+      expect(find.text('설날 연휴'), findsNWidgets(2));
+      expect(find.text('총 10일 연휴'), findsNWidgets(2));
+      expect(find.text('사용 연차 1일'), findsNWidgets(2));
+    });
+
+    testWidgets('행마다 순번이 붙고, 이름이 구간보다 위다', (tester) async {
+      // 시안 1534:44705 — 고른 순서가 곧 추천 순서다. 무슨 연휴인지 먼저
+      // 읽히도록 이름을 구간 위로 올렸다
+      tester.view.physicalSize = const Size(402 * 3, 1400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(const MaterialApp(home: GoldenHolidaysScreen()));
+      await tester.pumpAndSettle();
+
+      final first = kGoldenHolidays.first;
+      final name = tester.getRect(find.text(first.label));
+      final range = tester.getRect(find.text(first.rangeLabel));
+      expect(name.top, lessThan(range.top), reason: '이름이 위');
+
+      for (var i = 1; i <= kGoldenHolidays.length; i++) {
+        expect(find.text('$i'), findsWidgets, reason: '$i번 행의 순번');
       }
-      expect(find.text('총 10일 연휴'), findsOneWidget);
-      expect(find.text('총 9일 연휴'), findsNWidgets(2));
-      expect(find.text('사용 연차 1일'), findsOneWidget);
+
+      // 시안 실측: 번호칸(12)과 글 사이 20. 번호는 칸 안에서 가운데
+      // 정렬이라 글자 오른쪽이 아니라 칸 오른쪽을 기준으로 잰다
+      final number = tester.getRect(find.text('1').first);
+      expect(name.left - number.right, greaterThan(19));
+      expect(name.left - number.right, lessThan(27));
+
+      // 시안(1535:45144)은 앞 세 줄만 순번을 파랗게 두고 4·5는 회색이다
+      Color colorOf(int order) =>
+          tester.widget<Text>(find.text('$order').first).style!.color!;
+      for (var i = 1; i <= 3; i++) {
+        expect(colorOf(i), AppColors.primaryNormal, reason: '$i번은 강조');
+      }
+      for (var i = 4; i <= kGoldenHolidays.length; i++) {
+        expect(colorOf(i), AppPalette.neutral80, reason: '$i번은 회색');
+      }
+
+      // 줄이 바뀌어도 글 시작점은 한 줄로 맞는다 — 번호 폭을 고정한 이유
+      final lefts = <double>{
+        for (final h in kGoldenHolidays)
+          tester.getRect(find.text(h.rangeLabel).first).left.roundToDouble(),
+      };
+      expect(lefts, hasLength(1), reason: '행마다 글 시작점이 같다');
+
+      // 줄마다 카드를 두르지 않는다 — 시안(1535:45146)은 안쪽 여백만 있고
+      // 바탕이 없다. 색을 하나 집어 막으면 다른 회색으로 되살아나므로
+      // '행 안에 칠해진 상자가 없을 것'으로 잡는다.
+      //
+      // 상단 히어로 카드에는 시안에도 노란 바탕이 있으므로, 행 텍스트를
+      // 기점으로 그 행 안쪽만 훑는다
+      for (final holiday in kGoldenHolidays) {
+        final filled = find.ancestor(
+          of: find.text(holiday.rangeLabel).first,
+          matching: find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            final d = w.decoration;
+            return w.color != null ||
+                (d is BoxDecoration && (d.color != null || d.gradient != null));
+          }),
+        );
+        expect(filled, findsNothing, reason: '${holiday.label} 행에 바탕');
+      }
     });
   });
 
@@ -103,7 +168,7 @@ void main() {
       await tester.tap(find.text('자세히'));
       await tester.pumpAndSettle();
 
-      expect(find.text('연차 쓰기 좋은 날'), findsOneWidget);
+      expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
     });
   });
 }
