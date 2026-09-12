@@ -11,17 +11,19 @@ import 'package:offway/features/leave/presentation/widgets/golden_holiday_card.d
 /// 황금연휴 — 홈 카드에서 들어가는 '연차 쓰기 좋은 날' (시안 18900:72317).
 void main() {
   group('값', () {
-    test('시안의 네 구간 그대로다 — 요일·총 일수를 날짜에서 계산한다', () {
+    test('시안의 다섯 구간 그대로다 — 요일·총 일수를 날짜에서 계산한다', () {
       // 2027년 달력 기준. 요일이 틀리면 시안 문구와 어긋난다
       expect(kGoldenHolidays.map((h) => h.rangeLabel), [
         '10.2(토) – 10.11(월)',
-        '9.11(토) – 9.19(일)',
+        '2.5(금) – 2.14(일)',
         '5.1(토) – 5.9(일)',
+        '9.11(토) – 9.16(목)',
         '2.5(금) – 2.9(화)',
       ]);
-      // 5.1~5.9는 시안이 10일이라 적었지만 달력으로 9일이다 — 달력을 따른다
-      expect(kGoldenHolidays.map((h) => h.totalDays), [10, 9, 9, 5]);
-      expect(kGoldenHolidays.map((h) => h.leaveDays), [4, 2, 3, 1]);
+      // 개천절만 시안 목록('총 9일')을 안 따랐다 — 달력으로 10일이고 같은
+      // 시안의 상단 카드도 '최대 10일'이다
+      expect(kGoldenHolidays.map((h) => h.totalDays), [10, 10, 9, 6, 5]);
+      expect(kGoldenHolidays.map((h) => h.leaveDays), [4, 4, 3, 1, 1]);
     });
 
     test('상단 카드 표기는 붙여 쓴다', () {
@@ -30,7 +32,7 @@ void main() {
   });
 
   group('화면', () {
-    testWidgets('첫 구간을 위에 크게, 아래에 네 줄을 그린다', (tester) async {
+    testWidgets('첫 구간을 위에 크게, 아래에 다섯 줄을 그린다', (tester) async {
       await tester.pumpWidget(
         MaterialApp(theme: AppTheme.light, home: const GoldenHolidaysScreen()),
       );
@@ -41,12 +43,13 @@ void main() {
       expect(find.text('10.2(토)-10.11(월)'), findsOneWidget);
       expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요'), findsOneWidget);
       expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
-      for (final label in const ['개천절·한글날', '추석 연휴', '노동절·어린이날', '설날 연휴']) {
-        expect(find.text(label), findsOneWidget);
-      }
-      expect(find.text('총 10일 연휴'), findsOneWidget);
-      expect(find.text('총 9일 연휴'), findsNWidgets(2));
-      expect(find.text('사용 연차 1일'), findsOneWidget);
+      // 설날은 길고 짧은 두 구간이 함께 있다(시안 2·5번)
+      expect(find.text('개천절·한글날'), findsOneWidget);
+      expect(find.text('노동절·어린이날'), findsOneWidget);
+      expect(find.text('추석 연휴'), findsOneWidget);
+      expect(find.text('설날 연휴'), findsNWidgets(2));
+      expect(find.text('총 10일 연휴'), findsNWidgets(2));
+      expect(find.text('사용 연차 1일'), findsNWidgets(2));
     });
 
     testWidgets('행마다 순번이 붙고, 이름이 구간보다 위다', (tester) async {
