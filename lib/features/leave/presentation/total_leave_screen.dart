@@ -8,6 +8,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/async_retry.dart';
@@ -71,14 +72,23 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   ///
   /// 서버는 0.25 단위(반반차)까지 받는다. 그보다 잘게 쓰면 화면에 안 떨어지는
   /// 잔여가 생기므로 여기서 끊는다
-  String? get _error {
+  String? errorFor(double usedDays) {
     final raw = _input.text.trim();
     if (raw.isEmpty) return null;
     final days = double.tryParse(raw);
     if (days == null) return '숫자만 입력해 주세요.';
     // 0은 "쓸 수 있는 게 없다"라는 뜻으로 넣을 수 있다 — 서버도 0~99를 받는다
     if (days < 0) return '0일 이상이어야 해요.';
-    if (days > _maxDays) return '${formatLeaveDays(_maxDays)}일까지 넣을 수 있어요.';
+    // **서버가 받는 것은 총 연차다.** 화면은 잔여를 받으므로 이미 쓴 만큼을
+    // 얹어 보내는데, 그 합이 상한을 넘으면 저장이 거절된다. 입력값만 재면
+    // 눌러 본 뒤에야 '수정하지 못했어요'를 만난다
+    final limit = _maxDays - usedDays;
+    if (days > limit) {
+      return usedDays > 0
+          ? '이미 ${formatLeaveDays(usedDays)}일을 써서 '
+                '${formatLeaveDays(limit)}일까지 넣을 수 있어요.'
+          : '${formatLeaveDays(_maxDays)}일까지 넣을 수 있어요.';
+    }
     // 정수·0.25·0.5만 받는다. 0.75는 쓰지 않는 단위라 함께 막는다
     final fraction = days - days.floorToDouble();
     if (fraction != 0 && fraction != 0.25 && fraction != 0.5) {
@@ -87,8 +97,10 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
     return null;
   }
 
-  bool get _canSubmit =>
-      _input.text.trim().isNotEmpty && _error == null && !_submitting;
+  bool canSubmitWith(double usedDays) =>
+      _input.text.trim().isNotEmpty &&
+      errorFor(usedDays) == null &&
+      !_submitting;
 
   /// 입력한 값이 **잔여 연차 그대로** 남도록 저장한다.
   ///
@@ -121,12 +133,16 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
         return;
       }
       showAppToast(context, '연차 정보를 업데이트했어요.', kind: AppToastKind.success);
-    } on Object {
+    } on Object catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
+      // 서버가 왜 막았는지 말해 준다 — 같은 문구만 되풀이하면 사용자는
+      // 무엇을 고쳐야 할지 모른 채 다시 누른다
       showAppToast(
         context,
-        '수정하지 못했어요. 잠시 후 다시 시도해 주세요',
+        e is ApiException && e.detail.isNotEmpty
+            ? e.detail
+            : '수정하지 못했어요. 잠시 후 다시 시도해 주세요',
         kind: AppToastKind.cautionary,
       );
     }
@@ -229,7 +245,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
 
   /// 새 총 연차일수를 받는 상태
   Widget _buildEditor(double usedDays, double remainingDays) {
-    final error = _error;
+    final error = errorFor(usedDays);
     return Column(
       children: [
         Padding(
@@ -260,7 +276,9 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _canSubmit ? () => _submit(usedDays) : null,
+              onPressed: canSubmitWith(usedDays)
+                  ? () => _submit(usedDays)
+                  : null,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryNormal,
                 disabledBackgroundColor: AppColors.interactionDisable,
