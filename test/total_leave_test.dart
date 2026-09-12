@@ -69,7 +69,8 @@ void main() {
 
       final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller?.text, isEmpty);
-      expect(field.decoration?.hintText, '23일');
+      // 이 화면이 고치는 것은 **총 연차**다 — 잔여를 깔면 다른 값을 넣게 된다
+      expect(field.decoration?.hintText, '25일');
     });
   });
 
@@ -175,10 +176,12 @@ void main() {
   });
 
   group('저장', () {
-    testWidgets('입력한 값이 잔여 연차로 그대로 남는다', (tester) async {
-      // 서버가 받는 것은 총 연차이고 잔여는 거기서 사용분을 뺀 파생값이다.
-      // 입력값을 그대로 보내면 이미 쓴 만큼 줄어들어, 방금 넣은 숫자와 다른
-      // 값이 카드에 뜬다 — 쓴 일수를 얹어 보내야 한다
+    testWidgets('입력한 값이 총 연차 그대로 간다', (tester) async {
+      // 이 화면이 고치는 것은 총 연차다. 잔여는 거기서 사용분을 뺀 파생값이라
+      // 서버가 계산한다.
+      //
+      // **예전에는 잔여를 받아 사용분을 얹어 보냈다.** 그러면 입력값이 아니라
+      // 그 합이 서버 상한(99)에 걸려, 많이 쓴 사람이 큰 값을 넣지 못했다
       final repo = _RecordingLeaveRepository();
       await tester.pumpWidget(
         ProviderScope(
@@ -207,8 +210,8 @@ void main() {
       await tester.tap(find.text('등록하기'));
       await tester.pumpAndSettle();
 
-      // 잔여 15를 원하면 총은 15 + 이미 쓴 2 = 17이어야 한다
-      expect(repo.sentTotalDays, 17);
+      // 사용분을 얹지 않는다 — 넣은 값이 곧 총 연차다
+      expect(repo.sentTotalDays, 15);
     });
   });
 }

@@ -72,23 +72,14 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   ///
   /// 서버는 0.25 단위(반반차)까지 받는다. 그보다 잘게 쓰면 화면에 안 떨어지는
   /// 잔여가 생기므로 여기서 끊는다
-  String? errorFor(double usedDays) {
+  String? get _error {
     final raw = _input.text.trim();
     if (raw.isEmpty) return null;
     final days = double.tryParse(raw);
     if (days == null) return '숫자만 입력해 주세요.';
     // 0은 "쓸 수 있는 게 없다"라는 뜻으로 넣을 수 있다 — 서버도 0~99를 받는다
     if (days < 0) return '0일 이상이어야 해요.';
-    // **서버가 받는 것은 총 연차다.** 화면은 잔여를 받으므로 이미 쓴 만큼을
-    // 얹어 보내는데, 그 합이 상한을 넘으면 저장이 거절된다. 입력값만 재면
-    // 눌러 본 뒤에야 '수정하지 못했어요'를 만난다
-    final limit = _maxDays - usedDays;
-    if (days > limit) {
-      return usedDays > 0
-          ? '이미 ${formatLeaveDays(usedDays)}일을 써서 '
-                '${formatLeaveDays(limit)}일까지 넣을 수 있어요.'
-          : '${formatLeaveDays(_maxDays)}일까지 넣을 수 있어요.';
-    }
+    if (days > _maxDays) return '${formatLeaveDays(_maxDays)}일까지 넣을 수 있어요.';
     // 정수·0.25·0.5만 받는다. 0.75는 쓰지 않는 단위라 함께 막는다
     final fraction = days - days.floorToDouble();
     if (fraction != 0 && fraction != 0.25 && fraction != 0.5) {
@@ -97,24 +88,27 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
     return null;
   }
 
-  bool canSubmitWith(double usedDays) =>
-      _input.text.trim().isNotEmpty &&
-      errorFor(usedDays) == null &&
-      !_submitting;
+  bool get _canSubmit =>
+      _input.text.trim().isNotEmpty && _error == null && !_submitting;
 
-  /// 입력한 값이 **잔여 연차 그대로** 남도록 저장한다.
+  /// 입력한 값을 **총 연차 그대로** 저장한다.
   ///
-  /// 서버가 받는 것은 총 연차이고, 잔여는 거기서 사용분을 뺀 파생값이다
-  /// (core `MyLeaveService` — "남은 연차는 저장하지 않고 사용 내역이 정본").
-  /// 입력값을 그대로 보내면 이미 쓴 만큼 잔여가 줄어, 방금 넣은 숫자와
-  /// 다른 값이 카드에 뜬다. 쓴 일수를 얹어 보내야 화면이 말이 된다.
-  Future<void> _submit(double usedDays) async {
+  /// 이 화면이 고치는 것은 총 연차다(안내 문구도 '올해 사용할 수 있는 전체
+  /// 연차일수'라고 말한다). 잔여는 거기서 사용분을 뺀 파생값이라 서버가
+  /// 계산한다 — core `MyLeaveService`: "남은 연차는 저장하지 않고 사용
+  /// 내역이 정본".
+  ///
+  /// **예전에는 잔여를 받아 사용분을 얹어 보냈다.** 그러면 입력값이 아니라
+  /// 그 합이 서버 상한(99)에 걸려, 35일을 쓴 사람은 65를 넣을 수 없었다.
+  /// 온보딩은 총 연차를 받는데 이 화면만 잔여를 받아 같은 숫자가 다른
+  /// 뜻이었던 것이 뿌리다.
+  Future<void> _submit() async {
     final days = double.tryParse(_input.text.trim());
     if (days == null) return;
 
     setState(() => _submitting = true);
     try {
-      await ref.read(leaveRepositoryProvider).updateTotalDays(days + usedDays);
+      await ref.read(leaveRepositoryProvider).updateTotalDays(days);
       if (!mounted) return;
       // 잔여 연차를 읽는 곳이 셋이다 — 이 화면, 홈 카드, 마이의 사용자 정보.
       // 하나만 고치면 화면마다 다른 숫자를 말한다
@@ -176,7 +170,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
                     onRetry: () => ref.invalidate(myLeaveProvider),
                   ),
                   data: (data) => _editing
-                      ? _buildEditor(data.usedDays, data.remainingDays)
+                      ? _buildEditor(data.totalDays)
                       : _buildSummary(data.remainingDays),
                 ),
               ),
@@ -244,8 +238,8 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
   }
 
   /// 새 총 연차일수를 받는 상태
-  Widget _buildEditor(double usedDays, double remainingDays) {
-    final error = errorFor(usedDays);
+  Widget _buildEditor(double totalDays) {
+    final error = _error;
     return Column(
       children: [
         Padding(
@@ -255,7 +249,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
             focusNode: _focus,
             error: error,
             // 지금 값을 옅게 깔아 둔다 — 무엇을 고치는 중인지 알려 준다
-            hint: '${formatLeaveDays(remainingDays)}일',
+            hint: '${formatLeaveDays(totalDays)}일',
             onChanged: (_) => setState(() {}),
             onClear: () => setState(_input.clear),
           ),
@@ -276,9 +270,7 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: canSubmitWith(usedDays)
-                  ? () => _submit(usedDays)
-                  : null,
+              onPressed: _canSubmit ? _submit : null,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryNormal,
                 disabledBackgroundColor: AppColors.interactionDisable,
