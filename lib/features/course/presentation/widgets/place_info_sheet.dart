@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../data/course_repository.dart';
+import 'place_content_badge.dart';
 
 /// 장소 운영 정보 — 여행 당일 휴무일·운영시간 안내에만 조회한다
 final poiScheduleProvider = FutureProvider.autoDispose
@@ -57,6 +58,26 @@ class PlaceInfoSheet extends ConsumerWidget {
   final Map<String, dynamic> place;
   final bool isToday;
   final VoidCallback onOpenDetail;
+
+  /// 장소 성격 뱃지를 서버 값에서 만든다.
+  ///
+  /// **아직 서버가 안 주는 필드다**(2026-09-13). 지금은 늘 빈 목록이고,
+  /// 그래서 모달이 예전과 똑같이 보인다. 계약만 맞춰 두어 서버가 채우면
+  /// 앱 배포 없이 뜬다.
+  ///
+  /// 값 모양은 시안 문구를 그대로 쓴다 — '반려동물 동반'·'주말에 붐빔'.
+  /// 서버가 다른 말로 주면 그 말이 그대로 나온다
+  static List<Widget> _contentBadges(Map<String, dynamic> place) {
+    return [
+      if (place['petFriendly'] == true)
+        const PlaceContentBadge(
+          icon: 'assets/icons/ic_pet.svg',
+          text: '반려동물 동반',
+        ),
+      if (place['crowdNote'] case final String note when note.isNotEmpty)
+        PlaceContentBadge(icon: 'assets/icons/ic_crowd.svg', text: note),
+    ];
+  }
 
   /// 운영시간 문자열 끝의 마감 시각(HH:MM)이 이미 지났는지.
   /// 18:00~02:00처럼 자정을 넘기는 표기는 확신할 수 없어 판정하지 않는다.
@@ -155,7 +176,19 @@ class PlaceInfoSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            // 장소 성격 뱃지 — 반려동물 동반·혼잡도(시안 18991:86950).
+            //
+            // **서버가 아직 안 준다.** 필드가 비어 있으면 줄째 사라지므로,
+            // 값이 실리기 시작하면 앱을 고치지 않아도 그대로 뜬다
+            if (_contentBadges(place) case final badges
+                when badges.isNotEmpty) ...[
+              // 시안 실측: 캐치프레이즈 아래 12
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: badges),
+              // 시안 실측: 뱃지 아래 24
+              const SizedBox(height: 24),
+            ] else
+              const SizedBox(height: 30),
             _buildInfoRow(
               // 시안은 꽉 찬 시계가 아니라 테두리형이다 —
               // 배지·기간스타일이 쓰는 ic_clock과는 다른 아이콘
