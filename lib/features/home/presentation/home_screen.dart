@@ -85,7 +85,10 @@ const homeFeaturedCount = 8;
 /// 그 갈래를 다 보고 싶은 것이고, 숙박·음식은 소개가 늦게 채워진다).
 ///
 /// '전체'는 그 위에 **앞 [homeFeaturedCount]장을 관광지·체험으로** 번갈아
-/// 세운다. 각 갈래 안의 차례는 그대로고, 나머지는 원래 차례대로 뒤에 둔다
+/// 세운다. 각 갈래 안의 차례는 그대로고, 나머지는 원래 차례대로 뒤에 둔다.
+///
+/// 그 앞에 두 규칙이 더 걸린다 — 혜택이 붙은 장소를 앞세우고([_hasBenefit]),
+/// [homePinnedPlaceNames]에 적은 곳은 무조건 맨 앞으로 끌어온다
 List<Map<String, dynamic>> homePlacesForChip(
   List<Map<String, dynamic>> places,
   Map<String, dynamic>? selected,
@@ -100,10 +103,14 @@ List<Map<String, dynamic>> homePlacesForChip(
   final described = places
       .where((p) => (p['description'] as String?)?.isNotEmpty ?? false)
       .toList();
-  final sights = described.where((p) => p['kind'] == 'SIGHT').toList();
-  final experiences = described
-      .where((p) => p['kind'] == 'EXPERIENCE')
-      .toList();
+  // 혜택이 붙은 장소를 앞세운다 — 뱃지가 있는 카드가 먼저 보여야 '연차 내고
+  // 갈 만한 곳'으로 읽힌다. 각 무리 안의 차례는 그대로다(서버 추천 순)
+  final withBenefit = described.where(_hasBenefit).toList();
+  final withoutBenefit = described.where((p) => !_hasBenefit(p)).toList();
+  final ordered = [...withBenefit, ...withoutBenefit];
+
+  final sights = ordered.where((p) => p['kind'] == 'SIGHT').toList();
+  final experiences = ordered.where((p) => p['kind'] == 'EXPERIENCE').toList();
   final featured = <Map<String, dynamic>>[];
   for (var i = 0; featured.length < homeFeaturedCount; i++) {
     final s = i < sights.length ? sights[i] : null;
@@ -112,9 +119,42 @@ List<Map<String, dynamic>> homePlacesForChip(
     if (s != null) featured.add(s);
     if (e != null && featured.length < homeFeaturedCount) featured.add(e);
   }
-  if (featured.isEmpty) return described;
-  final rest = described.where((p) => !featured.contains(p)).toList();
-  return [...featured, ...rest];
+  if (featured.isEmpty) return _pinnedFirst(described);
+  final rest = ordered.where((p) => !featured.contains(p)).toList();
+  return _pinnedFirst([...featured, ...rest]);
+}
+
+/// 혜택 뱃지가 붙는가.
+///
+/// 서버는 장소마다 혜택을 **객체 하나**로 준다(`{text, policyType, …}`) —
+/// 배열이 아니라 개수를 셀 것이 없다. 붙었는지만 본다. 나중에 여러 개를
+/// 주게 되면 여기서 길이로 견주면 된다
+bool _hasBenefit(Map<String, dynamic> place) => place['benefit'] != null;
+
+/// '전체'에서 무조건 맨 앞에 세우는 장소 — 손으로 고른 값이다.
+///
+/// 사진이 좋아 첫 화면에 어울리는 곳들이다. 서버는 이걸 가릴 분류를 주지
+/// 않는다(`kind` 넷뿐이고 `contentTypeId`는 홈 응답에 없다). 자연을 가려낼
+/// 코드가 생기면 통째로 걷어낸다.
+///
+/// **이름으로 맞춘다** — 장소 id(`poiContentId`)는 수집을 다시 돌리면
+/// 바뀔 수 있지만 이름은 화면에 그대로 뜨는 값이라 눈으로 확인된다.
+/// 서버 목록에서 사라지면 그 줄만 조용히 힘을 잃는다
+const homePinnedPlaceNames = ['송도 구름산책로', '연미산 자연미술공원', '부산 중앙공원'];
+
+/// [homePinnedPlaceNames]에 있는 장소를 적은 순서대로 맨 앞으로 끌어온다.
+///
+/// 목록에 없는 이름은 건너뛰고, 나머지는 들어온 차례 그대로 뒤에 붙는다 —
+/// 셋 다 없으면 입력이 그대로 나간다
+List<Map<String, dynamic>> _pinnedFirst(List<Map<String, dynamic>> places) {
+  final pinned = <Map<String, dynamic>>[];
+  for (final name in homePinnedPlaceNames) {
+    final found = places.where((p) => p['placeName'] == name).firstOrNull;
+    if (found != null) pinned.add(found);
+  }
+  if (pinned.isEmpty) return places;
+  final rest = places.where((p) => !pinned.contains(p)).toList();
+  return [...pinned, ...rest];
 }
 
 /// 당겨서 새로고침한 뒤 카드 순서를 섞는다.

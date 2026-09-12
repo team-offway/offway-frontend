@@ -177,4 +177,91 @@ void main() {
       expect(card['kind'], 'SIGHT');
     });
   });
+
+  group("'전체' 앞자리 규칙 — 혜택과 지정 장소", () {
+    Map<String, dynamic> place(
+      String name, {
+      String kind = 'SIGHT',
+      bool benefit = false,
+    }) => {
+      'id': name,
+      'placeName': name,
+      'description': '소개',
+      'kind': kind,
+      if (benefit) 'benefit': {'text': '디지털관광주민증'},
+    };
+
+    List<String> namesOf(List<Map<String, dynamic>> rows) => [
+      for (final r in rows) r['placeName'] as String,
+    ];
+
+    test('지정한 세 곳이 적은 차례대로 맨 앞에 온다', () {
+      final places = [
+        place('부산 중앙공원'),
+        place('다른 곳1'),
+        place('송도 구름산책로', kind: 'EXPERIENCE'),
+        place('다른 곳2'),
+        place('연미산 자연미술공원'),
+      ];
+      expect(namesOf(homePlacesForChip(places, null)).take(3), [
+        '송도 구름산책로',
+        '연미산 자연미술공원',
+        '부산 중앙공원',
+      ]);
+    });
+
+    test('지정 장소가 목록에 없으면 있는 것만 앞세운다', () {
+      final places = [place('다른 곳'), place('부산 중앙공원')];
+      expect(namesOf(homePlacesForChip(places, null)).first, '부산 중앙공원');
+    });
+
+    test('지정 장소가 하나도 없으면 나머지 규칙 결과 그대로다', () {
+      final places = [
+        place('가', benefit: true),
+        place('나'),
+        place('다', benefit: true),
+      ];
+      // 혜택 있는 것이 앞 — 지정 장소가 끼어들지 않는다
+      expect(namesOf(homePlacesForChip(places, null)), ['가', '다', '나']);
+    });
+
+    test('혜택이 붙은 장소를 앞세운다', () {
+      final places = [
+        place('혜택없음1'),
+        place('혜택있음1', benefit: true),
+        place('혜택없음2'),
+        place('혜택있음2', benefit: true),
+      ];
+      expect(namesOf(homePlacesForChip(places, null)), [
+        '혜택있음1',
+        '혜택있음2',
+        '혜택없음1',
+        '혜택없음2',
+      ]);
+    });
+
+    test('혜택 무리 안에서는 서버 차례를 지킨다', () {
+      final places = [place('나중', benefit: true), place('먼저', benefit: true)];
+      expect(namesOf(homePlacesForChip(places, null)), ['나중', '먼저']);
+    });
+
+    test('지정 장소는 혜택이 없어도 맨 앞이다', () {
+      final places = [place('혜택있음', benefit: true), place('부산 중앙공원')];
+      expect(namesOf(homePlacesForChip(places, null)).first, '부산 중앙공원');
+    });
+
+    test('카테고리 칩을 고르면 이 규칙은 걸리지 않는다', () {
+      final places = [
+        place('혜택없음')..['categoryCounts'] = {'관광지': 1},
+        place('부산 중앙공원')..['categoryCounts'] = {'관광지': 1},
+      ];
+      expect(
+        namesOf(
+          homePlacesForChip(places, const {'key': 'SIGHT', 'label': '관광지'}),
+        ),
+        ['혜택없음', '부산 중앙공원'],
+        reason: '한 갈래만 볼 때는 서버 차례 그대로',
+      );
+    });
+  });
 }
