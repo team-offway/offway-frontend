@@ -41,6 +41,11 @@ const kGoldenHolidayYear = 2027;
 
 /// 2027년 연차 쓰기 좋은 날 — 시안 순서 그대로(첫 항목이 상단 카드에 간다).
 ///
+/// **개천절만 시안 숫자를 안 따랐다.** 목록에 '연차 2일 · 총 9일'로 적혀
+/// 있는데 10.2~10.11은 달력으로 10일이고, 그 안의 평일 중 공휴일이 아닌
+/// 날은 10.5~10.8 넷이다. 같은 시안의 상단 카드도 '연차 4일로 최대 10일'
+/// 이라 그쪽과 맞췄다.
+///
 /// 서버 공휴일(`/holidays?year=2027`)과 대조해 둔 값이다: 설날 2.6~2.9,
 /// 노동절 5.1(대체 5.3)·어린이날 5.5, 추석 9.14~9.16, 개천절 10.3(대체 10.4)·
 /// 한글날 10.9(대체 10.11).
@@ -52,19 +57,22 @@ final kGoldenHolidays = [
     leaveDays: 4,
   ),
   GoldenHoliday(
-    start: DateTime(2027, 9, 11),
-    end: DateTime(2027, 9, 19),
-    label: '추석 연휴',
-    leaveDays: 2,
+    start: DateTime(2027, 2, 5),
+    end: DateTime(2027, 2, 14),
+    label: '설날 연휴',
+    leaveDays: 4,
   ),
-  // 시안은 '연차 4일 · 총 10일'로 적혀 있지만 달력은 9일이고, 그 안의 평일은
-  // 5.4·5.6·5.7 셋이다(5.3은 서버 공휴일 목록의 노동절 대체휴일). 화면에
-  // 틀린 숫자를 내지 않으려고 달력값을 쓴다 — 시안 쪽에 알려 둘 것
   GoldenHoliday(
     start: DateTime(2027, 5, 1),
     end: DateTime(2027, 5, 9),
     label: '노동절·어린이날',
     leaveDays: 3,
+  ),
+  GoldenHoliday(
+    start: DateTime(2027, 9, 11),
+    end: DateTime(2027, 9, 16),
+    label: '추석 연휴',
+    leaveDays: 1,
   ),
   GoldenHoliday(
     start: DateTime(2027, 2, 5),
