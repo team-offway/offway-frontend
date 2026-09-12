@@ -66,7 +66,9 @@ void main() {
     expect(snapshot.user['nickname'], '게스트');
     expect(snapshot.user['remainingLeaveDays'], isNull);
 
-    final region = snapshot.regions.first;
+    // 차례는 sortPinnedRegions가 따로 정한다 — 여기서는 id로 집어
+    // 변환만 본다. 목록 위치로 찾으면 차례 규칙이 바뀔 때마다 깨진다
+    final region = snapshot.regions.firstWhere((r) => r['id'] == '1');
     // 서버가 합쳐 준 이름을 화면 조립 형태(name·sido)로 되쪼갠다
     expect(region['name'], '동구');
     expect(region['sido'], '부산광역시');
@@ -81,12 +83,60 @@ void main() {
 
   test('혜택 없는 지역은 뱃지 키 자체를 만들지 않는다', () async {
     final snapshot = await repository.fetch();
-    final region = snapshot.regions[1];
+    final region = snapshot.regions.firstWhere((r) => r['id'] == '29');
 
     // 카드가 `RegionBenefit.tryParse` 결과로 분기하므로 키가 없어야
     // 뱃지 줄이 사라진다 — null을 넣으면 파서가 또 null을 걸러야 한다
     expect(region.containsKey('benefit'), isFalse);
     expect(region['imageUrl'], isNull);
+  });
+
+  test('실서버 응답에서도 공주가 부산 동구보다 앞선다', () async {
+    final snapshot = await repository.fetch();
+    // fixture는 동구(1) → 공주(29) 차례로 온다. 뒤집혀 나와야 한다
+    expect([for (final r in snapshot.regions) r['id']], ['29', '1']);
+  });
+
+  group("'이번 연차엔 여기 어때요?' 지역 차례", () {
+    List<Map<String, dynamic>> cards(List<int> ids) => [
+      for (final id in ids) {'id': '$id', 'name': '지역$id'},
+    ];
+
+    List<int> idsOf(List<Map<String, dynamic>> rows) => [
+      for (final r in rows) int.parse(r['id'] as String),
+    ];
+
+    test('공주·가평은 앞으로, 부산 동구·대구 남구는 뒤로 보낸다', () {
+      // 실서버 차례: 동구(1) 공주(29) 가평(9) 남구(4) 서구(2) 홍천(20)
+      final sorted = sortPinnedRegions(cards([1, 29, 9, 4, 2, 20]));
+      expect(idsOf(sorted), [29, 9, 2, 20, 1, 4]);
+    });
+
+    test('표에 없는 지역만 오면 서버 차례 그대로 둔다', () {
+      final sorted = sortPinnedRegions(cards([2, 20, 33]));
+      expect(idsOf(sorted), [2, 20, 33]);
+    });
+
+    test('앞·뒤로 보낸 것들끼리도 서버 차례를 지킨다', () {
+      // 가평(9)이 공주(29)보다 먼저 왔으면 그 차례를 뒤집지 않는다
+      final sorted = sortPinnedRegions(cards([9, 29, 4, 1]));
+      expect(idsOf(sorted), [9, 29, 4, 1]);
+    });
+
+    test('id가 비거나 숫자가 아니어도 떨어뜨리지 않는다', () {
+      final rows = [
+        {'id': '29', 'name': '공주시'},
+        {'name': '아이디 없음'},
+        {'id': '', 'name': '빈 아이디'},
+      ];
+      final sorted = sortPinnedRegions(rows);
+      expect(sorted, hasLength(3), reason: '한 장도 잃지 않는다');
+      expect(sorted.first['id'], '29');
+    });
+
+    test('빈 목록은 빈 채로 둔다', () {
+      expect(sortPinnedRegions([]), isEmpty);
+    });
   });
 
   group('장소 카드 섞기', () {

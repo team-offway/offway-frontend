@@ -73,7 +73,7 @@ class HomeRepository {
           // currentUserProvider가 그 값으로 덮는다. 홈에 실려 오면 받아 둘 뿐이다
           'profileImageUrl': ?user['profileImageUrl'],
         },
-        regions: regions.map(_toRegionCardMap).toList(),
+        regions: sortPinnedRegions(regions.map(_toRegionCardMap).toList()),
         places: interleaveByRegion(
           ((data['recommendedPlaces'] as List?) ?? const [])
               .cast<Map<String, dynamic>>()
@@ -147,6 +147,57 @@ Map<String, dynamic> toPlaceCardMap(
     // 앞세우는 규칙이 라벨이 아니라 이 키로 가른다. 라벨은 서버가 바꿀 수 있다
     'kind': ?kind,
   };
+}
+
+/// '이번 연차엔 여기 어때요?'에서 앞·뒤로 보낼 지역 (regionId 기준).
+///
+/// **손으로 고른 값이다.** 서버는 추천 점수대로 주는데 첫 화면에 도시
+/// 자치구가 먼저 오면 "연차 내고 갈 곳"으로 읽히지 않는다. 자연이 있는
+/// 곳을 앞에, 도심 자치구를 뒤로 민다.
+///
+/// 이름이 아니라 `regionId`로 가른다 — '동구'는 부산·대구에 다 있고
+/// '남구'는 넷이라 이름으로는 엉뚱한 곳이 걸린다.
+///
+/// **매달 바뀌는 값이라 다음 달에도 확인이 필요하다.** 서버 추천 지역은
+/// 달마다 갈린다 — 여기 적힌 네 곳이 그때도 목록에 있으리라는 보장이
+/// 없고, 새로 올라온 도심 자치구가 앞자리를 차지할 수도 있다. 홈 첫
+/// 화면을 눈으로 보고 이 표를 손보는 일이 매달 한 번 필요하다.
+///
+/// **표에 없는 지역만 오면** 목록이 그대로 나간다([sortPinnedRegions]가
+/// 원래 차례를 지킨다) — 값이 낡아도 화면이 깨지지는 않는다.
+/// 분류 코드로 가릴 수 있게 되면 통째로 걷어낸다
+const _regionsToFront = {
+  29, // 공주시 · 충청남도
+  9, // 가평군 · 경기도
+};
+const _regionsToBack = {
+  1, // 동구 · 부산광역시
+  4, // 남구 · 대구광역시
+};
+
+/// 앞·뒤로 보낼 지역만 옮기고 나머지는 서버 차례 그대로 둔다.
+///
+/// 세 덩이(앞·중간·뒤) 안에서는 **서버가 준 순서를 건드리지 않는다** —
+/// 추천 점수 순인데 여기서 다시 줄 세울 근거가 없다. 표에 걸리는 지역이
+/// 하나도 없으면 들어온 목록이 그대로 나간다.
+List<Map<String, dynamic>> sortPinnedRegions(
+  List<Map<String, dynamic>> regions,
+) {
+  final front = <Map<String, dynamic>>[];
+  final middle = <Map<String, dynamic>>[];
+  final back = <Map<String, dynamic>>[];
+  for (final region in regions) {
+    // 카드의 id는 문자열이다(toRegionCardMap이 그렇게 만든다)
+    final id = int.tryParse(region['id'] as String? ?? '');
+    if (id != null && _regionsToFront.contains(id)) {
+      front.add(region);
+    } else if (id != null && _regionsToBack.contains(id)) {
+      back.add(region);
+    } else {
+      middle.add(region);
+    }
+  }
+  return [...front, ...middle, ...back];
 }
 
 /// 같은 지역이 연달아 나오지 않게 지역별로 번갈아 섞는다.
