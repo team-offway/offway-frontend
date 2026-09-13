@@ -16,7 +16,7 @@ import 'package:offway/features/course/presentation/widgets/place_info_sheet.dar
 /// | 화면 | 툴팁 | 끝나는 시점 |
 /// |---|---|---|
 /// | 코스 확정(저장 전) | 코스를 공유해보세요 | 닫기(X) |
-/// | 내 코스(담고 첫 진입) | 눌러서 자세히 보기 | 장소를 눌러 봄 |
+/// | 내 코스(담고 첫 진입) | 눌러서 자세히 보기 | 장소를 눌러 시트가 뜸 |
 /// | 내 코스(재진입) | 코스를 공유해보세요 | 닫기(X) |
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -143,9 +143,7 @@ void main() {
       expect(tip('코스를 공유해보세요'), findsNothing);
     });
 
-    testWidgets('시트만 열어서는 안 끝난다 — 운영시간만 보고 닫았을 수 있다', (tester) async {
-      // 시안 메모는 "상세 화면으로 진입 이후에는 다시 노출 X"다.
-      // 시트는 상세로 가는 길목일 뿐이라 여기서 끝내면 안내가 일찍 사라진다
+    testWidgets('시트가 올라오면 끝난다 — 누르면 열린다는 것을 이미 봤다', (tester) async {
       await pump(tester);
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pumpAndSettle();
@@ -156,10 +154,10 @@ void main() {
       expect(find.byType(PlaceInfoSheet), findsOneWidget);
 
       final storage = CourseTooltipStorage(const FlutterSecureStorage());
-      expect(await storage.isDetailHintDone('1'), isFalse);
+      expect(await storage.isDetailHintDone('1'), isTrue);
     });
 
-    testWidgets('상세 화면에 들어가면 끝난다 — 다시 열어도 안 뜬다', (tester) async {
+    testWidgets('상세까지 들어가도 물론 끝나 있다 — 다시 열어도 안 뜬다', (tester) async {
       await pump(tester);
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pumpAndSettle();

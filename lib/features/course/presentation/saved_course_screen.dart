@@ -138,7 +138,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     _tooltipStateLoaded = true;
   }
 
-  /// 장소 상세로 들어갔다 — 이 코스의 '눌러서 자세히 보기'는 할 일을 마쳤다
+  /// 장소 시트를 띄웠다 — 이 코스의 '눌러서 자세히 보기'는 할 일을 마쳤다
   void _markDetailHintDone() {
     if (!_detailHintPending) return;
     setState(() => _detailHintPending = false);
@@ -673,6 +673,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   /// 장소를 누르면 운영 정보 시트를 띄운다
   void _showPlaceSheet(Map<String, dynamic> place, {required bool isToday}) {
+    // **시트가 올라온 순간** 안내는 할 일을 마쳤다. 누르면 무언가 열린다는
+    // 것을 이미 본 것이라, 상세까지 들어가야 끝내면 시트만 보고 닫은
+    // 사람에게 같은 말풍선이 계속 따라붙는다.
+    //
+    // 상세로 못 가는 장소(poiContentId 없음)에서도 끝난다 — 시트를 띄우는
+    // 이 자리에서 처리하므로 그 갈림길을 타지 않는다
+    _markDetailHintDone();
     showPlaceInfoSheet(
       context,
       place: place,
@@ -680,10 +687,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       onOpenDetail: () {
         final contentId = place['poiContentId'] as String?;
         if (contentId == null) return;
-        // **상세 화면에 들어간 순간** 안내는 할 일을 마쳤다(시안 메모).
-        // 시트를 여는 것만으로는 끝내지 않는다 — 운영시간만 보고 닫았다면
-        // 눌러서 더 볼 수 있다는 것을 아직 모른다
-        _markDetailHintDone();
         context.push(
           AppRoutes.poiDetailPath(contentId, name: place['name'] as String),
         );
