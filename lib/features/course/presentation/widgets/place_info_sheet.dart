@@ -164,14 +164,17 @@ class PlaceInfoSheet extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  // 시안(1545:45775)은 DS Chevron Right(Tight) 12×24다 —
+                  // _16은 정사각 글리프라 같은 자리에서 더 뭉툭해 보인다.
+                  //
+                  // **색을 덮지 않는다.** 이 에셋에는 fill-opacity 0.61이
+                  // 박혀 있어 그대로 두면 #37383C@61% 가 나오고, 시안 실측
+                  // (133,133,136)과 맞는다. 여기에 labelAlternative(알파
+                  // 0.61)를 srcIn으로 또 씌우면 0.37로 곱해져 흐려진다
                   SvgPicture.asset(
-                    'assets/icons/ic_chevron_right_16.svg',
-                    width: 16,
-                    height: 16,
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.labelAlternative,
-                      BlendMode.srcIn,
-                    ),
+                    'assets/icons/ic_chevron_right.svg',
+                    width: 12,
+                    height: 24,
                   ),
                 ],
               ),
