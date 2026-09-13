@@ -256,9 +256,10 @@ void main() {
       final secondThumb = tester.getRect(thumbs.at(1));
       final thirdThumb = tester.getRect(thumbs.at(2));
 
-      // 둘째 사진 밑단에 **맞닿는다** — 시안은 사진 끝과 화살표 시작이
-      // 같은 자리다. 띄우면 어느 사진 것인지 흐려진다
-      expect(whole.top - secondThumb.bottom, closeTo(0, 1.5));
+      // 둘째 사진 밑단 **바로 아래**에 선다 — 시안 실측(1545:46475)은
+      // 사진 끝 828.0, 화살표 시작 829.7로 1.7 띄운다. 사진 안으로
+      // 파고들면 화살표 끝이 묻히고, 더 띄우면 어느 사진 것인지 흐려진다
+      expect(whole.top - secondThumb.bottom, closeTo(1.7, 0.6));
       // 셋째 사진을 덮지 않는다
       expect(whole.bottom, lessThan(thirdThumb.top));
       expect(bubble.width, closeTo(128, 2.5));
