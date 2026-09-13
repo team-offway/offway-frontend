@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -27,9 +29,20 @@ class AppTooltipBubble extends StatelessWidget {
   /// 눌러도 아무 일이 없는 자리를 남기지 않는다
   final VoidCallback? onClose;
 
-  /// 시안 실측 — 화살표 20×8
+  /// 시안 실측 — 화살표가 차지하는 자리는 20×8이고, 에셋 도형 자체는
+  /// 20×5.92다(1274:37978의 프레임 8 안에 도형이 아래로 붙어 있다)
   static const _arrowWidth = 20.0;
   static const _arrowHeight = 8.0;
+
+  /// 에셋 도형 자체의 높이 — 자리(8)보다 낮고 아래에 붙는다
+  static const _arrowShapeHeight = 5.92412;
+
+  /// 화살표가 차지한 자리를 테스트에서 집기 위한 키.
+  ///
+  /// 예전에는 `CustomPaint`를 크기(20×8)로 가려냈는데, 그림을 에셋으로
+  /// 바꾸면 그 방법이 조용히 깨진다 — 찾는 기준을 겉모습이 아니라 키로 둔다
+  @visibleForTesting
+  static const arrowKey = ValueKey('tooltip-arrow');
   static const _bubbleRadius = 8.0;
 
   /// 시안 실측 — 닫기 아이콘 19.2
@@ -39,12 +52,34 @@ class AppTooltipBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     // 시안 실측: 화살표 오른쪽 끝이 말풍선 오른쪽에서 8이다.
     // 코너 곡선(반지름 8)이 끝나는 자리와 정확히 만나 겹치지 않는다
+    // 시안 컴포넌트(1274:37981)를 그대로 딴 에셋이다. 손으로 그린
+    // 삼각형은 밑변이 말풍선에 닿는 '어깨'가 없어 결이 달랐다.
+    //
+    // 에셋의 꼭짓점은 위를 향한다 — 아래를 가리킬 때만 뒤집는다
+    //
+    // **늘리지 않는다.** 시안은 8짜리 자리 안에서 도형이 아래(말풍선 쪽)에
+    // 붙고 위로 2.08이 빈다. fill로 8까지 늘리면 꼭짓점이 그만큼 올라가
+    // 사진과의 간격이 어긋난다
+    final arrowAsset = SizedBox(
+      key: arrowKey,
+      width: _arrowWidth,
+      height: _arrowHeight,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SvgPicture.asset(
+          'assets/icons/ic_tooltip_arrow.svg',
+          width: _arrowWidth,
+          height: _arrowShapeHeight,
+          excludeFromSemantics: true,
+          colorFilter: ColorFilter.mode(_bubbleColor, BlendMode.srcIn),
+        ),
+      ),
+    );
     final arrow = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: CustomPaint(
-        size: const Size(_arrowWidth, _arrowHeight),
-        painter: _ArrowPainter(pointsDown: arrowAtBottom),
-      ),
+      child: arrowAtBottom
+          ? Transform.rotate(angle: math.pi, child: arrowAsset)
+          : arrowAsset,
     );
 
     return Column(
@@ -107,32 +142,4 @@ class AppTooltipBubble extends StatelessWidget {
     AppColors.primaryNormal.withValues(alpha: AppOpacity.o5),
     AppColors.inverseBackground.withValues(alpha: AppOpacity.o88),
   );
-}
-
-/// 위를 가리키는 삼각형 — 시안 화살표는 꼭짓점이 둥글다
-class _ArrowPainter extends CustomPainter {
-  const _ArrowPainter({this.pointsDown = false});
-
-  /// 꼭짓점이 아래를 향하는가 — 말풍선 밑에 붙을 때다
-  final bool pointsDown;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 붙는 변(말풍선과 맞닿는 쪽)과 꼭짓점의 y를 방향에 따라 맞바꾼다
-    final base = pointsDown ? 0.0 : size.height;
-    final tip = pointsDown ? size.height - 1 : 1.0;
-    final beyond = pointsDown ? size.height + 1 : -1.0;
-    final path = Path()
-      ..moveTo(0, base)
-      ..lineTo(size.width / 2 - 2, tip)
-      // 꼭짓점만 살짝 굴린다 — 각지면 말풍선과 결이 다르다
-      ..quadraticBezierTo(size.width / 2, beyond, size.width / 2 + 2, tip)
-      ..lineTo(size.width, base)
-      ..close();
-    canvas.drawPath(path, Paint()..color = AppTooltipBubble._bubbleColor);
-  }
-
-  @override
-  bool shouldRepaint(_ArrowPainter oldDelegate) =>
-      oldDelegate.pointsDown != pointsDown;
 }

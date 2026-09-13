@@ -180,13 +180,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final bubble = tester.getRect(find.byType(AppTooltipBubble));
-    // 화살표는 시안 20×8 — 그 크기로 가려낸다(_ArrowPainter가 private이라
-    // 타입으로는 못 집는다)
-    final arrow = tester.getRect(
-      find.byWidgetPredicate(
-        (w) => w is CustomPaint && w.size == const Size(20, 8),
-      ),
-    );
+    // 화살표는 시안 20×8 — 키로 집는다
+    final arrow = tester.getRect(find.byKey(AppTooltipBubble.arrowKey));
 
     expect(bubble.right - arrow.right, closeTo(8, 0.5));
     expect(arrow.width, 20);
@@ -196,11 +191,7 @@ void main() {
     await pump(tester);
 
     final share = tester.getRect(find.bySemanticsLabel('공유하기'));
-    final arrow = tester.getRect(
-      find.byWidgetPredicate(
-        (w) => w is CustomPaint && w.size == const Size(20, 8),
-      ),
-    );
+    final arrow = tester.getRect(find.byKey(AppTooltipBubble.arrowKey));
 
     expect(arrow.center.dx, closeTo(share.center.dx, 0.5));
   });

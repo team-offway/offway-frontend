@@ -139,11 +139,7 @@ void main() {
     await pump(tester);
 
     final share = tester.getRect(find.bySemanticsLabel('공유하기'));
-    final arrow = tester.getRect(
-      find.byWidgetPredicate(
-        (w) => w is CustomPaint && w.size == const Size(20, 8),
-      ),
-    );
+    final arrow = tester.getRect(find.byKey(AppTooltipBubble.arrowKey));
 
     expect(arrow.center.dx, closeTo(share.center.dx, 0.5));
   });
