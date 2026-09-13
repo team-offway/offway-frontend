@@ -150,7 +150,9 @@ class _PlaceRow extends StatelessWidget {
                           ),
                           if (place['catchphrase'] case final String phrase
                               when phrase.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            // 장소명·설명·분류 사이는 3이다(QA 9/13). 내 코스
+                            // 상세와 같은 카드라 두 화면을 함께 맞춘다
+                            const SizedBox(height: 3),
                             // 앞에 붙던 '추천 '을 뺐다(QA 9/11) — 코스에 실린
                             // 장소는 전부 추천이라 줄마다 되뇌는 말이 됐다
                             Text(
@@ -162,7 +164,7 @@ class _PlaceRow extends StatelessWidget {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           _buildMeta(),
                         ],
                       ),

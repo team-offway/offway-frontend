@@ -80,9 +80,12 @@ void main() {
     expect(find.text('0.8km'), findsOneWidget);
   });
 
-  testWidgets('내 코스 상세 — 시안 간격(블록 128, 분류→칩 12, 칩→다음 14)', (tester) async {
+  testWidgets('내 코스 상세 — 시안 간격(블록 126, 분류→칩 12, 칩→다음 14)', (tester) async {
     // 칩은 앞 장소 블록에 바로 붙고 아래로만 2를 띄운다. 장소 줄이 위아래
-    // 12씩 갖고 있어 눈에 보이는 간격이 12·14가 된다 (시안 18991:85115)
+    // 12씩 갖고 있어 눈에 보이는 간격이 12·14가 된다 (시안 18991:85115).
+    //
+    // 블록은 128이었다가 126이 됐다 — 글줄 사이를 4·4에서 3·3으로
+    // 좁히면서(QA 9/13) 2가 빠졌다
     tester.view.physicalSize = const Size(402 * 3, 1800 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -145,7 +148,7 @@ void main() {
     final chip = tester.getRect(find.byType(DistanceChip).first);
     final second = tester.getRect(find.text('학암포해수욕장'));
 
-    expect(second.top - first.top, 128, reason: '시안 장소 블록 간격');
+    expect(second.top - first.top, 126, reason: '시안 장소 블록 간격');
     expect(chip.top - category.bottom, 12);
     expect(second.top - chip.bottom, 14);
     // 칩은 목록 왼쪽 끝에 선다 — 점선(x=11.4)보다 오른쪽이다

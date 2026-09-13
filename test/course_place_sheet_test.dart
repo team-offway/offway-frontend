@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
@@ -80,5 +81,32 @@ void main() {
 
     expect(find.text('오늘은 휴무일이에요'), findsNothing);
     expect(find.text('오늘 운영이 끝났어요'), findsNothing);
+  });
+
+  testWidgets('제목 옆 쉐브론은 시안 그대로다 — 12×24, 색을 덮지 않는다', (tester) async {
+    // 시안(1545:45775)은 DS Chevron Right(Tight)다. 예전에는 정사각
+    // 글리프(_16)를 써서 같은 자리에서 더 뭉툭했다
+    await pump(tester);
+    await tester.tap(find.text('예산시장'));
+    await tester.pumpAndSettle();
+
+    final chevron = tester.widget<SvgPicture>(
+      find.descendant(
+        of: find.byType(PlaceInfoSheet),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is SvgPicture &&
+              (w.bytesLoader as SvgAssetLoader).assetName ==
+                  'assets/icons/ic_chevron_right.svg',
+        ),
+      ),
+    );
+
+    expect(chevron.width, 12);
+    expect(chevron.height, 24);
+    // **색을 덮지 않는다.** 이 에셋에는 fill-opacity 0.61이 박혀 있어
+    // 그대로 두면 시안 실측(133,133,136)과 맞는다. labelAlternative(알파
+    // 0.61)를 srcIn으로 또 씌우면 0.37로 곱해져 흐려진다
+    expect(chevron.colorFilter, isNull);
   });
 }
