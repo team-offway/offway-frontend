@@ -1005,10 +1005,14 @@ class _OverlapHint extends StatelessWidget {
   /// 시작한다(**+1.7**). 예전 -15는 사진 안으로 3.3만큼 파고들어 화살표
   /// 끝이 사진에 묻혔다.
   ///
-  /// 붙는 자리(카드 아래 끝)에서 사진 밑단까지는 **14**다 — 사진이
-  /// 위아래 12를 두르고, 뒤따르는 거리 칩이 2를 더 밀어낸다. 그래서
-  /// `-14 + 1.7 = -12.3`이다
-  static const _gap = -12.3;
+  /// 붙는 자리(카드 아래 끝)에서 사진 밑단까지는 **12**다 — 사진이
+  /// 위아래 12를 두르고 거리 칩이 2를 더 밀어내지만, 글줄 쪽이 3·3으로
+  /// 좁아지며(QA 9/13) 카드가 2 낮아져 상쇄됐다. 그래서
+  /// `-12 + 1.7 = -10.3`이다.
+  ///
+  /// **글줄 간격을 건드리면 이 값도 함께 본다** — 사진이 아니라 카드
+  /// 아래 끝을 기준으로 잡으므로 카드 높이가 바뀌면 같이 밀린다
+  static const _gap = -10.3;
 
   @override
   Widget build(BuildContext context) {
@@ -1212,7 +1216,9 @@ class _PlaceRow extends ConsumerWidget {
                   ),
                 ),
                 if (catchphrase != null) ...[
-                  const SizedBox(height: 4),
+                  // 장소명·설명·분류 사이는 3이다(QA 9/13). 세 줄이 한 덩이로
+                  // 읽히게 붙인다 — 4면 줄마다 따로 떨어져 보였다
+                  const SizedBox(height: 3),
                   // 앞에 붙던 '추천 '을 뺐다(QA 9/11) — 코스에 실린 장소는
                   // 전부 추천이라 줄마다 되뇌는 말이 됐다
                   Text(
@@ -1224,7 +1230,7 @@ class _PlaceRow extends ConsumerWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Row(
                   children: [
                     Flexible(
