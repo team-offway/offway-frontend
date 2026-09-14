@@ -443,6 +443,11 @@ class CourseRepository {
                   'travelMinutes': item['travelMinutes'],
                   // 사진이 없는 장소에만 온다 — 지도 검색으로 대신 보낸다
                   'mapSearchUrl': item['mapSearchUrl'],
+                  // 장소 성격 뱃지의 재료 (core #567·#568). 둘 다 **없으면
+                  // 키가 아예 안 온다** — 서버가 "모른다"와 "아니다"를 갈라
+                  // 두었으므로 여기서 false·빈 문자열로 메우지 않는다
+                  'petAccompany': ?item['petAccompany'],
+                  'crowd': ?item['crowd'],
                 },
             ],
           },
@@ -514,6 +519,9 @@ class CourseRepository {
                   'lat': item['lat'],
                   'lng': item['lng'],
                   'travelMinutes': item['travelMinutes'],
+                  // 담은 뒤에도 같은 뱃지를 띄운다 — 확정 화면과 같은 시트다
+                  'petAccompany': ?item['petAccompany'],
+                  'crowd': ?item['crowd'],
                 },
             ],
           },
