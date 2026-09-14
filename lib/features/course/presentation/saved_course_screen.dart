@@ -822,8 +822,11 @@ class _EditSheetRow extends StatelessWidget {
               ),
               child: Center(
                 // 시안: 배경 32 안에 아이콘 20, 61% 투명도로 옅게.
-                // 에셋에 이미 투명도가 박혀 있어 불투명하게 덮은 뒤
-                // 여기서 한 번만 옅게 만든다 — 안 그러면 61%가 두 번 곱해진다
+                //
+                // 농도는 **여기서만** 만든다 — 쓰는 에셋
+                // (ic_calendar_20·ic_trash)에는 fill-opacity 가 없다.
+                // 박힌 값이 있는 에셋을 넘기면 여기 61%와 곱해지므로,
+                // 새 아이콘을 붙일 때 그 에셋부터 확인한다
                 child: Opacity(
                   opacity: AppOpacity.o61,
                   child: SvgPicture.asset(

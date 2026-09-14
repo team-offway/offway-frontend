@@ -188,7 +188,9 @@ class _RoundIcon extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      // 가이드는 아이콘을 61% 투명도로 옅게 얹는다 (편집 시트와 같은 규칙)
+      // 가이드는 아이콘을 61% 투명도로 옅게 얹는다.
+      // 넘어오는 에셋(ic_image·ic_link·kakao_logo)에는 fill-opacity 가
+      // 없어 이 한 겹이 곧 농도다 — 박힌 값이 있는 에셋을 넘기면 곱해진다
       child: Opacity(
         opacity: AppOpacity.o61,
         // 시안: 배경 32 안에 아이콘 20 (프레임 24 - 안쪽 패딩 2씩)
