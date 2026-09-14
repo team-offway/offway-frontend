@@ -13,15 +13,20 @@
 - [x] `Runner/Info.plist` 에 `NSSupportsLiveActivities`
 - [x] 샘플 파일(`TripActivityControl.swift` 등) 삭제
 
-## 앱에서 켜는 것만 남았다
+## 앱에서 켜는 것도 끝났다
 
-아직 아무도 `start()` 를 부르지 않아 **실제로는 안 뜬다.** 한 줄이면 된다.
+`app/app.dart` 의 `initState` 에서 부른다.
 
 ```dart
-ref.read(tripActivityControllerProvider).start();
+if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
+  ref.read(tripActivityControllerProvider).start();
+}
 ```
 
-넣을 자리 후보 — 홈 화면 `initState`, 또는 `main.dart` 의 앱 시작 직후.
+**`main()` 이 아니라 여기다** — `main()` 은 `runApp` 전이라 `ref` 가 없고,
+로그인 여부도 여기서만 가릴 수 있다. 로그인 전에 부르면 예정 코스를 읽는
+요청이 401 을 맞는다.
+
 `start()` 는 앱이 포그라운드로 돌아올 때마다 스스로 다시 맞춘다.
 
 ## 확인 방법
