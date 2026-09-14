@@ -10,10 +10,13 @@ import WidgetKit
 struct TripActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TripActivityAttributes.self) { context in
-            // 잠금화면 — 펼쳐 보이는 자리
+            // 잠금화면 — 펼쳐 보이는 자리.
+            //
+            // **배경 틴트를 걸지 않는다.** 틴트를 걸고 글씨를 흰색으로 박으면
+            // 라이트 모드에서 시스템이 배경을 밝게 덮어 흰 글씨가 흰 바탕에
+            // 묻힌다 — 로그에는 렌더 success 로 찍히는데 화면은 비어 보인다.
+            // 색은 시스템에 맡기고 `.primary`·`.secondary` 만 쓴다
             LockScreenView(context: context)
-                .activityBackgroundTint(Color.black.opacity(0.55))
-                .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -40,13 +43,11 @@ struct TripActivityWidget: Widget {
             } compactLeading: {
                 Image(systemName: "suitcase.rolling")
             } compactTrailing: {
-                // 좁은 자리라 숫자만 — 지난 여행은 셈이 뒤집히므로 숨긴다
-                if context.state.daysUntil > 0 {
-                    Text("D-\(context.state.daysUntil)")
-                        .font(.caption2)
-                } else if context.state.daysUntil == 0 {
-                    Text("D-DAY").font(.caption2)
-                }
+                // **분기를 두지 않는다.** 좁은 자리라 숫자만 띄우는데,
+                // 조건을 걸면 여행 중(음수)일 때 자리가 빈 채로 남는다.
+                // 문구는 Flutter 가 만든 것을 그대로 쓴다
+                Text(context.state.compactLabel)
+                    .font(.caption2)
             } minimal: {
                 Image(systemName: "suitcase.rolling")
             }
@@ -63,15 +64,15 @@ private struct LockScreenView: View {
         HStack(spacing: 12) {
             Image(systemName: "suitcase.rolling")
                 .font(.title2)
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(.tint)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.state.headline)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 Text("\(context.state.rangeLabel) · \(context.state.durationLabel)")
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 0)

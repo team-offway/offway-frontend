@@ -70,6 +70,27 @@ class TripCountdown {
     return '$regionName 여행 D-$left';
   }
 
+  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `D-DAY` · `2일차`.
+  ///
+  /// [headline]과 같은 분기를 따르되 지역명을 뺀다 — 알약 옆에는 서너 글자밖에
+  /// 들어가지 않는다. **네이티브에서 조건으로 만들지 않는다**: 좁은 자리에
+  /// 분기를 두면 여행 중일 때 그 자리가 빈 채로 남는다
+  String compactLabel(DateTime now) {
+    if (isPast(now)) return '종료';
+    if (isOngoing(now)) {
+      final nth =
+          calendarDaysBetween(
+            DateUtils.dateOnly(startDate),
+            DateUtils.dateOnly(now),
+          ) +
+          1;
+      return '$nth일차';
+    }
+    // 여행 첫날은 위 isOngoing 이 '1일차'로 가져간다 — 여기 닿는 것은
+    // 아직 떠나지 않은 날뿐이라 D-DAY 갈래가 따로 필요 없다
+    return 'D-${daysUntil(now)}';
+  }
+
   /// `2026.7.26 - 7.28` — 부제로 쓰는 기간 표기
   String get rangeLabel {
     final s = '${startDate.year}.${startDate.month}.${startDate.day}';

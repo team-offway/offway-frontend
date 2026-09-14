@@ -43,7 +43,8 @@ enum TripActivityBridge {
               let headline = args["headline"] as? String,
               let rangeLabel = args["rangeLabel"] as? String,
               let durationLabel = args["durationLabel"] as? String,
-              let daysUntil = args["daysUntil"] as? Int
+              let daysUntil = args["daysUntil"] as? Int,
+              let compactLabel = args["compactLabel"] as? String
         else {
             return result(
                 FlutterError(code: "BAD_ARGS", message: "필요한 값이 없다", details: nil)
@@ -54,7 +55,8 @@ enum TripActivityBridge {
             headline: headline,
             rangeLabel: rangeLabel,
             durationLabel: durationLabel,
-            daysUntil: daysUntil
+            daysUntil: daysUntil,
+            compactLabel: compactLabel
         )
 
         // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —

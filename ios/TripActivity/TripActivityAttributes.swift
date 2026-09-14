@@ -27,5 +27,11 @@ struct TripActivityAttributes: ActivityAttributes {
         /// 남은 날. 0이면 오늘 출발, 음수면 지난 여행이다.
         /// 다이나믹 아일랜드 좁은 자리에 숫자만 띄울 때 쓴다
         let daysUntil: Int
+
+        /// 'D-3' · 'D-DAY' · '2일차' — 다이나믹 아일랜드 좁은 자리에 넣는 한 토막.
+        ///
+        /// **네이티브에서 조건으로 만들지 않는다.** 좁은 자리에 분기를 두면
+        /// 여행 중일 때 자리가 빈 채로 남는다 — 앱이 만든 문자열을 그대로 쓴다
+        let compactLabel: String
     }
 }

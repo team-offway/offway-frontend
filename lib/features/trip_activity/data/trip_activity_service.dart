@@ -60,6 +60,7 @@ class TripActivityService {
       'rangeLabel': trip.rangeLabel,
       'durationLabel': trip.durationLabel,
       'daysUntil': trip.daysUntil(at),
+      'compactLabel': trip.compactLabel(at),
       // 네이티브가 자정에 스스로 다시 셀 수 있게 날짜도 넘긴다
       'startDate': trip.startDate.toIso8601String(),
       'endDate': trip.endDate.toIso8601String(),

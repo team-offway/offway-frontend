@@ -66,6 +66,29 @@ void main() {
     });
   });
 
+  group('좁은 자리 문구', () {
+    // 다이나믹 아일랜드 알약 옆에는 서너 글자밖에 들어가지 않는다.
+    // **네 갈래가 모두 값을 내야 한다** — 비면 그 자리가 빈 채로 남는다
+    test('앞둔 여행은 D-n 이다', () {
+      expect(trip(start: DateTime(2026, 9, 23)).compactLabel(now), 'D-3');
+    });
+
+    test('첫날은 1일차다 — headline 과 같은 말을 쓴다', () {
+      final t = trip(start: DateTime(2026, 9, 20), end: DateTime(2026, 9, 22));
+      expect(t.compactLabel(now), '1일차');
+    });
+
+    test('여행 중에는 며칠째인지 말한다', () {
+      final t = trip(start: DateTime(2026, 9, 19), end: DateTime(2026, 9, 21));
+      expect(t.compactLabel(now), '2일차');
+    });
+
+    test('끝난 여행도 빈칸을 남기지 않는다', () {
+      final t = trip(start: DateTime(2026, 9, 17), end: DateTime(2026, 9, 18));
+      expect(t.compactLabel(now), '종료');
+    });
+  });
+
   group('기간 표기', () {
     test('당일치기는 하루만 적는다', () {
       expect(trip(start: DateTime(2026, 7, 26)).rangeLabel, '2026.7.26');

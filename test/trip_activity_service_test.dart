@@ -47,6 +47,8 @@ void main() {
     expect(args['headline'], '정선군 여행 D-3');
     expect(args['rangeLabel'], '2026.9.23 - 9.25');
     expect(args['daysUntil'], 3);
+    // 좁은 자리용 한 토막 — 네이티브가 조건으로 만들지 않게 앱이 넘긴다
+    expect(args['compactLabel'], 'D-3');
     // 자정에 네이티브가 스스로 다시 셀 수 있게 날짜도 넘긴다
     expect(args['startDate'], isNotNull);
     expect(args['endDate'], isNotNull);
@@ -58,6 +60,7 @@ void main() {
 
     final args = (calls.single.arguments as Map).cast<String, Object?>();
     expect(args['headline'], '정선군 여행 2일차');
+    expect(args['compactLabel'], '2일차');
   });
 
   test('내릴 때는 end 를 부른다', () async {
