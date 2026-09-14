@@ -38,7 +38,9 @@ class SessionExpiryListener extends ConsumerWidget {
       await clearAppIconBadge();
       // 잠금화면에 떠 있던 여행도 내린다 — 앱을 꺼도 남는 화면이라,
       // 세션이 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다
-      await ref.read(tripActivityServiceProvider).end();
+      // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
+      // 앞사람의 코스로 되살아난다
+      await ref.read(tripActivityControllerProvider).stop();
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다

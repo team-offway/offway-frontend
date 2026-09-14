@@ -180,7 +180,9 @@ class MyScreen extends ConsumerWidget {
       await ref.read(pushRegistrationProvider).stop();
       // 잠금화면에 떠 있던 여행도 내린다 — Live Activity 는 앱을 꺼도 남아,
       // 로그아웃한 뒤에도 앞사람의 여행지·날짜가 잠금화면에 보인다
-      await ref.read(tripActivityServiceProvider).end();
+      // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
+      // 앞사람의 코스로 되살아난다
+      await ref.read(tripActivityControllerProvider).stop();
       await ref.read(authRepositoryProvider).logout();
       // 남의 숫자가 아이콘에 남지 않게 — 다음 사람이 로그인하면 자기 값으로 다시 선다
       await clearAppIconBadge();

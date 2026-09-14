@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -37,12 +38,18 @@ class TripActivityService {
   Future<bool> isAvailable() async {
     if (!_isSupportedPlatform) return false;
     try {
-      return await _channel.invokeMethod<bool>('isAvailable') ?? false;
+      return await _channel
+              .invokeMethod<bool>('isAvailable')
+              .timeout(_timeout) ??
+          false;
     } on PlatformException catch (e) {
       debugPrint('Live Activity 가능 여부를 묻지 못했다: ${e.message}');
       return false;
     } on MissingPluginException {
       // 네이티브가 아직 안 붙은 빌드 — 기능이 없는 것이지 오류가 아니다
+      return false;
+    } on TimeoutException {
+      debugPrint('Live Activity 가능 여부가 제때 오지 않았다');
       return false;
     }
   }
@@ -59,26 +66,30 @@ class TripActivityService {
       'headline': trip.headline(at),
       'rangeLabel': trip.rangeLabel,
       'durationLabel': trip.durationLabel,
-      'daysUntil': trip.daysUntil(at),
       'compactLabel': trip.compactLabel(at),
-      // 네이티브가 자정에 스스로 다시 셀 수 있게 날짜도 넘긴다
-      'startDate': trip.startDate.toIso8601String(),
-      'endDate': trip.endDate.toIso8601String(),
     });
   }
 
   /// 떠 있는 잠금화면을 내린다 — 여행이 끝났거나 코스를 지웠을 때
   Future<void> end() => _invoke('end', const {});
 
+  /// 네이티브가 답하지 않을 때 기다리는 한도.
+  ///
+  /// ActivityKit 이 매달리면 `invokeMethod` 의 Future 가 영영 완결되지
+  /// 않는다 — 앱 재개마다 부르는 자리라 그대로 쌓인다
+  static const _timeout = Duration(seconds: 5);
+
   Future<void> _invoke(String method, Map<String, Object?> args) async {
     if (!_isSupportedPlatform) return;
     try {
-      await _channel.invokeMethod<void>(method, args);
+      await _channel.invokeMethod<void>(method, args).timeout(_timeout);
     } on PlatformException catch (e) {
       // 잠금화면이 안 뜨는 것뿐이다 — 앱이 하던 일을 막지 않는다
       debugPrint('Live Activity $method 실패: ${e.message}');
     } on MissingPluginException {
       debugPrint('Live Activity 네이티브가 없는 빌드다 ($method)');
+    } on TimeoutException {
+      debugPrint('Live Activity $method 가 제때 답하지 않았다');
     }
   }
 }

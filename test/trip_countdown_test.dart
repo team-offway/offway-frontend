@@ -63,7 +63,7 @@ void main() {
 
   group('좁은 자리 문구', () {
     // 다이나믹 아일랜드 알약 옆에는 서너 글자밖에 들어가지 않는다.
-    // **네 갈래가 모두 값을 내야 한다** — 비면 그 자리가 빈 채로 남는다
+    // **갈래가 모두 값을 내야 한다** — 비면 그 자리가 빈 채로 남는다
     test('앞둔 여행은 D-n 이다', () {
       expect(trip(start: DateTime(2026, 9, 23)).compactLabel(now), 'D-3');
     });
@@ -76,6 +76,37 @@ void main() {
     test('여행 중에는 며칠째인지 말한다', () {
       final t = trip(start: DateTime(2026, 9, 19), end: DateTime(2026, 9, 21));
       expect(t.compactLabel(now), '2일차');
+    });
+  });
+
+  group('경계', () {
+    test('마지막날도 여행 중이다', () {
+      // isOngoing 이 마지막날을 빼면 잠금화면이 그날 사라진다
+      final t = trip(start: DateTime(2026, 9, 18), end: DateTime(2026, 9, 20));
+      expect(t.isOngoing(now), isTrue);
+      expect(t.isPast(now), isFalse);
+      expect(t.compactLabel(now), '3일차');
+    });
+
+    test('날짜가 뒤집힌 데이터는 고르지 않는다', () {
+      // endDate 가 앞서면 isOngoing·isPast 둘 다 false 다 — 막지 않으면
+      // 음수인 채로 뽑혀 'D--3' 이 잠금화면에 나간다
+      final broken = trip(
+        start: DateTime(2026, 9, 17),
+        end: DateTime(2026, 9, 16),
+      );
+      expect(TripCountdown.pick([broken], now), isNull);
+    });
+
+    test('UTC 표기로 와도 로컬 날짜로 센다', () {
+      // 한국(UTC+9)에서 9/22T15:00Z 는 로컬 9/23 이다
+      final t = TripCountdown.tryFrom({
+        'courseId': '7',
+        'regionName': '정선군',
+        'startDate': '2026-09-22T15:00:00Z',
+        'durationLabel': '당일치기',
+      });
+      expect(t!.startDate, DateTime(2026, 9, 23));
     });
   });
 

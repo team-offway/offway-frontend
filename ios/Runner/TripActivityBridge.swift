@@ -43,7 +43,6 @@ enum TripActivityBridge {
               let headline = args["headline"] as? String,
               let rangeLabel = args["rangeLabel"] as? String,
               let durationLabel = args["durationLabel"] as? String,
-              let daysUntil = args["daysUntil"] as? Int,
               let compactLabel = args["compactLabel"] as? String
         else {
             return result(
@@ -55,46 +54,31 @@ enum TripActivityBridge {
             headline: headline,
             rangeLabel: rangeLabel,
             durationLabel: durationLabel,
-            daysUntil: daysUntil,
             compactLabel: compactLabel
         )
 
-        // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —
-        // 두 번 띄우면 잠금화면에 같은 여행이 둘 쌓인다
-        if let live = Activity<TripActivityAttributes>.activities.first(where: {
-            $0.attributes.courseId == courseId
-        }) {
-            Task {
-                await live.update(using: state)
-                result(nil)
-            }
-            return
-        }
-
-        // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다 — 한 번에 하나다.
-        //
-        // **내려가기를 기다린다.** Task 로 던져 놓고 바로 요청하면 옛 것이
-        // 아직 살아 있는 채로 새 것이 올라가 잠금화면에 둘이 쌓인다
+        // **줄을 세워 보낸다.** 앱 재개가 연달아 오거나 sync 중에 로그아웃이
+        // 겹치면 start 와 end 의 Task 가 동시에 돌아, 두 endAll 이 같은
+        // activity 를 각각 내리는 사이 request 가 끼어든다 — 잠금화면에
+        // 둘이 쌓이거나 방금 띄운 것이 곧바로 내려간다
         Task {
-            await endAll()
             do {
-                _ = try Activity.request(
-                    attributes: TripActivityAttributes(
-                        courseId: courseId,
-                        regionName: regionName
-                    ),
-                    contentState: state,
-                    pushType: nil  // 1단계는 앱이 켜져 있을 때만 갱신한다
+                try await ActivityQueue.shared.startOrUpdate(
+                    courseId: courseId,
+                    regionName: regionName,
+                    state: state
                 )
-                result(nil)
+                await MainActor.run { result(nil) }
             } catch {
-                result(
-                    FlutterError(
-                        code: "START_FAILED",
-                        message: error.localizedDescription,
-                        details: nil
+                await MainActor.run {
+                    result(
+                        FlutterError(
+                            code: "START_FAILED",
+                            message: error.localizedDescription,
+                            details: nil
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -104,15 +88,54 @@ enum TripActivityBridge {
         // 실제로 내려간 뒤에 답한다 — 먼저 답하면 Flutter 는 내려갔다고 아는데
         // 잠금화면에는 아직 남아 있다
         Task {
-            await endAll()
-            result(nil)
+            await ActivityQueue.shared.endAll()
+            await MainActor.run { result(nil) }
         }
     }
+}
 
-    @available(iOS 16.1, *)
-    private static func endAll() async {
+/// Activity 조작을 **한 줄로 세운다**.
+///
+/// `Activity.activities` 조회와 `request`·`end` 사이에 다른 호출이 끼어들면
+/// "한 번에 하나" 가 깨진다. actor 안에서만 만지게 해 그 틈을 없앤다.
+@available(iOS 16.1, *)
+actor ActivityQueue {
+    static let shared = ActivityQueue()
+
+    func startOrUpdate(
+        courseId: String,
+        regionName: String,
+        state: TripActivityAttributes.ContentState
+    ) throws {
+        // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —
+        // 두 번 띄우면 잠금화면에 같은 여행이 둘 쌓인다
+        if let live = Activity<TripActivityAttributes>.activities.first(where: {
+            $0.attributes.courseId == courseId
+        }) {
+            Task { await live.update(using: state) }
+            return
+        }
+
+        // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다
+        endAllNow()
+
+        _ = try Activity.request(
+            attributes: TripActivityAttributes(
+                courseId: courseId,
+                regionName: regionName
+            ),
+            contentState: state,
+            pushType: nil  // 1단계는 앱이 켜져 있을 때만 갱신한다
+        )
+    }
+
+    func endAll() {
+        endAllNow()
+    }
+
+    private func endAllNow() {
         for activity in Activity<TripActivityAttributes>.activities {
-            await activity.end(dismissalPolicy: .immediate)
+            Task { await activity.end(dismissalPolicy: .immediate) }
         }
     }
 }

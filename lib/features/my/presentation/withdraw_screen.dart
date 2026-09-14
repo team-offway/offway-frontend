@@ -165,7 +165,9 @@ class WithdrawScreen extends ConsumerWidget {
       await ref.read(pushRegistrationProvider).stop();
       // 잠금화면에 떠 있던 여행도 내린다 — Live Activity 는 앱을 꺼도 남아,
       // 계정이 지워진 뒤에도 여행지·날짜가 잠금화면에 그대로 보인다
-      await ref.read(tripActivityServiceProvider).end();
+      // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
+      // 앞사람의 코스로 되살아난다
+      await ref.read(tripActivityControllerProvider).stop();
       await ref.read(authRepositoryProvider).withdraw();
       // 계정이 사라졌다 — 아이콘에 숫자가 남아 있으면 안 된다
       await clearAppIconBadge();

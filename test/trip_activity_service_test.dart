@@ -46,12 +46,12 @@ void main() {
     // 문구는 앱이 만들어 넘긴다 — 네이티브가 한국어를 조립하지 않게
     expect(args['headline'], '정선군 여행 D-3');
     expect(args['rangeLabel'], '2026.9.23 - 9.25');
-    expect(args['daysUntil'], 3);
     // 좁은 자리용 한 토막 — 네이티브가 조건으로 만들지 않게 앱이 넘긴다
     expect(args['compactLabel'], 'D-3');
-    // 자정에 네이티브가 스스로 다시 셀 수 있게 날짜도 넘긴다
-    expect(args['startDate'], isNotNull);
-    expect(args['endDate'], isNotNull);
+    // 네이티브가 안 쓰는 값은 보내지 않는다 — ContentState 는 2단계 서버
+    // 푸시의 계약이라, 안 쓰는 키가 끼어 있으면 그대로 굳는다
+    expect(args.keys, isNot(contains('daysUntil')));
+    expect(args.keys, isNot(contains('startDate')));
   });
 
   test('여행 중이면 며칠째인지 넘긴다', () async {
@@ -74,6 +74,28 @@ void main() {
     stub(answer: (_) => true);
     expect(await service.isAvailable(), isTrue);
     expect(calls.single.method, 'isAvailable');
+  });
+
+  test('안 되는 플랫폼에서는 채널을 아예 때리지 않는다', () async {
+    // 안드로이드·iOS 16.1 미만에서는 네이티브가 없다. 불러 보고 실패를
+    // 삼키는 게 아니라 **가기 전에 멈춘다**
+    calls = [];
+    const channel = MethodChannel(TripActivityService.channelName);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return null;
+        });
+    final android = TripActivityService(
+      channel: channel,
+      isSupportedPlatform: false,
+    );
+
+    expect(await android.isAvailable(), isFalse);
+    await android.start(trip, now: DateTime(2026, 9, 20));
+    await android.end();
+
+    expect(calls, isEmpty);
   });
 
   test('네이티브가 없는 빌드에서도 깨지지 않는다', () async {

@@ -71,7 +71,7 @@ class TripCountdown {
     return '$regionName 여행 D-$left';
   }
 
-  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `2일차`.
+  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `1일차` · `종료`.
   ///
   /// [headline]과 같은 분기를 따르되 지역명을 뺀다 — 알약 옆에는 서너 글자밖에
   /// 들어가지 않는다. **네이티브에서 조건으로 만들지 않는다**: 좁은 자리에
@@ -108,9 +108,12 @@ class TripCountdown {
   /// 날짜가 없는 코스(일정 미확정)는 D-day를 셀 수 없어 **null**이다 —
   /// 억지로 오늘로 치면 엉뚱한 여행이 잠금화면에 뜬다
   static TripCountdown? tryFrom(Map<String, dynamic> card) {
-    final start = DateTime.tryParse(card['startDate'] as String? ?? '');
+    // **로컬 자정으로 맞춰 둔다.** 서버가 '2026-09-22T15:00:00Z' 같은 UTC
+    // 표기로 바꾸면 isUtc 인 DateTime 이 만들어지고, 한국(UTC+9)에서는
+    // 로컬 9/23 인데 날짜가 9/22 로 셈해져 D-day 가 하루 어긋난다
+    final start = _dateOnlyLocal(card['startDate'] as String?);
     if (start == null) return null;
-    final end = DateTime.tryParse(card['endDate'] as String? ?? '') ?? start;
+    final end = _dateOnlyLocal(card['endDate'] as String?) ?? start;
     final id = card['courseId'] as String? ?? card['id'] as String?;
     if (id == null) return null;
     return TripCountdown(
@@ -120,6 +123,11 @@ class TripCountdown {
       endDate: end,
       durationLabel: card['durationLabel'] as String? ?? '',
     );
+  }
+
+  static DateTime? _dateOnlyLocal(String? raw) {
+    final parsed = DateTime.tryParse(raw ?? '');
+    return parsed == null ? null : DateUtils.dateOnly(parsed.toLocal());
   }
 
   /// 여러 코스 중 **잠금화면에 띄울 하나**를 고른다.
@@ -140,7 +148,15 @@ class TripCountdown {
 
     final upcoming =
         trips
-            .where((t) => !t.isPast(now) && t.daysUntil(now) <= within)
+            // **하한도 둔다.** endDate 가 startDate 보다 앞선 역전 데이터가
+            // 오면 isOngoing·isPast 둘 다 false 가 되어 음수인 채로 뽑히고,
+            // headline 이 'D--3' 을 만든다
+            .where(
+              (t) =>
+                  !t.isPast(now) &&
+                  t.daysUntil(now) >= 0 &&
+                  t.daysUntil(now) <= within,
+            )
             .toList()
           ..sort((a, b) => a.startDate.compareTo(b.startDate));
     return upcoming.isEmpty ? null : upcoming.first;

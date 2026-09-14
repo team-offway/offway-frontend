@@ -31,11 +31,20 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 
 ## 확인 방법
 
-실기기에서만 된다 — 시뮬레이터는 다이나믹 아일랜드를 흉내만 낸다.
+**시뮬레이터에서도 된다.** 다이나믹 아일랜드가 있는 기종(iPhone 14 Pro
+이상)을 고르면 된다. 13 Pro 같은 노치 기종은 실기기든 시뮬레이터든
+잠금화면 카드만 보인다 — 아일랜드 자체가 없는 하드웨어다.
 
-1. 내 코스에 **7일 안쪽 날짜**로 코스를 담는다
-2. 앱을 백그라운드로 보낸다
-3. 잠금화면·다이나믹 아일랜드에 `정선군 여행 D-3` 이 뜨는지 본다
+1. 내 코스에 **5일 안쪽 날짜**로 코스를 담는다
+2. **홈 화면으로 나간다**
+3. 알약 양옆에 `D-3` 이, 잠금화면에 카드가 뜨는지 본다
+
+**앱을 보고 있는 동안에는 알약이 안 뜬다.** 그 화면에 이미 정보가 있어
+시스템이 접어 두는 iOS 동작이다(지도앱 길안내와 같다) — 고장이 아니다.
+
+실기기에 붙일 때는 `--profile` 로 빌드한다. `--debug` 바이너리는 Dart
+코드를 맥의 Flutter 툴에서 받아오므로, `flutter run` 이나 Xcode 없이
+단독 실행하면 엔진이 못 떠서 `signal 11` 로 죽는다.
 
 ## 겪은 것 — 다시 만나면
 
@@ -44,9 +53,9 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 매만지므로 순환이 생긴다. 그 페이즈를 **`Resources` 바로 뒤**로 옮기면
 풀린다(appex 가 먼저 들어가고 그 뒤에 스크립트가 손댄다).
 
-**`pod install` 이 objectVersion 70 을 모른다고 실패** — Xcode 26 이 쓰는
-형식을 CocoaPods 1.16.2 가 아직 못 읽는다. 다만 `flutter build` 안에서
-도는 pod install 은 통과하므로 실사용에 문제는 없었다.
+**`pod install` 이 objectVersion 을 모른다고 실패** — Xcode 26 이 새 프로젝트에
+쓰는 형식을 CocoaPods 1.16.2 가 못 읽는다. 지금은 `objectVersion = 54` 로
+낮춰 둬서 재현되지 않는다 — 다시 올라가면 이 증상이 돌아온다.
 
 **동기화 폴더** — Xcode 26 은 `TripActivity` 를
 `PBXFileSystemSynchronizedRootGroup` 으로 만든다. 그 폴더의 `.swift` 는
@@ -54,6 +63,10 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 보인다). 반대로 **`ios/Runner/` 는 옛 방식**이라 손으로 등록해야 한다.
 
 ## 안 한 것
+
+**시안 반영** — 지금은 SF Symbol·시스템 서체로만 배치해 뒀다. 디자인이
+나오면 `TripActivityWidget.swift` 의 뷰만 갈아 끼우면 된다(값 전달 경로는
+그대로다).
 
 **서버 푸시 갱신**(이슈 #261 2단계) — 앱이 꺼져 있는 동안에는 값이 안 바뀐다.
 자정을 넘겨도 다음에 앱을 열 때 맞춰진다. 푸시로 갱신하려면 서버가 APNs 를

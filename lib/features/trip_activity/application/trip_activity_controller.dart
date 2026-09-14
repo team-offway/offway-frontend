@@ -24,11 +24,25 @@ class TripActivityController with WidgetsBindingObserver {
   final Ref _ref;
   bool _started = false;
 
+  /// 진행 중인 맞추기. **겹쳐 돌면 안 된다** — 앱 재개가 연달아 오면
+  /// (알림 센터를 내렸다 올리거나 앱 스위처를 스치면 실제로 그렇다)
+  /// 늦게 시작한 쪽이 먼저 끝나 end() 와 start() 의 순서가 뒤집힌다
+  Future<void>? _syncing;
+
   void start() {
     if (_started) return;
     _started = true;
     WidgetsBinding.instance.addObserver(this);
     syncInBackground();
+  }
+
+  /// 세션이 끝났다 — 옵저버를 떼고 **잠금화면도 내린다**.
+  ///
+  /// 로그아웃·탈퇴·세션 만료가 부른다. 내리기만 하고 옵저버를 남겨 두면
+  /// 앱을 다시 앞으로 낼 때 앞사람의 코스로 다시 띄운다
+  Future<void> stop() async {
+    dispose();
+    await _ref.read(tripActivityServiceProvider).end();
   }
 
   void dispose() {
@@ -45,9 +59,12 @@ class TripActivityController with WidgetsBindingObserver {
   /// 기다리지 않고 맞춘다 — 실패해도 앱이 하던 일을 막지 않는다.
   /// 잠금화면이 안 뜨는 것뿐이다
   void syncInBackground() {
-    sync().catchError((Object e) {
-      debugPrint('잠금화면을 맞추지 못했다: $e');
-    });
+    // 앞의 맞추기가 끝난 뒤에 잇는다 — 겹쳐 돌면 순서가 뒤집힌다
+    _syncing = (_syncing ?? Future<void>.value())
+        .then((_) => sync())
+        .catchError((Object e) {
+          debugPrint('잠금화면을 맞추지 못했다: $e');
+        });
   }
 
   /// 예정 코스를 읽어 띄울 하나를 고른다.
