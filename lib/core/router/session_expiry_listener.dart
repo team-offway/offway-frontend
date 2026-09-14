@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notification/application/app_icon_badge.dart';
+import '../../features/trip_activity/application/trip_activity_controller.dart';
 import '../network/dio_client.dart';
 import '../storage/secure_storage.dart';
 import '../widgets/app_toast.dart';
@@ -35,6 +36,9 @@ class SessionExpiryListener extends ConsumerWidget {
       // 되풀이된다
       await ref.read(secureStorageProvider).clear();
       await clearAppIconBadge();
+      // 잠금화면에 떠 있던 여행도 내린다 — 앱을 꺼도 남는 화면이라,
+      // 세션이 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다
+      await ref.read(tripActivityServiceProvider).end();
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다

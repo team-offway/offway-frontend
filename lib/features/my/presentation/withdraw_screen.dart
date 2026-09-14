@@ -13,6 +13,7 @@ import '../../auth/data/auth_repository.dart';
 import '../../../core/utils/nickname.dart';
 import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
+import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../home/presentation/home_screen.dart'
     show homeSnapshotProvider, homeUserProvider;
 
@@ -162,6 +163,9 @@ class WithdrawScreen extends ConsumerWidget {
       // 계정이 지워지기 전에 푼다 — 지운 뒤에는 이 기기의 토큰이 누구
       // 것이었는지 서버가 알 수 없다
       await ref.read(pushRegistrationProvider).stop();
+      // 잠금화면에 떠 있던 여행도 내린다 — Live Activity 는 앱을 꺼도 남아,
+      // 계정이 지워진 뒤에도 여행지·날짜가 잠금화면에 그대로 보인다
+      await ref.read(tripActivityServiceProvider).end();
       await ref.read(authRepositoryProvider).withdraw();
       // 계정이 사라졌다 — 아이콘에 숫자가 남아 있으면 안 된다
       await clearAppIconBadge();

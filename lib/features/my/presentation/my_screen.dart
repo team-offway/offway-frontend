@@ -17,6 +17,7 @@ import '../../auth/data/auth_repository.dart';
 import '../../../core/utils/nickname.dart';
 import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
+import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
@@ -177,6 +178,9 @@ class MyScreen extends ConsumerWidget {
       // 이 기기로 더는 알림이 가지 않게 한다 — 로그아웃했는데 푸시가
       // 계속 오면 계정이 남아 있는 것처럼 보인다
       await ref.read(pushRegistrationProvider).stop();
+      // 잠금화면에 떠 있던 여행도 내린다 — Live Activity 는 앱을 꺼도 남아,
+      // 로그아웃한 뒤에도 앞사람의 여행지·날짜가 잠금화면에 보인다
+      await ref.read(tripActivityServiceProvider).end();
       await ref.read(authRepositoryProvider).logout();
       // 남의 숫자가 아이콘에 남지 않게 — 다음 사람이 로그인하면 자기 값으로 다시 선다
       await clearAppIconBadge();
