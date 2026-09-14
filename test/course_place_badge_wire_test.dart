@@ -42,13 +42,13 @@ void main() {
         'code': 'OK',
       });
 
-  Future<Map<String, dynamic>> firstPlace({
+  Future<Map<String, dynamic>> generate({
     Map<String, Object>? pet,
     Map<String, Object>? crowd,
   }) async {
     final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'))
       ..httpClientAdapter = _StubAdapter(body(pet: pet, crowd: crowd));
-    final course = await CourseRepository(dio).generate(
+    return CourseRepository(dio).generate(
       regionId: '4',
       travelDays: 1,
       density: 'RELAXED',
@@ -56,8 +56,27 @@ void main() {
       origin: const Origin(lat: 37.5, lng: 127.0, isFallback: false),
       travelDate: DateTime(2026, 9, 20),
     );
+  }
+
+  /// 화면(시트)이 읽는 자리 — 생성 응답의 첫 칸
+  Future<Map<String, dynamic>> firstPlace({
+    Map<String, Object>? pet,
+    Map<String, Object>? crowd,
+  }) async {
+    final course = await generate(pet: pet, crowd: crowd);
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     return (days.first['places'] as List).cast<Map<String, dynamic>>().first;
+  }
+
+  /// 저장 API 로 나가는 몸통의 첫 칸 — `generate()` 가 `_save` 로 실어 준다
+  Future<Map<String, dynamic>> firstSavedItem({
+    Map<String, Object>? pet,
+    Map<String, Object>? crowd,
+  }) async {
+    final course = await generate(pet: pet, crowd: crowd);
+    final save = course['_save']! as Map<String, dynamic>;
+    final days = (save['days'] as List).cast<Map<String, dynamic>>();
+    return (days.first['items'] as List).cast<Map<String, dynamic>>().first;
   }
 
   test('반려동반·혼잡이 시트가 읽는 자리까지 닿는다', () async {
@@ -87,6 +106,35 @@ void main() {
 
     expect(place.containsKey('petAccompany'), isFalse);
     expect(place.containsKey('crowd'), isFalse);
+  });
+
+  group('저장 몸통', () {
+    // 담을 때 이 둘을 떨구면 **저장 코스에서 뱃지가 영영 사라진다** —
+    // 서버가 받은 대로 되돌려 주므로 다시 채울 곳이 없다
+    test('담을 때도 반려동반·혼잡을 실어 보낸다', () async {
+      final item = await firstSavedItem(
+        pet: {'wholeArea': false, 'area': '일부구역 동반가능'},
+        crowd: {
+          'level': 'BUSY',
+          'basis': 'REGION_WEEKDAY',
+          'label': '토요일엔 붐비는 지역',
+        },
+      );
+
+      // 중첩된 값이 통째로 살아 있어야 한다 — 평평하게 눌러 담으면
+      // 서버가 못 읽는다
+      expect((item['petAccompany']! as Map)['wholeArea'], isFalse);
+      expect((item['petAccompany']! as Map)['area'], '일부구역 동반가능');
+      expect((item['crowd']! as Map)['basis'], 'REGION_WEEKDAY');
+      expect((item['crowd']! as Map)['label'], '토요일엔 붐비는 지역');
+    });
+
+    test('없으면 저장 몸통에도 키를 넣지 않는다', () async {
+      final item = await firstSavedItem();
+
+      expect(item.containsKey('petAccompany'), isFalse);
+      expect(item.containsKey('crowd'), isFalse);
+    });
   });
 }
 
