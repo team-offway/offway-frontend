@@ -65,17 +65,26 @@ class PlaceInfoSheet extends ConsumerWidget {
   /// 그래서 모달이 예전과 똑같이 보인다. 계약만 맞춰 두어 서버가 채우면
   /// 앱 배포 없이 뜬다.
   ///
-  /// 값 모양은 시안 문구를 그대로 쓴다 — '반려동물 동반'·'주말에 붐빔'.
-  /// 서버가 다른 말로 주면 그 말이 그대로 나온다
+  /// **둘 다 없으면 키가 아예 안 온다**(core #567·#568). 서버가 "모른다"와
+  /// "아니다"를 갈라 두었다 — 반려동반이 아닌 곳과 판정할 수 없는 곳이
+  /// 함께 여기 해당하므로, 없다고 '불가'로 적지 않는다.
+  ///
+  /// 혼잡 문구는 **서버가 준 `label`을 그대로** 쓴다. 앱이 말을 지어내지
+  /// 않는다 — 기준(붐빔 80·한산 20)이 바뀌면 서버가 문구를 바꾼다
   static List<Widget> _contentBadges(Map<String, dynamic> place) {
     return [
-      if (place['petFriendly'] == true)
+      if (place.containsKey('petAccompany'))
+        // 시안 문구 그대로 하나다. 값에는 전 구역·일부 구역 구분
+        // (`wholeArea`)과 견종·유의사항이 함께 오는데, 서버는 그것을
+        // **칩을 눌렀을 때 여는 내용**으로 설계했다(core #567) — 그 시안이
+        // 나오면 여기서 꺼내 쓴다. 칩 문구를 앱이 지어내지 않는다
         const PlaceContentBadge(
           icon: 'assets/icons/ic_pet.svg',
           text: '반려동물 동반',
         ),
-      if (place['crowdNote'] case final String note when note.isNotEmpty)
-        PlaceContentBadge(icon: 'assets/icons/ic_crowd.svg', text: note),
+      if (place['crowd'] case final Map<String, dynamic> crowd)
+        if (crowd['label'] case final String label when label.isNotEmpty)
+          PlaceContentBadge(icon: 'assets/icons/ic_crowd.svg', text: label),
     ];
   }
 

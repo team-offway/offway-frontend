@@ -7,11 +7,12 @@ import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course/presentation/widgets/place_content_badge.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
 
-/// 장소 모달의 성격 뱃지 — '반려동물 동반' · '주말에 붐빔'
-/// (시안 18991:86950, DS Content Badge).
+/// 장소 모달의 성격 뱃지 — 반려동반 · 혼잡도
+/// (시안 18991:86950, DS Content Badge · core #567·#568).
 ///
-/// **서버가 아직 안 주는 값이다.** 필드가 비면 줄째 사라져 모달이 예전과
-/// 똑같이 보이고, 서버가 채우면 앱을 고치지 않아도 뜬다.
+/// **둘 다 없으면 키가 아예 안 온다.** 서버가 "모른다"와 "아니다"를 갈라
+/// 두었다 — 반려동반이 아닌 곳과 판정할 수 없는 곳이 함께 여기 해당하므로
+/// 없다고 '불가'로 적지 않는다.
 void main() {
   Future<void> pump(WidgetTester tester, Map<String, dynamic> place) async {
     tester.view.physicalSize = const Size(402 * 3, 900 * 3);
@@ -40,12 +41,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  Map<String, dynamic> place({bool pet = false, String? crowd}) => {
+  /// [pet]이 null이면 키를 만들지 않는다 — 서버가 그렇게 준다.
+  /// [wholeArea]는 전 구역(true) / 일부 구역(false)을 가른다
+  Map<String, dynamic> place({bool? wholeArea, String? crowdLabel}) => {
     'name': '삼탄아트마인',
     'poiContentId': '1',
     'catchphrase': '폐광촌 예술 체험 공간',
-    if (pet) 'petFriendly': true,
-    'crowdNote': ?crowd,
+    if (wholeArea != null)
+      'petAccompany': {'wholeArea': wholeArea, 'area': '전구역 동반가능'},
+    if (crowdLabel != null)
+      'crowd': {
+        'level': 'BUSY',
+        'basis': 'ATTRACTION_FORECAST',
+        'label': crowdLabel,
+      },
   };
 
   testWidgets('서버가 안 주면 뱃지 줄이 아예 없다', (tester) async {
@@ -56,22 +65,33 @@ void main() {
     expect(find.text('운영시간'), findsOneWidget);
   });
 
-  testWidgets('반려동물 동반이면 뱃지가 붙는다', (tester) async {
-    await pump(tester, place(pet: true));
+  testWidgets('전 구역 동반이면 뱃지가 붙는다', (tester) async {
+    await pump(tester, place(wholeArea: true));
 
     expect(find.text('반려동물 동반'), findsOneWidget);
     expect(find.byType(PlaceContentBadge), findsNWidgets(1));
   });
 
+  testWidgets('일부 구역도 칩 문구는 같다 — 구분은 눌러서 여는 내용의 몫', (tester) async {
+    // 서버 실측(태안 15건)에서 절반이 '일부구역 동반가능'이지만, 서버는
+    // 그것을 **칩을 눌렀을 때 여는 내용**으로 설계했다(core #567).
+    // 칩 문구를 앱이 지어내면 시안에 없는 말이 화면에 뜬다
+    await pump(tester, place(wholeArea: false));
+
+    expect(find.text('반려동물 동반'), findsOneWidget);
+    // 구분 값은 버리지 않는다 — 상세 시안이 나오면 여기서 꺼내 쓴다
+    expect(find.byType(PlaceContentBadge), findsNWidgets(1));
+  });
+
   testWidgets('혼잡도는 서버 문구를 그대로 쓴다', (tester) async {
     // 앱이 말을 지어내지 않는다 — 기준이 바뀌면 서버가 문구를 바꾼다
-    await pump(tester, place(crowd: '주말에 붐빔'));
+    await pump(tester, place(crowdLabel: '이날 붐빔'));
 
-    expect(find.text('주말에 붐빔'), findsOneWidget);
+    expect(find.text('이날 붐빔'), findsOneWidget);
   });
 
   testWidgets('둘 다 있으면 나란히 선다', (tester) async {
-    await pump(tester, place(pet: true, crowd: '주말에 붐빔'));
+    await pump(tester, place(wholeArea: true, crowdLabel: '이날 붐빔'));
 
     final badges = find.byType(PlaceContentBadge);
     expect(badges, findsNWidgets(2));
@@ -83,7 +103,7 @@ void main() {
   });
 
   testWidgets('시안 치수 — 패딩 8·5, 반경 8, 글자 13', (tester) async {
-    await pump(tester, place(pet: true));
+    await pump(tester, place(wholeArea: true));
 
     final badge = tester.getRect(find.byType(PlaceContentBadge));
     final label = tester.getRect(find.text('반려동물 동반'));
