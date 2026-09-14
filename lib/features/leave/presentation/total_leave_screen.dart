@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +15,7 @@ import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
 import '../data/leave_usages_provider.dart';
 import 'widgets/sparkle.dart';
+import 'widgets/leave_days_field.dart';
 
 /// 총 연차일수를 고쳐 쓰는 화면 — 마이 > 내 연차 관리.
 ///
@@ -235,14 +235,27 @@ class _TotalLeaveScreenState extends ConsumerState<TotalLeaveScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 36, 20, 0),
-          child: _DaysField(
+          child: LeaveDaysField(
             controller: _input,
             focusNode: _focus,
-            error: error,
+            title: '총 연차일수를 입력해주세요',
+            hasError: error != null,
+            // 이 화면은 오류만 알린다 — 안내 문구는 따로 두지 않는다
+            message: error,
+            messageIsError: true,
             // 지금 값을 옅게 깔아 둔다 — 무엇을 고치는 중인지 알려 준다
             hint: '${formatLeaveDays(remainingDays)}일',
+            // 단위를 적어 넣는 사람이 있다
+            digitsOnly: true,
+            trailing: _ValidityIcon(
+              hasError: error != null,
+              // 지울 것이 있을 때만 ✕를 띄운다 — 빈 칸에 지우기가
+              // 떠 있으면 무엇을 지우라는 것인지 알 수 없다
+              focused: _focus.hasFocus && _input.text.trim().isNotEmpty,
+              valid: _input.text.trim().isNotEmpty && error == null,
+              onClear: () => setState(_input.clear),
+            ),
             onChanged: (_) => setState(() {}),
-            onClear: () => setState(_input.clear),
           ),
         ),
         const Spacer(),
@@ -430,143 +443,6 @@ class _Notice extends StatelessWidget {
 ///
 /// 시안의 다섯 상태(빈 값·입력 중·유효·오류·완료)를 한 위젯이 낸다 —
 /// 테두리 색과 오른쪽 아이콘이 그 상태를 말한다
-class _DaysField extends StatelessWidget {
-  const _DaysField({
-    required this.controller,
-    required this.focusNode,
-    required this.error,
-    required this.hint,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String? error;
-
-  /// 지금 잔여 연차 — 값이 비었을 때 옅게 깔아 둔다
-  final String hint;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasError = error != null;
-    final focused = focusNode.hasFocus;
-    final empty = controller.text.trim().isEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '총 연차일수를 입력해주세요',
-          style: AppTypography.label1NormalMedium.copyWith(
-            color: AppColors.labelNeutral,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // 연차 사용 등록의 차감 일수 칸과 같은 방식이다 — 숫자 폭만큼만
-        // TextField를 두고 단위는 그 옆에 붙인다. 칸 어디를 눌러도 수정으로
-        // 들어가게 전체를 탭 영역으로 둔다
-        GestureDetector(
-          onTap: focusNode.requestFocus,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundNormal,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: hasError
-                    ? AppColors.statusNegative
-                    : focused
-                    ? AppColors.primaryNormal
-                    : AppColors.lineNormalNeutral,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 숫자만 편집한다 — 단위까지 지워지지 않도록
-                        Flexible(
-                          child: IntrinsicWidth(
-                            child: TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              onChanged: onChanged,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              // 숫자와 소수점만 — 단위를 적어 넣는 사람이 있다
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9.]'),
-                                ),
-                              ],
-                              style: AppTypography.body1NormalRegular.copyWith(
-                                color: AppColors.labelNormal,
-                              ),
-                              decoration: InputDecoration(
-                                isDense: true,
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                                // **빈 칸일 때만 넘긴다.** IntrinsicWidth가
-                                // 고유 폭을 잴 때 힌트까지 재는 탓에, 값이
-                                // 있어도 힌트를 걸어 두면 칸이 '23일' 폭으로
-                                // 남아 숫자와 '일' 사이가 벌어진다
-                                hintText: empty ? hint : null,
-                                hintStyle: AppTypography.body1NormalRegular
-                                    .copyWith(color: AppColors.labelAssistive),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // 단위는 화면에만 붙는다 (값에는 들어가지 않는다).
-                        // 빈 칸에까지 '일'만 떠 있으면 무엇을 넣으라는 것인지
-                        // 흐려진다
-                        if (!empty)
-                          Text(
-                            '일',
-                            style: AppTypography.body1NormalRegular.copyWith(
-                              color: AppColors.labelNormal,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _ValidityIcon(
-                  hasError: hasError,
-                  // 지울 것이 있을 때만 ✕를 띄운다 — 빈 칸에 지우기가
-                  // 떠 있으면 무엇을 지우라는 것인지 알 수 없다
-                  focused: focused && !empty,
-                  valid: !empty && !hasError,
-                  onClear: onClear,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (hasError) ...[
-          const SizedBox(height: 8),
-          Text(
-            error!,
-            style: AppTypography.caption1Regular.copyWith(
-              color: AppColors.statusNegative,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
 /// 입력 칸 오른쪽 표식 — 오류면 경고, 입력 중이면 지우기, 다 됐으면 체크.
 ///
