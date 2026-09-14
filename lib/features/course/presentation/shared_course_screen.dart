@@ -288,7 +288,8 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
         children: [
           if (consumed != null)
             _SharedBadge(
-              iconAsset: 'assets/icons/ic_clock.svg',
+              // 내 코스 배지와 같은 것 — 시계는 글자와 같은 농도다
+              iconAsset: 'assets/icons/ic_clock_filled.svg',
               label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
             ),
           if (dDay.isNotEmpty) _SharedBadge(label: dDay),

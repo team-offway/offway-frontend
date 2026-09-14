@@ -360,15 +360,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             key: const Key('home-region-more'),
                             onTap: () => context.push(AppRoutes.regionList),
                             behavior: HitTestBehavior.opaque,
+                            // **색을 덮지 않는다.** 에셋에 fill-opacity 0.61이
+                            // 박혀 있어 그대로 두면 #37383C@61%가 나온다.
+                            // labelAlternative(알파 0.61)를 srcIn으로 또
+                            // 씌우면 0.37로 곱해져 흐려졌다
                             child: SvgPicture.asset(
                               'assets/icons/ic_chevron_right.svg',
                               // DS 쉐브론(Tight)은 12×24 비율이다
                               width: 12,
                               height: 24,
-                              colorFilter: const ColorFilter.mode(
-                                AppColors.labelAlternative,
-                                BlendMode.srcIn,
-                              ),
                             ),
                           ),
                         ),

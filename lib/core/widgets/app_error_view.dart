@@ -30,7 +30,8 @@ class AppErrorView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
-            // 기본 에셋은 28% 투명도가 박혀 있어 색을 입혀도 옅다
+            // solid 변형에는 fill-opacity 가 없어 이 색이 그대로 나간다 —
+            // 박힌 값이 있는 에셋으로 바꾸면 곱해져 옅어진다
             'assets/icons/ic_circle_exclamation_solid.svg',
             width: 32,
             height: 32,
