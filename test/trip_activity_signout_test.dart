@@ -96,6 +96,40 @@ void main() {
     expect(find.textContaining('지우지 못했어요'), findsOneWidget);
   });
 
+  testWidgets('토큰 정리가 실패해도 잠금화면은 내리고 사실대로 말한다', (tester) async {
+    // 토큰 정리와 잠금화면 정리는 따로다. 한 try 에 묶으면 Keychain 이
+    // 먼저 터졌을 때 내리기를 건너뛰면서도 '지웠다'고 말하게 된다 —
+    // 여기서는 **토큰 정리만 실패**시켜 그 둘이 갈라져 있는지 본다
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => throw PlatformException(code: 'KEYCHAIN'),
+        );
+    late WidgetRef readyRef;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides(),
+        child: MaterialApp(
+          home: SessionExpiryListener(
+            child: Consumer(
+              builder: (context, ref, _) {
+                readyRef = ref;
+                return const Scaffold(body: Text('홈'));
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    readyRef.read(sessionExpiredProvider.notifier).markExpired();
+    await tester.pumpAndSettle();
+
+    expect(spy.ended, isTrue, reason: '토큰이 안 지워져도 잠금화면은 내린다');
+    expect(find.textContaining('지우지 못했어요'), findsNothing);
+  });
+
   testWidgets('탈퇴하면 잠금화면에 뜬 여행을 내린다', (tester) async {
     // 계정이 아예 지워지는데 카드만 남으면 더 나쁘다
     await tester.pumpWidget(wrap(const WithdrawScreen()));

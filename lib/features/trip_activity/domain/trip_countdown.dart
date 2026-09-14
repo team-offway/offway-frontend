@@ -148,11 +148,15 @@ class TripCountdown {
 
     final upcoming =
         trips
-            // **하한도 둔다.** endDate 가 startDate 보다 앞선 역전 데이터가
-            // 오면 isOngoing·isPast 둘 다 false 가 되어 음수인 채로 뽑히고,
-            // headline 이 'D--3' 을 만든다
+            // **역전 데이터를 먼저 걷어낸다.** endDate 가 startDate 보다
+            // 앞서면 isOngoing·isPast 둘 다 false 라 그대로 뽑힌다 —
+            // 지난 날짜면 'D--3' 이, 앞선 날짜면 엉뚱한 기간이 나간다.
+            // 하한(>= 0)만으로는 미래의 역전을 못 막는다
             .where(
               (t) =>
+                  !DateUtils.dateOnly(
+                    t.endDate,
+                  ).isBefore(DateUtils.dateOnly(t.startDate)) &&
                   !t.isPast(now) &&
                   t.daysUntil(now) >= 0 &&
                   t.daysUntil(now) <= within,

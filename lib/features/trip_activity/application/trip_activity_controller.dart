@@ -29,9 +29,14 @@ class TripActivityController with WidgetsBindingObserver {
   /// 늦게 시작한 쪽이 먼저 끝나 end() 와 start() 의 순서가 뒤집힌다
   Future<void>? _syncing;
 
+  /// 멈춘 뒤인가. 진행 중이던 sync() 가 깨어났을 때 물러나게 한다 —
+  /// 세션이 끝났는데 앞사람의 코스를 다시 띄우면 안 된다
+  bool _stopped = false;
+
   void start() {
     if (_started) return;
     _started = true;
+    _stopped = false;
     WidgetsBinding.instance.addObserver(this);
     syncInBackground();
   }
@@ -39,10 +44,20 @@ class TripActivityController with WidgetsBindingObserver {
   /// 세션이 끝났다 — 옵저버를 떼고 **잠금화면도 내린다**.
   ///
   /// 로그아웃·탈퇴·세션 만료가 부른다. 내리기만 하고 옵저버를 남겨 두면
-  /// 앱을 다시 앞으로 낼 때 앞사람의 코스로 다시 띄운다
+  /// 앱을 다시 앞으로 낼 때 앞사람의 코스로 다시 띄운다.
+  ///
+  /// **진행 중인 맞추기 뒤에 세운다.** 코스 조회에 머물러 있던 sync() 가
+  /// 나중에 깨어나 start() 를 부르면, 방금 내린 앞사람의 여행이 다시
+  /// 올라간다. 멈춘 뒤에는 sync() 가 스스로 물러나지만(_stopped),
+  /// 이미 조회를 마친 것이 있을 수 있어 큐의 끝에서 내린다.
+  ///
   /// 내려갔으면 참. **거짓이면 앞사람의 여행이 잠금화면에 남아 있다.**
   Future<bool> stop() async {
     dispose();
+    _stopped = true;
+
+    // 앞의 맞추기가 끝나길 기다린다 — 실패했든 말든 순서만 지키면 된다
+    await (_syncing ?? Future<void>.value()).catchError((_) {});
     return _ref.read(tripActivityServiceProvider).end();
   }
 
@@ -75,6 +90,7 @@ class TripActivityController with WidgetsBindingObserver {
   Future<void> sync({DateTime? now}) async {
     final service = _ref.read(tripActivityServiceProvider);
     if (!await service.isAvailable()) return;
+    if (_stopped) return;
 
     final List<Map<String, dynamic>> cards;
     try {
@@ -84,9 +100,13 @@ class TripActivityController with WidgetsBindingObserver {
       // 실패하면 지난 여행 D-day 가 잠금화면에 무기한 남는다 — 무엇을
       // 띄울지 모르는 상태라면 아무것도 띄우지 않는 편이 맞다
       debugPrint('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
-      await service.end();
+      if (!_stopped) await service.end();
       rethrow;
     }
+
+    // **조회를 기다리는 동안 세션이 끝났을 수 있다.** 그 사이에 stop() 이
+    // 내려 둔 것을 여기서 다시 띄우면 앞사람의 여행이 되살아난다
+    if (_stopped) return;
 
     final trips = cards
         .map(TripCountdown.tryFrom)

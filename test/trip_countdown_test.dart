@@ -99,6 +99,16 @@ void main() {
       expect(TripCountdown.pick([broken], now), isNull);
     });
 
+    test('앞으로 올 여행도 날짜가 뒤집혔으면 고르지 않는다', () {
+      // 하한(daysUntil >= 0)만으로는 못 막는다 — 출발이 미래라 통과해
+      // 버리고, 엉뚱한 기간이 잠금화면에 나간다
+      final broken = trip(
+        start: DateTime(2026, 9, 25),
+        end: DateTime(2026, 9, 24),
+      );
+      expect(TripCountdown.pick([broken], now), isNull);
+    });
+
     test('UTC 표기로 와도 로컬 날짜로 센다', () {
       // 서버가 '2026-09-22T15:00:00Z' 같은 UTC 표기로 바꾸면 isUtc 인
       // DateTime 이 만들어져, 한국(UTC+9)에서는 로컬 9/23 인데 날짜가

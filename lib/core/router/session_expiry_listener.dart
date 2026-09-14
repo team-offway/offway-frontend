@@ -31,17 +31,24 @@ class SessionExpiryListener extends ConsumerWidget {
   }
 
   Future<void> _handleExpiry(BuildContext context, WidgetRef ref) async {
-    var lockScreenCleared = true;
+    // 잠금화면에 떠 있던 여행을 내린다 — 앱을 꺼도 남는 화면이라, 세션이
+    // 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다. 옵저버도 함께 뗀다:
+    // 내리기만 하면 앱을 다시 앞으로 낼 때 앞사람의 코스로 되살아난다.
+    //
+    // **토큰 정리와 따로 떼어 둔다.** 같은 try 에 두면 Keychain 이 먼저
+    // 실패했을 때 이 줄을 건너뛰면서도 '지웠다'고 말하게 된다
+    var lockScreenCleared = false;
+    try {
+      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
+    } on Exception catch (e) {
+      debugPrint('세션 만료 처리 중 잠금화면을 내리지 못했다: $e');
+    }
+
     try {
       // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
       // 되풀이된다
       await ref.read(secureStorageProvider).clear();
       await clearAppIconBadge();
-      // 잠금화면에 떠 있던 여행도 내린다 — 앱을 꺼도 남는 화면이라,
-      // 세션이 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다
-      // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
-      // 앞사람의 코스로 되살아난다
-      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다
