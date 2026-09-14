@@ -13,6 +13,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
 import 'leave_date_picker_screen.dart';
+import 'widgets/leave_days_field.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
 const _reasons = ['여행', '개인 사유', '가족 행사', '병가', '기타'];
@@ -165,6 +166,16 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
     }
   }
 
+  /// 차감 일수 칸 아래 한 줄 — 오류가 있으면 그 이유를, 없으면 값이 어디서
+  /// 왔는지 알린다. 값이 비면 설명할 것이 없어 아무 말도 하지 않는다
+  String? _daysMessage(String? error) {
+    if (error != null) return error;
+    if (_daysInput.text.trim().isEmpty) return null;
+    return _daysEdited
+        ? '차감 일수가 직접 입력한 값으로 수정됐어요.'
+        : '자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.';
+  }
+
   @override
   Widget build(BuildContext context) {
     // 남은 연차보다 많이 쓸 수 없으므로 상한으로 쓴다
@@ -213,13 +224,28 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
                       const SizedBox(height: 28),
                       _FieldLabel('차감 일수'),
                       const SizedBox(height: 8),
-                      _DaysField(
+                      LeaveDaysField(
                         controller: _daysInput,
                         focusNode: _daysFocus,
-                        error: daysError,
-                        edited: _daysEdited,
+                        hasError: daysError != null,
+                        // 오류가 있으면 그 이유를, 없으면 값이 어디서
+                        // 왔는지 알린다. 값을 지운 동안에는 설명할 값
+                        // 자체가 없어 아무 말도 하지 않는다
+                        message: _daysMessage(daysError),
+                        messageIsError: daysError != null,
+                        // 자동 계산값이 먼저 차 있어 단위를 늘 띄운다
+                        unitWhenEmpty: true,
+                        trailing: _EditStateIcon(
+                          hasError: daysError != null,
+                          focused: _daysFocus.hasFocus,
+                          // 값을 지운 상태를 '수정 완료'로 보여줄 수는 없다
+                          edited:
+                              _daysEdited && _daysInput.text.trim().isNotEmpty,
+                          onClear: () => setState(_daysInput.clear),
+                          // 연필을 눌러도 바로 고칠 수 있게 입력 칸으로 보낸다
+                          onEdit: _daysFocus.requestFocus,
+                        ),
                         onChanged: (_) => setState(() => _daysEdited = true),
-                        onClear: () => setState(_daysInput.clear),
                       ),
                     ],
                   ],
@@ -378,134 +404,6 @@ class _ChipRow extends StatelessWidget {
 ///
 /// 오른쪽 아이콘과 아래 안내가 상태를 알린다.
 /// 기본 연필 · 입력 중 지우기 · 고친 뒤 체크 · 잘못된 값 느낌표
-class _DaysField extends StatelessWidget {
-  const _DaysField({
-    required this.controller,
-    required this.focusNode,
-    required this.error,
-    required this.edited,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-
-  /// 왜 못 쓰는 값인지 — null이면 정상
-  final String? error;
-
-  /// 자동 계산값을 사용자가 손댔는지 — 안내 문구가 이 값으로 갈린다
-  final bool edited;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasError = error != null;
-    final focused = focusNode.hasFocus;
-    final empty = controller.text.trim().isEmpty;
-    // 값이 비면 설명할 것이 없다 — 오류도 안내도 띄우지 않는다
-    final message = hasError
-        ? error
-        : empty
-        ? null
-        : edited
-        ? '차감 일수가 직접 입력한 값으로 수정됐어요.'
-        : '자동 계산된 값이에요. 다르게 썼다면 직접 수정할 수 있어요.';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 숫자 폭만큼만 TextField라 빈 자리를 눌러도 닿지 않는다 —
-        // 칸 어디를 눌러도 수정으로 들어가게 전체를 탭 영역으로 둔다
-        GestureDetector(
-          onTap: focusNode.requestFocus,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundNormal,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: hasError
-                    ? AppColors.statusNegative
-                    : focused
-                    ? AppColors.primaryNormal
-                    : AppColors.lineNormalNeutral,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 숫자만 편집한다 — 단위까지 지워지지 않도록
-                        Flexible(
-                          child: IntrinsicWidth(
-                            child: TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              onChanged: onChanged,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              style: AppTypography.body1NormalRegular.copyWith(
-                                color: AppColors.labelNormal,
-                              ),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // 단위는 화면에만 붙는다 (값에는 들어가지 않는다)
-                        Text(
-                          '일',
-                          style: AppTypography.body1NormalRegular.copyWith(
-                            color: AppColors.labelNormal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _EditStateIcon(
-                  hasError: hasError,
-                  focused: focused,
-                  // 값을 지운 상태를 '수정 완료'로 보여줄 수는 없다
-                  edited: edited && !empty,
-                  onClear: onClear,
-                  // 연필을 눌러도 바로 고칠 수 있게 입력 칸으로 보낸다
-                  onEdit: focusNode.requestFocus,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // 오류가 있으면 그 이유를, 없으면 값이 어디서 왔는지 알린다.
-        // 값을 지운 동안에는 설명할 값 자체가 없어 아무 말도 하지 않는다
-        if (message != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: AppTypography.caption1Regular.copyWith(
-              color: hasError
-                  ? AppColors.statusNegative
-                  : AppColors.labelAlternative,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
 /// 입력 칸 오른쪽 아이콘 — 상태마다 다른 것이 붙는다
 /// 입력 칸 오른쪽의 **편집 상태** 아이콘 — 연필이면 고칠 수 있다는 표시,

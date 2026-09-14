@@ -73,6 +73,58 @@ void main() {
     });
   });
 
+  group('입력 칸 — 합치기 전에 못 박아 둔다', () {
+    // 연차 사용 등록의 차감 일수 칸과 골격이 같아 하나로 합칠 후보다
+    // (이슈 #227 ②). 합치다 흘리면 사용자가 바로 겪는 자리라 여기서 잠근다.
+
+    testWidgets('칸 아무 데나 눌러도 수정으로 들어간다', (tester) async {
+      // 숫자 폭만큼만 TextField라 빈 자리를 눌러도 닿지 않는다 —
+      // 전체를 탭 영역으로 두는 것이 이 칸의 핵심이다
+      await pump(tester);
+      await startEditing(tester);
+
+      final field = find.byType(TextField);
+      // 수정에 들어가면 바로 포커스가 간다 — 탭 영역을 보려면 먼저 뗀다
+      tester.widget<TextField>(field).focusNode!.unfocus();
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(field).focusNode?.hasFocus, isFalse);
+
+      // 칸의 오른쪽 끝 — TextField 바깥이지만 같은 상자 안이다
+      final box = tester.getRect(
+        find.ancestor(of: field, matching: find.byType(Container)).first,
+      );
+      await tester.tapAt(Offset(box.right - 40, box.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<TextField>(field).focusNode?.hasFocus, isTrue);
+    });
+
+    testWidgets('빈 칸에는 단위를 붙이지 않는다', (tester) async {
+      // 빈 칸에 '일'만 떠 있으면 무엇을 넣으라는 것인지 흐려진다
+      await pump(tester);
+      await startEditing(tester);
+
+      expect(find.text('일'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '12');
+      await tester.pumpAndSettle();
+      expect(find.text('일'), findsOneWidget);
+    });
+
+    testWidgets('숫자와 소수점만 받는다 — 단위를 적어 넣는 사람이 있다', (tester) async {
+      await pump(tester);
+      await startEditing(tester);
+
+      await tester.enterText(find.byType(TextField), '12일');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        '12',
+      );
+    });
+  });
+
   group('입력 검증', () {
     /// 화면에 뜬 오류 문구 — 없으면 null.
     ///
