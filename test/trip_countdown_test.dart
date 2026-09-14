@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/trip_activity/domain/trip_countdown.dart';
 
@@ -99,14 +100,25 @@ void main() {
     });
 
     test('UTC 표기로 와도 로컬 날짜로 센다', () {
-      // 한국(UTC+9)에서 9/22T15:00Z 는 로컬 9/23 이다
+      // 서버가 '2026-09-22T15:00:00Z' 같은 UTC 표기로 바꾸면 isUtc 인
+      // DateTime 이 만들어져, 한국(UTC+9)에서는 로컬 9/23 인데 날짜가
+      // 9/22 로 셈해진다.
+      //
+      // **기대값을 날짜로 박지 않는다** — CI 는 UTC 로 돌아 한국 기준
+      // 숫자를 적으면 여기서만 갈린다. 변환 규칙 자체를 확인한다
+      const raw = '2026-09-22T15:00:00Z';
       final t = TripCountdown.tryFrom({
         'courseId': '7',
         'regionName': '정선군',
-        'startDate': '2026-09-22T15:00:00Z',
+        'startDate': raw,
         'durationLabel': '당일치기',
       });
-      expect(t!.startDate, DateTime(2026, 9, 23));
+
+      final expected = DateUtils.dateOnly(DateTime.parse(raw).toLocal());
+      expect(t!.startDate, expected);
+      // 로컬 자정으로 맞춰 둬야 calendarDaysBetween 이 하루를 안 흘린다
+      expect(t.startDate.isUtc, isFalse);
+      expect([t.startDate.hour, t.startDate.minute], [0, 0]);
     });
   });
 
