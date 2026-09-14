@@ -72,12 +72,15 @@ void main() {
     expect(find.byType(PlaceContentBadge), findsNWidgets(1));
   });
 
-  testWidgets('일부 구역이면 그렇게 적는다 — 전 구역으로 오해하면 헛걸음한다', (tester) async {
-    // 서버 실측(태안 15건)에서 절반이 '일부구역 동반가능'이었다
+  testWidgets('일부 구역도 칩 문구는 같다 — 구분은 눌러서 여는 내용의 몫', (tester) async {
+    // 서버 실측(태안 15건)에서 절반이 '일부구역 동반가능'이지만, 서버는
+    // 그것을 **칩을 눌렀을 때 여는 내용**으로 설계했다(core #567).
+    // 칩 문구를 앱이 지어내면 시안에 없는 말이 화면에 뜬다
     await pump(tester, place(wholeArea: false));
 
-    expect(find.text('반려동물 일부구역'), findsOneWidget);
-    expect(find.text('반려동물 동반'), findsNothing);
+    expect(find.text('반려동물 동반'), findsOneWidget);
+    // 구분 값은 버리지 않는다 — 상세 시안이 나오면 여기서 꺼내 쓴다
+    expect(find.byType(PlaceContentBadge), findsNWidgets(1));
   });
 
   testWidgets('혼잡도는 서버 문구를 그대로 쓴다', (tester) async {

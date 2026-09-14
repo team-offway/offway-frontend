@@ -73,13 +73,14 @@ class PlaceInfoSheet extends ConsumerWidget {
   /// 않는다 — 기준(붐빔 80·한산 20)이 바뀌면 서버가 문구를 바꾼다
   static List<Widget> _contentBadges(Map<String, dynamic> place) {
     return [
-      if (place['petAccompany'] case final Map<String, dynamic> pet)
-        PlaceContentBadge(
+      if (place.containsKey('petAccompany'))
+        // 시안 문구 그대로 하나다. 값에는 전 구역·일부 구역 구분
+        // (`wholeArea`)과 견종·유의사항이 함께 오는데, 서버는 그것을
+        // **칩을 눌렀을 때 여는 내용**으로 설계했다(core #567) — 그 시안이
+        // 나오면 여기서 꺼내 쓴다. 칩 문구를 앱이 지어내지 않는다
+        const PlaceContentBadge(
           icon: 'assets/icons/ic_pet.svg',
-          // **전 구역과 일부 구역을 가른다.** 서버 실측(태안 15건)에서 절반이
-          // '일부구역 동반가능'이었다. 한 문구로 뭉뚱그리면 전 구역으로 알고
-          // 갔다가 못 들어가는 구역을 만난다
-          text: pet['wholeArea'] == true ? '반려동물 동반' : '반려동물 일부구역',
+          text: '반려동물 동반',
         ),
       if (place['crowd'] case final Map<String, dynamic> crowd)
         if (crowd['label'] case final String label when label.isNotEmpty)
