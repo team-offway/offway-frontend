@@ -55,7 +55,8 @@ class TripCountdown {
   /// 여행 중에는 남은 날이 아니라 **며칠째인지**를 말한다 — 이미 떠나 온
   /// 사람에게 'D-0'은 알려 주는 것이 없다
   String headline(DateTime now) {
-    if (isPast(now)) return '$regionName 여행을 마쳤어요';
+    // 끝난 여행은 문구가 없다 — pick() 이 고르지 않고 컨트롤러가 내린다.
+    // 마지막날이 지나면 잠금화면에 남아 있을 이유가 없다
     if (isOngoing(now)) {
       final nth =
           calendarDaysBetween(
@@ -70,13 +71,12 @@ class TripCountdown {
     return '$regionName 여행 D-$left';
   }
 
-  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `D-DAY` · `2일차`.
+  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `2일차`.
   ///
   /// [headline]과 같은 분기를 따르되 지역명을 뺀다 — 알약 옆에는 서너 글자밖에
   /// 들어가지 않는다. **네이티브에서 조건으로 만들지 않는다**: 좁은 자리에
   /// 분기를 두면 여행 중일 때 그 자리가 빈 채로 남는다
   String compactLabel(DateTime now) {
-    if (isPast(now)) return '종료';
     if (isOngoing(now)) {
       final nth =
           calendarDaysBetween(
@@ -95,7 +95,12 @@ class TripCountdown {
   String get rangeLabel {
     final s = '${startDate.year}.${startDate.month}.${startDate.day}';
     if (DateUtils.isSameDay(startDate, endDate)) return s;
-    return '$s - ${endDate.month}.${endDate.day}';
+    // 해를 넘기면 끝날에도 연도를 붙인다 — '12.31 - 1.2' 는 어느 해에
+    // 끝나는지 알 수 없다
+    final end = startDate.year == endDate.year
+        ? '${endDate.month}.${endDate.day}'
+        : '${endDate.year}.${endDate.month}.${endDate.day}';
+    return '$s - $end';
   }
 
   /// 저장 코스 카드(`_toSavedCardMap`)에서 만든다.
@@ -123,11 +128,11 @@ class TripCountdown {
   /// 고르지 않는다 — 끝난 여행이 잠금화면에 남아 있을 이유가 없다.
   ///
   /// **며칠 뒤까지 띄울지는 [within]이 정한다.** 두 달 뒤 여행에 D-60을
-  /// 띄우면 잠금화면만 차지한다
+  /// 띄우면 잠금화면만 차지한다 — D-5 부터 띄운다
   static TripCountdown? pick(
     List<TripCountdown> trips,
     DateTime now, {
-    int within = 7,
+    int within = 5,
   }) {
     final ongoing = trips.where((t) => t.isOngoing(now)).toList()
       ..sort((a, b) => a.startDate.compareTo(b.startDate));

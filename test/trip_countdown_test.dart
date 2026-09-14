@@ -59,11 +59,6 @@ void main() {
       final t = trip(start: DateTime(2026, 9, 20), end: DateTime(2026, 9, 22));
       expect(t.headline(now), '정선군 여행 1일차');
     });
-
-    test('끝난 여행은 마쳤다고 말한다', () {
-      final t = trip(start: DateTime(2026, 9, 17), end: DateTime(2026, 9, 18));
-      expect(t.headline(now), '정선군 여행을 마쳤어요');
-    });
   });
 
   group('좁은 자리 문구', () {
@@ -82,16 +77,17 @@ void main() {
       final t = trip(start: DateTime(2026, 9, 19), end: DateTime(2026, 9, 21));
       expect(t.compactLabel(now), '2일차');
     });
-
-    test('끝난 여행도 빈칸을 남기지 않는다', () {
-      final t = trip(start: DateTime(2026, 9, 17), end: DateTime(2026, 9, 18));
-      expect(t.compactLabel(now), '종료');
-    });
   });
 
   group('기간 표기', () {
     test('당일치기는 하루만 적는다', () {
       expect(trip(start: DateTime(2026, 7, 26)).rangeLabel, '2026.7.26');
+    });
+
+    test('해를 넘기면 끝날에도 연도를 붙인다', () {
+      // '2026.12.31 - 1.2' 로는 어느 해에 끝나는지 알 수 없다
+      final t = trip(start: DateTime(2026, 12, 31), end: DateTime(2027, 1, 2));
+      expect(t.rangeLabel, '2026.12.31 - 2027.1.2');
     });
 
     test('여러 날이면 끝날을 붙인다', () {
@@ -133,6 +129,19 @@ void main() {
         trip(start: DateTime(2026, 11, 1)),
       ], now);
       expect(picked, isNull);
+    });
+
+    test('D-5 부터 띄운다 — 그 밖은 고르지 않는다', () {
+      // 기본값을 못 박는다. 경계가 조용히 늘어나면 잠금화면에 먼 여행이
+      // 앉아 있게 된다
+      expect(
+        TripCountdown.pick([trip(start: DateTime(2026, 9, 25))], now),
+        isNotNull,
+      );
+      expect(
+        TripCountdown.pick([trip(start: DateTime(2026, 9, 26))], now),
+        isNull,
+      );
     });
 
     test('며칠 전부터 띄울지는 바꿀 수 있다', () {

@@ -71,40 +71,48 @@ enum TripActivityBridge {
             return
         }
 
-        // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다 — 한 번에 하나다
-        endAll()
-
-        do {
-            _ = try Activity.request(
-                attributes: TripActivityAttributes(
-                    courseId: courseId,
-                    regionName: regionName
-                ),
-                contentState: state,
-                pushType: nil  // 1단계는 앱이 켜져 있을 때만 갱신한다
-            )
-            result(nil)
-        } catch {
-            result(
-                FlutterError(
-                    code: "START_FAILED",
-                    message: error.localizedDescription,
-                    details: nil
+        // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다 — 한 번에 하나다.
+        //
+        // **내려가기를 기다린다.** Task 로 던져 놓고 바로 요청하면 옛 것이
+        // 아직 살아 있는 채로 새 것이 올라가 잠금화면에 둘이 쌓인다
+        Task {
+            await endAll()
+            do {
+                _ = try Activity.request(
+                    attributes: TripActivityAttributes(
+                        courseId: courseId,
+                        regionName: regionName
+                    ),
+                    contentState: state,
+                    pushType: nil  // 1단계는 앱이 켜져 있을 때만 갱신한다
                 )
-            )
+                result(nil)
+            } catch {
+                result(
+                    FlutterError(
+                        code: "START_FAILED",
+                        message: error.localizedDescription,
+                        details: nil
+                    )
+                )
+            }
         }
     }
 
     private static func end(result: @escaping FlutterResult) {
         guard #available(iOS 16.1, *) else { return result(nil) }
-        endAll()
-        result(nil)
+        // 실제로 내려간 뒤에 답한다 — 먼저 답하면 Flutter 는 내려갔다고 아는데
+        // 잠금화면에는 아직 남아 있다
+        Task {
+            await endAll()
+            result(nil)
+        }
     }
 
     @available(iOS 16.1, *)
-    private static func endAll() {
+    private static func endAll() async {
         for activity in Activity<TripActivityAttributes>.activities {
-            Task { await activity.end(dismissalPolicy: .immediate) }
+            await activity.end(dismissalPolicy: .immediate)
         }
     }
 }
