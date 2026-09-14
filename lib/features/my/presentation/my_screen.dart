@@ -172,6 +172,9 @@ class MyScreen extends ConsumerWidget {
       message: '정말 로그아웃 할까요?',
     );
     if (confirmed != true || !context.mounted) return;
+    // 잠금화면을 내리지 못했으면 알린다 — 로그아웃은 그대로 진행한다.
+    // 여기서 막으면 사용자가 나갈 길을 잃는다
+    var lockScreenCleared = true;
     // 토큰이 남은 채 로그인 화면으로 보내면 로그아웃된 줄 알고 넘어가므로,
     // Keychain 삭제가 실패하면 세션을 유지한 채 실패를 알린다
     try {
@@ -182,7 +185,7 @@ class MyScreen extends ConsumerWidget {
       // 로그아웃한 뒤에도 앞사람의 여행지·날짜가 잠금화면에 보인다
       // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
       // 앞사람의 코스로 되살아난다
-      await ref.read(tripActivityControllerProvider).stop();
+      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
       await ref.read(authRepositoryProvider).logout();
       // 남의 숫자가 아이콘에 남지 않게 — 다음 사람이 로그인하면 자기 값으로 다시 선다
       await clearAppIconBadge();
@@ -199,6 +202,9 @@ class MyScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     context.go(AppRoutes.login);
+    if (!lockScreenCleared) {
+      showAppToast(context, '잠금화면의 여행 정보를 지우지 못했어요');
+    }
   }
 }
 

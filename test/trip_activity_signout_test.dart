@@ -80,6 +80,22 @@ void main() {
     expect(spy.ended, isTrue, reason: '로그인 화면으로 가기 전에 내려야 한다');
   });
 
+  testWidgets('내리지 못하면 로그아웃은 하되 알린다', (tester) async {
+    // 잠금화면 정리가 실패했다고 로그인 화면으로 못 가면 나갈 길을 잃는다.
+    // 그렇다고 조용히 넘어가면 앞사람 여행이 남은 걸 아무도 모른다
+    spy.endSucceeds = false;
+    await tester.pumpWidget(wrap(const MyScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('로그인 화면'), findsOneWidget, reason: '로그아웃은 된다');
+    expect(find.textContaining('지우지 못했어요'), findsOneWidget);
+  });
+
   testWidgets('탈퇴하면 잠금화면에 뜬 여행을 내린다', (tester) async {
     // 계정이 아예 지워지는데 카드만 남으면 더 나쁘다
     await tester.pumpWidget(wrap(const WithdrawScreen()));
@@ -124,14 +140,20 @@ void main() {
 class _SpyService implements TripActivityService {
   bool ended = false;
 
+  /// 내리기가 실패하는 기기를 흉내 낼 때 거짓으로 둔다
+  bool endSucceeds = true;
+
   @override
-  Future<void> end() async => ended = true;
+  Future<bool> end() async {
+    ended = true;
+    return endSucceeds;
+  }
 
   @override
   Future<bool> isAvailable() async => true;
 
   @override
-  Future<void> start(TripCountdown trip, {DateTime? now}) async {}
+  Future<bool> start(TripCountdown trip, {DateTime? now}) async => true;
 }
 
 class _FakePushRegistration implements PushRegistration {

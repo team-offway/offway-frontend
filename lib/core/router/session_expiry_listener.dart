@@ -31,6 +31,7 @@ class SessionExpiryListener extends ConsumerWidget {
   }
 
   Future<void> _handleExpiry(BuildContext context, WidgetRef ref) async {
+    var lockScreenCleared = true;
     try {
       // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
       // 되풀이된다
@@ -40,7 +41,7 @@ class SessionExpiryListener extends ConsumerWidget {
       // 세션이 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다
       // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
       // 앞사람의 코스로 되살아난다
-      await ref.read(tripActivityControllerProvider).stop();
+      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다
@@ -52,6 +53,11 @@ class SessionExpiryListener extends ConsumerWidget {
 
     if (!context.mounted) return;
     ref.read(appRouterProvider).go(AppRoutes.login);
-    showAppToast(context, '로그인이 만료됐어요. 다시 로그인해 주세요');
+    showAppToast(
+      context,
+      lockScreenCleared
+          ? '로그인이 만료됐어요. 다시 로그인해 주세요'
+          : '로그인이 만료됐어요. 잠금화면의 여행 정보는 지우지 못했어요',
+    );
   }
 }

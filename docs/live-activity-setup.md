@@ -5,7 +5,13 @@
 
 ## 끝난 것
 
-- [x] 최소 버전 **16.1** (Runner·Extension·Podfile 전부)
+- [x] 최소 버전 — **확장만 16.1**, 앱(Runner·Podfile)은 **15.0 그대로**
+
+  앱까지 올리면 iOS 15 기기(6s·7·SE1)가 **앱 자체를 업데이트받지 못한다.**
+  그 기기들은 Live Activity 를 어차피 못 쓴다(16.1+ API 인 데다 다이나믹
+  아일랜드는 14 Pro 부터의 하드웨어다) — 얻는 것 없이 코스 추천·연차
+  계산까지 통째로 잃는다. 15.x 에서는 `isAvailable()` 이 false 라 조용히
+  아무 일도 하지 않는다
 - [x] Widget Extension 타겟 `TripActivityExtension` 생성
 - [x] `TripActivityAttributes.swift` — `ios/TripActivity/` 로 옮겨 **양쪽 타겟**이 읽는다
 - [x] `TripActivityWidget.swift` — 동기화 폴더라 자동으로 확장 소속

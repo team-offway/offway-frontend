@@ -21,15 +21,16 @@ class _FakeService implements TripActivityService {
   Future<bool> isAvailable() async => available;
 
   @override
-  Future<void> start(TripCountdown trip, {DateTime? now}) async {
+  Future<bool> start(TripCountdown trip, {DateTime? now}) async {
     started = trip;
+    return true;
   }
 
   @override
-  Future<void> end() async => endCount++;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<bool> end() async {
+    endCount++;
+    return true;
+  }
 }
 
 void main() {
@@ -83,6 +84,36 @@ void main() {
 
     expect(service.started, isNull);
     expect(service.endCount, 1);
+  });
+
+  test('코스를 못 읽으면 떠 있던 것을 내린다', () async {
+    // **서버가 실패한다고 그냥 두지 않는다.** 무엇을 띄울지 모르는 채로
+    // 두면 지난 여행 D-day 가 잠금화면에 무기한 남는다
+    final service = _FakeService();
+    final c = ProviderContainer(
+      overrides: [
+        tripActivityServiceProvider.overrideWithValue(service),
+        // Future.error 로 준다 — `async => throw` 는 로딩 상태로 남아
+        // 컨테이너가 정리될 때 StateError 가 대신 튀어나온다
+        savedCoursesProvider('UPCOMING').overrideWith(
+          (ref) => Future<List<Map<String, dynamic>>>.error(Exception('500')),
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+
+    // 삼키지 않고 위로 알린다 — syncInBackground 가 받아 적는다
+    Object? thrown;
+    try {
+      await c.read(tripActivityControllerProvider).sync(now: now);
+    } on Object catch (e) {
+      thrown = e;
+    }
+    // 어떤 오류인지는 보지 않는다 — 여기서 확인할 것은 '삼키지 않는다'다
+    expect(thrown, isNotNull);
+
+    expect(service.endCount, 1);
+    expect(service.started, isNull);
   });
 
   test('너무 먼 여행뿐이면 내린다', () async {

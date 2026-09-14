@@ -159,6 +159,8 @@ class WithdrawScreen extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
+    // 계정이 사라지는데 잠금화면에 여행이 남으면 지울 길이 없다 — 알린다
+    var lockScreenCleared = true;
     try {
       // 계정이 지워지기 전에 푼다 — 지운 뒤에는 이 기기의 토큰이 누구
       // 것이었는지 서버가 알 수 없다
@@ -167,7 +169,7 @@ class WithdrawScreen extends ConsumerWidget {
       // 계정이 지워진 뒤에도 여행지·날짜가 잠금화면에 그대로 보인다
       // 옵저버도 함께 뗀다 — 내리기만 하면 앱을 다시 앞으로 낼 때
       // 앞사람의 코스로 되살아난다
-      await ref.read(tripActivityControllerProvider).stop();
+      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
       await ref.read(authRepositoryProvider).withdraw();
       // 계정이 사라졌다 — 아이콘에 숫자가 남아 있으면 안 된다
       await clearAppIconBadge();
@@ -186,6 +188,10 @@ class WithdrawScreen extends ConsumerWidget {
 
     // 남은 화면이 지워진 데이터를 다시 읽지 않도록 처음부터 시작한다
     context.go(AppRoutes.login);
-    showAppToast(context, '탈퇴가 완료됐어요', kind: AppToastKind.success);
+    showAppToast(
+      context,
+      lockScreenCleared ? '탈퇴가 완료됐어요' : '탈퇴했지만 잠금화면의 여행 정보가 남았어요',
+      kind: lockScreenCleared ? AppToastKind.success : AppToastKind.normal,
+    );
   }
 }

@@ -58,9 +58,11 @@ class TripActivityService {
   ///
   /// 하루에 한 번꼴로 바뀌는 값이라(D-3 → D-2) 자주 부를 이유가 없다 —
   /// 앱이 앞으로 나올 때 한 번이면 충분하다
-  Future<void> start(TripCountdown trip, {DateTime? now}) async {
+  /// 성공 여부를 돌려준다 — 타임아웃이 나면 **띄운 건지 아닌지 알 수 없다**.
+  /// 그때는 거짓이다(다음 기회에 다시 맞춘다)
+  Future<bool> start(TripCountdown trip, {DateTime? now}) async {
     final at = now ?? DateTime.now();
-    await _invoke('start', {
+    return _invokeOk('start', {
       'courseId': trip.courseId,
       'regionName': trip.regionName,
       'headline': trip.headline(at),
@@ -70,8 +72,12 @@ class TripActivityService {
     });
   }
 
-  /// 떠 있는 잠금화면을 내린다 — 여행이 끝났거나 코스를 지웠을 때
-  Future<void> end() => _invoke('end', const {});
+  /// 떠 있는 잠금화면을 내린다 — 여행이 끝났거나 코스를 지웠을 때.
+  ///
+  /// **성공 여부를 돌려준다.** 로그아웃·탈퇴·세션 만료가 이걸 부르는데,
+  /// 실패를 삼키면 앞사람의 여행지·날짜가 잠금화면에 남은 채로 로그인
+  /// 화면으로 넘어간다 — 부르는 쪽이 알아야 다시 시도하든 알리든 한다
+  Future<bool> end() => _invokeOk('end', const {});
 
   /// 네이티브가 답하지 않을 때 기다리는 한도.
   ///
@@ -79,17 +85,27 @@ class TripActivityService {
   /// 않는다 — 앱 재개마다 부르는 자리라 그대로 쌓인다
   static const _timeout = Duration(seconds: 5);
 
-  Future<void> _invoke(String method, Map<String, Object?> args) async {
-    if (!_isSupportedPlatform) return;
+  /// 네이티브를 부르고 **해냈는지**를 돌려준다.
+  ///
+  /// 던지지는 않는다 — 잠금화면 때문에 로그아웃이 막히면 안 된다. 대신
+  /// 실패를 거짓으로 알려, 부르는 쪽이 판단하게 둔다
+  Future<bool> _invokeOk(String method, Map<String, Object?> args) async {
+    // 안 되는 플랫폼은 '실패'가 아니다 — 내릴 것이 애초에 없다
+    if (!_isSupportedPlatform) return true;
     try {
       await _channel.invokeMethod<void>(method, args).timeout(_timeout);
+      return true;
     } on PlatformException catch (e) {
-      // 잠금화면이 안 뜨는 것뿐이다 — 앱이 하던 일을 막지 않는다
       debugPrint('Live Activity $method 실패: ${e.message}');
+      return false;
     } on MissingPluginException {
+      // 네이티브가 없는 빌드 — 띄운 적이 없으니 남을 것도 없다
       debugPrint('Live Activity 네이티브가 없는 빌드다 ($method)');
+      return true;
     } on TimeoutException {
+      // **뜬 건지 아닌지 모른다.** 모르면 안 된 것으로 친다
       debugPrint('Live Activity $method 가 제때 답하지 않았다');
+      return false;
     }
   }
 }

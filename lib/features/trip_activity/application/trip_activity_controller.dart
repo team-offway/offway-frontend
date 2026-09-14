@@ -40,9 +40,10 @@ class TripActivityController with WidgetsBindingObserver {
   ///
   /// 로그아웃·탈퇴·세션 만료가 부른다. 내리기만 하고 옵저버를 남겨 두면
   /// 앱을 다시 앞으로 낼 때 앞사람의 코스로 다시 띄운다
-  Future<void> stop() async {
+  /// 내려갔으면 참. **거짓이면 앞사람의 여행이 잠금화면에 남아 있다.**
+  Future<bool> stop() async {
     dispose();
-    await _ref.read(tripActivityServiceProvider).end();
+    return _ref.read(tripActivityServiceProvider).end();
   }
 
   void dispose() {
@@ -75,7 +76,18 @@ class TripActivityController with WidgetsBindingObserver {
     final service = _ref.read(tripActivityServiceProvider);
     if (!await service.isAvailable()) return;
 
-    final cards = await _ref.read(savedCoursesProvider('UPCOMING').future);
+    final List<Map<String, dynamic>> cards;
+    try {
+      cards = await _ref.read(savedCoursesProvider('UPCOMING').future);
+    } on Object catch (e) {
+      // **코스를 못 읽었다고 떠 있는 것을 그냥 두지 않는다.** 서버가 계속
+      // 실패하면 지난 여행 D-day 가 잠금화면에 무기한 남는다 — 무엇을
+      // 띄울지 모르는 상태라면 아무것도 띄우지 않는 편이 맞다
+      debugPrint('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
+      await service.end();
+      rethrow;
+    }
+
     final trips = cards
         .map(TripCountdown.tryFrom)
         .whereType<TripCountdown>()
