@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notification/application/app_icon_badge.dart';
+import '../../features/trip_activity/application/trip_activity_controller.dart';
 import '../network/dio_client.dart';
 import '../storage/secure_storage.dart';
 import '../widgets/app_toast.dart';
@@ -30,6 +31,19 @@ class SessionExpiryListener extends ConsumerWidget {
   }
 
   Future<void> _handleExpiry(BuildContext context, WidgetRef ref) async {
+    // 잠금화면에 떠 있던 여행을 내린다 — 앱을 꺼도 남는 화면이라, 세션이
+    // 끊긴 뒤에도 앞사람의 여행지·날짜가 보인다. 옵저버도 함께 뗀다:
+    // 내리기만 하면 앱을 다시 앞으로 낼 때 앞사람의 코스로 되살아난다.
+    //
+    // **토큰 정리와 따로 떼어 둔다.** 같은 try 에 두면 Keychain 이 먼저
+    // 실패했을 때 이 줄을 건너뛰면서도 '지웠다'고 말하게 된다
+    var lockScreenCleared = false;
+    try {
+      lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
+    } on Exception catch (e) {
+      debugPrint('세션 만료 처리 중 잠금화면을 내리지 못했다: $e');
+    }
+
     try {
       // 못 쓰는 토큰이 남아 있으면 앱을 다시 켤 때 또 홈으로 들어가 같은 일이
       // 되풀이된다
@@ -46,6 +60,11 @@ class SessionExpiryListener extends ConsumerWidget {
 
     if (!context.mounted) return;
     ref.read(appRouterProvider).go(AppRoutes.login);
-    showAppToast(context, '로그인이 만료됐어요. 다시 로그인해 주세요');
+    showAppToast(
+      context,
+      lockScreenCleared
+          ? '로그인이 만료됐어요. 다시 로그인해 주세요'
+          : '로그인이 만료됐어요. 잠금화면의 여행 정보는 지우지 못했어요',
+    );
   }
 }

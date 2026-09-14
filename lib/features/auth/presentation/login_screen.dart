@@ -15,6 +15,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../notification/application/push_registration.dart';
+import '../../trip_activity/application/trip_activity_controller.dart';
 import '../application/current_user_provider.dart';
 import '../data/auth_repository.dart';
 import '../data/google_auth_service.dart';
@@ -115,6 +116,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // 풀어 두기도 했다 — 여기서 다시 잡지 않으면 다음 앱 실행까지
       // 푸시가 오지 않는다. 기다리지 않는다: 권한·토큰 조회가 몇 초 걸린다
       unawaited(ref.read(pushRegistrationProvider).start());
+      // 잠금화면 D-day 도 여기서 켠다. 앱 시작 때 켜는 자리는 콜드 스타트에
+      // 토큰이 있을 때만 지나가므로(main.dart 의 postSplashRoute), 방금
+      // 로그인한 사람은 앱을 껐다 켜기 전까지 한 번도 못 본다
+      ref.read(tripActivityControllerProvider).start();
 
       if (!mounted) return;
       // 이번에 계정이 만들어졌으면 잔여 연차를 받아야 홈이 채워진다.
