@@ -14,8 +14,7 @@ import '../../../core/utils/nickname.dart';
 import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
-import '../../home/presentation/home_screen.dart'
-    show homeSnapshotProvider, homeUserProvider;
+import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
 ///
@@ -25,7 +24,12 @@ class WithdrawScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nickname = ref.watch(homeUserProvider).value?['nickname'] as String?;
+    // **homeUserProvider 를 보지 않는다.** `/home` 의 이름은 비회원까지
+    // 아우르는 값이라 로그인해도 '게스트'가 온다(core HomeResponse.GUEST_NAME).
+    // currentUserProvider 가 `/users/me` 로 그것을 덮은 값을 쓴다 — 마이
+    // 화면이 부르는 이름과 같아야 한다
+    final nickname =
+        ref.watch(currentUserProvider).value?['nickname'] as String?;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
