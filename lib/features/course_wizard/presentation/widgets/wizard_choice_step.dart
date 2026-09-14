@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import 'wizard_option_button.dart';
 
 /// 위저드 공통 선택 스텝 레이아웃 (STEP0/이동수단/일정밀도가 공유하는 패턴)
 /// 상단 뒤로가기+스텝, 아이콘, 질문, 선택 버튼들, 하단 다음 CTA.
@@ -70,7 +71,7 @@ class WizardChoiceStep extends StatelessWidget {
                     const SizedBox(height: 55),
                     for (var i = 0; i < options.length; i++) ...[
                       if (i > 0) const SizedBox(height: 16),
-                      _OptionButton(
+                      WizardOptionButton(
                         label: options[i],
                         selected: selectedIndex == i,
                         onTap: () => onSelect(i),
@@ -123,45 +124,6 @@ class WizardChoiceStep extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// 선택지 버튼 — 고르면 채움을 걷어내고 Primary 테두리로 표시한다
-class _OptionButton extends StatelessWidget {
-  const _OptionButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 200,
-        constraints: const BoxConstraints(minHeight: 48),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? null : AppColors.fillNormal,
-          borderRadius: BorderRadius.circular(12),
-          border: selected ? Border.all(color: AppColors.primaryNormal) : null,
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: AppTypography.body1NormalBold.copyWith(
-            color: selected ? AppColors.primaryNormal : AppColors.labelNormal,
-          ),
-        ),
       ),
     );
   }

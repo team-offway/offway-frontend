@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../application/course_wizard_provider.dart';
+import 'widgets/wizard_option_button.dart';
 
 /// O-04-0 · 날짜 갈림길 (STEP 0)
 /// "가고싶은 날짜가 있어요" → 캘린더 / "아직 안 정했어요" → 기간스타일
@@ -50,7 +51,7 @@ class DateGateScreen extends ConsumerWidget {
             ),
             // 시안 측정값 — 부제와 첫 카드 사이 48
             const SizedBox(height: 48),
-            _OptionButton(
+            WizardOptionButton(
               label: '가고싶은 날짜가 있어요',
               selected: choice == DatePathChoice.haveDates,
               onTap: () => ref
@@ -58,7 +59,7 @@ class DateGateScreen extends ConsumerWidget {
                   .selectDatePath(DatePathChoice.haveDates),
             ),
             const SizedBox(height: 16),
-            _OptionButton(
+            WizardOptionButton(
               label: '아직 안 정했어요',
               selected: choice == DatePathChoice.undecided,
               onTap: () => ref
@@ -117,44 +118,6 @@ class DateGateScreen extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OptionButton extends StatelessWidget {
-  const _OptionButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          // 고른 카드는 배경을 비우고 테두리·글자를 브랜드색으로 세운다
-          color: selected ? AppColors.backgroundNormal : AppColors.fillNormal,
-          borderRadius: BorderRadius.circular(12),
-          border: selected
-              ? Border.all(color: AppColors.primaryNormal, width: 1.5)
-              : null,
-        ),
-        child: Text(
-          label,
-          style: AppTypography.body1NormalMedium.copyWith(
-            color: selected ? AppColors.primaryNormal : AppColors.labelNeutral,
-          ),
-        ),
       ),
     );
   }
