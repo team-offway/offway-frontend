@@ -586,7 +586,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       children: [
         if (consumed != null) ...[
           _Badge(
-            iconAsset: 'assets/icons/ic_clock.svg',
+            // 시안(1545:46487)은 시계가 글자와 같은 #3DC2FF **100%**다.
+            // ic_clock 은 fill-opacity 0.61 이 박혀 있어 불투명 색을
+            // srcIn 으로 씌워도 61%로 나갔다 — 글자보다 옅었다.
+            //
+            // 그 에셋은 기간 스타일 카드가 61%인 채로 쓰므로 건드리지 않고,
+            // 불투명 사본을 따로 둔다
+            iconAsset: 'assets/icons/ic_clock_filled.svg',
             label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
           ),
           const SizedBox(width: 8),

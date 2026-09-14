@@ -87,14 +87,13 @@ class _BenefitRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              // **색을 덮지 않는다.** 에셋의 fill-opacity 0.61이 이미
+              // 시안 농도다 — labelAlternative를 srcIn으로 또 씌우면
+              // 0.37로 곱해진다
               SvgPicture.asset(
                 'assets/icons/ic_chevron_right.svg',
                 width: 12,
                 height: 24,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.labelAlternative,
-                  BlendMode.srcIn,
-                ),
               ),
             ],
           ),
