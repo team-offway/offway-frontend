@@ -476,7 +476,7 @@ class _DaysField extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _TrailingIcon(
+                _EditStateIcon(
                   hasError: hasError,
                   focused: focused,
                   // 값을 지운 상태를 '수정 완료'로 보여줄 수는 없다
@@ -508,8 +508,13 @@ class _DaysField extends StatelessWidget {
 }
 
 /// 입력 칸 오른쪽 아이콘 — 상태마다 다른 것이 붙는다
-class _TrailingIcon extends StatelessWidget {
-  const _TrailingIcon({
+/// 입력 칸 오른쪽의 **편집 상태** 아이콘 — 연필이면 고칠 수 있다는 표시,
+/// 체크면 직접 손댄 값이라는 표시다. 눌리면 커서를 입력 칸으로 보낸다.
+///
+/// 총 연차 화면의 `_ValidityIcon`과 **이름만 닮았고 다른 물건이다** —
+/// 그쪽은 값이 유효한지를 말하고 탭도 받지 않는다. 합치지 않는다.
+class _EditStateIcon extends StatelessWidget {
+  const _EditStateIcon({
     required this.hasError,
     required this.focused,
     required this.edited,

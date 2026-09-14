@@ -15,6 +15,7 @@ import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
 import '../data/leave_usages_provider.dart';
+import 'widgets/sparkle.dart';
 
 /// 총 연차일수를 고쳐 쓰는 화면 — 마이 > 내 연차 관리.
 ///
@@ -307,14 +308,14 @@ class _RemainingCard extends StatelessWidget {
         children: [
           // 시안 좌표(카드 안쪽 기준) — 타이머를 둘러싸듯 흩어 둔다.
           // 패딩 71을 뺀 자리라 왼쪽 값이 시안보다 그만큼 작다
-          const Positioned(left: 131, top: 14, child: _Sparkle(size: 9)),
-          const Positioned(left: 70, top: -5, child: _Sparkle(size: 7.3)),
+          const Positioned(left: 131, top: 14, child: Sparkle(size: 9)),
+          const Positioned(left: 70, top: -5, child: Sparkle(size: 7.3)),
           // 왼쪽 아래만 한 단 옅다 — 내 연차 화면의 같은 자리와 맞춘다.
           // 셋을 같은 색으로 두면 반짝임이 평평해 보인다
           const Positioned(
             left: 81,
             top: 40,
-            child: _Sparkle(size: 9, tone: AppPalette.lightBlue70),
+            child: Sparkle(size: 9, tone: AppPalette.lightBlue70),
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -367,29 +368,6 @@ class _RemainingCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 카드 위 반짝이 — 브랜드색이 SVG에 박혀 있어 색을 덧씌우지 않는다
-/// 타이머 둘레에 흩어 둔 반짝임.
-///
-/// 에셋 원본은 `#3DC2FF`(Light Blue 60)다. [tone]을 주면 그 색으로 덮는다 —
-/// 셋을 같은 농도로 두면 반짝임이 평평해 보여 하나만 한 단 옅게 쓴다.
-class _Sparkle extends StatelessWidget {
-  const _Sparkle({required this.size, this.tone});
-
-  final double size;
-
-  /// null이면 에셋 원본색을 그대로 쓴다
-  final Color? tone;
-
-  @override
-  Widget build(BuildContext context) => SvgPicture.asset(
-    'assets/icons/ic_star_four.svg',
-    width: size,
-    height: size,
-    excludeFromSemantics: true,
-    colorFilter: tone == null ? null : ColorFilter.mode(tone!, BlendMode.srcIn),
-  );
 }
 
 /// ⓘ 제목 + 본문 두 줄짜리 안내.
@@ -564,7 +542,7 @@ class _DaysField extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _TrailingIcon(
+                _ValidityIcon(
                   hasError: hasError,
                   // 지울 것이 있을 때만 ✕를 띄운다 — 빈 칸에 지우기가
                   // 떠 있으면 무엇을 지우라는 것인지 알 수 없다
@@ -593,8 +571,12 @@ class _DaysField extends StatelessWidget {
 /// 입력 칸 오른쪽 표식 — 오류면 경고, 입력 중이면 지우기, 다 됐으면 체크.
 ///
 /// 연차 사용 등록의 같은 자리와 아이콘 세트를 맞춘다(22px DS 에셋).
-class _TrailingIcon extends StatelessWidget {
-  const _TrailingIcon({
+/// 입력 칸 오른쪽의 **유효성** 아이콘 — 값이 올바르면 체크, 아니면 빈 자리다.
+///
+/// 연차 등록 화면의 `_EditStateIcon`과 **이름만 닮았고 다른 물건이다** —
+/// 그쪽은 편집 상태를 말하고 눌리면 커서를 보낸다. 합치지 않는다.
+class _ValidityIcon extends StatelessWidget {
+  const _ValidityIcon({
     required this.hasError,
     required this.focused,
     required this.valid,
