@@ -16,6 +16,7 @@ import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
+import 'widgets/sparkle.dart';
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
@@ -262,14 +263,18 @@ class _TotalLeaveEntry extends StatelessWidget {
                   height: 48.9,
                   excludeFromSemantics: true,
                 ),
-                const Positioned(left: -15.7, top: -4.9, child: _Sparkle(7.3)),
-                const Positioned(left: 45.7, top: 14, child: _Sparkle(9)),
+                const Positioned(
+                  left: -15.7,
+                  top: -4.9,
+                  child: Sparkle(size: 7.3),
+                ),
+                const Positioned(left: 45.7, top: 14, child: Sparkle(size: 9)),
                 // 왼쪽 아래만 한 단 옅다 — 시안이 셋을 같은 색으로 두지
                 // 않는다. 나란히 놓으면 반짝임이 평평해 보이기 때문이다
                 const Positioned(
                   left: -4.5,
                   top: 39.9,
-                  child: _Sparkle(9, tone: AppPalette.lightBlue70),
+                  child: Sparkle(size: 9, tone: AppPalette.lightBlue70),
                 ),
               ],
             ),
@@ -308,28 +313,6 @@ class _TotalLeaveEntry extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 타이머 둘레에 흩어 둔 반짝임.
-///
-/// 에셋 원본은 `#3DC2FF`(Light Blue 60)다. [tone]을 주면 그 색으로 덮는다 —
-/// 시안이 세 개를 같은 농도로 두지 않아 하나만 한 단 옅게 쓴다.
-class _Sparkle extends StatelessWidget {
-  const _Sparkle(this.size, {this.tone});
-
-  final double size;
-
-  /// null이면 에셋 원본색을 그대로 쓴다
-  final Color? tone;
-
-  @override
-  Widget build(BuildContext context) => SvgPicture.asset(
-    'assets/icons/ic_star_four.svg',
-    width: size,
-    height: size,
-    excludeFromSemantics: true,
-    colorFilter: tone == null ? null : ColorFilter.mode(tone!, BlendMode.srcIn),
-  );
 }
 
 /// 잔여 일수만 쓰는 큰 숫자.
