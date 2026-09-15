@@ -7,6 +7,10 @@ import '../../../core/constants/trip_constants.dart';
 /// 앱이 아는 것만으로 만든다 — 코스에는 시각 정보가 없어(장소마다 몇 시인지
 /// 서버가 주지 않는다) "몇 시에 어디"는 띄울 수 없다. 날짜로 답할 수 있는
 /// 것만 담는다.
+///
+/// **문구는 여기서 만들지 않는다.** 네이티브 `ContentState` 가 재료(남은 날·
+/// 며칠째·날짜)에서 조립한다(core #577 B안). 서버가 자정에 보내는 것과 같은
+/// 재료라, 앱이 띄운 카드와 서버가 갱신한 카드가 다른 말을 하지 않는다.
 @immutable
 class TripCountdown {
   const TripCountdown({
@@ -14,7 +18,6 @@ class TripCountdown {
     required this.regionName,
     required this.startDate,
     required this.endDate,
-    required this.durationLabel,
   });
 
   final String courseId;
@@ -25,9 +28,6 @@ class TripCountdown {
   /// 여행 첫날·마지막날 (둘 다 포함)
   final DateTime startDate;
   final DateTime endDate;
-
-  /// '당일치기' · '1박 2일' · '2박 3일'
-  final String durationLabel;
 
   /// 오늘 기준 남은 날. 여행 첫날이면 0, 지났으면 음수다.
   ///
@@ -50,58 +50,30 @@ class TripCountdown {
   bool isPast(DateTime now) =>
       DateUtils.dateOnly(endDate).isBefore(DateUtils.dateOnly(now));
 
-  /// 잠금화면에 그대로 띄우는 한 줄.
+  /// 남은 날 — **출발 전에만 값이 있다.** 여행 중이면 null.
   ///
-  /// 여행 중에는 남은 날이 아니라 **며칠째인지**를 말한다 — 이미 떠나 온
-  /// 사람에게 'D-0'은 알려 주는 것이 없다
-  String headline(DateTime now) {
-    // 끝난 여행은 문구가 없다 — pick() 이 고르지 않고 컨트롤러가 내린다.
-    // 마지막날이 지나면 잠금화면에 남아 있을 이유가 없다
-    if (isOngoing(now)) {
-      final nth =
-          calendarDaysBetween(
-            DateUtils.dateOnly(startDate),
-            DateUtils.dateOnly(now),
-          ) +
-          1;
-      return '$regionName 여행 $nth일차';
-    }
-    final left = daysUntil(now);
-    if (left == 1) return '내일 $regionName 여행';
-    return '$regionName 여행 D-$left';
+  /// 서버 `TripProgress`(core #577)와 같은 계약이다. [dayNth]와 **둘 중 하나만**
+  /// 값이 있다 — 비어 있다는 것 자체가 뜻이라(출발 전이냐 여행 중이냐) 네이티브에
+  /// null 도 그대로 넘긴다
+  int? daysLeft(DateTime now) => isOngoing(now) ? null : daysUntil(now);
+
+  /// 여행 며칠째 — **여행 중에만 값이 있다.** 출발 당일이 1이고 0일차는 없다.
+  ///
+  /// 이미 떠나 온 사람에게 'D-0'은 알려 주는 것이 없다 — 첫날부터 며칠째로 센다
+  int? dayNth(DateTime now) {
+    if (!isOngoing(now)) return null;
+    return calendarDaysBetween(
+          DateUtils.dateOnly(startDate),
+          DateUtils.dateOnly(now),
+        ) +
+        1;
   }
 
-  /// 다이나믹 아일랜드 좁은 자리에 넣는 **한 토막** — `D-3` · `1일차` · `종료`.
-  ///
-  /// [headline]과 같은 분기를 따르되 지역명을 뺀다 — 알약 옆에는 서너 글자밖에
-  /// 들어가지 않는다. **네이티브에서 조건으로 만들지 않는다**: 좁은 자리에
-  /// 분기를 두면 여행 중일 때 그 자리가 빈 채로 남는다
-  String compactLabel(DateTime now) {
-    if (isOngoing(now)) {
-      final nth =
-          calendarDaysBetween(
-            DateUtils.dateOnly(startDate),
-            DateUtils.dateOnly(now),
-          ) +
-          1;
-      return '$nth일차';
-    }
-    // 여행 첫날은 위 isOngoing 이 '1일차'로 가져간다 — 여기 닿는 것은
-    // 아직 떠나지 않은 날뿐이라 D-DAY 갈래가 따로 필요 없다
-    return 'D-${daysUntil(now)}';
-  }
-
-  /// `2026.7.26 - 7.28` — 부제로 쓰는 기간 표기
-  String get rangeLabel {
-    final s = '${startDate.year}.${startDate.month}.${startDate.day}';
-    if (DateUtils.isSameDay(startDate, endDate)) return s;
-    // 해를 넘기면 끝날에도 연도를 붙인다 — '12.31 - 1.2' 는 어느 해에
-    // 끝나는지 알 수 없다
-    final end = startDate.year == endDate.year
-        ? '${endDate.month}.${endDate.day}'
-        : '${endDate.year}.${endDate.month}.${endDate.day}';
-    return '$s - $end';
-  }
+  /// `2026-09-23` — 네이티브·서버와 약속한 날짜 표기. 시각·시간대를 싣지 않는다
+  static String isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   /// 저장 코스 카드(`_toSavedCardMap`)에서 만든다.
   ///
@@ -121,7 +93,6 @@ class TripCountdown {
       regionName: card['regionName'] as String? ?? '',
       startDate: start,
       endDate: end,
-      durationLabel: card['durationLabel'] as String? ?? '',
     );
   }
 

@@ -188,6 +188,9 @@ class _SpyService implements TripActivityService {
 
   @override
   Future<bool> start(TripCountdown trip, {DateTime? now}) async => true;
+
+  @override
+  void listenPushToken(PushTokenListener listener) {}
 }
 
 class _FakePushRegistration implements PushRegistration {

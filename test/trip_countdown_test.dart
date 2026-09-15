@@ -16,7 +16,6 @@ void main() {
     regionName: region,
     startDate: start,
     endDate: end ?? start,
-    durationLabel: '당일치기',
   );
 
   final now = DateTime(2026, 9, 20);
@@ -41,42 +40,36 @@ void main() {
     });
   });
 
-  group('문구', () {
-    test('앞둔 여행은 D-n 으로 적는다', () {
-      expect(trip(start: DateTime(2026, 9, 23)).headline(now), '정선군 여행 D-3');
+  group('재료', () {
+    // **문구는 여기서 만들지 않는다.** 네이티브 ContentState 가 조립한다
+    // (core #577 B안). 앱은 서버가 자정에 보내는 것과 같은 재료만 넘긴다 —
+    // 남은 날·며칠째 **둘 중 하나만** 값이 있다
+    test('출발 전에는 남은 날만 있다', () {
+      final t = trip(start: DateTime(2026, 9, 23));
+      expect(t.daysLeft(now), 3);
+      expect(t.dayNth(now), isNull);
     });
 
-    test('하루 앞이면 내일이라고 말한다 — D-1 보다 읽힌다', () {
-      expect(trip(start: DateTime(2026, 9, 21)).headline(now), '내일 정선군 여행');
-    });
-
-    test('여행 중에는 며칠째인지 말한다', () {
-      // 이미 떠나 온 사람에게 'D-0'은 알려 주는 것이 없다
+    test('여행 중에는 며칠째만 있다', () {
       final t = trip(start: DateTime(2026, 9, 19), end: DateTime(2026, 9, 21));
-      expect(t.headline(now), '정선군 여행 2일차');
+      expect(t.daysLeft(now), isNull);
+      expect(t.dayNth(now), 2);
     });
 
-    test('첫날은 1일차다', () {
+    test('출발 당일은 1일차다 — 0일차는 없다', () {
+      // 이미 떠나 온 사람에게 D-0 은 알려 주는 것이 없다
       final t = trip(start: DateTime(2026, 9, 20), end: DateTime(2026, 9, 22));
-      expect(t.headline(now), '정선군 여행 1일차');
-    });
-  });
-
-  group('좁은 자리 문구', () {
-    // 다이나믹 아일랜드 알약 옆에는 서너 글자밖에 들어가지 않는다.
-    // **갈래가 모두 값을 내야 한다** — 비면 그 자리가 빈 채로 남는다
-    test('앞둔 여행은 D-n 이다', () {
-      expect(trip(start: DateTime(2026, 9, 23)).compactLabel(now), 'D-3');
+      expect(t.daysLeft(now), isNull);
+      expect(t.dayNth(now), 1);
     });
 
-    test('첫날은 1일차다 — headline 과 같은 말을 쓴다', () {
-      final t = trip(start: DateTime(2026, 9, 20), end: DateTime(2026, 9, 22));
-      expect(t.compactLabel(now), '1일차');
-    });
-
-    test('여행 중에는 며칠째인지 말한다', () {
-      final t = trip(start: DateTime(2026, 9, 19), end: DateTime(2026, 9, 21));
-      expect(t.compactLabel(now), '2일차');
+    test('날짜는 yyyy-MM-dd 로 넘긴다 — 시각·시간대를 싣지 않는다', () {
+      // 서버·네이티브가 같은 표기를 읽는다. 한 자리 월·일도 0 을 채운다
+      expect(TripCountdown.isoDate(DateTime(2026, 9, 3)), '2026-09-03');
+      expect(
+        TripCountdown.isoDate(DateTime(2026, 12, 25, 15, 30)),
+        '2026-12-25',
+      );
     });
   });
 
@@ -86,7 +79,7 @@ void main() {
       final t = trip(start: DateTime(2026, 9, 18), end: DateTime(2026, 9, 20));
       expect(t.isOngoing(now), isTrue);
       expect(t.isPast(now), isFalse);
-      expect(t.compactLabel(now), '3일차');
+      expect(t.dayNth(now), 3);
     });
 
     test('날짜가 뒤집힌 데이터는 고르지 않는다', () {
@@ -121,7 +114,6 @@ void main() {
         'courseId': '7',
         'regionName': '정선군',
         'startDate': raw,
-        'durationLabel': '당일치기',
       });
 
       final expected = DateUtils.dateOnly(DateTime.parse(raw).toLocal());
@@ -129,23 +121,6 @@ void main() {
       // 로컬 자정으로 맞춰 둬야 calendarDaysBetween 이 하루를 안 흘린다
       expect(t.startDate.isUtc, isFalse);
       expect([t.startDate.hour, t.startDate.minute], [0, 0]);
-    });
-  });
-
-  group('기간 표기', () {
-    test('당일치기는 하루만 적는다', () {
-      expect(trip(start: DateTime(2026, 7, 26)).rangeLabel, '2026.7.26');
-    });
-
-    test('해를 넘기면 끝날에도 연도를 붙인다', () {
-      // '2026.12.31 - 1.2' 로는 어느 해에 끝나는지 알 수 없다
-      final t = trip(start: DateTime(2026, 12, 31), end: DateTime(2027, 1, 2));
-      expect(t.rangeLabel, '2026.12.31 - 2027.1.2');
-    });
-
-    test('여러 날이면 끝날을 붙인다', () {
-      final t = trip(start: DateTime(2026, 7, 26), end: DateTime(2026, 7, 28));
-      expect(t.rangeLabel, '2026.7.26 - 7.28');
     });
   });
 

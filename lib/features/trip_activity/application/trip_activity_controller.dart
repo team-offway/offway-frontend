@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../course/presentation/my_courses_screen.dart'
     show savedCoursesProvider;
+import '../data/live_activity_repository.dart';
 import '../data/trip_activity_service.dart';
 import '../domain/trip_countdown.dart';
 
@@ -15,11 +16,15 @@ final tripActivityServiceProvider = Provider<TripActivityService>(
 /// **하루에 한 번꼴로 바뀌는 값이다**(D-3 → D-2). 자주 부를 이유가 없어
 /// 앱이 켜지거나 포그라운드로 돌아올 때만 맞춘다 — 타이머를 두지 않는다.
 ///
-/// 1단계(로컬)라 **앱이 꺼져 있는 동안에는 갱신되지 않는다.** 자정을 넘겨도
-/// 다음에 앱을 열 때 맞춰진다. 서버 푸시로 갱신하려면 APNs 직접 호출이
-/// 필요한데(이슈 #261 2단계) 그건 별도 작업이다.
+/// 앱이 꺼져 있는 동안은 **서버가 자정마다 갱신한다**(core #577). 그러려면
+/// 카드의 푸시 토큰을 서버가 알아야 하는데, 네이티브가 토큰을 올려 보내면
+/// 여기서 등록한다. 카드를 내릴 때는 등록도 지운다.
 class TripActivityController with WidgetsBindingObserver {
-  TripActivityController(this._ref);
+  TripActivityController(this._ref) {
+    // 토큰 수신자는 **한 번만** 건다. 카드가 떠야 토큰이 오므로 start()
+    // 전에는 어차피 안 오고, 세션이 끝난 뒤 늦게 온 것은 _stopped 가 거른다
+    _ref.read(tripActivityServiceProvider).listenPushToken(_onPushToken);
+  }
 
   final Ref _ref;
   bool _started = false;
@@ -32,6 +37,10 @@ class TripActivityController with WidgetsBindingObserver {
   /// 멈춘 뒤인가. 진행 중이던 sync() 가 깨어났을 때 물러나게 한다 —
   /// 세션이 끝났는데 앞사람의 코스를 다시 띄우면 안 된다
   bool _stopped = false;
+
+  /// 지금 잠금화면에 떠 있는 코스. 내릴 때 서버 등록도 같이 지우려면
+  /// 어느 코스였는지 알아야 한다
+  String? _liveCourseId;
 
   void start() {
     if (_started) return;
@@ -58,6 +67,9 @@ class TripActivityController with WidgetsBindingObserver {
 
     // 앞의 맞추기가 끝나길 기다린다 — 실패했든 말든 순서만 지키면 된다
     await (_syncing ?? Future<void>.value()).catchError((_) {});
+    // 서버 등록을 먼저 지운다 — 아직 이 사람의 토큰이 살아 있을 때라야
+    // 요청이 통한다(로그아웃 뒤에는 401 이다)
+    await _unregisterLive();
     return _ref.read(tripActivityServiceProvider).end();
   }
 
@@ -100,7 +112,10 @@ class TripActivityController with WidgetsBindingObserver {
       // 실패하면 지난 여행 D-day 가 잠금화면에 무기한 남는다 — 무엇을
       // 띄울지 모르는 상태라면 아무것도 띄우지 않는 편이 맞다
       debugPrint('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
-      if (!_stopped) await service.end();
+      if (!_stopped) {
+        await _unregisterLive();
+        await service.end();
+      }
       rethrow;
     }
 
@@ -115,10 +130,49 @@ class TripActivityController with WidgetsBindingObserver {
     final picked = TripCountdown.pick(trips, now ?? DateTime.now());
 
     if (picked == null) {
+      await _unregisterLive();
       await service.end();
       return;
     }
-    await service.start(picked, now: now);
+    // 다른 코스로 바뀐다 — 앞 코스의 등록은 지운다. 안 지우면 서버가
+    // 내린 카드에 매일 갱신을 보내다 410 을 받고서야 치운다
+    if (_liveCourseId != null && _liveCourseId != picked.courseId) {
+      await _unregisterLive();
+    }
+    if (await service.start(picked, now: now)) {
+      _liveCourseId = picked.courseId;
+    }
+  }
+
+  /// 네이티브가 카드의 토큰을 올려 보냈다 — 서버에 등록한다.
+  ///
+  /// **기다리지 않는다.** 등록이 늦어도 카드는 이미 떠 있다. 실패하면 다음
+  /// 자정 갱신이 안 오는 것뿐이고, iOS 가 토큰을 다시 주거나 앱이 다시
+  /// 띄울 때 또 온다
+  void _onPushToken(String courseId, String token) {
+    if (_stopped) return; // 세션이 끝난 뒤 늦게 온 토큰 — 남의 것이 된다
+    _ref
+        .read(liveActivityRepositoryProvider)
+        .register(courseId: courseId, token: token)
+        .catchError((Object e) {
+          debugPrint('잠금화면 갱신 토큰을 올리지 못했다: $e');
+        });
+  }
+
+  /// 떠 있던 코스의 서버 등록을 지운다.
+  ///
+  /// 실패해도 삼킨다 — 안 불러도 결국 정리된다(여행이 끝나면 배치가, 토큰이
+  /// 죽으면 410 이 지운다). 이 호출은 그보다 빨리 치우는 것뿐이라, 잠금화면
+  /// 정리나 로그아웃을 막을 이유가 없다
+  Future<void> _unregisterLive() async {
+    final id = _liveCourseId;
+    if (id == null) return;
+    _liveCourseId = null;
+    try {
+      await _ref.read(liveActivityRepositoryProvider).unregister(id);
+    } on Object catch (e) {
+      debugPrint('잠금화면 갱신 등록을 지우지 못했다: $e');
+    }
   }
 }
 
