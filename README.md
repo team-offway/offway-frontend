@@ -36,6 +36,7 @@
 | 소셜 로그인 | kakao_flutter_sdk_user, sign_in_with_apple, google_sign_in |
 | 공유 | kakao_flutter_sdk_share (카카오톡 공유 카드) |
 | 푸시 | firebase_core, firebase_messaging (기기 등록·포그라운드 배너까지 연동) |
+| 잠금화면·다이나믹 아일랜드 | ActivityKit — Swift Widget Extension(`ios/TripActivity/`). Flutter 는 재료(지역·남은 날·날짜)만 넘기고 **문구 조립은 네이티브 한 곳**에서 한다 |
 
 ## 폴더 구조
 
@@ -51,6 +52,7 @@ lib/
 │   └── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
 ├── mock/                      # 테스트 픽스처 로더 (앱 코드에서는 쓰지 않음)
 └── features/                  # 기능(도메인) 단위 모듈
+    ├── splash/                    # 스플래시 · 첫 화면 판정
     ├── auth/                      # 로그인 (카카오·Apple·구글)
     ├── onboarding/                # 잔여연차 입력
     ├── home/                      # 홈
@@ -59,8 +61,13 @@ lib/
     ├── course/                    # 코스 확정·내 코스·공유
     ├── leave/                     # 내 연차·사용 내역
     ├── notification/              # 알림
+    ├── trip_activity/             # 잠금화면·다이나믹 아일랜드 여행 D-day
+    ├── update/                    # 앱 업데이트 안내
     ├── policy/                    # 약관·방침
     └── my/                        # 마이
+
+ios/TripActivity/              # Live Activity 확장 (Swift) — 카드 그리기·문구 조립
+docs/                          # 백엔드 요청서 · Live Activity 설정 기록
 ```
 
 새 기능은 `features/<기능명>/` 아래에 `data`(API·repository) / `domain`(모델) / `presentation`(화면·상태) 구조로 추가합니다.
@@ -80,11 +87,13 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8080
 flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 ```
 
+실기기에 **설치해서 단독으로 켤** 때는 `flutter build ios --profile` 로 빌드합니다. `--debug` 는 Dart 코드를 Mac 의 Flutter 툴에서 받아오므로 `flutter run` 이나 Xcode 없이 홈 화면에서 열면 곧바로 죽습니다.
+
 `env.json`은 `env.json.example`을 복사해 만듭니다. 배포 서버가 임시 Basic 게이트 뒤에 있어 계정 없이 부르면 전부 401이 납니다. **gitignore 대상이라 커밋하지 않습니다.**
 
 ## 현재 상태
 
-**App Store 정식 출시** (2026-08-27, v1.0.0). 전 화면이 실 서버와 연동되어 있고, mock 데이터는 테스트에서만 씁니다.
+**App Store 정식 출시** (2026-08-27, v1.0.0) — 최신 출시 **1.0.4**, 1.0.5 심사 중. 전 화면이 실 서버와 연동되어 있고, mock 데이터는 테스트에서만 씁니다.
 
 | 영역 | 상태 |
 |---|---|
@@ -95,6 +104,7 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 | 지역 상세 · 이번달 추천 여행지 | 연동 완료 |
 | 알림 목록 · 푸시(FCM) | 연동 완료 (기기 등록, 포그라운드 배너) |
 | 회원탈퇴 | 연동 완료 |
+| 잠금화면·다이나믹 아일랜드 여행 D-day | 연동 완료 |
 
 사전 배포와 검증은 TestFlight로 진행합니다.
 
@@ -117,6 +127,11 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 flutter test        # 위젯·단위 테스트
 flutter analyze
 dart format .
+
+# 네이티브(Swift) — 잠금화면 문구 규칙 · 서버 content-state 계약
+# (먼저 flutter build ios --simulator 로 Flutter 프레임워크를 만들어 둔다)
+cd ios && xcodebuild test -workspace Runner.xcworkspace -scheme Runner \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:RunnerTests
 ```
 
 PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해야 머지할 수 있습니다. `main` 직접 푸시는 브랜치 보호로 차단되어 있습니다.
@@ -124,6 +139,7 @@ PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해�
 ## 비고
 
 - 번들 ID: `com.nth.offway` · App Store 등록명: **[Offway - 연차로 떠나는 로컬 여행](https://apps.apple.com/app/id6793610290)**
+- iOS 최소 버전은 **15.0**, Live Activity 확장만 **16.1** 입니다. 15.x 기기는 앱은 정상이고 잠금화면 카드만 없습니다 — 그 기기들은 다이나믹 아일랜드 하드웨어가 없어 앱 버전을 올려도 얻는 것이 없습니다. 확장 설정과 겪은 함정은 `docs/live-activity-setup.md`
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 엽니다 (`.xcodeproj` 아님)
 - 카카오 앱 키를 바꿀 때는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 합니다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못합니다
 - 레포가 **public**이므로 시크릿은 어떤 형태로도 커밋하지 않습니다 (카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret 등 — 서버가 쓰는 값은 백엔드 환경변수로만 관리)
