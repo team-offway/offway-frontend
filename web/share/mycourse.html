@@ -509,11 +509,19 @@
       return w ? md + ' ' + w : md;
     }
 
+    // 앱 뱃지와 같은 시계 — assets/icons/ic_clock_filled.svg 의 경로 그대로.
+    // 원이 꽉 찬 채 바늘을 파낸 모양이라 선으로 그린 시계와 결이 다르다.
+    // fill 은 currentColor 로 두어 뱃지 글자색을 따른다
     var CLOCK =
-      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-      '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>' +
-      '<path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" ' +
-      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="' +
+      'M12 2.1C6.53239 2.1 2.10003 6.53238 2.10003 12C2.10003 17.4676 6.53239 21.9 ' +
+      '12 21.9C17.4676 21.9 21.9 17.4676 21.9 12C21.9 6.53238 17.4676 2.1 12 2.1Z' +
+      'M11.4999 6.09941C11.9969 6.09941 12.3999 6.50236 12.3999 6.99941V12.1267' +
+      'L14.7146 14.4414C15.0661 14.7929 15.0661 15.3628 14.7146 15.7142' +
+      'C14.3631 16.0657 13.7933 16.0657 13.4418 15.7142L10.8634 13.1358' +
+      'C10.6838 12.9563 10.596 12.7198 10.5999 12.4845V6.99941' +
+      'C10.5999 6.50236 11.0028 6.09941 11.4999 6.09941Z"/></svg>';
 
     /// 첫 뱃지에만 시계 아이콘을 단다 (시안: 사용 연차 뱃지)
     function renderBadges(list, withClock) {
