@@ -38,8 +38,11 @@ class TripActivityController with WidgetsBindingObserver {
   /// 세션이 끝났는데 앞사람의 코스를 다시 띄우면 안 된다
   bool _stopped = false;
 
-  /// 지금 잠금화면에 떠 있는 코스. 내릴 때 서버 등록도 같이 지우려면
-  /// 어느 코스였는지 알아야 한다
+  /// 지금 잠금화면에 떠 있는(또는 띄우는 중인) 코스.
+  ///
+  /// 둘에 쓴다 — 내릴 때 서버 등록을 같이 지우고, **올라온 토큰이 이 코스의
+  /// 것인지 가른다.** 네이티브 watcher 는 취소 검사와 Dart 호출 사이에 틈이
+  /// 있어, 코스를 갈아타는 도중 내린 코스의 토큰이 늦게 닿을 수 있다
   String? _liveCourseId;
 
   void start() {
@@ -139,9 +142,12 @@ class TripActivityController with WidgetsBindingObserver {
     if (_liveCourseId != null && _liveCourseId != picked.courseId) {
       await _unregisterLive();
     }
-    if (await service.start(picked, now: now)) {
-      _liveCourseId = picked.courseId;
-    }
+    // **띄우기 전에 세운다.** 토큰은 start() 가 답한 뒤에 오지만, 그 전에
+    // 세워 둬야 '시작 중인 코스' 의 토큰을 남의 것으로 버리지 않는다.
+    // 띄우기가 실패해도 그대로 둔다 — 다음 맞추기가 다시 띄우고, 지울 일이
+    // 생기면 등록된 적 없는 코스의 DELETE 는 서버가 성공으로 받는다
+    _liveCourseId = picked.courseId;
+    await service.start(picked, now: now);
   }
 
   /// 네이티브가 카드의 토큰을 올려 보냈다 — 서버에 등록한다.
@@ -151,6 +157,13 @@ class TripActivityController with WidgetsBindingObserver {
   /// 띄울 때 또 온다
   void _onPushToken(String courseId, String token) {
     if (_stopped) return; // 세션이 끝난 뒤 늦게 온 토큰 — 남의 것이 된다
+    // **지금 떠 있는 코스의 토큰만 올린다.** 코스를 갈아타는 도중 내린 코스의
+    // 토큰이 늦게 닿으면, 방금 지운 등록이 죽은 토큰으로 되살아난다 — 서버가
+    // 자정마다 거기 보내다 410 을 받고서야 치운다
+    if (courseId != _liveCourseId) {
+      debugPrint('내린 코스($courseId)의 토큰은 올리지 않는다');
+      return;
+    }
     _ref
         .read(liveActivityRepositoryProvider)
         .register(courseId: courseId, token: token)

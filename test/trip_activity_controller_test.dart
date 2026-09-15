@@ -183,7 +183,7 @@ void main() {
         service,
         repository: repo,
       );
-      c.read(tripActivityControllerProvider);
+      await c.read(tripActivityControllerProvider).sync(now: now);
 
       service.listener!('122', 'old');
       service.listener!('122', 'new');
@@ -260,6 +260,44 @@ void main() {
 
       expect(repo.unregistered, ['122']);
       expect(service.started?.courseId, '130');
+    });
+
+    test('코스를 갈아탄 뒤 늦게 온 앞 코스의 토큰은 올리지 않는다', () async {
+      // 네이티브 watcher 는 취소 검사와 Dart 호출 사이에 틈이 있어, 내린
+      // 코스의 토큰이 새 코스를 띄운 뒤에 닿을 수 있다. 그대로 올리면 방금
+      // 지운 등록이 죽은 토큰으로 되살아난다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final cards = [card(id: '122', start: '2026-09-22')];
+      final c = containerWith(cards, service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      cards
+        ..clear()
+        ..add(card(id: '130', start: '2026-09-21'));
+      c.invalidate(savedCoursesProvider('UPCOMING'));
+      await controller.sync(now: now);
+
+      service.listener!('122', 'stale'); // 내린 코스 — 늦게 닿았다
+      service.listener!('130', 'fresh'); // 지금 떠 있는 코스
+      await settle();
+
+      expect(repo.registered.map((r) => r.courseId), ['130']);
+      expect(repo.unregistered, ['122']);
+    });
+
+    test('아직 띄우지 않은 코스의 토큰은 올리지 않는다', () async {
+      // 어떤 코스도 안 띄웠는데 토큰이 오면 남의 것이거나 낡은 것이다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      c.read(tripActivityControllerProvider);
+
+      service.listener!('122', 'orphan');
+      await settle();
+
+      expect(repo.registered, isEmpty);
     });
 
     test('등록이 실패해도 카드는 떠 있다', () async {

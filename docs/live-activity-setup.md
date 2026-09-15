@@ -79,10 +79,10 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 앱이 꺼져 있어도 `D-3` 이 `D-2` 로 바뀐다. 서버가 APNs 를 직접 불러
 (FCM 은 Live Activity 를 중계하지 않는다) 카드를 갱신한다.
 
-**문구는 앱이, 재료는 서버가.** `ContentState` 는 `regionName` · `daysLeft` ·
-`dayNth` · `startDate` · `endDate` 다섯 칸이고, 앱이 띄울 때도 서버가 갱신할
-때도 같은 칸을 넣는다. 조립은 `TripActivityAttributes.swift` 의 extension
-한 곳이다 — 카피를 바꿀 때 서버를 고칠 일이 없다. 규칙은 `RunnerTests` 의
+**재료는 앱과 서버가, 문구는 네이티브가.** `ContentState` 는 `regionName` ·
+`daysLeft` · `dayNth` · `startDate` · `endDate` 다섯 칸이고, 앱이 띄울 때도
+서버가 갱신할 때도 같은 칸을 넣는다. 조립은 `TripActivityAttributes.swift` 의
+`ContentState` extension 한 곳이다 — 카피를 바꿀 때 서버를 고칠 일이 없다. 규칙은 `RunnerTests` 의
 `TripPhraseTests` 가 잠근다.
 
 **칸 이름이 하나라도 어긋나면 오류 없이 화면만 안 바뀐다.** 서버
