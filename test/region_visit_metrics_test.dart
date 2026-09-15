@@ -193,6 +193,52 @@ void main() {
       expect(find.text('출처 · 관광빅데이터'), findsOneWidget);
     });
 
+    testWidgets('시트의 닫기는 오른쪽 위 — 글리프가 시안 좌표에 온다', (tester) async {
+      // 시안(1583:38596): 닫기 22×22 가 오른쪽 26 · 위 28. 제목 행과 윗변이
+      // 맞는다. AppIconButton 은 글리프를 44 탭 박스 가운데에 두므로, 박스를
+      // 제목에 맞추면 글리프가 11 아래·안쪽으로 밀린다 — QA 가 짚은 자리다
+      await pump(
+        tester,
+        const QuietestDay(label: '화요일', percentLessThanOtherDays: 30),
+      );
+      await tester.tap(find.bySemanticsLabel('한산한 요일 안내'));
+      await tester.pumpAndSettle();
+
+      final sheet = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('출처 · 관광빅데이터'),
+              matching: find.byType(Stack),
+            )
+            .first,
+      );
+      final glyph = tester.getRect(
+        find.descendant(
+          of: find.bySemanticsLabel('닫기'),
+          matching: find.byType(SvgPicture),
+        ),
+      );
+
+      expect(glyph.size, const Size(22, 22));
+      expect(glyph.top - sheet.top, 28, reason: '제목 행과 윗변이 맞아야 한다');
+      expect(sheet.right - glyph.right, 26);
+    });
+
+    testWidgets('시트의 닫기를 누르면 닫힌다', (tester) async {
+      await pump(
+        tester,
+        const QuietestDay(label: '화요일', percentLessThanOtherDays: 30),
+      );
+      await tester.tap(find.bySemanticsLabel('한산한 요일 안내'));
+      await tester.pumpAndSettle();
+      expect(find.text('출처 · 관광빅데이터'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('닫기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('출처 · 관광빅데이터'), findsNothing);
+    });
+
     testWidgets('i를 누르면 근거와 출처가 뜬다', (tester) async {
       // 근거 없이 숫자만 보이면 어디까지 믿을지 판단할 수 없다
       await pump(

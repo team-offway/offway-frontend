@@ -57,7 +57,12 @@ class AppIconButton extends StatelessWidget {
   final bool tintAsset;
 
   /// 손가락으로 눌러 빗나가지 않는 최소 크기
-  static const _minTapTarget = 44.0;
+  /// 탭 영역 한 변. 글리프는 이 박스 **가운데**에 놓인다.
+  ///
+  /// 시안이 글리프 위치로 좌표를 주면, 바깥에서 `(tapTarget - size) / 2` 만큼
+  /// 당겨야 글리프가 그 자리에 온다 — 박스 모서리를 맞추면 글리프가
+  /// 안쪽으로 밀린다
+  static const tapTarget = 44.0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +74,8 @@ class AppIconButton extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          width: _minTapTarget,
-          height: _minTapTarget,
+          width: tapTarget,
+          height: tapTarget,
           child: Center(
             child: path == null
                 ? Icon(icon, size: size, color: color)
