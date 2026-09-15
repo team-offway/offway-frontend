@@ -26,6 +26,8 @@ class TripDateRangePicker extends StatelessWidget {
     this.maxSpanDays = kMaxTripSpanDays,
     this.showTripLabels = true,
     this.allowedWeekdays,
+    this.allowPast = false,
+    this.pastMonthCount = 0,
   });
 
   final DateTime today;
@@ -51,23 +53,64 @@ class TripDateRangePicker extends StatelessWidget {
   /// 아무 요일에나 붙이면 코스와 날짜가 어긋난다.
   final Set<int>? allowedWeekdays;
 
+  /// 오늘 이전 날짜도 고를 수 있는가.
+  ///
+  /// 여행은 지난 날에 갈 수 없지만 **연차는 이미 쓴 날을 등록**한다 — 지난주에
+  /// 쓴 연차를 오늘 적는 것이 보통이다
+  final bool allowPast;
+
+  /// 오늘 달 앞으로 몇 달을 더 그리는가. 0이면 오늘 달부터 시작한다.
+  ///
+  /// [allowPast] 만 켜면 이번 달의 지난 날짜만 열린다 — 달력이 오늘 달부터
+  /// 그리기 때문에 지난달은 아예 안 보인다. 지난달 연차를 등록하려면 뒤로도
+  /// 그려야 한다. **열었을 때는 오늘 달에서 시작한다** — 과거 달은 위로
+  /// 스크롤해 간다
+  final int pastMonthCount;
+
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: padding,
-      itemCount: monthCount,
-      itemBuilder: (context, i) => _MonthCalendar(
-        month: DateTime(today.year, today.month + i),
-        today: today,
-        startDate: startDate,
-        endDate: endDate,
-        onSelect: onSelect,
-        maxSpanDays: maxSpanDays,
-        showTripLabels: showTripLabels,
-        allowedWeekdays: allowedWeekdays,
-      ),
+    // 오늘 달을 기준점(center)으로 두고 과거는 위, 미래는 아래로 편다.
+    // 과거 달이 없으면(pastMonthCount 0) 미래 슬리버 하나뿐이라 지금까지의
+    // ListView 와 같은 배치다 — 위저드는 달라지지 않는다
+    const todayKey = ValueKey('today-month');
+    return CustomScrollView(
+      center: todayKey,
+      slivers: [
+        if (pastMonthCount > 0)
+          SliverPadding(
+            padding: padding.copyWith(bottom: 0),
+            sliver: SliverList.builder(
+              itemCount: pastMonthCount,
+              // center 위쪽 슬리버는 아래에서 위로 쌓인다 — i=0 이 오늘
+              // 바로 앞 달이어야 오늘 달과 이어진다
+              itemBuilder: (context, i) => _month(today.month - 1 - i),
+            ),
+          ),
+        SliverPadding(
+          key: todayKey,
+          padding: padding.copyWith(top: pastMonthCount > 0 ? 0 : padding.top),
+          sliver: SliverList.builder(
+            itemCount: monthCount,
+            itemBuilder: (context, i) => _month(today.month + i),
+          ),
+        ),
+      ],
     );
   }
+
+  /// [month] 는 오늘 해 기준 월 번호 — 0 이하나 13 이상이어도 DateTime 이
+  /// 해를 넘겨 맞춰 준다
+  Widget _month(int month) => _MonthCalendar(
+    month: DateTime(today.year, month),
+    today: today,
+    startDate: startDate,
+    endDate: endDate,
+    onSelect: onSelect,
+    maxSpanDays: maxSpanDays,
+    showTripLabels: showTripLabels,
+    allowedWeekdays: allowedWeekdays,
+    allowPast: allowPast,
+  );
 }
 
 class _MonthCalendar extends StatelessWidget {
@@ -80,6 +123,7 @@ class _MonthCalendar extends StatelessWidget {
     required this.maxSpanDays,
     required this.showTripLabels,
     required this.allowedWeekdays,
+    required this.allowPast,
   });
 
   final DateTime month;
@@ -90,6 +134,7 @@ class _MonthCalendar extends StatelessWidget {
   final int? maxSpanDays;
   final bool showTripLabels;
   final Set<int>? allowedWeekdays;
+  final bool allowPast;
 
   static const _weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -149,7 +194,8 @@ class _MonthCalendar extends StatelessWidget {
   /// 정책: 지난 날짜와, 가는날을 고른 뒤 상한을 넘는 날짜는 고를 수 없다.
   /// 단, 범위가 완성된 뒤에는 다시 열어 다른 시점으로 재선택할 수 있게 한다.
   bool _isDisabled(DateTime date) {
-    if (date.isBefore(today)) return true;
+    // 연차 등록은 지난 날을 연다 — 이미 쓴 날을 적는 자리다
+    if (!allowPast && date.isBefore(today)) return true;
     // 위저드에서 정한 요일 밖은 닫는다 — 그 조건으로 짠 코스라 아무 요일에나
     // 붙이면 일정과 날짜가 어긋난다
     if (allowedWeekdays case final Set<int> days) {
