@@ -195,8 +195,15 @@ class PeriodStyleScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
               child: Text(
                 // 왜 완료가 잠겼는지 알려준다. 주말이 빠진 경우가 가장 헷갈린다
-                // — 목·금처럼 이어 골랐는데도 버튼이 흐린 이유가 안 보인다
-                range.days >= WeekdayRange.minDays && !range.includesWeekend
+                // — 목·금처럼 이어 골랐는데도 버튼이 흐린 이유가 안 보인다.
+                //
+                // **조건을 채우면 비운다.** 다 골랐는데 '연속된 요일만' 이 남아
+                // 있으면 아직 뭘 더 해야 하는 줄 안다. 빈 문자열도 한 줄
+                // 높이를 차지하므로 완료 버튼이 위로 튀지 않는다
+                range.canConfirm
+                    ? ''
+                    : range.days >= WeekdayRange.minDays &&
+                          !range.includesWeekend
                     ? '토요일이나 일요일이 하루는 포함돼야 해요'
                     : '연속된 요일만 선택 가능해요',
                 textAlign: TextAlign.center,
