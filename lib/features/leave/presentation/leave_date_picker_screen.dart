@@ -141,6 +141,10 @@ class _LeaveDatePickerScreenState extends ConsumerState<LeaveDatePickerScreen> {
                 maxSpanDays: null,
                 // 여행이 아니라 연차 쓴 날이라 '가는날/오는날'이 맞지 않는다
                 showTripLabels: false,
+                // 연차는 **이미 쓴 날을 등록**한다 — 지난주 연차를 오늘 적는
+                // 것이 보통이다. 지난달까지 닿게 뒤로도 그린다
+                allowPast: true,
+                pastMonthCount: 12,
               ),
             ),
             _buildActionArea(consumed, calculating),
