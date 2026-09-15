@@ -531,6 +531,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         width: 1080,
         pixelRatio: 1,
         precacheImages: _shareImages(course, day),
+        // 사용 연차 뱃지의 시계 — 미리 안 넣으면 캡처된 이미지에 빈칸이다
+        precacheSvgs: const [CourseShareImage.clockAsset],
       );
       await Gal.putImageBytes(
         png,
@@ -599,12 +601,18 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         ],
         _Badge(
           // 목록 카드와 같은 규칙 — 날짜가 지났다고 '여행완료'가 아니라,
-          // 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'
-          label: switch (dDay) {
-            0 => 'D-DAY',
-            > 0 => 'D-$dDay',
-            _ => visited ? '여행완료' : '미방문',
-          },
+          // 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'.
+          //
+          // 지난 여행인지는 **종료일**로 가른다(`courseCardBadge`와 동일).
+          // dDay(출발일 기준)로 가르면 2·3일차에 '미방문'이 찍힌다
+          label:
+              DateUtils.dateOnly(
+                end,
+              ).isBefore(DateUtils.dateOnly(DateTime.now()))
+              ? (visited ? '여행완료' : '미방문')
+              : dDay > 0
+              ? 'D-$dDay'
+              : 'D-DAY',
         ),
       ],
     );

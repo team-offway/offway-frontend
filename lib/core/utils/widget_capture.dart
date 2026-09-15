@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/rendering.dart';
 
 /// [widget]을 화면 밖에서 그려 PNG 바이트로 만든다.
@@ -17,6 +18,7 @@ Future<Uint8List> captureWidgetPng(
   required double width,
   double pixelRatio = 3,
   List<ImageProvider> precacheImages = const [],
+  List<String> precacheSvgs = const [],
 }) async {
   // 이미지를 미리 받아 캐시에 올린다 — 실패한 것은 빈 자리로 두고 넘어간다
   for (final provider in precacheImages) {
@@ -27,6 +29,7 @@ Future<Uint8List> captureWidgetPng(
       // 죽은 URL 하나 때문에 저장을 통째로 막지 않는다
     }
   }
+  await precacheSvgAssets(precacheSvgs);
   if (!context.mounted) {
     throw StateError('캡처 중 화면이 사라졌습니다');
   }
@@ -67,5 +70,20 @@ Future<Uint8List> captureWidgetPng(
     }
   } finally {
     entry.remove();
+  }
+}
+
+/// SVG 에셋을 flutter_svg 캐시에 미리 넣는다.
+///
+/// SVG 는 첫 그리기에서 비동기로 로드된다 — 캡처가 두 프레임 안에 돌면 그
+/// 자리가 빈 이미지가 된다. 미리 넣어 두면 첫 프레임부터 동기로 그려진다
+/// (course_map 의 핀과 같은 방식). 부르는 쪽이 캡처 전에 기다려야 한다
+Future<void> precacheSvgAssets(Iterable<String> assets) async {
+  for (final asset in assets) {
+    final loader = SvgAssetLoader(asset);
+    await svg.cache.putIfAbsent(
+      loader.cacheKey(null),
+      () => loader.loadBytes(null),
+    );
   }
 }
