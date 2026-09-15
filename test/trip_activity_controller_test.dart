@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart'
     show savedCoursesProvider;
 import 'package:offway/features/trip_activity/application/trip_activity_controller.dart';
+import 'package:offway/features/trip_activity/data/live_activity_repository.dart';
 import 'package:offway/features/trip_activity/data/trip_activity_service.dart';
 import 'package:offway/features/trip_activity/domain/trip_countdown.dart';
 
@@ -16,6 +17,12 @@ class _FakeService implements TripActivityService {
   final bool available;
   TripCountdown? started;
   int endCount = 0;
+
+  /// 컨트롤러가 걸어 둔 토큰 수신자 — 테스트가 네이티브인 척 부른다
+  PushTokenListener? listener;
+
+  @override
+  void listenPushToken(PushTokenListener listener) => this.listener = listener;
 
   @override
   Future<bool> isAvailable() async => available;
@@ -51,17 +58,25 @@ void main() {
 
   ProviderContainer containerWith(
     List<Map<String, dynamic>> cards,
-    _FakeService service,
-  ) {
+    _FakeService service, {
+    _FakeRepository? repository,
+  }) {
     final c = ProviderContainer(
       overrides: [
         tripActivityServiceProvider.overrideWithValue(service),
+        liveActivityRepositoryProvider.overrideWithValue(
+          repository ?? _FakeRepository(),
+        ),
+        // 목록을 나중에 바꿔 다시 읽게 할 수 있게 같은 리스트를 돌려준다
         savedCoursesProvider('UPCOMING').overrideWith((ref) async => cards),
       ],
     );
     addTearDown(c.dispose);
     return c;
   }
+
+  /// 마이크로태스크를 비운다 — 기다리지 않는 등록이 끝나길
+  Future<void> settle() => Future<void>.delayed(Duration.zero);
 
   test('가장 가까운 예정 여행을 띄운다', () async {
     final service = _FakeService();
@@ -138,6 +153,174 @@ void main() {
     expect(service.started?.regionName, '가평군');
   });
 
+  group('서버 갱신 등록 (core #577)', () {
+    // 서버가 자정마다 카드를 갱신하려면 그 카드의 푸시 토큰을 알아야 한다.
+    // 네이티브가 토큰을 올리면 등록하고, 카드를 내리면 등록도 지운다
+
+    test('토큰이 오면 서버에 등록한다', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      service.listener!('122', '80a1b2');
+      await settle();
+
+      expect(repo.registered, [(courseId: '122', token: '80a1b2')]);
+    });
+
+    test('토큰이 다시 와도 같은 등록을 다시 보낸다', () async {
+      // iOS 가 토큰을 갈아 끼우면 또 준다 — 서버가 멱등이라 그대로 보낸다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      service.listener!('122', 'old');
+      service.listener!('122', 'new');
+      await settle();
+
+      expect(repo.registered.map((r) => r.token), ['old', 'new']);
+    });
+
+    test('세션이 끝나면 등록을 지우고 내린다', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      await controller.stop();
+
+      expect(repo.unregistered, ['122']);
+      expect(service.endCount, 1);
+    });
+
+    test('멈춘 뒤 늦게 온 토큰은 올리지 않는다', () async {
+      // 로그아웃 뒤 도착한 토큰을 올리면 남의 계정으로 등록된다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.stop();
+
+      service.listener!('122', 'late');
+      await settle();
+
+      expect(repo.registered, isEmpty);
+    });
+
+    test('띄울 것이 없어지면 등록도 지운다', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final cards = [card(id: '122', start: '2026-09-22')];
+      final c = containerWith(cards, service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      cards.clear();
+      c.invalidate(savedCoursesProvider('UPCOMING'));
+      await controller.sync(now: now);
+
+      expect(repo.unregistered, ['122']);
+      expect(service.endCount, 1);
+    });
+
+    test('다른 코스로 바뀌면 앞 코스의 등록을 지운다', () async {
+      // 안 지우면 서버가 내린 카드에 매일 갱신을 보내다 410 을 받고서야 치운다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final cards = [card(id: '122', start: '2026-09-22')];
+      final c = containerWith(cards, service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      cards
+        ..clear()
+        ..add(card(id: '130', start: '2026-09-21'));
+      c.invalidate(savedCoursesProvider('UPCOMING'));
+      await controller.sync(now: now);
+
+      expect(repo.unregistered, ['122']);
+      expect(service.started?.courseId, '130');
+    });
+
+    test('코스를 갈아탄 뒤 늦게 온 앞 코스의 토큰은 올리지 않는다', () async {
+      // 네이티브 watcher 는 취소 검사와 Dart 호출 사이에 틈이 있어, 내린
+      // 코스의 토큰이 새 코스를 띄운 뒤에 닿을 수 있다. 그대로 올리면 방금
+      // 지운 등록이 죽은 토큰으로 되살아난다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final cards = [card(id: '122', start: '2026-09-22')];
+      final c = containerWith(cards, service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      cards
+        ..clear()
+        ..add(card(id: '130', start: '2026-09-21'));
+      c.invalidate(savedCoursesProvider('UPCOMING'));
+      await controller.sync(now: now);
+
+      service.listener!('122', 'stale'); // 내린 코스 — 늦게 닿았다
+      service.listener!('130', 'fresh'); // 지금 떠 있는 코스
+      await settle();
+
+      expect(repo.registered.map((r) => r.courseId), ['130']);
+      expect(repo.unregistered, ['122']);
+    });
+
+    test('아직 띄우지 않은 코스의 토큰은 올리지 않는다', () async {
+      // 어떤 코스도 안 띄웠는데 토큰이 오면 남의 것이거나 낡은 것이다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      c.read(tripActivityControllerProvider);
+
+      service.listener!('122', 'orphan');
+      await settle();
+
+      expect(repo.registered, isEmpty);
+    });
+
+    test('등록이 실패해도 카드는 떠 있다', () async {
+      // 등록은 덤이다 — 실패하면 자정 갱신이 안 오는 것뿐이고, 앱을 다시
+      // 열면 다시 띄우며 다시 올린다
+      final service = _FakeService();
+      final repo = _FakeRepository(failRegister: true);
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      service.listener!('122', 'tok');
+      await settle();
+
+      expect(service.started?.courseId, '122');
+      expect(service.endCount, 0);
+    });
+  });
+
   test('기능을 못 쓰는 기기에서는 아무것도 하지 않는다', () async {
     // iOS 16.1 미만·안드로이드·사용자가 껐을 때
     final service = _FakeService(available: false);
@@ -148,4 +331,26 @@ void main() {
     expect(service.started, isNull);
     expect(service.endCount, 0, reason: '내릴 것도 없다');
   });
+}
+
+/// **`noSuchMethod` 를 두지 않는다.** 두면 레포에 메서드가 늘어도 조용히
+/// 삼켜, 실기기에서만 터지는 구멍이 생긴다
+class _FakeRepository implements LiveActivityRepository {
+  _FakeRepository({this.failRegister = false});
+
+  final bool failRegister;
+  final registered = <({String courseId, String token})>[];
+  final unregistered = <String>[];
+
+  @override
+  Future<void> register({
+    required String courseId,
+    required String token,
+  }) async {
+    if (failRegister) throw Exception('등록 실패');
+    registered.add((courseId: courseId, token: token));
+  }
+
+  @override
+  Future<void> unregister(String courseId) async => unregistered.add(courseId);
 }

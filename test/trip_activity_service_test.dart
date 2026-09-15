@@ -32,7 +32,6 @@ void main() {
     regionName: '정선군',
     startDate: DateTime(2026, 9, 23),
     endDate: DateTime(2026, 9, 25),
-    durationLabel: '2박 3일',
   );
 
   test('띄울 때 화면이 쓸 값을 모두 넘긴다', () async {
@@ -43,15 +42,18 @@ void main() {
     final args = (calls.single.arguments as Map).cast<String, Object?>();
     expect(args['courseId'], '7');
     expect(args['regionName'], '정선군');
-    // 문구는 앱이 만들어 넘긴다 — 네이티브가 한국어를 조립하지 않게
-    expect(args['headline'], '정선군 여행 D-3');
-    expect(args['rangeLabel'], '2026.9.23 - 9.25');
-    // 좁은 자리용 한 토막 — 네이티브가 조건으로 만들지 않게 앱이 넘긴다
-    expect(args['compactLabel'], 'D-3');
-    // 네이티브가 안 쓰는 값은 보내지 않는다 — ContentState 는 2단계 서버
-    // 푸시의 계약이라, 안 쓰는 키가 끼어 있으면 그대로 굳는다
-    expect(args.keys, isNot(contains('daysUntil')));
-    expect(args.keys, isNot(contains('startDate')));
+    // **문구가 아니라 재료다**(core #577 B안). 서버가 자정에 보내는 것과
+    // 같은 다섯 칸 — 이름이 하나라도 어긋나면 네이티브가 조용히 못 읽는다
+    expect(args['daysLeft'], 3);
+    expect(args['startDate'], '2026-09-23');
+    expect(args['endDate'], '2026-09-25');
+    // 여행 중이 아니면 dayNth 는 null — **키는 있어야 한다.** 빼면 네이티브가
+    // 직전 값을 그대로 쓴다
+    expect(args.containsKey('dayNth'), isTrue);
+    expect(args['dayNth'], isNull);
+    // 문구 키는 더 보내지 않는다 — ContentState 계약에 없다
+    expect(args.keys, isNot(contains('headline')));
+    expect(args.keys, isNot(contains('compactLabel')));
   });
 
   test('여행 중이면 며칠째인지 넘긴다', () async {
@@ -59,8 +61,53 @@ void main() {
     await service.start(trip, now: DateTime(2026, 9, 24));
 
     final args = (calls.single.arguments as Map).cast<String, Object?>();
-    expect(args['headline'], '정선군 여행 2일차');
-    expect(args['compactLabel'], '2일차');
+    expect(args['dayNth'], 2);
+    expect(args['daysLeft'], isNull);
+  });
+
+  test('네이티브가 올린 푸시 토큰을 받는다', () async {
+    // 카드를 띄우면 iOS 가 토큰을 주고, 네이티브가 Dart 로 되부른다.
+    // 서버 등록은 JWT 를 쥔 Dart 몫이다
+    stub();
+    String? gotCourse;
+    String? gotToken;
+    service.listenPushToken((courseId, token) {
+      gotCourse = courseId;
+      gotToken = token;
+    });
+
+    const codec = StandardMethodCodec();
+    final message = codec.encodeMethodCall(
+      const MethodCall('onPushToken', {'courseId': '7', 'token': '80a1b2'}),
+    );
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          TripActivityService.channelName,
+          message,
+          (_) {},
+        );
+
+    expect(gotCourse, '7');
+    expect(gotToken, '80a1b2');
+  });
+
+  test('빈 토큰은 흘려보낸다', () async {
+    stub();
+    var called = false;
+    service.listenPushToken((_, _) => called = true);
+
+    const codec = StandardMethodCodec();
+    final message = codec.encodeMethodCall(
+      const MethodCall('onPushToken', {'courseId': '7', 'token': ''}),
+    );
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          TripActivityService.channelName,
+          message,
+          (_) {},
+        );
+
+    expect(called, isFalse);
   });
 
   test('내릴 때는 end 를 부른다', () async {

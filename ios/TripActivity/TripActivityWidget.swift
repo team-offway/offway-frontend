@@ -4,8 +4,9 @@ import WidgetKit
 
 /// 여행 D-day 를 잠금화면과 다이나믹 아일랜드에 그린다.
 ///
-/// **값은 Flutter 가 넘긴다** — 여기서는 배치만 맡는다. 문구를 네이티브가
-/// 만들면 같은 말을 두 곳에서 고치게 된다.
+/// **여기서는 배치만 맡는다.** 문구는 `ContentState` 가 재료에서 조립한다 —
+/// 앱이 띄웠든 서버가 자정에 갱신했든(core #577) 같은 다섯 칸이 들어오고
+/// 같은 규칙으로 그려진다.
 @available(iOS 16.1, *)
 struct TripActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -20,7 +21,7 @@ struct TripActivityWidget: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(context.attributes.regionName)
+                    Text(context.state.regionName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.leading, 4)
@@ -44,8 +45,8 @@ struct TripActivityWidget: Widget {
                 Image(systemName: "suitcase.rolling")
             } compactTrailing: {
                 // **분기를 두지 않는다.** 좁은 자리라 숫자만 띄우는데,
-                // 조건을 걸면 여행 중(음수)일 때 자리가 빈 채로 남는다.
-                // 문구는 Flutter 가 만든 것을 그대로 쓴다
+                // 조건을 걸면 여행 중일 때 자리가 빈 채로 남는다.
+                // 조립은 ContentState 가 했다 — 모든 갈래가 값을 낸다
                 Text(context.state.compactLabel)
                     .font(.caption2)
             } minimal: {

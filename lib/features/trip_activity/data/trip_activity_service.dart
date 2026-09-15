@@ -6,10 +6,13 @@ import 'package:flutter/services.dart';
 
 import '../domain/trip_countdown.dart';
 
+/// 네이티브가 카드의 푸시 토큰을 받았다 — 카드 하나마다 토큰이 따로다
+typedef PushTokenListener = void Function(String courseId, String token);
+
 /// 잠금화면·다이나믹 아일랜드(Live Activity)를 여닫는 다리.
 ///
 /// **UI는 Swift가 그린다.** Flutter 위젯으로는 잠금화면을 그릴 수 없어,
-/// 값만 네이티브로 넘기고 화면은 Widget Extension(SwiftUI)이 맡는다.
+/// 재료만 네이티브로 넘기고 화면은 Widget Extension(SwiftUI)이 맡는다.
 ///
 /// iOS 16.1+ 에서만 동작한다. 그 아래거나 안드로이드면 **조용히 아무 일도
 /// 하지 않는다** — 쓰는 쪽이 플랫폼을 검사하지 않게 여기서 삼킨다.
@@ -56,8 +59,11 @@ class TripActivityService {
 
   /// 이 여행으로 잠금화면을 띄운다. 이미 떠 있으면 값만 갈아 끼운다.
   ///
-  /// 하루에 한 번꼴로 바뀌는 값이라(D-3 → D-2) 자주 부를 이유가 없다 —
-  /// 앱이 앞으로 나올 때 한 번이면 충분하다
+  /// **문구가 아니라 재료를 넘긴다**(core #577 B안). 조립은 네이티브
+  /// `ContentState` 가 한다 — 서버가 자정에 보내는 것과 같은 다섯 칸이라
+  /// 앱이 띄운 카드와 서버가 갱신한 카드가 다른 말을 하지 않고, 카피를
+  /// 바꿀 때 서버를 고칠 일이 없다.
+  ///
   /// 성공 여부를 돌려준다 — 타임아웃이 나면 **띄운 건지 아닌지 알 수 없다**.
   /// 그때는 거짓이다(다음 기회에 다시 맞춘다)
   Future<bool> start(TripCountdown trip, {DateTime? now}) async {
@@ -65,10 +71,13 @@ class TripActivityService {
     return _invokeOk('start', {
       'courseId': trip.courseId,
       'regionName': trip.regionName,
-      'headline': trip.headline(at),
-      'rangeLabel': trip.rangeLabel,
-      'durationLabel': trip.durationLabel,
-      'compactLabel': trip.compactLabel(at),
+      // 둘 중 하나만 값이 있다. null 도 그대로 보낸다 — 비어 있다는 것
+      // 자체가 뜻이라(출발 전이냐 여행 중이냐), 빼면 네이티브가 직전
+      // 값을 그대로 쓴다
+      'daysLeft': trip.daysLeft(at),
+      'dayNth': trip.dayNth(at),
+      'startDate': TripCountdown.isoDate(trip.startDate),
+      'endDate': TripCountdown.isoDate(trip.endDate),
     });
   }
 
@@ -78,6 +87,25 @@ class TripActivityService {
   /// 실패를 삼키면 앞사람의 여행지·날짜가 잠금화면에 남은 채로 로그인
   /// 화면으로 넘어간다 — 부르는 쪽이 알아야 다시 시도하든 알리든 한다
   Future<bool> end() => _invokeOk('end', const {});
+
+  /// 네이티브가 카드의 푸시 토큰을 올려 보내면 받는다.
+  ///
+  /// 서버 등록은 JWT 를 쥔 Dart 가 한다(`LiveActivityRepository`). iOS 는
+  /// 카드를 띄운 직후 첫 토큰을 주고, 도중에 갈아 끼우면 또 준다 — 그때마다
+  /// 같은 등록을 다시 보내면 된다(서버가 (사용자, 코스)로 한 행만 둔다)
+  void listenPushToken(PushTokenListener listener) {
+    if (!_isSupportedPlatform) return;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method != 'onPushToken') {
+        throw MissingPluginException('${call.method} 은 받지 않는다');
+      }
+      final args = (call.arguments as Map?)?.cast<String, Object?>();
+      final courseId = args?['courseId'] as String?;
+      final token = args?['token'] as String?;
+      if (courseId == null || token == null || token.isEmpty) return;
+      listener(courseId, token);
+    });
+  }
 
   /// 네이티브가 답하지 않을 때 기다리는 한도.
   ///

@@ -74,6 +74,29 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 나오면 `TripActivityWidget.swift` 의 뷰만 갈아 끼우면 된다(값 전달 경로는
 그대로다).
 
-**서버 푸시 갱신**(이슈 #261 2단계) — 앱이 꺼져 있는 동안에는 값이 안 바뀐다.
-자정을 넘겨도 다음에 앱을 열 때 맞춰진다. 푸시로 갱신하려면 서버가 APNs 를
-직접 불러야 하는데(FCM 은 Live Activity 를 중계하지 않는다) core 작업이 필요하다.
+## 서버가 자정마다 갱신한다 — core #577 (B안)
+
+앱이 꺼져 있어도 `D-3` 이 `D-2` 로 바뀐다. 서버가 APNs 를 직접 불러
+(FCM 은 Live Activity 를 중계하지 않는다) 카드를 갱신한다.
+
+**재료는 앱과 서버가, 문구는 네이티브가.** `ContentState` 는 `regionName` ·
+`daysLeft` · `dayNth` · `startDate` · `endDate` 다섯 칸이고, 앱이 띄울 때도
+서버가 갱신할 때도 같은 칸을 넣는다. 조립은 `TripActivityAttributes.swift` 의
+`ContentState` extension 한 곳이다 — 카피를 바꿀 때 서버를 고칠 일이 없다. 규칙은 `RunnerTests` 의
+`TripPhraseTests` 가 잠근다.
+
+**칸 이름이 하나라도 어긋나면 오류 없이 화면만 안 바뀐다.** 서버
+`ApnsPayload` 와 1:1 이라, 바꿀 일이 생기면 양쪽을 같은 PR 에서 고친다.
+
+흐름: 카드를 띄우면(`pushType: .token`) iOS 가 토큰을 주고 → 네이티브가
+`onPushToken` 으로 Dart 에 올리고 → `LiveActivityRepository` 가
+`POST /api/v1/live-activities` 로 등록한다. 카드를 내리면 `DELETE` 로 지운다.
+등록은 멱등이라 토큰이 다시 와도 같은 요청을 다시 보내면 된다.
+
+**서버에 APNs 키가 들어가야 산다.** `APNS_KEY_ID` 등 환경변수 다섯 개가
+비어 있으면 서버는 갱신만 끄고 부팅한다(`ApnsResult.DISABLED`). 키는
+`3Q22536QKC`(APNs · Team scoped · All topics) — 새로 발급할 것 없다.
+
+**끝까지 확인하려면 TestFlight 빌드여야 한다.** 개발 빌드(시뮬레이터·
+Xcode 실기기)의 토큰은 sandbox 라 운영 APNs 로 안 닿는다. 카드를 띄워 두고
+자정을 넘겨 봐야 갱신이 오는지 안다.

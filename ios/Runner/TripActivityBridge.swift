@@ -4,17 +4,25 @@ import Foundation
 
 /// Flutter 가 부르는 잠금화면 제어 — `TripActivityService` 와 짝이다.
 ///
-/// **문구는 Flutter 가 만들어 넘긴다.** 여기서는 받은 값을 그대로 실어
-/// 띄우기만 한다 — 같은 한국어를 두 곳에서 관리하지 않는다.
+/// **재료만 받는다.** 문구는 `ContentState` 가 조립한다(core #577 B안). 서버가
+/// 자정에 보내는 것과 같은 다섯 칸이라, 앱이 띄운 카드와 서버가 갱신한 카드가
+/// 다른 말을 하지 않는다.
+///
+/// 띄운 카드의 **푸시 토큰은 Dart 로 되돌려 준다**(`onPushToken`). 서버 등록은
+/// JWT 를 쥔 Dart 가 한다.
 enum TripActivityBridge {
     /// Dart 쪽 `TripActivityService.channelName` 과 같아야 한다
     static let channelName = "com.nth.offway/trip_activity"
+
+    /// Dart 를 되부를 때 쓴다 — 푸시 토큰이 나오면 이 채널로 올린다
+    private static var channel: FlutterMethodChannel?
 
     static func register(with controller: FlutterViewController) {
         let channel = FlutterMethodChannel(
             name: channelName,
             binaryMessenger: controller.binaryMessenger
         )
+        self.channel = channel
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "isAvailable":
@@ -29,6 +37,17 @@ enum TripActivityBridge {
         }
     }
 
+    /// 카드 하나의 푸시 토큰이 나왔다 — Dart 가 서버에 올린다.
+    ///
+    /// **메인 스레드에서 부른다.** 채널 호출은 플랫폼 스레드가 계약이다
+    @MainActor
+    static func deliverPushToken(courseId: String, token: String) {
+        channel?.invokeMethod(
+            "onPushToken",
+            arguments: ["courseId": courseId, "token": token]
+        )
+    }
+
     private static func isAvailable() -> Bool {
         guard #available(iOS 16.1, *) else { return false }
         // 사용자가 설정에서 껐을 수도 있다 — 그때도 거짓이다
@@ -40,21 +59,22 @@ enum TripActivityBridge {
         guard let args = arguments as? [String: Any],
               let courseId = args["courseId"] as? String,
               let regionName = args["regionName"] as? String,
-              let headline = args["headline"] as? String,
-              let rangeLabel = args["rangeLabel"] as? String,
-              let durationLabel = args["durationLabel"] as? String,
-              let compactLabel = args["compactLabel"] as? String
+              let startDate = args["startDate"] as? String,
+              let endDate = args["endDate"] as? String
         else {
             return result(
                 FlutterError(code: "BAD_ARGS", message: "필요한 값이 없다", details: nil)
             )
         }
 
+        // Dart 의 null 은 NSNull 로 온다 — `as? Int` 가 nil 을 돌려주므로 그대로 옵셔널.
+        // 둘 중 하나만 값이 있는 것이 정상이다(출발 전이냐 여행 중이냐)
         let state = TripActivityAttributes.ContentState(
-            headline: headline,
-            rangeLabel: rangeLabel,
-            durationLabel: durationLabel,
-            compactLabel: compactLabel
+            regionName: regionName,
+            daysLeft: args["daysLeft"] as? Int,
+            dayNth: args["dayNth"] as? Int,
+            startDate: startDate,
+            endDate: endDate
         )
 
         // **줄을 세워 보낸다.** 앱 재개가 연달아 오거나 sync 중에 로그아웃이
@@ -65,7 +85,6 @@ enum TripActivityBridge {
             do {
                 try await ActivityQueue.shared.startOrUpdate(
                     courseId: courseId,
-                    regionName: regionName,
                     state: state
                 )
                 await MainActor.run { result(nil) }
@@ -102,9 +121,12 @@ enum TripActivityBridge {
 actor ActivityQueue {
     static let shared = ActivityQueue()
 
+    /// 카드마다 토큰을 지켜보는 작업. **카드가 바뀌면 앞의 것을 끊는다** —
+    /// 안 끊으면 내린 카드의 토큰이 계속 올라간다
+    private var tokenWatchers: [String: Task<Void, Never>] = [:]
+
     func startOrUpdate(
         courseId: String,
-        regionName: String,
         state: TripActivityAttributes.ContentState
     ) throws {
         // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —
@@ -113,20 +135,22 @@ actor ActivityQueue {
             $0.attributes.courseId == courseId
         }) {
             Task { await live.update(using: state) }
+            // 앱을 다시 켠 뒤라면 지켜보는 작업이 없다 — 토큰을 다시 올려
+            // 서버가 최신 주소를 갖게 한다(등록은 멱등이다)
+            watchPushToken(of: live)
             return
         }
 
         // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다
         endAllNow()
 
-        _ = try Activity.request(
-            attributes: TripActivityAttributes(
-                courseId: courseId,
-                regionName: regionName
-            ),
+        let activity = try Activity.request(
+            attributes: TripActivityAttributes(courseId: courseId),
             contentState: state,
-            pushType: nil  // 1단계는 앱이 켜져 있을 때만 갱신한다
+            // **토큰을 받는다.** 서버가 자정마다 이 카드를 갱신한다(core #577)
+            pushType: .token
         )
+        watchPushToken(of: activity)
     }
 
     func endAll() {
@@ -134,8 +158,24 @@ actor ActivityQueue {
     }
 
     private func endAllNow() {
+        for watcher in tokenWatchers.values { watcher.cancel() }
+        tokenWatchers.removeAll()
         for activity in Activity<TripActivityAttributes>.activities {
             Task { await activity.end(dismissalPolicy: .immediate) }
+        }
+    }
+
+    /// 토큰이 나올 때마다 Dart 로 올린다. iOS 는 첫 토큰을 곧 주고, 도중에
+    /// 갈아 끼우면 또 준다 — 그때마다 같은 등록을 다시 보내면 된다
+    private func watchPushToken(of activity: Activity<TripActivityAttributes>) {
+        let courseId = activity.attributes.courseId
+        tokenWatchers[courseId]?.cancel()
+        tokenWatchers[courseId] = Task {
+            for await data in activity.pushTokenUpdates {
+                if Task.isCancelled { return }
+                let hex = data.map { String(format: "%02x", $0) }.joined()
+                await TripActivityBridge.deliverPushToken(courseId: courseId, token: hex)
+            }
         }
     }
 }
