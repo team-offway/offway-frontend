@@ -610,13 +610,21 @@ class CourseRepository {
 /// **서버는 타입별 블록에 값을 담고 최상위는 비워 둔다** — 관광지·문화·레포츠는
 /// `useTime`, 식당은 `food.openTime`, 숙소는 체크인/아웃이다. 최상위만 읽으면
 /// 늘 빈 줄로 보인다. 모달과 상세 화면이 같은 값을 말하도록 규칙을 한곳에 둔다
+/// 줄바꿈 사이에 공백뿐인 줄이 하나 이상 — 빈 줄. `poiScheduleOf`가 접는다
+final _blankLines = RegExp(r'\n[ \t ]*(?:\n[ \t ]*)+');
+
 ({String? useTime, String? restDate}) poiScheduleOf(Map<String, dynamic> data) {
   Map<String, dynamic>? block(String key) => data[key] as Map<String, dynamic>?;
 
   // **빈 문자열은 없는 값으로 본다.** 서버가 최상위를 `""`로 채워 보내면
-  // null만 걸러서는 그 빈 값이 이겨, 블록에 든 진짜 운영시간이 묻힌다
+  // null만 걸러서는 그 빈 값이 이겨, 블록에 든 진짜 운영시간이 묻힌다.
+  //
+  // **빈 줄은 접는다.** TourAPI 원문에 `<br><br>`이 흔해(문단 여백) 서버가
+  // 연속 빈 줄을 하나로 줄여 주지만, 그 하나가 "- 3월~10월 …" 과
+  // "- 11월 …" 사이에 남아 정보 상자에서 줄 하나가 통째로 빈다(QA 9/16).
+  // 줄마다 항목이 하나라 빈 줄이 없어도 뜻은 그대로다
   String? text(Object? value) {
-    final s = (value as String?)?.trim();
+    final s = (value as String?)?.replaceAll(_blankLines, '\n').trim();
     return (s == null || s.isEmpty) ? null : s;
   }
 
