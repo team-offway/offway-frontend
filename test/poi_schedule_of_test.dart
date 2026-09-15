@@ -77,6 +77,30 @@ void main() {
     expect(s.useTime, '09:00~18:00');
   });
 
+  test('빈 줄은 접는다 — 줄마다 항목 하나라 여백 없이도 뜻은 같다', () {
+    // 서버(TourText.normalize)는 연속 빈 줄을 하나로만 줄인다. 그 하나가
+    // 정보 상자에서 줄 하나를 통째로 비웠다 (QA 9/16, 연미산자연미술공원)
+    final s = poiScheduleOf(const {
+      'sight': {
+        'useTime':
+            '- 3월~10월 10:00~18:00 (입장마감 17:00)\n\n- 11월 10:00~17:00 (입장마감 16:00)',
+        'restDate': '매주 월요일\n \n\n12월~2월 동절기',
+      },
+    });
+    expect(
+      s.useTime,
+      '- 3월~10월 10:00~18:00 (입장마감 17:00)\n- 11월 10:00~17:00 (입장마감 16:00)',
+    );
+    expect(s.restDate, '매주 월요일\n12월~2월 동절기');
+  });
+
+  test('한 줄 줄바꿈은 그대로다 — 줄 구분이 곧 뜻이다', () {
+    final s = poiScheduleOf(const {
+      'useTime': '[동절기]\n- 10:00~17:00\n※ 폐장 30분 전 매표 마감',
+    });
+    expect(s.useTime, '[동절기]\n- 10:00~17:00\n※ 폐장 30분 전 매표 마감');
+  });
+
   test('블록이 없으면 null — 없는 값을 지어내지 않는다', () {
     final s = poiScheduleOf(const {'title': '좌천동 가구거리'});
     expect(s.useTime, isNull);
