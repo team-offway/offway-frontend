@@ -100,6 +100,51 @@ final class TripPhraseTests: XCTestCase {
         XCTAssertEqual(state(start: "2026-12-31", end: "2027-01-02").rangeLabel, "2026.12.31 - 2027.1.2")
     }
 
+    // MARK: 서버 계약 — core #577 ApnsPayload 가 보내는 JSON 그대로
+
+    /// 서버 `ApnsPayload.contentState()` 가 만드는 모양이다. **칸 이름이 하나라도
+    /// 어긋나면 iOS 가 조용히 못 읽는다** — 오류 없이 화면만 안 바뀐다. 그래서
+    /// 실제 JSON 을 디코딩해 본다. 서버 쪽은 `ApnsPayloadTest` 가 같은 이름을
+    /// 잠그고 있어, 둘이 함께 계약을 쥔다
+    func test서버가보내는JSON을그대로읽는다() throws {
+        let json = """
+        {"regionName":"정선군","daysLeft":2,"dayNth":null,"startDate":"2026-09-23","endDate":"2026-09-25"}
+        """.data(using: .utf8)!
+
+        let s = try JSONDecoder().decode(TripActivityAttributes.ContentState.self, from: json)
+
+        XCTAssertEqual(s.regionName, "정선군")
+        XCTAssertEqual(s.daysLeft, 2)
+        XCTAssertNil(s.dayNth)
+        XCTAssertEqual(s.startDate, "2026-09-23")
+        XCTAssertEqual(s.headline, "정선군 여행 D-2")
+        XCTAssertEqual(s.compactLabel, "D-2")
+    }
+
+    func test여행중갱신도읽는다() throws {
+        // 서버는 null 인 칸도 빼지 않고 싣는다 — 빼면 앱이 직전 값을 그대로 쓴다
+        let json = """
+        {"regionName":"정선군","daysLeft":null,"dayNth":2,"startDate":"2026-09-23","endDate":"2026-09-25"}
+        """.data(using: .utf8)!
+
+        let s = try JSONDecoder().decode(TripActivityAttributes.ContentState.self, from: json)
+
+        XCTAssertNil(s.daysLeft)
+        XCTAssertEqual(s.dayNth, 2)
+        XCTAssertEqual(s.headline, "정선군 여행 2일차")
+    }
+
+    func test칸이름이어긋나면읽지못한다() {
+        // 계약이 깨지는 방향을 잠근다 — 서버가 이름을 바꾸면 여기가 먼저 안다
+        let json = """
+        {"region":"정선군","daysLeft":2,"dayNth":null,"startDate":"2026-09-23","endDate":"2026-09-25"}
+        """.data(using: .utf8)!
+
+        XCTAssertThrowsError(
+            try JSONDecoder().decode(TripActivityAttributes.ContentState.self, from: json)
+        )
+    }
+
     // MARK: 깨진 입력
 
     func test날짜가깨지면원문을그대로내고기간은비운다() {
