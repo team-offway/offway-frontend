@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/utils/leave_format.dart';
@@ -29,6 +30,10 @@ class CourseShareImage extends StatelessWidget {
   final double? consumedLeaveDays;
 
   static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+  /// 사용 연차 뱃지의 시계. 캡처하는 쪽이 이 에셋을 **먼저 캐시에 넣어야**
+  /// 이미지에 그려진다 — SVG 는 첫 그리기에서 비동기로 로드된다
+  static const clockAsset = 'assets/icons/ic_clock_filled.svg';
 
   /// 여행 날짜가 있으면 '내 코스', 없으면 '추천코스'
   bool get _isSaved => saved['startDate'] != null;
@@ -133,7 +138,7 @@ class CourseShareImage extends StatelessWidget {
                 style: _subtitle,
               ),
             const SizedBox(height: 26),
-            _buildBadges(start),
+            _buildBadges(start, end),
           ] else
             Text('맞춤코스로 연차 여행을 떠나보세요.', style: _subtitle),
         ],
@@ -141,21 +146,28 @@ class CourseShareImage extends StatelessWidget {
     );
   }
 
-  /// 사용 연차·D-DAY — 내 코스에만 붙는다
-  Widget _buildBadges(DateTime? start) {
-    final labels = <String>[
+  /// 사용 연차·D-DAY — 내 코스에만 붙는다.
+  ///
+  /// 시안(1023:46577)은 **사용 연차 뱃지에만 시계**를 단다 — D-DAY 뱃지는
+  /// Leading Icon 이 숨김이다. 앱 화면·공유 웹페이지와 같은 규칙이다
+  Widget _buildBadges(DateTime? start, DateTime? end) {
+    final badges = <({String label, bool clock})>[
       if (consumedLeaveDays != null)
-        '사용 연차 일수 ${formatLeaveDays(consumedLeaveDays!)}일',
-      if (start != null) _dDayLabel(start),
-    ].where((s) => s.isNotEmpty).toList();
-    if (labels.isEmpty) return const SizedBox.shrink();
+        (
+          label: '사용 연차 일수 ${formatLeaveDays(consumedLeaveDays!)}일',
+          clock: true,
+        ),
+      if (start != null && end != null)
+        (label: _dDayLabel(start, end), clock: false),
+    ].where((b) => b.label.isNotEmpty).toList();
+    if (badges.isEmpty) return const SizedBox.shrink();
 
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 24,
       runSpacing: 12,
       children: [
-        for (final label in labels)
+        for (final badge in badges)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 10),
             decoration: BoxDecoration(
@@ -163,12 +175,32 @@ class CourseShareImage extends StatelessWidget {
               color: AppColors.primaryNormal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              label,
-              style: AppTypography.headline1Bold.copyWith(
-                color: AppColors.primaryNormal,
-                fontSize: 34,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (badge.clock) ...[
+                  // 시안 실측(1080 기준): 시계 33, 글자와 8. 앱 뱃지와 같은
+                  // 채운 시계(ic_clock_filled)를 primary 로 칠한다.
+                  // **캡처 전에 프리캐시된다** — 안 하면 첫 프레임에 빈칸이다
+                  SvgPicture.asset(
+                    clockAsset,
+                    width: 33,
+                    height: 33,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.primaryNormal,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  badge.label,
+                  style: AppTypography.headline1Bold.copyWith(
+                    color: AppColors.primaryNormal,
+                    fontSize: 34,
+                  ),
+                ),
+              ],
             ),
           ),
       ],
@@ -176,11 +208,20 @@ class CourseShareImage extends StatelessWidget {
   }
 
   /// 지난 여행에는 D-DAY를 붙이지 않는다
-  String _dDayLabel(DateTime start) {
+  /// 내 코스 상세·목록 카드와 같은 규칙 — 날짜가 지났다고 '여행완료'가
+  /// 아니라, 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'.
+  /// 지난 여행에 아무것도 안 붙이면 화면과 이미지가 다른 말을 한다.
+  ///
+  /// 지난 여행인지는 **종료일**로 가른다 — 출발일로 가르면 여행 중
+  /// 2·3일차에 '미방문'이 찍힌다. 종료 전이면 출발일까지 D-n, 당일부터 D-DAY
+  String _dDayLabel(DateTime start, DateTime end) {
     final today = DateUtils.dateOnly(DateTime.now());
+    if (DateUtils.dateOnly(end).isBefore(today)) {
+      final visited = saved['leaveDeducted'] as bool? ?? false;
+      return visited ? '여행완료' : '미방문';
+    }
     final diff = DateUtils.dateOnly(start).difference(today).inDays;
-    if (diff == 0) return 'D-DAY';
-    return diff > 0 ? 'D-$diff' : '';
+    return diff > 0 ? 'D-$diff' : 'D-DAY';
   }
 
   Widget _buildDayHeader(Map<String, dynamic> d) {
