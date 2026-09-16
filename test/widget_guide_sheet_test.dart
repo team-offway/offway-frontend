@@ -21,6 +21,9 @@ void main() {
     await tester.tap(find.text('여행 D-day 위젯'));
     await tester.pumpAndSettle();
 
+    // 설명은 두 줄 — 디자인 요청(9/16)
+    expect(find.textContaining('다음 여행까지 남은 날을 위젯으로 확인해보세요.'), findsOneWidget);
+    expect(find.textContaining('D-day가 자동으로 바뀌어요.'), findsOneWidget);
     // 잠금화면·홈 두 자리를 다 알려준다
     expect(find.text('잠금화면에 넣기'), findsOneWidget);
     expect(find.text('홈 화면에 넣기'), findsOneWidget);
