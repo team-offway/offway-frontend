@@ -43,8 +43,9 @@ class _GuideBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '다음 여행까지 남은 날을 잠금화면과 홈 화면에서 바로 볼 수 있어요. '
-          '앱을 열지 않아도 날짜가 매일 바뀌어요.',
+          // 디자인 요청(9/16) — 두 줄로 나눠 적는다
+          '다음 여행까지 남은 날을 위젯으로 확인해보세요.\n'
+          '여행 날짜가 가까워질수록 D-day가 자동으로 바뀌어요.',
           style: AppTypography.label1NormalMedium.copyWith(
             color: AppColors.labelAlternative,
           ),
