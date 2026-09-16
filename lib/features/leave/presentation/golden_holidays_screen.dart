@@ -108,16 +108,18 @@ class _HeroCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // 시안 실측: 카드 오른쪽 위에 126×117, 위 6 · 오른쪽 4
+          // 시안(1625:39849): 100.58×93.63 을 위 0 · 오른쪽 6.46 에 둔다.
+          // 원본 SVG(125.726×117.039)의 **0.8배**다 — 예전 시안은 원본
+          // 크기 그대로였는데 이번에 줄었다
           Positioned(
-            top: 6,
-            right: 4,
+            top: 0,
+            right: 6.46,
             // PNG 내보내기는 흰 배경이 박혀 와 노란 카드 위에 흰 상자가 떴다.
             // 이 일러스트는 마스크·블러가 없어 SVG로 투명하게 그린다
             child: SvgPicture.asset(
               'assets/images/golden_holiday_sandwich.svg',
-              width: 126,
-              height: 117,
+              width: 100.58,
+              height: 93.63,
               excludeFromSemantics: true,
             ),
           ),
@@ -208,7 +210,8 @@ class _HolidayRow extends StatelessWidget {
                   holiday.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.caption1Regular.copyWith(
+                  // 시안(1625:39892)은 Caption 1/**Medium** 이다
+                  style: AppTypography.caption1Medium.copyWith(
                     color: AppColors.labelAlternative,
                   ),
                 ),
