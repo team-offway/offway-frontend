@@ -34,6 +34,7 @@ import 'widgets/place_info_sheet.dart';
 import 'my_courses_screen.dart' show savedCoursesProvider;
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -449,7 +450,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: course.when(
           // 실제 코스 생성이라 몇 초 걸릴 수 있다 — O-07 로딩 디자인을 쓴다
           // 시안(O-07): "{지역} 여행 코스를 만들고 있어요.."
@@ -659,7 +662,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         Expanded(
           child: ListView(
             controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            padding: EdgeInsets.fromLTRB(20, 18, 20, 24 + context.bottomInset),
             children: [
               Center(
                 child: SvgPicture.asset(

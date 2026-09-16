@@ -14,6 +14,7 @@ import '../../../core/widgets/async_retry.dart';
 import '../../course/presentation/trip_outcome_prompt.dart';
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
 import 'widgets/sparkle.dart';
@@ -75,14 +76,19 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildTopBar(context),
             Expanded(
               child: ListView(
                 // 시안: 상단바와 히어로 카드 사이 24
-                padding: const EdgeInsets.only(top: 24, bottom: 32),
+                padding: EdgeInsets.only(
+                  top: 24,
+                  bottom: 32 + context.bottomInset,
+                ),
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),

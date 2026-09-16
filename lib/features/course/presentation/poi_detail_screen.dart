@@ -16,6 +16,7 @@ import '../../../core/widgets/async_retry.dart';
 import '../../policy/domain/region_benefit.dart';
 import '../../policy/presentation/benefit_badge.dart';
 import '../data/course_repository.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_map.dart';
 import 'widgets/expandable_description.dart';
 
@@ -52,7 +53,9 @@ class PoiDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildHeader(context),
@@ -143,7 +146,7 @@ class _Body extends StatelessWidget {
       padding: EdgeInsets.zero,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 32 + context.bottomInset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

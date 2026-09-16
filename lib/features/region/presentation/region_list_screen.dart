@@ -12,6 +12,7 @@ import '../../home/presentation/home_screen.dart'
     show homePlacesProvider, homeSnapshotProvider;
 import '../data/region_list_repository.dart';
 import '../../policy/data/region_policies_provider.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
 
@@ -120,7 +121,9 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 출처 줄이 화면 끝이다 — 인디케이터 아래로 흐르게 두고 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildTopBar(context),
@@ -146,7 +149,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
             // 섞으면 안 쓴 출처를 표기하게 된다
             DataSourceNote(
               sources: _shownSources,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 12 + context.bottomInset),
             ),
           ],
         ),

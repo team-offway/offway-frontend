@@ -23,6 +23,7 @@ import '../../course/presentation/saved_course_screen.dart'
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import '../../onboarding/data/leave_repository.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'my_leave_screen.dart' show reasonOf, memoOf, CourseDetailButton;
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
@@ -82,7 +83,9 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 끝 여백에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildTopBar(context),
@@ -96,7 +99,12 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
                   ? const Center(child: LeaveEmptyView())
                   : ListView.separated(
                       // 시안 실측: 헤더에서 첫 카드까지 24
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        24,
+                        20,
+                        32 + context.bottomInset,
+                      ),
                       itemCount: usages.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) => _UsageCard(
@@ -192,7 +200,8 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   /// 삭제 모드 하단 — 취소와 삭제하기
   Widget _buildDeleteActions(List<LeaveUsage> usages) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      // 삭제 선택 중에는 이 줄이 화면 끝이다 — 인디케이터만큼 더 띄운다
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + context.bottomInset),
       child: Row(
         children: [
           Expanded(

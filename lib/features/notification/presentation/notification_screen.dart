@@ -16,6 +16,7 @@ import '../application/notification_provider.dart';
 import '../application/push_registration.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
+import '../../../core/utils/bottom_inset.dart';
 
 /// 기기 알림 권한이 켜져 있는지.
 ///
@@ -76,7 +77,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 끝 여백에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildTopBar(context),
@@ -116,7 +119,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
         SliverFillRemaining(
           hasScrollBody: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 40),
+            padding: EdgeInsets.fromLTRB(10, 40, 10, 40 + context.bottomInset),
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Text(

@@ -36,6 +36,7 @@ import 'widgets/place_info_sheet.dart';
 import '../domain/transit_access.dart';
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'my_courses_screen.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
@@ -190,7 +191,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: detail.whenRetryable(
           loading: () => const AppCircularLoadingView(),
           error: (e, _) => AppErrorView(
@@ -272,7 +275,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         Expanded(
           child: ListView(
             controller: _scroll,
-            padding: const EdgeInsets.only(top: 12, bottom: 32),
+            padding: EdgeInsets.only(top: 12, bottom: 32 + context.bottomInset),
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
