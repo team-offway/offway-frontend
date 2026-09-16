@@ -40,9 +40,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('2027 황금연휴 알아보기'), findsOneWidget);
-      expect(find.text('2027년 연차 황금 타이밍'), findsOneWidget);
+      // 시안(1625:39844)이 카드에서 제목 줄을 뺐다
+      expect(find.text('2027년 연차 황금 타이밍'), findsNothing);
       expect(find.text('10.2(토)-10.11(월)'), findsOneWidget);
-      expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요'), findsOneWidget);
+      expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요.'), findsOneWidget);
       expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
       // 설날은 길고 짧은 두 구간이 함께 있다(시안 2·5번)
       expect(find.text('개천절·한글날'), findsOneWidget);

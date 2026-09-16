@@ -38,33 +38,12 @@ class GoldenHolidaysScreen extends StatelessWidget {
             _HeroCard(holiday: hero, background: _heroBackground),
             // 시안 실측: 상단 카드 아래 32 → 제목 → 16 → 목록(행 사이 8)
             const SizedBox(height: 32),
-            // 시안 실측: 시계 24, 글자와 8 띄운다(아이콘 0~24, 글자 32)
-            Row(
-              children: [
-                // 시안은 bulk 변형(테두리 없는 두 톤)이다 — ic_clock은
-                // 외곽선형이라 같은 자리에 놓으면 더 진하고 얇게 보인다.
-                //
-                // 에셋의 원반에 opacity 0.4가 박혀 있고 srcIn 색의 알파와
-                // 곱해진다. labelAlternative(0.61)를 그대로 씌우면
-                // 원반 0.244 → #CECFCF 로 시안 실측 #CECFD0과 맞는다
-                SvgPicture.asset(
-                  'assets/icons/ic_clock_bulk.svg',
-                  width: 24,
-                  height: 24,
-                  excludeFromSemantics: true,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.labelAlternative,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '$kGoldenHolidayYear년 연차 쓰기 좋은 날',
-                  style: AppTypography.headline1Bold.copyWith(
-                    color: AppColors.labelNormal,
-                  ),
-                ),
-              ],
+            // 시안(1625:39881)이 제목 앞 시계를 뺐다 — 글자만 놓인다
+            Text(
+              '$kGoldenHolidayYear년 연차 쓰기 좋은 날',
+              style: AppTypography.headline1Bold.copyWith(
+                color: AppColors.labelNormal,
+              ),
             ),
             const SizedBox(height: 16),
             for (final (i, holiday) in kGoldenHolidays.indexed) ...[
@@ -119,6 +98,10 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       clipBehavior: Clip.antiAlias,
+      // 시안(1625:39844)은 높이 102 다. **고정하지 않고 최소로 둔다** —
+      // 시안 서체(Pretendard JP)와 앱 서체의 글자 높이가 달라 내용은 98 이
+      // 나오고, 시스템 글자 크기를 키우면 102 를 넘는다. 박아 두면 그때 넘친다
+      constraints: const BoxConstraints(minHeight: 102),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),
@@ -139,32 +122,24 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
           Padding(
-            // 시안 실측: 안쪽 24·25
-            padding: const EdgeInsets.fromLTRB(24, 25, 24, 25),
+            // 시안(1625:39844) 안쪽 25 사방
+            padding: const EdgeInsets.all(25),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 시안(1534:44652)이 시계를 여기서 빼고 아래 목록 제목으로
-                // 옮겼다 — 카드는 날짜를 앞세우는 자리다
-                Text(
-                  '$kGoldenHolidayYear년 연차 황금 타이밍',
-                  style: AppTypography.label1ReadingBold.copyWith(
-                    color: AppColors.labelNeutral,
-                  ),
-                ),
-                // 시안 실측: 제목 아래 12 (0~18 → 30)
-                const SizedBox(height: 12),
+                // 시안(1625:39844)이 카드에서 제목 줄을 뺐다 — 날짜와 안내
+                // 두 줄만 남는다
                 Text(
                   holiday.heroRangeLabel,
-                  style: AppTypography.title3Bold.copyWith(
+                  style: AppTypography.headline1Bold.copyWith(
                     color: AppColors.labelNeutral,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '연차 ${holiday.leaveDays}일로 최대 ${holiday.totalDays}일까지 쉴 수 있어요',
-                  style: AppTypography.label1NormalMedium.copyWith(
-                    color: AppColors.labelNeutral,
+                  '연차 ${holiday.leaveDays}일로 최대 ${holiday.totalDays}일까지 쉴 수 있어요.',
+                  style: AppTypography.label2Medium.copyWith(
+                    color: AppColors.labelAlternative,
                   ),
                 ),
               ],
