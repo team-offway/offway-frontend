@@ -130,9 +130,15 @@ actor ActivityQueue {
         state: TripActivityAttributes.ContentState
     ) throws {
         // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —
-        // 두 번 띄우면 잠금화면에 같은 여행이 둘 쌓인다
+        // 두 번 띄우면 잠금화면에 같은 여행이 둘 쌓인다.
+        //
+        // **활성인 것만 "떠 있다"고 본다.** 라이브 액티비티는 8시간이 지나면
+        // 시스템이 끝내는데(`.ended`), 끝난 카드도 잠금화면에 최대 4시간 더
+        // 남아 있고 그동안 `activities` 에도 남는다. 그것을 찾아 `update` 를
+        // 보내면 아무 일도 안 일어난다 — 앱을 다시 열어도 카드가 안 살아난다.
+        // 끝난 것은 아래 `endAllNow()` 가 치우고 새로 띄운다
         if let live = Activity<TripActivityAttributes>.activities.first(where: {
-            $0.attributes.courseId == courseId
+            $0.attributes.courseId == courseId && $0.activityState == .active
         }) {
             Task { await live.update(using: state) }
             // 앱을 다시 켠 뒤라면 지켜보는 작업이 없다 — 토큰을 다시 올려
