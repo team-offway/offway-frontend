@@ -39,6 +39,15 @@
 			</array>
 		</dict>
 		<dict>
+			<!-- 위젯을 눌렀을 때 — offway://course/{id} · offway://wizard -->
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>offway</string>
+			</array>
+		</dict>
+		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>

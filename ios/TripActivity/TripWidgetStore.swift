@@ -129,6 +129,17 @@ struct TripWidgetSnapshot: Equatable {
     let state: TripActivityAttributes.ContentState?
     /// 로그인 전이면 "로그인하고 여행을 담아보세요"
     let signedIn: Bool
+    /// 눌렀을 때 열 코스 — 보여줄 여행이 있을 때만
+    var courseId: String? = nil
+
+    /// 위젯을 눌렀을 때 앱이 받는 주소. 여행이 있으면 그 코스 상세,
+    /// 없으면 코스 만들기. 앱의 `widgetDeepLinkRoute` 가 푼다
+    var deepLink: URL? {
+        if let id = courseId {
+            return URL(string: "offway://course/\(id)")
+        }
+        return URL(string: signedIn ? "offway://wizard" : "offway://home")
+    }
 }
 
 /// 자정마다 바뀌는 시간표 — **서버·푸시 없이** 시스템이 날짜에 맞춰 칸을 바꾼다.
@@ -163,7 +174,13 @@ enum TripWidgetTimeline {
         calendar: Calendar = .current
     ) -> TripWidgetSnapshot {
         let today = YMD(date, calendar: calendar)
-        let state = TripWidgetTrip.pick(trips, today: today)?.contentState(today: today)
-        return TripWidgetSnapshot(date: date, state: state, signedIn: signedIn)
+        let picked = TripWidgetTrip.pick(trips, today: today)
+        let state = picked?.contentState(today: today)
+        return TripWidgetSnapshot(
+            date: date,
+            state: state,
+            signedIn: signedIn,
+            courseId: state == nil ? nil : picked?.courseId
+        )
     }
 }

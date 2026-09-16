@@ -154,5 +154,15 @@ Developer 콘솔에 등록돼 있어야 실기기 서명이 통과한다(시뮬�
 자리는 iOS 가 배경화면에 맞춰 흰색·반투명으로 그리므로 우리 색이 안 먹는다 —
 글자와 SF Symbol 만 쓴다. 홈 중형은 시안이 나오면.
 
+**누르면 앱이 열린다.** 위젯은 `offway://course/{id}`(보여주던 여행) ·
+`offway://wizard`(예정 없음) · `offway://home`(로그인 전)을 만들고
+(`TripWidgetSnapshot.deepLink`), 앱은 `widgetDeepLinkRoute` 가 화면으로
+푼다(`DeepLinkListener`, 공유 링크보다 먼저 가른다). 스킴은 `Info.plist`
+`CFBundleURLSchemes` 의 `offway`.
+
+**사용자가 직접 붙여야 한다** — iOS 에 앱이 대신 넣는 API 가 없다. 마이 메뉴
+"여행 D-day 위젯" 이 잠금화면·홈 두 자리의 순서를 안내한다(`showWidgetGuideSheet`,
+시안 없이 텍스트).
+
 시뮬레이터에서 확인: 앱을 한 번 실행해 로그인한 뒤, 홈 화면 길게 → `+` →
 OffWay → "여행 D-day". 잠금화면은 잠금화면 길게 → 사용자화 → 시계 아래 칸.

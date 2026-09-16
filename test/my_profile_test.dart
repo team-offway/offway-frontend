@@ -26,7 +26,7 @@ void main() {
         .map((e) => tester.getSize(find.byWidget(e.widget)))
         .where((s) => s.width == 16)
         .toList();
-    expect(chevrons.length, 5, reason: '연차 카드 1 + 메뉴 4');
+    expect(chevrons.length, 6, reason: '연차 카드 1 + 메뉴 5');
     for (final s in chevrons) {
       expect(s.height, 16);
     }

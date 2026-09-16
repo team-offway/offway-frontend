@@ -247,6 +247,24 @@ final class TripWidgetTests: XCTestCase {
         let s = TripWidgetTimeline.snapshot(at: Date(), trips: [], signedIn: false)
         XCTAssertNil(s.state)
         XCTAssertFalse(s.signedIn)
+        XCTAssertEqual(s.deepLink?.absoluteString, "offway://home")
+    }
+
+    func test누르면여행이있으면그코스_없으면코스만들기다() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 9))!
+        let with = TripWidgetTimeline.snapshot(
+            at: now, trips: [trip("122", start: "2026-09-23")], signedIn: true, calendar: cal
+        )
+        XCTAssertEqual(with.courseId, "122")
+        XCTAssertEqual(with.deepLink?.absoluteString, "offway://course/122")
+
+        let without = TripWidgetTimeline.snapshot(
+            at: now, trips: [trip("1", start: "2026-09-10")], signedIn: true, calendar: cal
+        )
+        XCTAssertNil(without.courseId, "지난 여행은 눌러도 열 것이 없다")
+        XCTAssertEqual(without.deepLink?.absoluteString, "offway://wizard")
     }
 
     func test저장한목록을그대로읽는다() throws {

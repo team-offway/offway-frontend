@@ -4,7 +4,9 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/course_wizard/application/course_wizard_provider.dart';
 import 'app_router.dart';
+import 'widget_deep_link.dart';
 
 /// 공유 링크로 앱이 열렸을 때 그 코스 화면으로 보낸다.
 ///
@@ -47,6 +49,22 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
   }
 
   void _handle(Uri uri) {
+    // 위젯을 눌러 열렸다 — 공유 링크와 다른 스킴이라 먼저 가른다
+    final widgetRoute = widgetDeepLinkRoute(uri);
+    if (widgetRoute != null) {
+      final router = ref.read(appRouterProvider);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widgetRoute == AppRoutes.wizardDateGate) {
+          // 홈의 '코스 추천받기' 와 같이 처음부터 — 지난 선택이 남지 않게
+          ref.read(courseWizardProvider.notifier).reset();
+        }
+        // 홈은 이미 그 자리다 — 위에 또 쌓지 않는다
+        if (widgetRoute != AppRoutes.home) router.push(widgetRoute);
+      });
+      return;
+    }
+
     final token = uri.queryParameters['shareToken'];
     // 어느 화면에서 공유했는지 — 없으면 추천코스로 본다(예전 링크 대비)
     final kind = uri.queryParameters['kind'];

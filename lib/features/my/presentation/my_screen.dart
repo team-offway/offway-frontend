@@ -20,6 +20,7 @@ import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../auth/application/current_user_provider.dart';
 import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import 'widget_guide_sheet.dart';
 
 /// 마이 — 프로필과 계정 관리 메뉴
 class MyScreen extends ConsumerWidget {
@@ -71,6 +72,11 @@ class MyScreen extends ConsumerWidget {
             ),
             // 시안 실측: 카드~첫 메뉴 32
             const SizedBox(height: 32),
+            // 위젯은 사용자가 직접 붙여야 한다 — 어디서 넣는지 알려주는 자리
+            _MenuRow(
+              label: '여행 D-day 위젯',
+              onTap: () => showWidgetGuideSheet(context),
+            ),
             // 로그인 화면의 동의 문구와 같은 순서로 둔다
             _MenuRow(
               label: '이용약관',

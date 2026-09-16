@@ -55,7 +55,8 @@ struct TripWidgetProvider: TimelineProvider {
                     startDate: "2026-09-23",
                     endDate: "2026-09-25"
                 ),
-                signedIn: true
+                signedIn: true,
+                courseId: "0"
             )
         )
     }
@@ -113,6 +114,8 @@ struct TripWidgetView: View {
             }
         }
         .widgetContainerBackground(accessory: family.isAccessory)
+        // 누르면 앱이 열린다 — 여행이 있으면 그 코스, 없으면 코스 만들기
+        .widgetURL(entry.snapshot.deepLink)
     }
 }
 
