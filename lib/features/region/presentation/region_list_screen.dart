@@ -141,16 +141,6 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
                 },
               ),
             ),
-            // 공공데이터 출처 (core #417) — 목록은 끝없이 이어져 그리드 안에
-            // 두면 언제 보일지 알 수 없다. 화면 아래에 고정한다.
-            //
-            // **어느 응답을 그리는지에 따라 갈린다** — 장소 카드를 쓰는
-            // 중이면 홈 응답의 출처고, 지역 목록으로 폴백했으면 그쪽이다.
-            // 섞으면 안 쓴 출처를 표기하게 된다
-            DataSourceNote(
-              sources: _shownSources,
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 12 + context.bottomInset),
-            ),
           ],
         ),
       ),
@@ -247,23 +237,46 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
     );
   }
 
+  /// 카드 격자 + **목록 끝의 출처 한 줄**.
+  ///
+  /// 출처를 화면 아래 고정으로 두면 목록이 그 위에서 끝나, 인디케이터 자리가
+  /// 빈 배경으로 남아 흰 띠처럼 보인다(#300). 다른 화면(코스 확정·후보 지역)
+  /// 처럼 **목록의 마지막 항목**으로 넣어 함께 스크롤되게 한다 — 목록이
+  /// 화면 끝까지 흐르고 그 아래 빈 자리가 생기지 않는다
   Widget _buildGrid(
     double cardExtent, {
     required int itemCount,
     required Widget Function(BuildContext, int) builder,
     ScrollController? controller,
   }) {
-    return GridView.builder(
+    return CustomScrollView(
       controller: controller,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 24,
-        mainAxisExtent: cardExtent,
-      ),
-      itemCount: itemCount,
-      itemBuilder: builder,
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          sliver: SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 24,
+              mainAxisExtent: cardExtent,
+            ),
+            itemCount: itemCount,
+            itemBuilder: builder,
+          ),
+        ),
+        SliverToBoxAdapter(
+          // **어느 응답을 그리는지에 따라 갈린다** — 장소 카드를 쓰는
+          // 중이면 홈 응답의 출처고, 지역 목록으로 폴백했으면 그쪽이다.
+          // 섞으면 안 쓴 출처를 표기하게 된다
+          child: DataSourceNote(
+            sources: _shownSources,
+            // 카드와 출처 사이는 **24** — 내 코스 상세·장소 상세·코스 확정이
+            // 쓰는 값과 같다. 아래로는 인디케이터만큼 흘려 보낸다
+            padding: EdgeInsets.fromLTRB(20, 24, 20, 12 + context.bottomInset),
+          ),
+        ),
+      ],
     );
   }
 
