@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/course_wizard/application/course_wizard_provider.dart';
 import 'app_router.dart';
+import 'pending_deep_link.dart';
 import 'widget_deep_link.dart';
 
 /// 공유 링크로 앱이 열렸을 때 그 코스 화면으로 보낸다.
@@ -52,16 +53,19 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
     // 위젯을 눌러 열렸다 — 공유 링크와 다른 스킴이라 먼저 가른다
     final widgetRoute = widgetDeepLinkRoute(uri);
     if (widgetRoute != null) {
-      final router = ref.read(appRouterProvider);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (widgetRoute == AppRoutes.wizardDateGate) {
-          // 홈의 '코스 추천받기' 와 같이 처음부터 — 지난 선택이 남지 않게
-          ref.read(courseWizardProvider.notifier).reset();
-        }
-        // 홈은 이미 그 자리다 — 위에 또 쌓지 않는다
-        if (widgetRoute != AppRoutes.home) router.push(widgetRoute);
-      });
+      // 홈은 이미 그 자리다 — 위에 또 쌓지 않는다
+      if (widgetRoute == AppRoutes.home) return;
+      // **스택을 바꾼다(go).** 위저드 중간에 위젯을 누르면 push 는 옛 위저드
+      // 화면 위에 새 위저드를 얹어, 뒤로 가면 비워진 초안의 옛 화면이 나온다.
+      // 코스 상세도 같은 화면이 두 장 쌓이지 않게 같은 규칙이다
+      _open(
+        widgetRoute,
+        replace: true,
+        // 홈의 '코스 추천받기' 와 같이 처음부터 — 지난 선택이 남지 않게
+        before: widgetRoute == AppRoutes.wizardDateGate
+            ? () => ref.read(courseWizardProvider.notifier).reset()
+            : null,
+      );
       return;
     }
 
@@ -69,13 +73,28 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
     // 어느 화면에서 공유했는지 — 없으면 추천코스로 본다(예전 링크 대비)
     final kind = uri.queryParameters['kind'];
     if (token == null || token.isEmpty) return;
-    // context로는 못 찾는다 — MaterialApp.router의 builder는 라우터 바깥이라
-    // 그 안에서 GoRouter.of(context)를 부르면 예외가 난다. 라우터를 직접 잡는다
+    _open(AppRoutes.sharedCoursePath(token, kind: kind));
+  }
+
+  /// 목적지로 간다 — 라우터가 준비된 뒤, 스플래시가 끝난 뒤.
+  ///
+  /// context로는 라우터를 못 찾는다 — MaterialApp.router의 builder는 라우터
+  /// 바깥이라 그 안에서 GoRouter.of(context)를 부르면 예외가 난다. 라우터를
+  /// 직접 잡는다. 이동은 다음 프레임으로 미뤄 첫 프레임과 부딪히지 않게 한다.
+  ///
+  /// **스플래시가 떠 있으면 맡겨 둔다.** 그 위에 올리면 스플래시가 끝나며
+  /// `go(next)` 로 스택을 갈아 치워 지운다 — [pendingDeepLinkProvider]
+  void _open(String route, {bool replace = false, VoidCallback? before}) {
     final router = ref.read(appRouterProvider);
-    // 라우터가 준비된 뒤 옮겨야 첫 프레임과 부딪히지 않는다
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      router.push(AppRoutes.sharedCoursePath(token, kind: kind));
+      before?.call();
+      if (router.routerDelegate.currentConfiguration.uri.path ==
+          AppRoutes.splash) {
+        ref.read(pendingDeepLinkProvider.notifier).set(route, replace: replace);
+        return;
+      }
+      replace ? router.go(route) : router.push(route);
     });
   }
 

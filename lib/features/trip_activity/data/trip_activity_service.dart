@@ -69,17 +69,23 @@ class TripActivityService {
   Future<bool> start(TripCountdown trip, {DateTime? now}) async {
     final at = now ?? DateTime.now();
     return _invokeOk('start', {
-      'courseId': trip.courseId,
-      'regionName': trip.regionName,
+      ..._tripArgs(trip),
       // 둘 중 하나만 값이 있다. null 도 그대로 보낸다 — 비어 있다는 것
       // 자체가 뜻이라(출발 전이냐 여행 중이냐), 빼면 네이티브가 직전
       // 값을 그대로 쓴다
       'daysLeft': trip.daysLeft(at),
       'dayNth': trip.dayNth(at),
-      'startDate': TripCountdown.isoDate(trip.startDate),
-      'endDate': TripCountdown.isoDate(trip.endDate),
     });
   }
+
+  /// 네이티브가 여행 하나를 읽는 네 칸 — 라이브 액티비티와 위젯 목록이 같은
+  /// 이름을 쓴다. 한 곳에서만 적어야 이름이 어긋나지 않는다
+  static Map<String, Object?> _tripArgs(TripCountdown trip) => {
+    'courseId': trip.courseId,
+    'regionName': trip.regionName,
+    'startDate': TripCountdown.isoDate(trip.startDate),
+    'endDate': TripCountdown.isoDate(trip.endDate),
+  };
 
   /// 떠 있는 잠금화면을 내린다 — 여행이 끝났거나 코스를 지웠을 때.
   ///
@@ -97,16 +103,32 @@ class TripActivityService {
   /// 같다(`courseId`·`regionName`·`startDate`·`endDate`)
   Future<bool> setWidgetTrips(List<TripCountdown> trips) =>
       _invokeOk('setWidgetTrips', {
-        'trips': [
-          for (final t in trips)
-            {
-              'courseId': t.courseId,
-              'regionName': t.regionName,
-              'startDate': TripCountdown.isoDate(t.startDate),
-              'endDate': TripCountdown.isoDate(t.endDate),
-            },
-        ],
+        'trips': [for (final t in trips) _tripArgs(t)],
       });
+
+  /// 위젯을 그릴 수 있는 기기인가 — iOS 16.1 이상. 라이브 액티비티와 달리
+  /// 사용자가 끌 수 있는 것이 아니라 버전만 본다
+  Future<bool> isWidgetAvailable() async {
+    if (!_isSupportedPlatform) return false;
+    try {
+      return await _channel
+              .invokeMethod<bool>('isWidgetAvailable')
+              .timeout(_timeout) ??
+          false;
+    } on PlatformException catch (e) {
+      debugPrint('위젯 가능 여부를 묻지 못했다: ${e.message}');
+      return false;
+    } on MissingPluginException {
+      return false;
+    } on TimeoutException {
+      return false;
+    }
+  }
+
+  /// 세션이 시작됐다 — 목록을 아직 못 받았어도 위젯이 "로그인하세요" 로
+  /// 보이지 않게. 로그인 여부와 여행 목록은 다른 사실이라 따로 알린다
+  Future<bool> markWidgetSignedIn() =>
+      _invokeOk('markWidgetSignedIn', const {});
 
   /// 위젯을 로그인 전 상태로 되돌린다 — 로그아웃·탈퇴.
   /// 안 비우면 앞사람의 여행이 위젯에 남는다

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
@@ -33,8 +34,11 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    // 타이포 토큰은 fontFamily를 비워두고 테마에서 지정하므로 테마가 필요하다
-    return MaterialApp.router(routerConfig: router, theme: AppTheme.light);
+    // 타이포 토큰은 fontFamily를 비워두고 테마에서 지정하므로 테마가 필요하다.
+    // 스플래시가 맡겨 둔 링크(pendingDeepLinkProvider)를 읽어 ProviderScope 가 있어야 한다
+    return ProviderScope(
+      child: MaterialApp.router(routerConfig: router, theme: AppTheme.light),
+    );
   }
 
   group('스플래시', () {

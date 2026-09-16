@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/pending_deep_link.dart';
 import '../../../core/theme/tokens/tokens.dart';
 
 /// 앱을 켜면 처음 보이는 화면 (O-00).
@@ -11,17 +13,17 @@ import '../../../core/theme/tokens/tokens.dart';
 /// 하는 일은 잠깐 워드마크를 보여주는 것뿐이다 — 토큰 확인은 [main]이 라우터를
 /// 만들기 전에 이미 끝내 놓는다. 다음 목적지도 그때 정해진 초기 경로를 그대로
 /// 따른다(로그인했으면 홈, 아니면 온보딩).
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key, required this.next});
 
   /// 이 시간이 지나면 갈 곳. [main]이 정한 초기 경로다.
   final String next;
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   /// 워드마크가 눈에 남을 만큼만 머문다. 더 끌면 앱이 느려 보인다.
   static const _hold = Duration(milliseconds: 1200);
 
@@ -57,6 +59,11 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     // go: 스플래시는 뒤로 돌아올 곳이 아니므로 스택에 남기지 않는다
     context.go(widget.next);
+    // 스플래시가 떠 있는 동안 링크(위젯·공유)로 열렸으면 그 화면으로 —
+    // 먼저 올려 두면 방금의 go 가 지우므로 여기서 연다
+    final pending = ref.read(pendingDeepLinkProvider.notifier).take();
+    if (pending == null) return;
+    pending.replace ? context.go(pending.route) : context.push(pending.route);
   }
 
   @override

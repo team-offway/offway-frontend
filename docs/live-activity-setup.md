@@ -137,10 +137,17 @@ Flutter sync()  ─(예정 코스 목록)─▶  App Group UserDefaults  ◀─�
   Dart `TripCountdown.pick` 과 같은 규칙에 **창(D-5)만 없다.** 위젯은 사용자가
   붙여 둔 자리라 D-12 도 보여준다
 - **문구는 라이브 액티비티와 같은 곳**(`ContentState` extension)이 조립한다
-- 라이브 액티비티를 설정에서 껐어도 위젯은 쓴다 — `sync()` 가 `isAvailable()`
-  보다 먼저 저장소를 쓴다
+- 라이브 액티비티를 설정에서 껐어도 위젯은 쓴다 — 가능 여부를 따로 묻는다
+  (`isWidgetAvailable`, iOS 16.1+). 둘 다 안 되는 기기면 코스를 읽지 않는다
+- **앱 안에서 코스가 바뀌면 바로 따라간다.** 컨트롤러가 예정 코스 목록을
+  구독해(`ref.listen`) 화면이 목록을 다시 읽을 때마다(담기·삭제·날짜 변경)
+  맞춘다. 앱 재개 때는 목록을 invalidate 해 서버 변화를 받아온다
+- **로그인 표시는 목록과 따로.** `start()` 가 `markWidgetSignedIn`, `stop()` 이
+  `clearWidget`. 첫 조회가 실패해도 위젯이 "로그인하세요" 로 보이지 않는다
 - 코스를 못 읽으면 위젯은 그대로 둔다(날짜는 스스로 세니 알던 여행엔 맞다).
-  로그아웃·탈퇴(`stop()`)에서는 비운다 — 앞사람의 여행이 남지 않게
+  로그아웃·탈퇴가 **실패하면** 되살린다(`start()` 다시) — 아직 그 사람이다
+- 같은 목록을 다시 써도 위젯을 다시 그리지 않는다(값 비교) — 앱 재개마다
+  익스텐션을 깨우지 않게
 - 파일: `TripWidgetStore.swift`(앱·익스텐션 둘 다), `TripWidget.swift`(익스텐션),
   번들 `TripActivityBundle` 에 `TripWidget()` 추가. 새 타깃 없음 — 익스텐션
   배포 타깃 16.1 이라 iOS 15 는 위젯도 못 받는다(라이브 액티비티와 같은 선)
@@ -165,7 +172,13 @@ D-n · 날짜(요일 포함) · 기간, 중형은 여기에 **날짜 타일**(�
 `offway://wizard`(예정 없음) · `offway://home`(로그인 전)을 만들고
 (`TripWidgetSnapshot.deepLink`), 앱은 `widgetDeepLinkRoute` 가 화면으로
 푼다(`DeepLinkListener`, 공유 링크보다 먼저 가른다). 스킴은 `Info.plist`
-`CFBundleURLSchemes` 의 `offway`.
+`CFBundleURLSchemes` 의 `offway`. 위젯 링크는 **스택을 바꾼다(go)** — 위저드
+중간에 누르면 옛 위저드 위에 새 위저드가 얹히지 않게.
+
+**앱이 꺼진 채 열리면 스플래시가 끝난 뒤에 간다.** 스플래시 위에 먼저 올리면
+1.2초 뒤 스플래시가 `go(next)` 로 스택을 갈아 치우며 지운다 — 링크는
+`pendingDeepLinkProvider` 에 맡겨 두고 스플래시의 `_goNext` 가 꺼내 간다.
+공유 링크도 같은 길을 탄다.
 
 **사용자가 직접 붙여야 한다** — iOS 에 앱이 대신 넣는 API 가 없다. 마이 메뉴
 "여행 D-day 위젯" 이 잠금화면·홈 두 자리의 순서를 안내한다(`showWidgetGuideSheet`,

@@ -196,6 +196,9 @@ class MyScreen extends ConsumerWidget {
       // 남의 숫자가 아이콘에 남지 않게 — 다음 사람이 로그인하면 자기 값으로 다시 선다
       await clearAppIconBadge();
     } catch (_) {
+      // 로그아웃이 안 됐으니 아직 이 사람이다 — 방금 비운 잠금화면·위젯을
+      // 되살린다. 안 그러면 앱을 다시 켤 때까지 위젯이 "로그인하세요" 다
+      ref.read(tripActivityControllerProvider).start();
       if (!context.mounted) return;
       showAppToast(context, '로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요');
       return;

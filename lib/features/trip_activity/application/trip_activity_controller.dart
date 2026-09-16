@@ -45,11 +45,24 @@ class TripActivityController with WidgetsBindingObserver {
   /// 있어, 코스를 갈아타는 도중 내린 코스의 토큰이 늦게 닿을 수 있다
   String? _liveCourseId;
 
+  /// 예정 코스 목록 구독 — 앱 안에서 코스를 담거나 지우거나 날짜를 바꾸면
+  /// 화면이 목록을 다시 읽는데(invalidate), 그때 위젯·잠금화면도 따라간다.
+  /// 이게 없으면 앱을 다시 앞으로 낼 때까지 위젯이 지운 여행을 센다
+  ProviderSubscription<AsyncValue<List<Map<String, dynamic>>>>? _courses;
+
   void start() {
     if (_started) return;
     _started = true;
     _stopped = false;
     WidgetsBinding.instance.addObserver(this);
+    // 로그인 여부는 목록보다 먼저 — 첫 조회가 실패해도 위젯이 "로그인하세요"
+    // 로 보이지 않게. 기다리지 않는다
+    _ref.read(tripActivityServiceProvider).markWidgetSignedIn();
+    // 목록이 새로 읽힐 때마다 맞춘다. 로딩 중은 건너뛴다 — 값이 오면 온다.
+    // sync() 는 읽기만 하고 invalidate 하지 않으므로 돌지 않는다
+    _courses = _ref.listen(savedCoursesProvider('UPCOMING'), (_, next) {
+      if (!next.isLoading) syncInBackground();
+    });
     syncInBackground();
   }
 
@@ -74,21 +87,30 @@ class TripActivityController with WidgetsBindingObserver {
     // 요청이 통한다(로그아웃 뒤에는 401 이다)
     await _unregisterLive();
     final service = _ref.read(tripActivityServiceProvider);
-    final ended = await service.end();
-    // 위젯도 앞사람의 것이다 — 카드처럼 비운다
-    final cleared = await service.clearWidget();
-    return ended && cleared;
+    // 위젯도 앞사람의 것이다 — 카드처럼 비운다. 둘은 독립된 왕복이라 같이 보낸다.
+    // 돌려주는 값은 **카드**가 내려갔는가다 — 호출부가 그 뜻으로 안내를 띄운다.
+    // 위젯 비우기는 네이티브가 실패할 길이 없어(타임아웃뿐) 기록만 남긴다
+    final (ended, cleared) = await (service.end(), service.clearWidget()).wait;
+    if (!cleared) debugPrint('위젯을 비우지 못했다 — 앞사람의 여행이 남을 수 있다');
+    return ended;
   }
 
   void dispose() {
     if (!_started) return;
     WidgetsBinding.instance.removeObserver(this);
+    _courses?.close();
+    _courses = null;
     _started = false;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) syncInBackground();
+    // 서버에서 바뀐 것(다른 기기)을 받아오게 목록을 다시 읽는다 — 구독이
+    // 살아 있어 캐시가 남으므로, 읽기만 해서는 옛 값이다. 다시 읽히면
+    // 구독이 맞춘다
+    if (state == AppLifecycleState.resumed) {
+      _ref.invalidate(savedCoursesProvider('UPCOMING'));
+    }
   }
 
   /// 기다리지 않고 맞춘다 — 실패해도 앱이 하던 일을 막지 않는다.
@@ -108,6 +130,14 @@ class TripActivityController with WidgetsBindingObserver {
   /// 끝난 여행이 잠금화면에 남아 있을 이유가 없다
   Future<void> sync({DateTime? now}) async {
     final service = _ref.read(tripActivityServiceProvider);
+    if (_stopped) return;
+    // 위젯도 카드도 못 그리는 기기(iOS 16.1 미만·안드로이드)면 코스를 읽지
+    // 않는다 — 읽어도 쓸 데가 없다
+    final (widgetOk, liveOk) = await (
+      service.isWidgetAvailable(),
+      service.isAvailable(),
+    ).wait;
+    if (!widgetOk && !liveOk) return;
     if (_stopped) return;
 
     final List<Map<String, dynamic>> cards;
@@ -139,11 +169,12 @@ class TripActivityController with WidgetsBindingObserver {
         .whereType<TripCountdown>()
         .toList();
 
-    // 위젯은 라이브 액티비티가 안 되는 기기(설정에서 껐거나)에서도 그린다 —
-    // 가능 여부를 묻기 전에 먼저 쓴다. 지난 여행은 넘기지 않는다
-    await service.setWidgetTrips(trips.where((t) => !t.isPast(at)).toList());
+    // 위젯은 라이브 액티비티가 안 되는 기기(설정에서 껐거나)에서도 그린다.
+    // 목록을 그대로 넘긴다 — 지난 여행을 거르는 규칙은 위젯이 날짜별로 갖고
+    // 있다. 여기서도 거르면 같은 규칙이 두 곳에 산다
+    if (widgetOk) await service.setWidgetTrips(trips);
 
-    if (!await service.isAvailable()) return;
+    if (!liveOk) return;
     if (_stopped) return;
 
     final picked = TripCountdown.pick(trips, at);
