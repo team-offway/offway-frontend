@@ -118,3 +118,73 @@ push-to-start(iOS 17.2+, 이슈 #287)가 필요하고, 그것도 한 번에 8시
 **끝까지 확인하려면 TestFlight 빌드여야 한다.** 개발 빌드(시뮬레이터·
 Xcode 실기기)의 토큰은 sandbox 라 운영 APNs 로 안 닿는다. 카드를 띄워 두고
 자정을 넘겨 봐야 갱신이 오는지 안다.
+
+## 위젯 — 상시 D-day (이슈 #297)
+
+라이브 액티비티가 8시간짜리라, **며칠 내내 잠금화면·홈에 붙어 있는 D-day** 는
+위젯(WidgetKit)이 맡는다. 사용자가 직접 붙이고, 시간 제한이 없고, 자정에
+숫자가 바뀌는 것도 서버 없이 된다.
+
+```
+Flutter sync()  ─(예정 코스 목록)─▶  App Group UserDefaults  ◀─읽기─  TripWidget
+   TripActivityService                 group.com.nth.offway            14일치 자정 시간표
+   .setWidgetTrips / .clearWidget      TripWidgetStore                  → 시스템이 날짜에 맞춰 교체
+                        └─▶ WidgetCenter.reloadAllTimelines()
+```
+
+- **저장은 목록, 선택은 위젯이.** 앱은 지난 여행을 뺀 예정 코스 목록을 통째로
+  쓴다. 어느 날 무엇을 보여줄지는 `TripWidgetTrip.pick` 이 날짜별로 정한다 —
+  Dart `TripCountdown.pick` 과 같은 규칙에 **창(D-5)만 없다.** 위젯은 사용자가
+  붙여 둔 자리라 D-12 도 보여준다
+- **문구는 라이브 액티비티와 같은 곳**(`ContentState` extension)이 조립한다
+- 라이브 액티비티를 설정에서 껐어도 위젯은 쓴다 — 가능 여부를 따로 묻는다
+  (`isWidgetAvailable`, iOS 16.1+). 둘 다 안 되는 기기면 코스를 읽지 않는다
+- **앱 안에서 코스가 바뀌면 바로 따라간다.** 컨트롤러가 예정 코스 목록을
+  구독해(`ref.listen`) 화면이 목록을 다시 읽을 때마다(담기·삭제·날짜 변경)
+  맞춘다. 앱 재개 때는 목록을 invalidate 해 서버 변화를 받아온다
+- **로그인 표시는 목록과 따로.** `start()` 가 `markWidgetSignedIn`, `stop()` 이
+  `clearWidget`. 첫 조회가 실패해도 위젯이 "로그인하세요" 로 보이지 않는다
+- 코스를 못 읽으면 위젯은 그대로 둔다(날짜는 스스로 세니 알던 여행엔 맞다).
+  로그아웃·탈퇴가 **실패하면** 되살린다(`start()` 다시) — 아직 그 사람이다
+- 같은 목록을 다시 써도 위젯을 다시 그리지 않는다(값 비교) — 앱 재개마다
+  익스텐션을 깨우지 않게
+- 파일: `TripWidgetStore.swift`(앱·익스텐션 둘 다), `TripWidget.swift`(익스텐션),
+  번들 `TripActivityBundle` 에 `TripWidget()` 추가. 새 타깃 없음 — 익스텐션
+  배포 타깃 16.1 이라 iOS 15 는 위젯도 못 받는다(라이브 액티비티와 같은 선)
+
+**App Group 이 있어야 한다.** 두 타깃의 entitlements 에
+`com.apple.security.application-groups` = `group.com.nth.offway`. 그룹은 Apple
+Developer 콘솔에 등록돼 있어야 실기기 서명이 통과한다(시뮬레이터는 안 따진다).
+
+자리는 다섯 — 홈 소형·중형(`systemSmall`·`systemMedium`), 잠금화면 직사각형·
+원형·한 줄(`accessoryRectangular`·`accessoryCircular`·`accessoryInline`). 잠금화면
+세 자리는 iOS 가 배경화면에 맞춰 흰색·반투명으로 그리므로 우리 색이 안 먹는다 —
+글자와 SF Symbol 만 쓴다.
+
+**홈 위젯은 시안 없이 앱 토큰으로 그렸다.** 색의 주인은 `TripWidget.swift` 의
+**`WidgetPalette`** 하나다 — Primary(Light Blue 60 `#3DC2FF`)와 바탕(라이트 흰색 ·
+다크 Cool Neutral 20). 라이브 액티비티도 같은 파랑을 쓴다. 에셋
+(`AccentColor` · `WidgetBackground`)에 같은 값을 두면 토큰이 바뀔 때 한쪽만
+고쳐져 두 화면이 다른 색이 되므로 비워 뒀다. 소형은 지역 칩 · 큰
+D-n · 날짜(요일 포함) · 기간, 중형은 여기에 **날짜 타일**(출발 전엔 출발일,
+여행 중엔 돌아오는 날)을 붙였다. 글꼴은 SF Rounded — Pretendard 를 익스텐션에
+싣는 건 시안이 확정되면. 시안이 나오면 `TripWidget.swift` 의 뷰만 갈아 끼운다.
+
+**누르면 앱이 열린다.** 위젯은 `offway://course/{id}`(보여주던 여행) ·
+`offway://wizard`(예정 없음) · `offway://home`(로그인 전)을 만들고
+(`TripWidgetSnapshot.deepLink`), 앱은 `widgetDeepLinkRoute` 가 화면으로
+푼다(`DeepLinkListener`, 공유 링크보다 먼저 가른다). 스킴은 `Info.plist`
+`CFBundleURLSchemes` 의 `offway`. 위젯 링크는 **스택을 바꾼다(go)** — 위저드
+중간에 누르면 옛 위저드 위에 새 위저드가 얹히지 않게.
+
+**앱이 꺼진 채 열리면 스플래시가 끝난 뒤에 간다.** 스플래시 위에 먼저 올리면
+1.2초 뒤 스플래시가 `go(next)` 로 스택을 갈아 치우며 지운다 — 링크는
+`pendingDeepLinkProvider` 에 맡겨 두고 스플래시의 `_goNext` 가 꺼내 간다.
+공유 링크도 같은 길을 탄다.
+
+**사용자가 직접 붙여야 한다** — iOS 에 앱이 대신 넣는 API 가 없다. 마이 메뉴
+"여행 D-day 위젯" 이 잠금화면·홈 두 자리의 순서를 안내한다(`showWidgetGuideSheet`,
+시안 없이 텍스트).
+
+시뮬레이터에서 확인: 앱을 한 번 실행해 로그인한 뒤, 홈 화면 길게 → `+` →
+Offway → "여행 D-day". 잠금화면은 잠금화면 길게 → 사용자화 → 시계 아래 칸.

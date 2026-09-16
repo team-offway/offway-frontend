@@ -22,6 +22,7 @@
 		F2FC01CA30582A4800F1C3CA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2FC01C930582A4800F1C3CA /* SwiftUI.framework */; };
 		F2FC01D930582A4900F1C3CA /* TripActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F2FC01C630582A4800F1C3CA /* TripActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F2FC01EB30582B8200F1C3CA /* TripActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2FC01EA30582B8200F1C3CA /* TripActivityAttributes.swift */; };
+		F2FC01F130582B8200F1C3CA /* TripWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2FC01F030582B8200F1C3CA /* TripWidgetStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +97,7 @@
 		F2FC01C730582A4800F1C3CA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		F2FC01C930582A4800F1C3CA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		F2FC01EA30582B8200F1C3CA /* TripActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TripActivityAttributes.swift; path = ../TripActivity/TripActivityAttributes.swift; sourceTree = "<group>"; };
+		F2FC01F030582B8200F1C3CA /* TripWidgetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TripWidgetStore.swift; path = ../TripActivity/TripWidgetStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -103,6 +105,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				TripActivity.entitlements,
 			);
 			target = F2FC01C530582A4800F1C3CA /* TripActivityExtension */;
 		};
@@ -223,6 +226,7 @@
 			children = (
 				45E7809A8824B8EF88A38C21 /* TripActivityBridge.swift */,
 				F2FC01EA30582B8200F1C3CA /* TripActivityAttributes.swift */,
+				F2FC01F030582B8200F1C3CA /* TripWidgetStore.swift */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -523,6 +527,7 @@
 				5DC138261234ED997C68F8C3 /* TripActivityBridge.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				F2FC01EB30582B8200F1C3CA /* TripActivityAttributes.swift in Sources */,
+				F2FC01F130582B8200F1C3CA /* TripWidgetStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -865,6 +870,7 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = TripActivity/TripActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = AWV8LRP46J;
@@ -909,6 +915,7 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = TripActivity/TripActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = AWV8LRP46J;
@@ -950,6 +957,7 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = TripActivity/TripActivity.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = AWV8LRP46J;

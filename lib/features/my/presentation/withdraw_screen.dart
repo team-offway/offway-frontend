@@ -178,7 +178,9 @@ class WithdrawScreen extends ConsumerWidget {
       // 계정이 사라졌다 — 아이콘에 숫자가 남아 있으면 안 된다
       await clearAppIconBadge();
     } on ApiException catch (e) {
-      // 서버가 못 지웠는데 로그인 화면으로 보내면 탈퇴된 줄 알고 넘어간다
+      // 서버가 못 지웠는데 로그인 화면으로 보내면 탈퇴된 줄 알고 넘어간다.
+      // 계정이 남았으니 방금 비운 잠금화면·위젯도 되살린다
+      ref.read(tripActivityControllerProvider).start();
       if (!context.mounted) return;
       showAppToast(context, e.detail.isEmpty ? '탈퇴하지 못했어요' : e.detail);
       return;

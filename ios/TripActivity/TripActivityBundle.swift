@@ -13,6 +13,8 @@ import WidgetKit
 @main
 struct TripActivityBundle: WidgetBundle {
     var body: some Widget {
+        // 라이브 액티비티(앱이 띄우는 8시간 카드)와 위젯(사용자가 붙이는 상시)
         TripActivityWidget()
+        TripWidget()
     }
 }

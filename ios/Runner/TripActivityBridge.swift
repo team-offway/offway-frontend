@@ -1,6 +1,7 @@
 import ActivityKit
 import Flutter
 import Foundation
+import WidgetKit
 
 /// Flutter 가 부르는 잠금화면 제어 — `TripActivityService` 와 짝이다.
 ///
@@ -31,6 +32,14 @@ enum TripActivityBridge {
                 start(call.arguments, result: result)
             case "end":
                 end(result: result)
+            case "isWidgetAvailable":
+                result(isWidgetAvailable())
+            case "setWidgetTrips":
+                setWidgetTrips(call.arguments, result: result)
+            case "markWidgetSignedIn":
+                markWidgetSignedIn(result: result)
+            case "clearWidget":
+                clearWidget(result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -56,25 +65,24 @@ enum TripActivityBridge {
 
     private static func start(_ arguments: Any?, result: @escaping FlutterResult) {
         guard #available(iOS 16.1, *) else { return result(nil) }
+        // 네 칸은 위젯 목록과 같은 이름·같은 파서다
         guard let args = arguments as? [String: Any],
-              let courseId = args["courseId"] as? String,
-              let regionName = args["regionName"] as? String,
-              let startDate = args["startDate"] as? String,
-              let endDate = args["endDate"] as? String
+              let trip = TripWidgetTrip(channelArgs: args)
         else {
             return result(
                 FlutterError(code: "BAD_ARGS", message: "필요한 값이 없다", details: nil)
             )
         }
+        let courseId = trip.courseId
 
         // Dart 의 null 은 NSNull 로 온다 — `as? Int` 가 nil 을 돌려주므로 그대로 옵셔널.
         // 둘 중 하나만 값이 있는 것이 정상이다(출발 전이냐 여행 중이냐)
         let state = TripActivityAttributes.ContentState(
-            regionName: regionName,
+            regionName: trip.regionName,
             daysLeft: args["daysLeft"] as? Int,
             dayNth: args["dayNth"] as? Int,
-            startDate: startDate,
-            endDate: endDate
+            startDate: trip.startDate,
+            endDate: trip.endDate
         )
 
         // **줄을 세워 보낸다.** 앱 재개가 연달아 오거나 sync 중에 로그아웃이
@@ -100,6 +108,71 @@ enum TripActivityBridge {
                 }
             }
         }
+    }
+
+    // MARK: 위젯
+
+    /// 위젯을 그릴 수 있는 기기인가 — 익스텐션 배포 타깃(16.1)과 같은 선.
+    /// 라이브 액티비티와 달리 사용자가 설정에서 끌 수 있는 것이 아니다
+    private static func isWidgetAvailable() -> Bool {
+        if #available(iOS 16.1, *) { return true }
+        return false
+    }
+
+    /// 위젯이 읽을 예정 여행 목록을 App Group 저장소에 쓴다. **목록이 바뀌었을
+    /// 때만** 위젯 시간표를 다시 만들게 한다 — 앱 재개마다 부르는 자리라
+    /// 같은 목록으로 익스텐션을 깨우면 낭비다.
+    ///
+    /// 칸이 빠진 항목은 `start` 와 같이 **거절한다** — 조용히 버리면 위젯이
+    /// "예정된 여행이 없어요" 를 보이는데 Dart 는 성공으로 안다
+    private static func setWidgetTrips(_ arguments: Any?, result: FlutterResult) {
+        guard let args = arguments as? [String: Any],
+              let raw = args["trips"] as? [[String: Any]]
+        else {
+            return result(
+                FlutterError(code: "BAD_ARGS", message: "trips 가 없다", details: nil)
+            )
+        }
+        var trips: [TripWidgetTrip] = []
+        for item in raw {
+            guard let trip = TripWidgetTrip(channelArgs: item) else {
+                return result(
+                    FlutterError(code: "BAD_ARGS", message: "칸이 빠진 여행이 있다", details: nil)
+                )
+            }
+            trips.append(trip)
+        }
+        do {
+            if try TripWidgetStore.save(trips) {
+                WidgetCenter.shared.reloadTimelines(ofKind: TripWidgetStore.widgetKind)
+            }
+        } catch {
+            return result(
+                FlutterError(
+                    code: "WIDGET_SAVE_FAILED",
+                    message: error.localizedDescription,
+                    details: nil
+                )
+            )
+        }
+        result(nil)
+    }
+
+    /// 세션이 시작됐다 — 목록이 오기 전에도 "로그인 전" 으로 보이지 않게
+    private static func markWidgetSignedIn(result: FlutterResult) {
+        let wasSignedIn = TripWidgetStore.isSignedIn
+        TripWidgetStore.markSignedIn()
+        if !wasSignedIn {
+            WidgetCenter.shared.reloadTimelines(ofKind: TripWidgetStore.widgetKind)
+        }
+        result(nil)
+    }
+
+    /// 로그아웃·탈퇴 — 위젯을 로그인 전 상태로 되돌린다
+    private static func clearWidget(result: FlutterResult) {
+        TripWidgetStore.clear()
+        WidgetCenter.shared.reloadTimelines(ofKind: TripWidgetStore.widgetKind)
+        result(nil)
     }
 
     private static func end(result: @escaping FlutterResult) {

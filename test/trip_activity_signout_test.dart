@@ -40,7 +40,7 @@ void main() {
     }
   });
 
-  overrides() => [
+  overrides({AuthRepository? auth}) => [
     currentUserProvider.overrideWith((ref) async => {'nickname': '영찬'}),
     // 세션 만료는 토큰부터 지운다 — 덮지 않으면 그 자리에서 예외가 나고
     // try 가 삼켜, 정작 검사하려는 stop() 까지 가지 못한다
@@ -49,11 +49,11 @@ void main() {
     ),
     tripActivityServiceProvider.overrideWithValue(spy),
     pushRegistrationProvider.overrideWithValue(_FakePushRegistration()),
-    authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+    authRepositoryProvider.overrideWithValue(auth ?? _FakeAuthRepository()),
   ];
 
-  Widget wrap(Widget screen) => ProviderScope(
-    overrides: overrides(),
+  Widget wrap(Widget screen, {AuthRepository? auth}) => ProviderScope(
+    overrides: overrides(auth: auth),
     child: MaterialApp.router(
       routerConfig: GoRouter(
         initialLocation: '/here',
@@ -78,6 +78,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(spy.ended, isTrue, reason: '로그인 화면으로 가기 전에 내려야 한다');
+    expect(spy.widgetCleared, isTrue, reason: '위젯도 앞사람의 것이다');
+  });
+
+  testWidgets('로그아웃이 실패하면 방금 비운 위젯·잠금화면을 되살린다', (tester) async {
+    // 서버가 못 지웠으면 아직 이 사람이다 — 위젯이 "로그인하세요" 로 남으면
+    // 앱을 다시 켤 때까지 그대로다
+    await tester.pumpWidget(
+      wrap(const MyScreen(), auth: _FakeAuthRepository(logoutFails: true)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+
+    expect(spy.widgetCleared, isTrue, reason: '로그아웃을 시도하며 비웠다');
+    expect(spy.signedInCount, greaterThanOrEqualTo(1), reason: '실패 뒤 되살렸다');
+    expect(find.text('로그인 화면'), findsNothing);
   });
 
   testWidgets('내리지 못하면 로그아웃은 하되 알린다', (tester) async {
@@ -141,6 +160,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(spy.ended, isTrue, reason: '계정이 지워지기 전에 내려야 한다');
+    expect(spy.widgetCleared, isTrue);
   });
 
   testWidgets('세션이 만료돼도 잠금화면을 내린다', (tester) async {
@@ -191,6 +211,30 @@ class _SpyService implements TripActivityService {
 
   @override
   void listenPushToken(PushTokenListener listener) {}
+
+  /// 로그아웃 때 위젯도 비웠는가
+  bool widgetCleared = false;
+
+  @override
+  Future<bool> setWidgetTrips(List<TripCountdown> trips) async => true;
+
+  @override
+  Future<bool> isWidgetAvailable() async => true;
+
+  /// 실패 뒤 세션을 되살렸는가 — start() 가 로그인 표시를 다시 세운다
+  int signedInCount = 0;
+
+  @override
+  Future<bool> markWidgetSignedIn() async {
+    signedInCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> clearWidget() async {
+    widgetCleared = true;
+    return true;
+  }
 }
 
 class _FakePushRegistration implements PushRegistration {
@@ -199,8 +243,14 @@ class _FakePushRegistration implements PushRegistration {
 }
 
 class _FakeAuthRepository implements AuthRepository {
+  _FakeAuthRepository({this.logoutFails = false});
+
+  final bool logoutFails;
+
   @override
-  Future<void> logout() async {}
+  Future<void> logout() async {
+    if (logoutFails) throw Exception('500');
+  }
 
   @override
   Future<void> withdraw() async {}

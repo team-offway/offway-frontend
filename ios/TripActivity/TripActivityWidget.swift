@@ -52,7 +52,7 @@ struct TripActivityWidget: Widget {
             } minimal: {
                 Image(systemName: "suitcase.rolling")
             }
-            .keylineTint(Color.accentColor)
+            .keylineTint(WidgetPalette.primary)
         }
     }
 }
@@ -65,7 +65,8 @@ private struct LockScreenView: View {
         HStack(spacing: 12) {
             Image(systemName: "suitcase.rolling")
                 .font(.title2)
-                .foregroundStyle(.tint)
+                // 위젯과 같은 파랑 — 색의 주인은 WidgetPalette 하나다
+                .foregroundStyle(WidgetPalette.primary)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(context.state.headline)
