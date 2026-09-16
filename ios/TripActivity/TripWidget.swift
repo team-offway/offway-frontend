@@ -12,9 +12,8 @@ import WidgetKit
 /// 다섯 자리: 홈 소형·중형 · 잠금화면 직사각형(시계 아래 넓은 칸) · 원형(시계
 /// 아래 동그라미) · 한 줄(시계 위 날짜 옆).
 ///
-/// **디자인 시안 없이 앱 토큰으로 그렸다**(#297) — Primary(Light Blue 60
-/// `#3DC2FF`)는 에셋 `AccentColor`, 바탕은 `WidgetBackground`(라이트 흰색 ·
-/// 다크 Cool Neutral 20). 시안이 나오면 이 파일의 뷰만 갈아 끼운다.
+/// **디자인 시안 없이 앱 토큰으로 그렸다**(#297) — `WidgetPalette`. 시안이
+/// 나오면 이 파일의 뷰만 갈아 끼운다.
 @available(iOS 16.1, *)
 struct TripWidget: Widget {
     static let kind = "TripWidget"
@@ -103,7 +102,13 @@ struct TripWidgetProvider: TimelineProvider {
 @available(iOS 16.1, *)
 struct TripWidgetView: View {
     let entry: TripWidgetEntry
-    @Environment(\.widgetFamily) private var family
+    /// 자리를 직접 정한다 — 스냅샷 테스트용. 위젯 안에서는 nil 로 두어
+    /// 시스템이 준 자리(`widgetFamily`)를 쓴다. 그 환경값은 읽기 전용이라
+    /// 테스트가 바꿀 수 없다
+    var familyOverride: WidgetFamily? = nil
+    @Environment(\.widgetFamily) private var environmentFamily
+
+    private var family: WidgetFamily { familyOverride ?? environmentFamily }
 
     var body: some View {
         Group {
@@ -129,18 +134,29 @@ struct TripWidgetView: View {
 // MARK: 홈 화면
 
 /// 앱 색 토큰 — Flutter `AppColors` 와 같은 값. 시안 없이 그린 자리라
-/// 토큰을 그대로 옮겨 앱과 한 벌로 보이게 한다
+/// 토큰을 그대로 옮겨 앱과 한 벌로 보이게 한다.
+///
+/// **에셋이 아니라 코드다.** 에셋 색은 익스텐션 번들에서만 풀리고, 값이 코드에
+/// 있어야 Flutter 토큰과 나란히 놓고 대조할 수 있다
 @available(iOS 16.1, *)
-private enum WidgetPalette {
-    /// Primary/Normal · Light Blue 60
-    static let primary = Color("AccentColor")
-    /// Primary/Strong · Light Blue 50 — 글자로 쓰는 파랑
+enum WidgetPalette {
+    /// Primary/Normal · Light Blue 60 `#3DC2FF`
+    static let primary = Color(red: 0x3D / 255, green: 0xC2 / 255, blue: 0xFF / 255)
+    /// Primary/Strong · Light Blue 50 `#00AEFF` — 글자로 쓰는 파랑
     static let primaryStrong = Color(red: 0x00 / 255, green: 0xAE / 255, blue: 0xFF / 255)
     /// 파랑 칩 바탕 — Primary 12%. 다크에서도 바탕 위에 옅게 뜬다
     static let primaryFill = primary.opacity(0.12)
-    /// Label/Strong · Normal · Alternative 에 해당 — 다크에서는 시스템이 뒤집는다
+    /// Label/Strong · Alternative — 다크에서는 시스템이 뒤집는다
     static let labelStrong = Color.primary
     static let labelAlternative = Color.secondary
+    /// 홈 위젯 바탕 — 라이트 흰색 · 다크 Cool Neutral 20 `#292A2D`
+    static let background = Color(
+        uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0x29 / 255, green: 0x2A / 255, blue: 0x2D / 255, alpha: 1)
+                : .white
+        }
+    )
 }
 
 /// 지역명 칩 — '정선군 여행'. 파랑 바탕에 파랑 글자
@@ -378,18 +394,19 @@ extension View {
     /// StandBy·iPad 에서 배경이 깨진다. 잠금화면 자리는 배경이 없어 투명으로,
     /// 홈은 에셋 `WidgetBackground`(라이트 흰색·다크 Cool Neutral 20).
     /// 16 은 그 API 가 없어 홈에 여백과 배경만 준다
+    @available(iOS 16.1, *)
     @ViewBuilder
     func widgetContainerBackground(accessory: Bool) -> some View {
         if #available(iOS 17.0, *) {
             if accessory {
                 containerBackground(.clear, for: .widget)
             } else {
-                containerBackground(Color("WidgetBackground"), for: .widget)
+                containerBackground(WidgetPalette.background, for: .widget)
             }
         } else if accessory {
             self
         } else {
-            padding().background(Color("WidgetBackground"))
+            padding().background(WidgetPalette.background)
         }
     }
 }
