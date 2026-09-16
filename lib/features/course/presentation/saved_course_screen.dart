@@ -419,7 +419,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       child: Row(
         children: [
           AppBackButton(
-            onTap: () => context.pop(),
+            // 위젯·공유 링크로 바로 들어오면 스택이 비어 pop 이 안 된다 —
+            // 내 코스 목록으로 보낸다(#304 에서 딥링크를 go 로 바꾸며 드러났다)
+            onTap: () => context.canPop()
+                ? context.pop()
+                : context.go(AppRoutes.myCourses),
             // 편집·공유 아이콘과 같은 위계 — 기본 검정은 혼자 진하다
             color: AppColors.labelAlternative,
           ),
@@ -795,7 +799,8 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       ref.invalidate(homeSnapshotProvider);
       if (!mounted) return;
       showAppToast(context, '코스가 삭제됐어요.', kind: AppToastKind.success);
-      context.pop();
+      // 지운 코스 화면에 머물 수 없다 — 돌아갈 곳이 없으면 목록으로
+      context.canPop() ? context.pop() : context.go(AppRoutes.myCourses);
     } on ApiException catch (e) {
       // 지워지지 않았는데 화면을 닫으면 지워진 줄 안다 — 머물러 알린다
       if (mounted) showAppToast(context, e.detail);
