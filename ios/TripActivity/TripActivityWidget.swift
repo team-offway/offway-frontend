@@ -21,6 +21,10 @@ struct TripActivityWidget: Widget {
             // 묻힌다 — 로그에는 렌더 success 로 찍히는데 화면은 비어 보인다.
             // 색은 시스템에 맡기고 `.primary`·`.secondary` 만 쓴다
             LockScreenView(context: context)
+                // 카드를 누르면 그 코스로 — 펼침의 '코스 보기' 와 같은 주소다.
+                // 카드 전체를 Link 로 감싸지 않는다: 잠금화면 카드의 탭은
+                // 시스템이 다루는 자리라 widgetURL 로 목적지만 알려 준다
+                .widgetURL(context.attributes.courseURL)
         } dynamicIsland: { context in
             DynamicIsland {
                 // 펼침은 **center 한 덩이**로 넣는다 — leading/trailing 으로
@@ -46,6 +50,20 @@ struct TripActivityWidget: Widget {
             }
             .keylineTint(WidgetPalette.islandAccent)
         }
+    }
+}
+
+@available(iOS 16.1, *)
+extension TripActivityAttributes {
+    /// 누르면 갈 곳 — 그 코스 상세.
+    ///
+    /// 위젯이 쓰는 주소와 같은 형태다(`offway://course/{id}`). 코스 id 는
+    /// 카드가 살아 있는 동안 바뀌지 않으므로 `attributes` 가 들고 있다.
+    /// 잠금화면 카드와 펼침의 '코스 보기' 가 이 하나를 같이 쓴다 —
+    /// 두 자리가 다른 곳으로 가면 안 된다
+    var courseURL: URL {
+        URL(string: "offway://course/\(courseId)")
+            ?? URL(string: "offway://home")!
     }
 }
 
@@ -100,7 +118,7 @@ private struct ExpandedView: View {
             .padding(.horizontal, 12)
 
             // 누르면 그 코스로 — 위젯과 같은 주소다(`offway://course/{id}`)
-            Link(destination: courseURL) {
+            Link(destination: context.attributes.courseURL) {
                 Text("코스 보기")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(WidgetPalette.islandAccent)
@@ -110,12 +128,6 @@ private struct ExpandedView: View {
             }
         }
         .padding(.top, 8)
-    }
-
-    /// 코스 id 는 카드가 살아 있는 동안 바뀌지 않는다(`attributes`)
-    private var courseURL: URL {
-        URL(string: "offway://course/\(context.attributes.courseId)")
-            ?? URL(string: "offway://home")!
     }
 }
 
