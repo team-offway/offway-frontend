@@ -157,3 +157,108 @@ final class TripPhraseTests: XCTestCase {
         XCTAssertEqual(state(start: "2026-09-25", end: "2026-09-23").durationLabel, "당일치기")
     }
 }
+
+// MARK: - 위젯
+
+/// 위젯이 날짜마다 무엇을 보여줄지 — Dart `TripCountdown.pick` 과 같은 규칙에
+/// 창(within)만 없다. 시간표는 앱이 넘긴 목록에서 여기서 만든다(서버 없음).
+@available(iOS 16.1, *)
+final class TripWidgetTests: XCTestCase {
+    private func trip(
+        _ id: String,
+        region: String = "정선군",
+        start: String,
+        end: String? = nil
+    ) -> TripWidgetTrip {
+        TripWidgetTrip(courseId: id, regionName: region, startDate: start, endDate: end ?? start)
+    }
+
+    private let today = YMD(y: 2026, m: 9, d: 20)
+
+    func test여행중인것이먼저다() {
+        let picked = TripWidgetTrip.pick(
+            [
+                trip("1", start: "2026-09-22"),
+                trip("2", region: "가평군", start: "2026-09-19", end: "2026-09-21"),
+            ],
+            today: today
+        )
+        XCTAssertEqual(picked?.courseId, "2")
+        XCTAssertEqual(picked?.contentState(today: today)?.dayNth, 2)
+        XCTAssertNil(picked?.contentState(today: today)?.daysLeft)
+    }
+
+    func test없으면가장가까운예정여행이다() {
+        let picked = TripWidgetTrip.pick(
+            [trip("1", start: "2026-10-05"), trip("2", start: "2026-09-25")],
+            today: today
+        )
+        XCTAssertEqual(picked?.courseId, "2")
+        XCTAssertEqual(picked?.contentState(today: today)?.daysLeft, 5)
+    }
+
+    func test창이없다_먼여행도보여준다() {
+        // 라이브 액티비티는 D-5 부터지만 위젯은 사용자가 붙인 자리라 빈칸이면 뺀다
+        let picked = TripWidgetTrip.pick([trip("1", start: "2026-10-02")], today: today)
+        XCTAssertEqual(picked?.contentState(today: today)?.daysLeft, 12)
+        XCTAssertEqual(picked?.contentState(today: today)?.headline, "정선군 여행 D-12")
+    }
+
+    func test지난여행과역전데이터는건너뛴다() {
+        let picked = TripWidgetTrip.pick(
+            [
+                trip("1", start: "2026-09-10", end: "2026-09-12"),
+                trip("2", start: "2026-09-30", end: "2026-09-28"),
+                trip("3", start: "2026-09-29"),
+            ],
+            today: today
+        )
+        XCTAssertEqual(picked?.courseId, "3")
+        XCTAssertNil(TripWidgetTrip.pick([trip("1", start: "2026-09-10")], today: today))
+    }
+
+    func test시간표는지금하나와자정마다하나다() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 15, minute: 30))!
+        let entries = TripWidgetTimeline.entries(
+            now: now,
+            trips: [trip("1", start: "2026-09-23", end: "2026-09-25")],
+            signedIn: true,
+            calendar: cal,
+            days: 14
+        )
+        XCTAssertEqual(entries.count, 14)
+        XCTAssertEqual(entries[0].date, now)
+        XCTAssertEqual(entries[0].state?.daysLeft, 3)
+        // 둘째 칸은 다음 날 00:00 — 그 순간 D-2 가 된다
+        XCTAssertEqual(
+            cal.dateComponents([.year, .month, .day, .hour, .minute], from: entries[1].date),
+            DateComponents(year: 2026, month: 9, day: 21, hour: 0, minute: 0)
+        )
+        XCTAssertEqual(entries[1].state?.daysLeft, 2)
+        // 출발 당일 칸은 1일차, 여행이 끝난 뒤 칸은 빈 상태
+        XCTAssertEqual(entries[3].state?.dayNth, 1)
+        XCTAssertNil(entries[6].state)
+        XCTAssertTrue(entries[6].signedIn)
+    }
+
+    func test로그인전은빈상태에표시가남는다() {
+        let s = TripWidgetTimeline.snapshot(at: Date(), trips: [], signedIn: false)
+        XCTAssertNil(s.state)
+        XCTAssertFalse(s.signedIn)
+    }
+
+    func test저장한목록을그대로읽는다() throws {
+        // 앱 그룹이 없는 테스트 환경에서는 suite 가 nil 일 수 있다 — 그러면 건너뛴다
+        try XCTSkipIf(TripWidgetStore.defaults == nil, "App Group 저장소가 없다")
+        TripWidgetStore.clear()
+        let trips = [trip("1", start: "2026-09-23", end: "2026-09-25")]
+        try TripWidgetStore.save(trips)
+        XCTAssertEqual(TripWidgetStore.load(), trips)
+        XCTAssertTrue(TripWidgetStore.isSignedIn)
+        TripWidgetStore.clear()
+        XCTAssertEqual(TripWidgetStore.load(), [])
+        XCTAssertFalse(TripWidgetStore.isSignedIn)
+    }
+}

@@ -82,17 +82,33 @@ extension TripActivityAttributes.ContentState {
 }
 
 /// `yyyy-MM-dd` 한 토막. 시간대·서머타임과 무관하게 **달력 날짜로만** 센다 —
-/// 잠금화면 D-day 가 하루 틀리면 기능이 있으나 마나다
-private struct YMD: Equatable {
+/// 잠금화면 D-day 가 하루 틀리면 기능이 있으나 마나다.
+///
+/// 위젯(`TripWidgetStore`)도 같은 셈을 쓴다 — 라이브 액티비티와 위젯이
+/// 같은 날 다른 숫자를 말하면 안 된다
+struct YMD: Equatable {
     let y: Int
     let m: Int
     let d: Int
+
+    init(y: Int, m: Int, d: Int) {
+        (self.y, self.m, self.d) = (y, m, d)
+    }
 
     init?(_ text: String) {
         let parts = text.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
         (y, m, d) = (parts[0], parts[1], parts[2])
     }
+
+    /// 기기 달력의 그 순간 날짜 — 자정 경계는 **사용자의 시간대**다
+    init(_ date: Date, calendar: Calendar = .current) {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        (y, m, d) = (c.year ?? 1970, c.month ?? 1, c.day ?? 1)
+    }
+
+    /// `2026-09-23`
+    var iso: String { String(format: "%04d-%02d-%02d", y, m, d) }
 
     /// 두 날짜 사이 일수 — UTC 그레고리력으로 고정해 어디서 돌려도 같다
     static func days(from a: YMD, to b: YMD) -> Int {

@@ -73,7 +73,11 @@ class TripActivityController with WidgetsBindingObserver {
     // 서버 등록을 먼저 지운다 — 아직 이 사람의 토큰이 살아 있을 때라야
     // 요청이 통한다(로그아웃 뒤에는 401 이다)
     await _unregisterLive();
-    return _ref.read(tripActivityServiceProvider).end();
+    final service = _ref.read(tripActivityServiceProvider);
+    final ended = await service.end();
+    // 위젯도 앞사람의 것이다 — 카드처럼 비운다
+    final cleared = await service.clearWidget();
+    return ended && cleared;
   }
 
   void dispose() {
@@ -98,13 +102,12 @@ class TripActivityController with WidgetsBindingObserver {
         });
   }
 
-  /// 예정 코스를 읽어 띄울 하나를 고른다.
+  /// 예정 코스를 읽어 **위젯 목록을 갈아 끼우고**, 잠금화면에 띄울 하나를 고른다.
   ///
   /// 띄울 것이 없으면(예정이 없거나 다 지났으면) 떠 있던 것을 내린다 —
   /// 끝난 여행이 잠금화면에 남아 있을 이유가 없다
   Future<void> sync({DateTime? now}) async {
     final service = _ref.read(tripActivityServiceProvider);
-    if (!await service.isAvailable()) return;
     if (_stopped) return;
 
     final List<Map<String, dynamic>> cards;
@@ -113,7 +116,11 @@ class TripActivityController with WidgetsBindingObserver {
     } on Object catch (e) {
       // **코스를 못 읽었다고 떠 있는 것을 그냥 두지 않는다.** 서버가 계속
       // 실패하면 지난 여행 D-day 가 잠금화면에 무기한 남는다 — 무엇을
-      // 띄울지 모르는 상태라면 아무것도 띄우지 않는 편이 맞다
+      // 띄울지 모르는 상태라면 아무것도 띄우지 않는 편이 맞다.
+      //
+      // 위젯은 그대로 둔다 — 위젯은 날짜를 스스로 세므로 알던 여행에 대해선
+      // 여전히 맞는 말을 한다. 비우면 잠깐의 통신 실패가 "예정된 여행이
+      // 없어요" 로 보인다
       debugPrint('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
       if (!_stopped) {
         await _unregisterLive();
@@ -126,11 +133,20 @@ class TripActivityController with WidgetsBindingObserver {
     // 내려 둔 것을 여기서 다시 띄우면 앞사람의 여행이 되살아난다
     if (_stopped) return;
 
+    final at = now ?? DateTime.now();
     final trips = cards
         .map(TripCountdown.tryFrom)
         .whereType<TripCountdown>()
         .toList();
-    final picked = TripCountdown.pick(trips, now ?? DateTime.now());
+
+    // 위젯은 라이브 액티비티가 안 되는 기기(설정에서 껐거나)에서도 그린다 —
+    // 가능 여부를 묻기 전에 먼저 쓴다. 지난 여행은 넘기지 않는다
+    await service.setWidgetTrips(trips.where((t) => !t.isPast(at)).toList());
+
+    if (!await service.isAvailable()) return;
+    if (_stopped) return;
+
+    final picked = TripCountdown.pick(trips, at);
 
     if (picked == null) {
       await _unregisterLive();

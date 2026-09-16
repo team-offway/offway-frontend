@@ -88,6 +88,30 @@ class TripActivityService {
   /// 화면으로 넘어간다 — 부르는 쪽이 알아야 다시 시도하든 알리든 한다
   Future<bool> end() => _invokeOk('end', const {});
 
+  /// 홈·잠금화면 **위젯**이 읽을 예정 여행 목록을 네이티브 저장소(App Group)에
+  /// 쓴다 — 쓰고 나면 네이티브가 위젯 시간표를 다시 만들게 한다.
+  ///
+  /// **고른 하나가 아니라 목록**을 넘긴다. 어느 날 무엇을 보여줄지는 위젯이
+  /// 날짜별 시간표를 만들 때 정한다 — 하나만 넘기면 그 여행이 끝난 다음 날
+  /// 앱을 안 열었을 때 다음 여행으로 못 넘어간다. 칸은 라이브 액티비티와
+  /// 같다(`courseId`·`regionName`·`startDate`·`endDate`)
+  Future<bool> setWidgetTrips(List<TripCountdown> trips) =>
+      _invokeOk('setWidgetTrips', {
+        'trips': [
+          for (final t in trips)
+            {
+              'courseId': t.courseId,
+              'regionName': t.regionName,
+              'startDate': TripCountdown.isoDate(t.startDate),
+              'endDate': TripCountdown.isoDate(t.endDate),
+            },
+        ],
+      });
+
+  /// 위젯을 로그인 전 상태로 되돌린다 — 로그아웃·탈퇴.
+  /// 안 비우면 앞사람의 여행이 위젯에 남는다
+  Future<bool> clearWidget() => _invokeOk('clearWidget', const {});
+
   /// 네이티브가 카드의 푸시 토큰을 올려 보내면 받는다.
   ///
   /// 서버 등록은 JWT 를 쥔 Dart 가 한다(`LiveActivityRepository`). iOS 는

@@ -168,4 +168,36 @@ void main() {
     await service.start(trip);
     await service.end();
   });
+
+  group('위젯', () {
+    test('위젯에는 목록을 넘긴다 — 칸은 라이브 액티비티와 같다', () async {
+      stub();
+      final later = TripCountdown(
+        courseId: '8',
+        regionName: '가평군',
+        startDate: DateTime(2026, 10, 20),
+        endDate: DateTime(2026, 10, 20),
+      );
+
+      await service.setWidgetTrips([trip, later]);
+
+      expect(calls.single.method, 'setWidgetTrips');
+      final args = (calls.single.arguments as Map).cast<String, Object?>();
+      final trips = (args['trips'] as List).cast<Map>();
+      expect(trips, hasLength(2));
+      expect(trips.first['courseId'], '7');
+      expect(trips.first['regionName'], '정선군');
+      expect(trips.first['startDate'], '2026-09-23');
+      expect(trips.first['endDate'], '2026-09-25');
+      // 날짜별 판단은 위젯이 한다 — 여기서 D-day 를 미리 세지 않는다
+      expect(trips.first.keys, isNot(contains('daysLeft')));
+      expect(trips.first.keys, isNot(contains('dayNth')));
+    });
+
+    test('비울 때는 인자 없이 부른다', () async {
+      stub();
+      expect(await service.clearWidget(), isTrue);
+      expect(calls.single.method, 'clearWidget');
+    });
+  });
 }

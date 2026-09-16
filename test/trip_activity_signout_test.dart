@@ -78,6 +78,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(spy.ended, isTrue, reason: '로그인 화면으로 가기 전에 내려야 한다');
+    expect(spy.widgetCleared, isTrue, reason: '위젯도 앞사람의 것이다');
   });
 
   testWidgets('내리지 못하면 로그아웃은 하되 알린다', (tester) async {
@@ -141,6 +142,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(spy.ended, isTrue, reason: '계정이 지워지기 전에 내려야 한다');
+    expect(spy.widgetCleared, isTrue);
   });
 
   testWidgets('세션이 만료돼도 잠금화면을 내린다', (tester) async {
@@ -191,6 +193,18 @@ class _SpyService implements TripActivityService {
 
   @override
   void listenPushToken(PushTokenListener listener) {}
+
+  /// 로그아웃 때 위젯도 비웠는가
+  bool widgetCleared = false;
+
+  @override
+  Future<bool> setWidgetTrips(List<TripCountdown> trips) async => true;
+
+  @override
+  Future<bool> clearWidget() async {
+    widgetCleared = true;
+    return true;
+  }
 }
 
 class _FakePushRegistration implements PushRegistration {

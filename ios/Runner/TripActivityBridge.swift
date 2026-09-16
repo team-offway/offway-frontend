@@ -1,6 +1,7 @@
 import ActivityKit
 import Flutter
 import Foundation
+import WidgetKit
 
 /// Flutter 가 부르는 잠금화면 제어 — `TripActivityService` 와 짝이다.
 ///
@@ -31,6 +32,10 @@ enum TripActivityBridge {
                 start(call.arguments, result: result)
             case "end":
                 end(result: result)
+            case "setWidgetTrips":
+                setWidgetTrips(call.arguments, result: result)
+            case "clearWidget":
+                clearWidget(result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -100,6 +105,56 @@ enum TripActivityBridge {
                 }
             }
         }
+    }
+
+    // MARK: 위젯
+
+    /// 위젯이 읽을 예정 여행 목록을 App Group 저장소에 쓰고 시간표를 다시 만들게 한다.
+    ///
+    /// 라이브 액티비티와 달리 **iOS 버전을 가리지 않는다** — 저장소 쓰기는 어디서나
+    /// 되고, 위젯을 못 그리는 기기(16.1 미만)에서는 읽는 쪽이 없을 뿐이다
+    private static func setWidgetTrips(_ arguments: Any?, result: FlutterResult) {
+        guard let args = arguments as? [String: Any],
+              let raw = args["trips"] as? [[String: Any]]
+        else {
+            return result(
+                FlutterError(code: "BAD_ARGS", message: "trips 가 없다", details: nil)
+            )
+        }
+        // 칸이 빠진 항목은 버린다 — 없는 날짜로 D-day 를 그리면 안 된다
+        let trips = raw.compactMap { item -> TripWidgetTrip? in
+            guard let courseId = item["courseId"] as? String,
+                  let regionName = item["regionName"] as? String,
+                  let startDate = item["startDate"] as? String,
+                  let endDate = item["endDate"] as? String
+            else { return nil }
+            return TripWidgetTrip(
+                courseId: courseId,
+                regionName: regionName,
+                startDate: startDate,
+                endDate: endDate
+            )
+        }
+        do {
+            try TripWidgetStore.save(trips)
+        } catch {
+            return result(
+                FlutterError(
+                    code: "WIDGET_SAVE_FAILED",
+                    message: error.localizedDescription,
+                    details: nil
+                )
+            )
+        }
+        WidgetCenter.shared.reloadAllTimelines()
+        result(nil)
+    }
+
+    /// 로그아웃·탈퇴 — 위젯을 로그인 전 상태로 되돌린다
+    private static func clearWidget(result: FlutterResult) {
+        TripWidgetStore.clear()
+        WidgetCenter.shared.reloadAllTimelines()
+        result(nil)
     }
 
     private static func end(result: @escaping FlutterResult) {

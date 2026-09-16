@@ -38,6 +38,22 @@ class _FakeService implements TripActivityService {
     endCount++;
     return true;
   }
+
+  /// 위젯 저장소에 마지막으로 쓴 목록 — 쓴 적 없으면 null
+  List<TripCountdown>? widgetTrips;
+  int clearWidgetCount = 0;
+
+  @override
+  Future<bool> setWidgetTrips(List<TripCountdown> trips) async {
+    widgetTrips = trips;
+    return true;
+  }
+
+  @override
+  Future<bool> clearWidget() async {
+    clearWidgetCount++;
+    return true;
+  }
 }
 
 void main() {
@@ -321,7 +337,7 @@ void main() {
     });
   });
 
-  test('기능을 못 쓰는 기기에서는 아무것도 하지 않는다', () async {
+  test('기능을 못 쓰는 기기에서는 잠금화면을 건드리지 않는다', () async {
     // iOS 16.1 미만·안드로이드·사용자가 껐을 때
     final service = _FakeService(available: false);
     final c = containerWith([card(id: '1', start: '2026-09-22')], service);
@@ -330,6 +346,83 @@ void main() {
 
     expect(service.started, isNull);
     expect(service.endCount, 0, reason: '내릴 것도 없다');
+  });
+
+  group('위젯', () {
+    test('예정 코스 목록을 위젯 저장소에 쓴다 — 고른 하나가 아니라 전부', () async {
+      // 하나만 쓰면 그 여행이 끝난 다음 날 앱을 안 열었을 때 다음 여행으로
+      // 못 넘어간다. 어느 날 무엇을 보여줄지는 위젯이 정한다
+      final service = _FakeService();
+      final c = containerWith([
+        card(id: '1', start: '2026-09-25', region: '홍천군'),
+        card(id: '2', start: '2026-10-20', region: '가평군'),
+      ], service);
+
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      expect(service.widgetTrips?.map((t) => t.courseId), ['1', '2']);
+      // 잠금화면은 여전히 창(D-5) 안의 하나만
+      expect(service.started?.courseId, '1');
+    });
+
+    test('지난 여행은 위젯에 넘기지 않는다', () async {
+      final service = _FakeService();
+      final c = containerWith([
+        card(id: '1', start: '2026-09-10', end: '2026-09-12'),
+        card(id: '2', start: '2026-09-25'),
+      ], service);
+
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      expect(service.widgetTrips?.map((t) => t.courseId), ['2']);
+    });
+
+    test('라이브 액티비티가 안 되는 기기에서도 위젯은 쓴다', () async {
+      // 설정에서 라이브 액티비티를 껐어도 위젯은 따로다
+      final service = _FakeService(available: false);
+      final c = containerWith([card(id: '1', start: '2026-09-22')], service);
+
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      expect(service.widgetTrips?.map((t) => t.courseId), ['1']);
+      expect(service.started, isNull);
+    });
+
+    test('코스를 못 읽으면 위젯은 그대로 둔다', () async {
+      // 위젯은 날짜를 스스로 세므로 알던 여행에 대해선 여전히 맞는 말을 한다.
+      // 비우면 잠깐의 통신 실패가 "예정된 여행이 없어요" 로 보인다
+      final service = _FakeService();
+      final c = ProviderContainer(
+        overrides: [
+          tripActivityServiceProvider.overrideWithValue(service),
+          savedCoursesProvider('UPCOMING').overrideWith(
+            (ref) => Future<List<Map<String, dynamic>>>.error(Exception('500')),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      try {
+        await c.read(tripActivityControllerProvider).sync(now: now);
+      } on Object catch (_) {}
+
+      expect(service.widgetTrips, isNull);
+      expect(service.clearWidgetCount, 0);
+    });
+
+    test('세션이 끝나면 위젯도 비운다', () async {
+      // 앞사람의 여행이 위젯에 남지 않게 — 카드와 같은 이유
+      final service = _FakeService();
+      final c = containerWith([card(id: '1', start: '2026-09-22')], service);
+      final controller = c.read(tripActivityControllerProvider);
+      await controller.sync(now: now);
+
+      final ok = await controller.stop();
+
+      expect(ok, isTrue);
+      expect(service.endCount, 1);
+      expect(service.clearWidgetCount, 1);
+    });
   });
 }
 
