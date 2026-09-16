@@ -93,9 +93,27 @@ if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
 `POST /api/v1/live-activities` 로 등록한다. 카드를 내리면 `DELETE` 로 지운다.
 등록은 멱등이라 토큰이 다시 와도 같은 요청을 다시 보내면 된다.
 
-**서버에 APNs 키가 들어가야 산다.** `APNS_KEY_ID` 등 환경변수 다섯 개가
+**서버에 APNs 키가 들어가야 산다.** `APNS_KEY_ID` 등 환경변수가
 비어 있으면 서버는 갱신만 끄고 부팅한다(`ApnsResult.DISABLED`). 키는
-`3Q22536QKC`(APNs · Team scoped · All topics) — 새로 발급할 것 없다.
+Sign in with Apple 과 같은 `.p8` 이고, core #582 가 `deploy.yml` 에 배선해
+운영에 들어갔다(2026-09-16).
+
+## 카드는 8시간짜리다 — Apple 제약
+
+라이브 액티비티는 **앱이나 사람이 끝내지 않아도 8시간이 지나면 시스템이
+끝낸다.** 끝나는 순간 다이나믹 아일랜드에서 사라지고, 잠금화면에는 최대
+4시간 더(총 12시간) 남은 뒤 치워진다. 푸시 갱신은 이 8시간을 늘려 주지
+않는다(Apple ActivityKit "Displaying live data with Live Activities").
+
+그래서 지금 구조에서 자정 갱신이 실제로 먹는 건 **그날 16시 이후에 앱을
+열어 카드를 띄운 경우**뿐이다. 낮에 띄운 카드는 자정 전에 이미 끝나 있다.
+며칠 내내 잠금화면에 붙어 있게 하려면 서버가 하루 몇 번씩 새로 띄우는
+push-to-start(iOS 17.2+, 이슈 #287)가 필요하고, 그것도 한 번에 8시간이다.
+
+**끝난 카드를 "떠 있다"고 착각하지 않는다.** 시스템이 끝낸 카드는 잠금화면에
+남아 있는 동안 `Activity.activities` 에도 `.ended` 로 남는다. `startOrUpdate`
+는 `activityState == .active` 인 것만 갱신 대상으로 보고, 아니면 남은 것을
+치우고 새로 띄운다 — 안 그러면 앱을 다시 열어도 카드가 안 살아난다.
 
 **끝까지 확인하려면 TestFlight 빌드여야 한다.** 개발 빌드(시뮬레이터·
 Xcode 실기기)의 토큰은 sandbox 라 운영 APNs 로 안 닿는다. 카드를 띄워 두고
