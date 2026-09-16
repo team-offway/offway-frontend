@@ -148,8 +148,8 @@ void main() {
     expect(find.byType(AppTooltipBubble), findsNothing);
   });
 
-  testWidgets('아직 안 끝난 여행에는 뜬다 — 목록의 다녀온 여행 탭과 같은 기준', (tester) async {
-    // 서버는 종료일이 오늘보다 이전인 코스만 '다녀온 여행'으로 본다.
+  testWidgets('아직 안 끝난 여행에는 뜬다 — 목록의 지난 여행 탭과 같은 기준', (tester) async {
+    // 서버는 종료일이 오늘보다 이전인 코스만 '지난 여행'으로 본다.
     // 연차를 미리 차감했어도 여행이 안 끝났으면 공유할 이유가 있다
     await pump(tester, leaveDeducted: true);
 

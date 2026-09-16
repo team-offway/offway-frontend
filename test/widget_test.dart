@@ -692,7 +692,7 @@ void main() {
     // 서브탭 3종이 있고, 최신순(영월 미확정)이 위에 온다
     expect(inCourses('전체'), findsOneWidget);
     expect(inCourses('예정된 여행'), findsOneWidget);
-    expect(inCourses('다녀온 여행'), findsOneWidget);
+    expect(inCourses('지난 여행'), findsOneWidget);
     expect(inCourses('영월 · 당일치기'), findsOneWidget);
     expect(inCourses('날짜 미정'), findsOneWidget);
     expect(inCourses('정선 · 2박3일'), findsOneWidget);
