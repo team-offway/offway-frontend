@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/core/widgets/app_bottom_sheet.dart';
 import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/my/presentation/my_screen.dart';
 
@@ -24,5 +25,11 @@ void main() {
     expect(find.text('잠금화면에 넣기'), findsOneWidget);
     expect(find.text('홈 화면에 넣기'), findsOneWidget);
     expect(find.textContaining('Offway를 골라요'), findsOneWidget);
+
+    // 제목 바가 시트 전체 폭이어야 닫기 버튼이 오른쪽 끝에 붙는다 — 좁게
+    // 잡히면 X 가 제목 글자 위에 겹친다
+    final bar = tester.getRect(find.byType(AppSheetTitleBar));
+    final screen = tester.getSize(find.byType(MaterialApp));
+    expect(bar.width, screen.width);
   });
 }

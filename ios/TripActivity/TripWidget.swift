@@ -16,11 +16,9 @@ import WidgetKit
 /// 나오면 이 파일의 뷰만 갈아 끼운다.
 @available(iOS 16.1, *)
 struct TripWidget: Widget {
-    static let kind = "TripWidget"
-
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: Self.kind, provider: TripWidgetProvider()) { entry in
-            TripWidgetView(entry: entry)
+        StaticConfiguration(kind: TripWidgetStore.widgetKind, provider: TripWidgetProvider()) { entry in
+            TripWidgetView(snapshot: entry)
         }
         .configurationDisplayName("여행 D-day")
         .description("다음 여행까지 남은 날을 보여줘요.")
@@ -34,60 +32,49 @@ struct TripWidget: Widget {
     }
 }
 
+/// 시간표의 한 칸이 곧 엔트리다 — `date` 를 이미 갖고 있다
 @available(iOS 16.1, *)
-struct TripWidgetEntry: TimelineEntry {
-    let date: Date
-    let snapshot: TripWidgetSnapshot
-
-    init(_ snapshot: TripWidgetSnapshot) {
-        date = snapshot.date
-        self.snapshot = snapshot
-    }
-}
+extension TripWidgetSnapshot: TimelineEntry {}
 
 @available(iOS 16.1, *)
 struct TripWidgetProvider: TimelineProvider {
     /// 위젯 갤러리 미리보기 — 실제 데이터 없이 모양만
-    private var sample: TripWidgetEntry {
-        TripWidgetEntry(
-            TripWidgetSnapshot(
-                date: Date(),
-                state: TripActivityAttributes.ContentState(
-                    regionName: "정선군",
-                    daysLeft: 5,
-                    dayNth: nil,
-                    startDate: "2026-09-23",
-                    endDate: "2026-09-25"
-                ),
-                signedIn: true,
-                courseId: "0"
-            )
+    private var sample: TripWidgetSnapshot {
+        TripWidgetSnapshot(
+            date: Date(),
+            state: TripActivityAttributes.ContentState(
+                regionName: "정선군",
+                daysLeft: 5,
+                dayNth: nil,
+                startDate: "2026-09-23",
+                endDate: "2026-09-25"
+            ),
+            courseId: "0",
+            signedIn: true
         )
     }
 
-    private var current: TripWidgetEntry {
-        TripWidgetEntry(
-            TripWidgetTimeline.snapshot(
-                at: Date(),
-                trips: TripWidgetStore.load(),
-                signedIn: TripWidgetStore.isSignedIn
-            )
+    private var current: TripWidgetSnapshot {
+        TripWidgetTimeline.snapshot(
+            at: Date(),
+            trips: TripWidgetStore.load(),
+            signedIn: TripWidgetStore.isSignedIn
         )
     }
 
-    func placeholder(in context: Context) -> TripWidgetEntry { sample }
+    func placeholder(in context: Context) -> TripWidgetSnapshot { sample }
 
-    func getSnapshot(in context: Context, completion: @escaping (TripWidgetEntry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping (TripWidgetSnapshot) -> Void) {
         completion(context.isPreview ? sample : current)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<TripWidgetEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TripWidgetSnapshot>) -> Void) {
         let entries = TripWidgetTimeline.entries(
             now: Date(),
             trips: TripWidgetStore.load(),
             signedIn: TripWidgetStore.isSignedIn
-        ).map(TripWidgetEntry.init)
-        // 14일이 지나면 다시 부른다. 그 전에 앱이 목록을 갈아 끼우면 즉시 다시 만든다
+        )
+        // 마지막 칸이 지나면 다시 부른다. 그 전에 앱이 목록을 갈아 끼우면 즉시 다시 만든다
         completion(Timeline(entries: entries, policy: .atEnd))
     }
 }
@@ -101,33 +88,29 @@ struct TripWidgetProvider: TimelineProvider {
 /// 디자인이 그대로 나간다.
 @available(iOS 16.1, *)
 struct TripWidgetView: View {
-    let entry: TripWidgetEntry
-    /// 자리를 직접 정한다 — 스냅샷 테스트용. 위젯 안에서는 nil 로 두어
-    /// 시스템이 준 자리(`widgetFamily`)를 쓴다. 그 환경값은 읽기 전용이라
-    /// 테스트가 바꿀 수 없다
-    var familyOverride: WidgetFamily? = nil
-    @Environment(\.widgetFamily) private var environmentFamily
-
-    private var family: WidgetFamily { familyOverride ?? environmentFamily }
+    let snapshot: TripWidgetSnapshot
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
         Group {
-            switch family {
-            case .accessoryInline:
-                InlineView(snapshot: entry.snapshot)
-            case .accessoryCircular:
-                CircularView(snapshot: entry.snapshot)
-            case .accessoryRectangular:
-                RectangularView(snapshot: entry.snapshot)
-            case .systemMedium:
-                HomeMediumView(snapshot: entry.snapshot)
-            default:
-                HomeSmallView(snapshot: entry.snapshot)
+            switch (family, snapshot.state) {
+            case (.accessoryInline, _):
+                InlineView(snapshot: snapshot)
+            case (.accessoryCircular, _):
+                CircularView(snapshot: snapshot)
+            case (.accessoryRectangular, _):
+                RectangularView(snapshot: snapshot)
+            case (.systemMedium, let state?):
+                HomeMediumView(state: state)
+            case (_, let state?):
+                HomeSmallView(state: state)
+            case (_, nil):
+                HomeEmptyView(snapshot: snapshot)
             }
         }
         .widgetContainerBackground(accessory: family.isAccessory)
         // 누르면 앱이 열린다 — 여행이 있으면 그 코스, 없으면 코스 만들기
-        .widgetURL(entry.snapshot.deepLink)
+        .widgetURL(snapshot.deepLink)
     }
 }
 
@@ -136,8 +119,9 @@ struct TripWidgetView: View {
 /// 앱 색 토큰 — Flutter `AppColors` 와 같은 값. 시안 없이 그린 자리라
 /// 토큰을 그대로 옮겨 앱과 한 벌로 보이게 한다.
 ///
-/// **에셋이 아니라 코드다.** 에셋 색은 익스텐션 번들에서만 풀리고, 값이 코드에
-/// 있어야 Flutter 토큰과 나란히 놓고 대조할 수 있다
+/// **색의 주인은 여기 하나다.** 라이브 액티비티(`TripActivityWidget`)도 이 파랑을
+/// 쓴다 — 에셋(`AccentColor`)에 같은 값을 두면 토큰이 바뀔 때 한쪽만 고쳐져
+/// 잠금화면 카드와 위젯이 다른 파랑이 된다
 @available(iOS 16.1, *)
 enum WidgetPalette {
     /// Primary/Normal · Light Blue 60 `#3DC2FF`
@@ -182,7 +166,7 @@ private struct RegionChip: View {
 /// 빈 상태 — 예정 없음 · 로그인 전. 소형·중형이 같이 쓴다
 @available(iOS 16.1, *)
 private struct HomeEmptyView: View {
-    let signedIn: Bool
+    let snapshot: TripWidgetSnapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -190,11 +174,11 @@ private struct HomeEmptyView: View {
                 .font(.title3)
                 .foregroundStyle(WidgetPalette.primary)
             Spacer(minLength: 0)
-            Text(signedIn ? "예정된 여행이 없어요" : "로그인하고 여행을 담아보세요")
+            Text(snapshot.emptyTitle)
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(WidgetPalette.labelStrong)
                 .lineLimit(2)
-            Text(signedIn ? "남은 연차로 떠날 곳을 찾아보세요" : "Offway")
+            Text(snapshot.emptySubtitle ?? "Offway")
                 .font(.system(size: 12))
                 .foregroundStyle(WidgetPalette.labelAlternative)
                 .lineLimit(1)
@@ -206,33 +190,29 @@ private struct HomeEmptyView: View {
 /// 홈 소형 — 숫자가 주인공이다. 칩 · 큰 D-n · 날짜
 @available(iOS 16.1, *)
 private struct HomeSmallView: View {
-    let snapshot: TripWidgetSnapshot
+    let state: TripActivityAttributes.ContentState
 
     var body: some View {
-        if let state = snapshot.state {
-            VStack(alignment: .leading, spacing: 0) {
-                RegionChip(regionName: state.regionName)
-                Spacer(minLength: 4)
-                // 'D-5' · '2일차' · '내일' 은 안 쓴다 — 좁은 자리는 숫자 그대로
-                Text(state.compactLabel)
-                    .font(.system(size: 36, weight: .heavy, design: .rounded))
-                    .foregroundStyle(WidgetPalette.labelStrong)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Text(state.shortRangeLabel)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(WidgetPalette.labelAlternative)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Text(state.durationLabel)
-                    .font(.system(size: 11))
-                    .foregroundStyle(WidgetPalette.labelAlternative)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        } else {
-            HomeEmptyView(signedIn: snapshot.signedIn)
+        VStack(alignment: .leading, spacing: 0) {
+            RegionChip(regionName: state.regionName)
+            Spacer(minLength: 4)
+            // 'D-5' · '2일차' — 좁은 자리는 숫자 그대로
+            Text(state.compactLabel)
+                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                .foregroundStyle(WidgetPalette.labelStrong)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            Text(state.shortRangeLabel)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(WidgetPalette.labelAlternative)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(state.durationLabel)
+                .font(.system(size: 11))
+                .foregroundStyle(WidgetPalette.labelAlternative)
+                .lineLimit(1)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }
 
@@ -240,33 +220,29 @@ private struct HomeSmallView: View {
 /// 돌아오는 날). 넓어진 만큼 날짜를 달력처럼 크게 보여준다
 @available(iOS 16.1, *)
 private struct HomeMediumView: View {
-    let snapshot: TripWidgetSnapshot
+    let state: TripActivityAttributes.ContentState
 
     var body: some View {
-        if let state = snapshot.state {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 0) {
-                    RegionChip(regionName: state.regionName)
-                    Spacer(minLength: 4)
-                    // 중형은 자리가 있어 문장으로 — '내일 정선군 여행' · '정선군 여행 2일차'
-                    Text(state.headline)
-                        .font(.system(size: 20, weight: .heavy, design: .rounded))
-                        .foregroundStyle(WidgetPalette.labelStrong)
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(2)
-                    Spacer(minLength: 4)
-                    Text("\(state.shortRangeLabel) · \(state.durationLabel)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(WidgetPalette.labelAlternative)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-
-                DateTile(state: state)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                RegionChip(regionName: state.regionName)
+                Spacer(minLength: 4)
+                // 중형은 자리가 있어 문장으로 — '내일 정선군 여행' · '정선군 여행 2일차'
+                Text(state.headline)
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .foregroundStyle(WidgetPalette.labelStrong)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(2)
+                Spacer(minLength: 4)
+                Text("\(state.shortRangeLabel) · \(state.durationLabel)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(WidgetPalette.labelAlternative)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-        } else {
-            HomeEmptyView(signedIn: snapshot.signedIn)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+            DateTile(state: state)
         }
     }
 }
@@ -318,15 +294,12 @@ private struct RectangularView: View {
                     .font(.caption)
                     .lineLimit(1)
             } else {
-                Label(
-                    snapshot.signedIn ? "예정된 여행이 없어요" : "로그인하고 여행을 담아보세요",
-                    systemImage: "suitcase.rolling"
-                )
-                .font(.headline)
-                .widgetAccentable()
-                .lineLimit(2)
-                if snapshot.signedIn {
-                    Text("남은 연차로 떠날 곳을 찾아보세요")
+                Label(snapshot.emptyTitle, systemImage: "suitcase.rolling")
+                    .font(.headline)
+                    .widgetAccentable()
+                    .lineLimit(2)
+                if let subtitle = snapshot.emptySubtitle {
+                    Text(subtitle)
                         .font(.caption)
                         .lineLimit(1)
                 }
@@ -370,11 +343,7 @@ private struct InlineView: View {
     let snapshot: TripWidgetSnapshot
 
     var body: some View {
-        if let state = snapshot.state {
-            Label(state.headline, systemImage: "suitcase.rolling")
-        } else {
-            Label(snapshot.signedIn ? "예정된 여행이 없어요" : "Offway", systemImage: "suitcase.rolling")
-        }
+        Label(snapshot.state?.headline ?? snapshot.emptyTitle, systemImage: "suitcase.rolling")
     }
 }
 
@@ -392,7 +361,7 @@ extension WidgetFamily {
 extension View {
     /// iOS 17 은 위젯 배경을 `containerBackground` 로 줘야 한다 — 없으면
     /// StandBy·iPad 에서 배경이 깨진다. 잠금화면 자리는 배경이 없어 투명으로,
-    /// 홈은 에셋 `WidgetBackground`(라이트 흰색·다크 Cool Neutral 20).
+    /// 홈은 `WidgetPalette.background`(라이트 흰색·다크 Cool Neutral 20).
     /// 16 은 그 API 가 없어 홈에 여백과 배경만 준다
     @available(iOS 16.1, *)
     @ViewBuilder

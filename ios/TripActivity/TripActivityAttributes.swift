@@ -64,24 +64,30 @@ extension TripActivityAttributes.ContentState {
         return "D-\(left)"
     }
 
-    /// '2026.9.23 - 9.25' — 해를 넘기면 끝날에도 연도를 붙인다
+    /// '2026.9.23 - 9.25' — 시작엔 연도, 해를 넘기면 끝날에도 연도를 붙인다
     var rangeLabel: String {
-        guard let s = YMD(startDate), let e = YMD(endDate) else { return startDate }
-        let head = "\(s.y).\(s.m).\(s.d)"
-        if s == e { return head }
-        let tail = s.y == e.y ? "\(e.m).\(e.d)" : "\(e.y).\(e.m).\(e.d)"
-        return "\(head) - \(tail)"
+        rangeLabel(startYear: true) { d, withYear in
+            withYear ? "\(d.y).\(d.m).\(d.d)" : "\(d.m).\(d.d)"
+        }
     }
 
-    /// '9.23 (수) - 9.25 (금)' — 위젯처럼 좁은 자리. 해를 넘기면 끝날에 연도
+    /// '9.23 (수) - 9.25 (금)' — 위젯처럼 좁은 자리라 연도는 해를 넘길 때만
     var shortRangeLabel: String {
+        rangeLabel(startYear: false) { d, withYear in
+            (withYear ? "\(d.y).\(d.m).\(d.d)" : "\(d.m).\(d.d)") + " (\(d.weekday))"
+        }
+    }
+
+    /// 범위 문구의 뼈대 — 같은 날이면 시작만, 해가 같으면 끝날에 연도 생략.
+    /// 두 문구가 이 규칙을 따로 들고 있으면 한쪽만 바뀐다
+    private func rangeLabel(
+        startYear: Bool,
+        _ format: (YMD, _ withYear: Bool) -> String
+    ) -> String {
         guard let s = YMD(startDate), let e = YMD(endDate) else { return startDate }
-        let head = "\(s.m).\(s.d) (\(s.weekday))"
-        if s == e { return head }
-        let tail = s.y == e.y
-            ? "\(e.m).\(e.d) (\(e.weekday))"
-            : "\(e.y).\(e.m).\(e.d) (\(e.weekday))"
-        return "\(head) - \(tail)"
+        let start = format(s, startYear)
+        if s == e { return start }
+        return "\(start) - \(format(e, s.y != e.y))"
     }
 
     /// '당일치기' · '1박 2일' · '2박 3일'
@@ -97,7 +103,7 @@ extension TripActivityAttributes.ContentState {
 ///
 /// 위젯(`TripWidgetStore`)도 같은 셈을 쓴다 — 라이브 액티비티와 위젯이
 /// 같은 날 다른 숫자를 말하면 안 된다
-struct YMD: Equatable {
+struct YMD: Equatable, Comparable {
     let y: Int
     let m: Int
     let d: Int
@@ -112,38 +118,45 @@ struct YMD: Equatable {
         (y, m, d) = (parts[0], parts[1], parts[2])
     }
 
-    /// 그 순간의 날짜 — 자정 경계는 **사용자의 시간대**, 연·월·일은 **그레고리력**.
+    /// 그 순간의 날짜 — 자정 경계는 **그 시간대**, 연·월·일은 **그레고리력**.
     ///
-    /// `Calendar.current` 를 그대로 쓰면 불교력·일본력 같은 설정에서 연도가
+    /// 기기 달력(`Calendar.current`)을 쓰면 불교력·일본력 설정에서 연도가
     /// 2569 처럼 나와, 그레고리력으로 적힌 여행 날짜(`2026-09-23`)와 비교할 때
-    /// 전부 지난 여행이 된다. 시간대만 사용자 것을 빌린다
-    init(_ date: Date, calendar: Calendar = .current) {
-        var gregorian = Calendar(identifier: .gregorian)
-        gregorian.timeZone = calendar.timeZone
-        let c = gregorian.dateComponents([.year, .month, .day], from: date)
+    /// 전부 지난 여행이 된다
+    init(_ date: Date, timeZone: TimeZone = .current) {
+        let c = YMD.gregorian(in: timeZone).dateComponents([.year, .month, .day], from: date)
         (y, m, d) = (c.year ?? 1970, c.month ?? 1, c.day ?? 1)
     }
 
-    /// `2026-09-23`
-    var iso: String { String(format: "%04d-%02d-%02d", y, m, d) }
-
     /// '수' — 요일 한 글자. 달력 날짜만으로 정하므로 시간대와 무관하다
     var weekday: String {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        guard let date = cal.date(from: DateComponents(year: y, month: m, day: d))
-        else { return "" }
+        guard let date = utcDate else { return "" }
         let symbols = ["일", "월", "화", "수", "목", "금", "토"]
-        return symbols[cal.component(.weekday, from: date) - 1]
+        return symbols[YMD.utc.component(.weekday, from: date) - 1]
     }
 
     /// 두 날짜 사이 일수 — UTC 그레고리력으로 고정해 어디서 돌려도 같다
     static func days(from a: YMD, to b: YMD) -> Int {
+        guard let da = a.utcDate, let db = b.utcDate else { return 0 }
+        return utc.dateComponents([.day], from: da, to: db).day ?? 0
+    }
+
+    /// 달력 순서가 곧 날짜 순서다 — 비교에는 달력 연산이 필요 없다
+    static func < (lhs: YMD, rhs: YMD) -> Bool {
+        (lhs.y, lhs.m, lhs.d) < (rhs.y, rhs.m, rhs.d)
+    }
+
+    /// 어느 시간대의 그레고리력 — 자정 경계·날짜 셈이 한 달력에서 나오게
+    static func gregorian(in timeZone: TimeZone) -> Calendar {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        guard let da = cal.date(from: DateComponents(year: a.y, month: a.m, day: a.d)),
-              let db = cal.date(from: DateComponents(year: b.y, month: b.m, day: b.d))
-        else { return 0 }
-        return cal.dateComponents([.day], from: da, to: db).day ?? 0
+        cal.timeZone = timeZone
+        return cal
+    }
+
+    /// 요일·일수 셈용 UTC 그레고리력 — 매번 만들지 않는다
+    private static let utc = gregorian(in: TimeZone(identifier: "UTC")!)
+
+    private var utcDate: Date? {
+        YMD.utc.date(from: DateComponents(year: y, month: m, day: d))
     }
 }

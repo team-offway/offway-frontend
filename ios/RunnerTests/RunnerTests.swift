@@ -218,14 +218,14 @@ final class TripWidgetTests: XCTestCase {
     }
 
     func test시간표는지금하나와자정마다하나다() {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let seoul = TimeZone(identifier: "Asia/Seoul")!
+        let cal = YMD.gregorian(in: seoul)
         let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 15, minute: 30))!
         let entries = TripWidgetTimeline.entries(
             now: now,
             trips: [trip("1", start: "2026-09-23", end: "2026-09-25")],
             signedIn: true,
-            calendar: cal,
+            timeZone: seoul,
             days: 14
         )
         XCTAssertEqual(entries.count, 14)
@@ -257,19 +257,17 @@ final class TripWidgetTests: XCTestCase {
         XCTAssertEqual(same.shortRangeLabel, "9.23 (수)")
     }
 
-    func test기기달력이불교력이어도그레고리력날짜로센다() {
-        // Calendar.current 가 불교력이면 2026년이 2569년으로 나온다 — 그대로 비교하면
-        // 그레고리력으로 적힌 여행이 전부 지난 것이 된다
-        var buddhist = Calendar(identifier: .buddhist)
-        buddhist.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        var greg = Calendar(identifier: .gregorian)
-        greg.timeZone = buddhist.timeZone
-        let date = greg.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 9))!
-        XCTAssertEqual(YMD(date, calendar: buddhist), YMD(y: 2026, m: 9, d: 20))
-        let s = TripWidgetTimeline.snapshot(
-            at: date, trips: [trip("1", start: "2026-09-23")], signedIn: true, calendar: buddhist
-        )
-        XCTAssertEqual(s.state?.daysLeft, 3)
+    func test날짜는시간대의그레고리력으로센다() {
+        // 기기 달력이 불교력이어도(연도 2569) 여행 날짜는 그레고리력으로 적혀 있다 —
+        // 시간대만 빌리고 달력은 그레고리력이라 2026 으로 나온다
+        let seoul = TimeZone(identifier: "Asia/Seoul")!
+        // 서울 9/20 00:30 은 UTC 로는 9/19 다 — 시간대가 날짜를 가른다
+        let date = YMD.gregorian(in: seoul).date(
+            from: DateComponents(year: 2026, month: 9, day: 20, hour: 0, minute: 30)
+        )!
+        XCTAssertEqual(YMD(date, timeZone: seoul), YMD(y: 2026, m: 9, d: 20))
+        XCTAssertEqual(YMD(date, timeZone: TimeZone(identifier: "UTC")!), YMD(y: 2026, m: 9, d: 19))
+        XCTAssertTrue(YMD(y: 2026, m: 9, d: 19) < YMD(y: 2026, m: 10, d: 1))
     }
 
     func test로그인전은빈상태에표시가남는다() {
@@ -284,28 +282,40 @@ final class TripWidgetTests: XCTestCase {
         cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
         let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 9))!
         let with = TripWidgetTimeline.snapshot(
-            at: now, trips: [trip("122", start: "2026-09-23")], signedIn: true, calendar: cal
+            at: now, trips: [trip("122", start: "2026-09-23")], signedIn: true, timeZone: cal.timeZone
         )
         XCTAssertEqual(with.courseId, "122")
         XCTAssertEqual(with.deepLink?.absoluteString, "offway://course/122")
 
         let without = TripWidgetTimeline.snapshot(
-            at: now, trips: [trip("1", start: "2026-09-10")], signedIn: true, calendar: cal
+            at: now, trips: [trip("1", start: "2026-09-10")], signedIn: true, timeZone: cal.timeZone
         )
         XCTAssertNil(without.courseId, "지난 여행은 눌러도 열 것이 없다")
         XCTAssertEqual(without.deepLink?.absoluteString, "offway://wizard")
     }
 
-    func test저장한목록을그대로읽는다() throws {
-        // 앱 그룹이 없는 테스트 환경에서는 suite 가 nil 일 수 있다 — 그러면 건너뛴다
-        try XCTSkipIf(TripWidgetStore.defaults == nil, "App Group 저장소가 없다")
+    func test저장한목록을그대로읽고_같은목록은바뀐것으로치지않는다() throws {
         TripWidgetStore.clear()
         let trips = [trip("1", start: "2026-09-23", end: "2026-09-25")]
-        try TripWidgetStore.save(trips)
+        XCTAssertTrue(try TripWidgetStore.save(trips))
+        XCTAssertFalse(try TripWidgetStore.save(trips), "같은 목록이면 위젯을 다시 그릴 이유가 없다")
         XCTAssertEqual(TripWidgetStore.load(), trips)
+        // 로그인 표시는 목록과 따로다 — 목록을 썼다고 로그인으로 치지 않는다
+        XCTAssertFalse(TripWidgetStore.isSignedIn)
+        TripWidgetStore.markSignedIn()
         XCTAssertTrue(TripWidgetStore.isSignedIn)
         TripWidgetStore.clear()
         XCTAssertEqual(TripWidgetStore.load(), [])
         XCTAssertFalse(TripWidgetStore.isSignedIn)
+    }
+
+    func test채널인자는네칸이다_하나라도빠지면nil() {
+        let full: [String: Any] = [
+            "courseId": "1", "regionName": "정선군", "startDate": "2026-09-23", "endDate": "2026-09-25",
+        ]
+        XCTAssertEqual(TripWidgetTrip(channelArgs: full), trip("1", start: "2026-09-23", end: "2026-09-25"))
+        var missing = full
+        missing.removeValue(forKey: "endDate")
+        XCTAssertNil(TripWidgetTrip(channelArgs: missing))
     }
 }
