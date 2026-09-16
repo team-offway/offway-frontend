@@ -69,7 +69,7 @@ class _GuideBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'iOS 16 이상에서 쓸 수 있어요.',
+          'iOS 16.1 이상에서 쓸 수 있어요.',
           style: AppTypography.caption1Medium.copyWith(
             color: AppColors.labelAssistive,
           ),
