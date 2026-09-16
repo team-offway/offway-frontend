@@ -271,9 +271,9 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
           // 섞으면 안 쓴 출처를 표기하게 된다
           child: DataSourceNote(
             sources: _shownSources,
-            // 시안 여백 32 를 카드와 출처 사이에 두고, 인디케이터만큼 더
-            // 흘려 보낸다 — 목록 끝이 화면 끝이다
-            padding: EdgeInsets.fromLTRB(20, 32, 20, 12 + context.bottomInset),
+            // 카드와 출처 사이는 **24** — 내 코스 상세·장소 상세·코스 확정이
+            // 쓰는 값과 같다. 아래로는 인디케이터만큼 흘려 보낸다
+            padding: EdgeInsets.fromLTRB(20, 24, 20, 12 + context.bottomInset),
           ),
         ),
       ],
