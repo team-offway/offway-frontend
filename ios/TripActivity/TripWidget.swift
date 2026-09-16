@@ -194,7 +194,7 @@ private struct HomeEmptyView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(WidgetPalette.labelStrong)
                 .lineLimit(2)
-            Text(signedIn ? "남은 연차로 떠날 곳을 찾아보세요" : "OffWay")
+            Text(signedIn ? "남은 연차로 떠날 곳을 찾아보세요" : "Offway")
                 .font(.system(size: 12))
                 .foregroundStyle(WidgetPalette.labelAlternative)
                 .lineLimit(1)
@@ -373,7 +373,7 @@ private struct InlineView: View {
         if let state = snapshot.state {
             Label(state.headline, systemImage: "suitcase.rolling")
         } else {
-            Label(snapshot.signedIn ? "예정된 여행이 없어요" : "OffWay", systemImage: "suitcase.rolling")
+            Label(snapshot.signedIn ? "예정된 여행이 없어요" : "Offway", systemImage: "suitcase.rolling")
         }
     }
 }

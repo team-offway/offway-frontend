@@ -35,7 +35,7 @@ Future<void> showWidgetGuideSheet(BuildContext context) {
             steps: [
               '잠금화면을 길게 눌러요',
               '‘사용자화’ → ‘잠금 화면’을 눌러요',
-              '시계 아래 칸을 누르고 OffWay를 골라요',
+              '시계 아래 칸을 누르고 Offway를 골라요',
             ],
           ),
           const SizedBox(height: 20),
@@ -44,7 +44,7 @@ Future<void> showWidgetGuideSheet(BuildContext context) {
             steps: [
               '홈 화면의 빈 곳을 길게 눌러요',
               '왼쪽 위 ‘+’(편집)를 눌러요',
-              'OffWay를 찾아 ‘여행 D-day’를 추가해요',
+              'Offway를 찾아 ‘여행 D-day’를 추가해요',
             ],
           ),
           const SizedBox(height: 20),

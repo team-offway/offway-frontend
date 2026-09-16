@@ -23,6 +23,6 @@ void main() {
     // 잠금화면·홈 두 자리를 다 알려준다
     expect(find.text('잠금화면에 넣기'), findsOneWidget);
     expect(find.text('홈 화면에 넣기'), findsOneWidget);
-    expect(find.textContaining('OffWay를 골라요'), findsOneWidget);
+    expect(find.textContaining('Offway를 골라요'), findsOneWidget);
   });
 }
