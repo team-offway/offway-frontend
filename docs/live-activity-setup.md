@@ -149,10 +149,17 @@ Flutter sync()  ─(예정 코스 목록)─▶  App Group UserDefaults  ◀─�
 `com.apple.security.application-groups` = `group.com.nth.offway`. 그룹은 Apple
 Developer 콘솔에 등록돼 있어야 실기기 서명이 통과한다(시뮬레이터는 안 따진다).
 
-자리는 넷 — 홈 소형(`systemSmall`), 잠금화면 직사각형·원형·한 줄
-(`accessoryRectangular`·`accessoryCircular`·`accessoryInline`). 잠금화면 세
-자리는 iOS 가 배경화면에 맞춰 흰색·반투명으로 그리므로 우리 색이 안 먹는다 —
-글자와 SF Symbol 만 쓴다. 홈 중형은 시안이 나오면.
+자리는 다섯 — 홈 소형·중형(`systemSmall`·`systemMedium`), 잠금화면 직사각형·
+원형·한 줄(`accessoryRectangular`·`accessoryCircular`·`accessoryInline`). 잠금화면
+세 자리는 iOS 가 배경화면에 맞춰 흰색·반투명으로 그리므로 우리 색이 안 먹는다 —
+글자와 SF Symbol 만 쓴다.
+
+**홈 위젯은 시안 없이 앱 토큰으로 그렸다.** Primary(Light Blue 60 `#3DC2FF`)는
+익스텐션 에셋 `AccentColor`(라이브 액티비티의 `.tint` 도 이걸 받는다), 바탕은
+`WidgetBackground`(라이트 흰색 · 다크 Cool Neutral 20). 소형은 지역 칩 · 큰
+D-n · 날짜(요일 포함) · 기간, 중형은 여기에 **날짜 타일**(출발 전엔 출발일,
+여행 중엔 돌아오는 날)을 붙였다. 글꼴은 SF Rounded — Pretendard 를 익스텐션에
+싣는 건 시안이 확정되면. 시안이 나오면 `TripWidget.swift` 의 뷰만 갈아 끼운다.
 
 **누르면 앱이 열린다.** 위젯은 `offway://course/{id}`(보여주던 여행) ·
 `offway://wizard`(예정 없음) · `offway://home`(로그인 전)을 만들고

@@ -73,6 +73,17 @@ extension TripActivityAttributes.ContentState {
         return "\(head) - \(tail)"
     }
 
+    /// '9.23 (수) - 9.25 (금)' — 위젯처럼 좁은 자리. 해를 넘기면 끝날에 연도
+    var shortRangeLabel: String {
+        guard let s = YMD(startDate), let e = YMD(endDate) else { return startDate }
+        let head = "\(s.m).\(s.d) (\(s.weekday))"
+        if s == e { return head }
+        let tail = s.y == e.y
+            ? "\(e.m).\(e.d) (\(e.weekday))"
+            : "\(e.y).\(e.m).\(e.d) (\(e.weekday))"
+        return "\(head) - \(tail)"
+    }
+
     /// '당일치기' · '1박 2일' · '2박 3일'
     var durationLabel: String {
         guard let s = YMD(startDate), let e = YMD(endDate) else { return "" }
@@ -109,6 +120,16 @@ struct YMD: Equatable {
 
     /// `2026-09-23`
     var iso: String { String(format: "%04d-%02d-%02d", y, m, d) }
+
+    /// '수' — 요일 한 글자. 달력 날짜만으로 정하므로 시간대와 무관하다
+    var weekday: String {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        guard let date = cal.date(from: DateComponents(year: y, month: m, day: d))
+        else { return "" }
+        let symbols = ["일", "월", "화", "수", "목", "금", "토"]
+        return symbols[cal.component(.weekday, from: date) - 1]
+    }
 
     /// 두 날짜 사이 일수 — UTC 그레고리력으로 고정해 어디서 돌려도 같다
     static func days(from a: YMD, to b: YMD) -> Int {

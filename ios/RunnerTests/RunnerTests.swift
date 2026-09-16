@@ -243,6 +243,20 @@ final class TripWidgetTests: XCTestCase {
         XCTAssertTrue(entries[6].signedIn)
     }
 
+    func test위젯날짜는요일을붙여짧게() {
+        let s = TripActivityAttributes.ContentState(
+            regionName: "정선군", daysLeft: 3, dayNth: nil,
+            startDate: "2026-09-23", endDate: "2026-09-25"
+        )
+        XCTAssertEqual(s.shortRangeLabel, "9.23 (수) - 9.25 (금)")
+        XCTAssertEqual(YMD(y: 2026, m: 9, d: 20).weekday, "일")
+        let same = TripActivityAttributes.ContentState(
+            regionName: "정선군", daysLeft: 3, dayNth: nil,
+            startDate: "2026-09-23", endDate: "2026-09-23"
+        )
+        XCTAssertEqual(same.shortRangeLabel, "9.23 (수)")
+    }
+
     func test로그인전은빈상태에표시가남는다() {
         let s = TripWidgetTimeline.snapshot(at: Date(), trips: [], signedIn: false)
         XCTAssertNil(s.state)
