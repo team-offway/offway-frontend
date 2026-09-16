@@ -2,17 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/network/api_envelope.dart';
-import 'package:offway/core/widgets/data_source_note.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
-import 'package:offway/features/region/presentation/widgets/region_card.dart';
 
 /// 지역 목록 하단 — 출처 줄이 **고정**이라 다른 화면과 처리가 다르다(#300 후속).
 ///
-/// 출처 줄이 **화면 맨 아래**다. 인디케이터 자리는 이 줄의 아래 여백이
-/// 채운다 — SafeArea 로 잘라내면 그 자리가 배경으로 남아 흰 띠처럼 보인다.
-/// 목록 위에 겹치면 글자가 카드 위에 떠 보여 안 된다.
+/// 출처를 화면 아래 **고정**으로 두면 목록이 그 위에서 끝나 인디케이터 자리가
+/// 빈 배경으로 남는다 — 그게 흰 띠로 보였다. 다른 화면(코스 확정·후보 지역)
+/// 처럼 **목록의 마지막 항목**으로 넣어 함께 스크롤되게 한다.
 void main() {
   const inset = 34.0;
 
@@ -52,46 +50,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  testWidgets('출처 줄이 화면 맨 아래에 붙는다 — 그 아래 빈 배경이 없다', (tester) async {
+  testWidgets('목록이 화면 끝까지 흐른다 — 아래에 빈 배경이 없다', (tester) async {
     await pump(tester);
 
     final screenH = tester.getSize(find.byType(MaterialApp)).height;
-    final note = tester.getRect(find.byType(DataSourceNote));
+    final scroll = tester.getRect(find.byType(CustomScrollView).first);
 
-    expect(
-      note.bottom,
-      screenH,
-      reason: '출처 줄이 인디케이터 자리까지 차지해야 그 아래가 배경으로 안 남는다',
-    );
+    expect(scroll.bottom, screenH, reason: '스크롤 영역이 인디케이터 아래까지 닿아야 그 자리가 안 빈다');
   });
 
-  testWidgets('출처 글자는 인디케이터 위에 있다 — 가려지지 않는다', (tester) async {
+  testWidgets('출처는 목록 끝에 따라온다 — 다른 화면과 같은 방식', (tester) async {
     await pump(tester);
 
-    final screenH = tester.getSize(find.byType(MaterialApp)).height;
-    final text = tester.getRect(find.textContaining('출처').first);
-
-    expect(
-      screenH - text.bottom,
-      greaterThanOrEqualTo(inset),
-      reason: '글자 아래로 인디케이터만큼은 비어 있어야 한다',
+    // 위에서는 아직 안 보인다. 끝까지 내려야 나온다
+    await tester.drag(
+      find.byType(CustomScrollView).first,
+      const Offset(0, -3000),
     );
-  });
-
-  testWidgets('목록은 출처 줄 위에서 끝난다 — 글자를 가리지 않는다', (tester) async {
-    await pump(tester);
-    final noteTop = tester.getRect(find.byType(DataSourceNote)).top;
-
-    await tester.drag(find.byType(GridView).first, const Offset(0, -3000));
     await tester.pumpAndSettle();
 
-    var last = 0.0;
-    for (final e in find.byType(RegionCard).evaluate()) {
-      final r = tester.getRect(find.byWidget(e.widget));
-      if (r.bottom > last) last = r.bottom;
-    }
+    expect(find.textContaining('출처'), findsOneWidget);
+  });
 
-    expect(last, lessThanOrEqualTo(noteTop), reason: '카드가 출처 위로 넘지 않는다');
+  testWidgets('끝까지 내리면 출처가 인디케이터 바로 위에 선다', (tester) async {
+    await pump(tester);
+    final screenH = tester.getSize(find.byType(MaterialApp)).height;
+
+    await tester.drag(
+      find.byType(CustomScrollView).first,
+      const Offset(0, -3000),
+    );
+    await tester.pumpAndSettle();
+
+    final text = tester.getRect(find.textContaining('출처').first);
+    // 글자 아래로는 인디케이터(34)와 시안 여백(12)만 남는다
+    expect(screenH - text.bottom, closeTo(46, 1));
   });
 
   testWidgets('출처가 없으면 그 줄은 아예 없다 — 빈 자리를 만들지 않는다', (tester) async {
