@@ -108,7 +108,11 @@ class DateGateScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(6, 10, 16, 10),
       child: Row(
         children: [
-          AppBackButton(onTap: () => context.pop()),
+          AppBackButton(
+            // 위젯에서 바로 들어오면 스택이 비어 있다
+            onTap: () =>
+                context.canPop() ? context.pop() : context.go(AppRoutes.home),
+          ),
           const Spacer(),
           Text(
             '1/4',
