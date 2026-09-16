@@ -20,6 +20,7 @@ import '../application/current_user_provider.dart';
 import '../data/auth_repository.dart';
 import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
+import '../../../core/utils/bottom_inset.dart';
 
 /// O-01 · 로그인/회원가입
 ///
@@ -205,7 +206,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 끝 여백에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -271,7 +274,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 + context.bottomInset),
                   ],
                 ),
               ),

@@ -49,7 +49,8 @@ lib/
 │   ├── network/dio_client.dart    # Dio 프로바이더 + Auth 인터셉터
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# JWT 토큰 Keychain 저장소
-│   └── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
+│   ├── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
+│   └── utils/bottom_inset.dart    # 홈 인디케이터 높이 — SafeArea 하단 규칙
 ├── mock/                      # 테스트 픽스처 로더 (앱 코드에서는 쓰지 않음)
 └── features/                  # 기능(도메인) 단위 모듈
     ├── splash/                    # 스플래시 · 첫 화면 판정

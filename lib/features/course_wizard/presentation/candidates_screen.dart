@@ -24,6 +24,7 @@ import '../../region/presentation/widgets/rising_chip.dart';
 import '../application/available_time_provider.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
+import '../../../core/utils/bottom_inset.dart';
 
 /// 위저드 조건(이동수단·기간)과 현재 위치로 후보지역을 추천받는다.
 ///
@@ -135,7 +136,9 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,7 +175,12 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
                   if (all.isEmpty) return _buildEmpty();
                   final list = _sorted(all);
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      22,
+                      20,
+                      24 + context.bottomInset,
+                    ),
                     children: [
                       _buildHeadline(list.length),
                       const SizedBox(height: 8),

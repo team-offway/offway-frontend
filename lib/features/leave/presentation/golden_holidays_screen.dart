@@ -6,6 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../domain/golden_holiday.dart';
+import '../../../core/utils/bottom_inset.dart';
 
 /// 황금연휴 — 연차를 조금 써서 길게 쉬는 구간들 (시안 18900:72317).
 ///
@@ -25,10 +26,12 @@ class GoldenHolidaysScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
+        bottom: false,
         child: ListView(
           // 시안 실측: 상단바 아래 26, 좌우 20
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 40 + context.bottomInset),
           children: [
             _buildTopBar(context),
             const SizedBox(height: 26),

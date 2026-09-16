@@ -14,6 +14,7 @@ import '../../../core/widgets/async_retry.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../data/course_repository.dart';
+import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
@@ -57,8 +58,10 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       // 히어로가 상태바까지 올라오도록 위쪽 SafeArea는 쓰지 않는다
+      // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
         top: false,
+        bottom: false,
         child: Column(
           children: [
             Expanded(
@@ -96,7 +99,7 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final regionName = course['regionName'] as String? ?? '';
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 40),
+      padding: EdgeInsets.only(bottom: 40 + context.bottomInset),
       children: [
         // 웹 공유 페이지와 같은 히어로
         Image.asset(
