@@ -130,6 +130,15 @@ enum WidgetPalette {
     static let primaryStrong = Color(red: 0x00 / 255, green: 0xAE / 255, blue: 0xFF / 255)
     /// 파랑 칩 바탕 — Primary 12%. 다크에서도 바탕 위에 옅게 뜬다
     static let primaryFill = primary.opacity(0.12)
+
+    /// 다이나믹 아일랜드·잠금화면 카드의 파랑 `#18D2FE` — 시안(1603:38922 외)이
+    /// 정한 값이고 로고 에셋도 같은 색이다. 홈 위젯이 쓰는 [primary](#3DC2FF)와
+    /// 다르다 — 시안이 없던 때 앱 토큰으로 그린 자리라 그쪽은 그대로 둔다
+    static let islandAccent = Color(red: 0x18 / 255, green: 0xD2 / 255, blue: 0xFE / 255)
+    /// '코스 보기' 버튼 바탕 — 시안은 같은 파랑 20%다
+    static let islandButtonFill = islandAccent.opacity(0.2)
+    /// 펼친 카드의 부제 — 시스템 회색(systemGray2) `#A4A4A9`
+    static let islandSubtitle = Color(red: 0xA4 / 255, green: 0xA4 / 255, blue: 0xA9 / 255)
     /// Label/Strong · Alternative — 다크에서는 시스템이 뒤집는다
     static let labelStrong = Color.primary
     static let labelAlternative = Color.secondary
