@@ -23,7 +23,7 @@ final savedCoursesProvider = FutureProvider.autoDispose
 enum _Scope {
   all('전체', 'ALL', '아직 담은 코스가 없어요'),
   upcoming('예정된 여행', 'UPCOMING', '예정된 여행이 없어요'),
-  past('다녀온 여행', 'PAST', '다녀온 여행이 없어요');
+  past('지난 여행', 'PAST', '지난 여행이 없어요');
 
   const _Scope(this.label, this.serverValue, this.emptyTitle);
 
@@ -32,7 +32,7 @@ enum _Scope {
   final String emptyTitle;
 }
 
-/// 내 코스 — 담아둔 코스를 예정/다녀온 여행으로 나눠 보여준다
+/// 내 코스 — 담아둔 코스를 예정/지난 여행으로 나눠 보여준다
 class MyCoursesScreen extends ConsumerStatefulWidget {
   const MyCoursesScreen({super.key});
 
@@ -218,7 +218,7 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
   }
 }
 
-/// 전체 · 예정된 여행 · 다녀온 여행 — 고른 탭에 검정 밑줄이 붙는다
+/// 전체 · 예정된 여행 · 지난 여행 — 고른 탭에 검정 밑줄이 붙는다
 class _ScopeTabs extends StatelessWidget {
   const _ScopeTabs({required this.scope, required this.onSelect});
 
