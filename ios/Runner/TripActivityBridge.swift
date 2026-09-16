@@ -171,7 +171,9 @@ enum TripActivityBridge {
 /// Activity 조작을 **한 줄로 세운다**.
 ///
 /// `Activity.activities` 조회와 `request`·`end` 사이에 다른 호출이 끼어들면
-/// "한 번에 하나" 가 깨진다. actor 안에서만 만지게 해 그 틈을 없앤다.
+/// "한 번에 하나" 가 깨진다. actor 안에서만 만지고, **await 가 있는 작업은
+/// 체인으로 하나씩** 돌린다 — actor 는 await 지점에서 다른 호출을 받아들이므로
+/// (재진입) 그것만으로는 틈이 남는다.
 @available(iOS 16.1, *)
 actor ActivityQueue {
     static let shared = ActivityQueue()
@@ -180,10 +182,46 @@ actor ActivityQueue {
     /// 안 끊으면 내린 카드의 토큰이 계속 올라간다
     private var tokenWatchers: [String: Task<Void, Never>] = [:]
 
+    /// 마지막으로 줄 세운 작업 — 다음 작업은 이것이 끝난 뒤 시작한다
+    private var tail: Task<Void, Never>?
+
+    /// 앞 작업이 끝난 뒤에 잇는다.
+    ///
+    /// `end` 를 기다리는 사이 다음 `startOrUpdate` 가 들어와 "떠 있는 카드
+    /// 없음" 을 보고 새로 띄우면, 앞 작업이 깨어나 하나 더 띄운다 — 잠금화면에
+    /// 둘이 쌓인다. 줄을 세우면 앞 작업이 request 까지 마친 뒤에야 다음이 본다
+    private func enqueue<T: Sendable>(
+        _ operation: @Sendable @escaping () async throws -> T
+    ) async throws -> T {
+        let previous = tail
+        let task = Task<T, Error> {
+            await previous?.value
+            return try await operation()
+        }
+        tail = Task { _ = try? await task.value }
+        return try await task.value
+    }
+
     func startOrUpdate(
         courseId: String,
         state: TripActivityAttributes.ContentState
-    ) throws {
+    ) async throws {
+        try await enqueue {
+            try await self.performStartOrUpdate(courseId: courseId, state: state)
+        }
+    }
+
+    /// 떠 있는 카드를 전부 내린다. **실제로 내려간 뒤에 돌아온다** — 로그아웃이
+    /// 이걸 기다렸다가 답하므로, 먼저 돌아오면 Flutter 는 내려갔다고 아는데
+    /// 잠금화면에는 아직 남아 있다
+    func endAll() async {
+        _ = try? await enqueue { await self.endAllNow() }
+    }
+
+    private func performStartOrUpdate(
+        courseId: String,
+        state: TripActivityAttributes.ContentState
+    ) async throws {
         // 같은 코스가 이미 떠 있으면 새로 띄우지 않고 값만 갈아 끼운다 —
         // 두 번 띄우면 잠금화면에 같은 여행이 둘 쌓인다.
         //
@@ -195,15 +233,17 @@ actor ActivityQueue {
         if let live = Activity<TripActivityAttributes>.activities.first(where: {
             $0.attributes.courseId == courseId && $0.activityState == .active
         }) {
-            Task { await live.update(using: state) }
+            await live.update(using: state)
             // 앱을 다시 켠 뒤라면 지켜보는 작업이 없다 — 토큰을 다시 올려
             // 서버가 최신 주소를 갖게 한다(등록은 멱등이다)
             watchPushToken(of: live)
             return
         }
 
-        // 다른 코스가 떠 있으면 내리고 이것으로 바꾼다
-        endAllNow()
+        // 다른 코스가 떠 있으면 **다 내려간 뒤에** 이것으로 바꾼다. 기다리지
+        // 않으면 앞 카드가 아직 살아 있을 때 request 가 돌아, 동시 개수 제한에
+        // 걸려 실패하거나 잠깐 둘이 겹친다(#296 리뷰)
+        await endAllNow()
 
         let activity = try Activity.request(
             attributes: TripActivityAttributes(courseId: courseId),
@@ -214,15 +254,11 @@ actor ActivityQueue {
         watchPushToken(of: activity)
     }
 
-    func endAll() {
-        endAllNow()
-    }
-
-    private func endAllNow() {
+    private func endAllNow() async {
         for watcher in tokenWatchers.values { watcher.cancel() }
         tokenWatchers.removeAll()
         for activity in Activity<TripActivityAttributes>.activities {
-            Task { await activity.end(dismissalPolicy: .immediate) }
+            await activity.end(dismissalPolicy: .immediate)
         }
     }
 
