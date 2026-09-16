@@ -146,7 +146,11 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
             //
             // **어느 응답을 그리는지에 따라 갈린다** — 장소 카드를 쓰는
             // 중이면 홈 응답의 출처고, 지역 목록으로 폴백했으면 그쪽이다.
-            // 섞으면 안 쓴 출처를 표기하게 된다
+            // 섞으면 안 쓴 출처를 표기하게 된다.
+            //
+            // **이 줄이 화면 맨 아래다.** 인디케이터 자리는 이 줄의 아래
+            // 여백이 채운다 — SafeArea 로 잘라내면 그 자리가 배경으로 남아
+            // 흰 띠처럼 보인다(#300)
             DataSourceNote(
               sources: _shownSources,
               padding: EdgeInsets.fromLTRB(20, 0, 20, 12 + context.bottomInset),
