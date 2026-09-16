@@ -40,9 +40,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('2027 황금연휴 알아보기'), findsOneWidget);
-      expect(find.text('2027년 연차 황금 타이밍'), findsOneWidget);
+      // 시안(1625:39844)이 카드에서 제목 줄을 뺐다
+      expect(find.text('2027년 연차 황금 타이밍'), findsNothing);
       expect(find.text('10.2(토)-10.11(월)'), findsOneWidget);
-      expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요'), findsOneWidget);
+      expect(find.text('연차 4일로 최대 10일까지 쉴 수 있어요.'), findsOneWidget);
       expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
       // 설날은 길고 짧은 두 구간이 함께 있다(시안 2·5번)
       expect(find.text('개천절·한글날'), findsOneWidget);
@@ -169,6 +170,89 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('$kGoldenHolidayYear년 연차 쓰기 좋은 날'), findsOneWidget);
+    });
+  });
+
+  group('시안 치수', () {
+    /// 시안 1625:39835 — 예전 시안 값이 남아 어긋난 적이 있다(샌드위치가
+    /// 원본 크기 그대로였다). 치수와 글자 굵기를 여기서 잠근다.
+    Future<Rect> pumpScreen(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(402 * 3, 1400 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const GoldenHolidaysScreen()),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      );
+      await tester.pump();
+
+      return tester.getRect(
+        find
+            .byWidgetPredicate(
+              (w) =>
+                  w is Container &&
+                  w.decoration is BoxDecoration &&
+                  (w.decoration! as BoxDecoration).color ==
+                      const Color(0xFFFEFAE5),
+            )
+            .first,
+      );
+    }
+
+    testWidgets('상단 카드는 362 x 102 다', (tester) async {
+      final card = await pumpScreen(tester);
+
+      expect(card.width, 362);
+      // 높이는 최소값 — 글자 크기를 키우면 늘어난다
+      expect(card.height, 102);
+    });
+
+    testWidgets('샌드위치는 100.58 x 93.63, 위 0 · 오른쪽 6.46', (tester) async {
+      final card = await pumpScreen(tester);
+      final sandwich = tester.getRect(
+        find
+            .byWidgetPredicate(
+              (w) =>
+                  w is SvgPicture &&
+                  (w.bytesLoader as SvgAssetLoader).assetName.contains(
+                    'sandwich',
+                  ),
+            )
+            .first,
+      );
+
+      // 원본 SVG(125.726 x 117.039)의 0.8 배다
+      expect(sandwich.width, closeTo(100.58, 0.01));
+      expect(sandwich.height, closeTo(93.63, 0.01));
+      expect(sandwich.top - card.top, closeTo(0, 0.01));
+      expect(card.right - sandwich.right, closeTo(6.46, 0.01));
+    });
+
+    testWidgets('글자 크기·굵기가 시안과 같다', (tester) async {
+      await pumpScreen(tester);
+
+      void check(String text, double size, FontWeight weight) {
+        final style = tester.widget<Text>(find.text(text).first).style!;
+        expect(style.fontSize, size, reason: text);
+        expect(style.fontWeight, weight, reason: text);
+      }
+
+      // 상단 카드 — 날짜 18 SemiBold, 안내 13 Medium
+      check('10.2(토)-10.11(월)', 18, FontWeight.w600);
+      check('연차 4일로 최대 10일까지 쉴 수 있어요.', 13, FontWeight.w500);
+      // 목록 — 이름 12 Medium, 날짜 15 Medium, 순번 18 SemiBold
+      check('개천절·한글날', 12, FontWeight.w500);
+      check('10.2(토) – 10.11(월)', 15, FontWeight.w500);
+      check('1', 18, FontWeight.w600);
+      // 우측 두 줄 13 Medium
+      check('사용 연차 4일', 13, FontWeight.w500);
+      check('총 10일 연휴', 13, FontWeight.w500);
     });
   });
 }
