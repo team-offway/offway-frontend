@@ -112,9 +112,15 @@ struct YMD: Equatable {
         (y, m, d) = (parts[0], parts[1], parts[2])
     }
 
-    /// 기기 달력의 그 순간 날짜 — 자정 경계는 **사용자의 시간대**다
+    /// 그 순간의 날짜 — 자정 경계는 **사용자의 시간대**, 연·월·일은 **그레고리력**.
+    ///
+    /// `Calendar.current` 를 그대로 쓰면 불교력·일본력 같은 설정에서 연도가
+    /// 2569 처럼 나와, 그레고리력으로 적힌 여행 날짜(`2026-09-23`)와 비교할 때
+    /// 전부 지난 여행이 된다. 시간대만 사용자 것을 빌린다
     init(_ date: Date, calendar: Calendar = .current) {
-        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        let c = gregorian.dateComponents([.year, .month, .day], from: date)
         (y, m, d) = (c.year ?? 1970, c.month ?? 1, c.day ?? 1)
     }
 

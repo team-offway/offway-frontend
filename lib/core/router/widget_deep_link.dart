@@ -16,8 +16,12 @@ String? widgetDeepLinkRoute(Uri uri) {
   if (uri.scheme != widgetDeepLinkScheme) return null;
   switch (uri.host) {
     case 'course':
+      // pathSegments 는 디코드된 값이다 — '/' 가 든 id 를 그대로 끼우면 경로가
+      // 두 칸이 되어 `/my-courses/:savedId` 에 안 맞는다. 한 칸으로 되돌린다
       final id = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
-      return id.isEmpty ? AppRoutes.home : AppRoutes.savedCoursePath(id);
+      return id.isEmpty
+          ? AppRoutes.home
+          : AppRoutes.savedCoursePath(Uri.encodeComponent(id));
     case 'wizard':
       return AppRoutes.wizardDateGate;
     default:

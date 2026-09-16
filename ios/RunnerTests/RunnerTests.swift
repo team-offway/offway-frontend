@@ -257,6 +257,21 @@ final class TripWidgetTests: XCTestCase {
         XCTAssertEqual(same.shortRangeLabel, "9.23 (수)")
     }
 
+    func test기기달력이불교력이어도그레고리력날짜로센다() {
+        // Calendar.current 가 불교력이면 2026년이 2569년으로 나온다 — 그대로 비교하면
+        // 그레고리력으로 적힌 여행이 전부 지난 것이 된다
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        var greg = Calendar(identifier: .gregorian)
+        greg.timeZone = buddhist.timeZone
+        let date = greg.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 9))!
+        XCTAssertEqual(YMD(date, calendar: buddhist), YMD(y: 2026, m: 9, d: 20))
+        let s = TripWidgetTimeline.snapshot(
+            at: date, trips: [trip("1", start: "2026-09-23")], signedIn: true, calendar: buddhist
+        )
+        XCTAssertEqual(s.state?.daysLeft, 3)
+    }
+
     func test로그인전은빈상태에표시가남는다() {
         let s = TripWidgetTimeline.snapshot(at: Date(), trips: [], signedIn: false)
         XCTAssertNil(s.state)

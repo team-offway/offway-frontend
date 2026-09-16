@@ -14,6 +14,13 @@ void main() {
     );
   });
 
+  test('id 는 경로 한 칸이다 — 슬래시가 들어 있어도 두 칸으로 쪼개지 않는다', () {
+    expect(
+      widgetDeepLinkRoute(Uri.parse('offway://course/a%2Fb')),
+      '/my-courses/a%2Fb',
+    );
+  });
+
   test('예정 여행이 없으면 코스 만들기로', () {
     expect(
       widgetDeepLinkRoute(Uri.parse('offway://wizard')),
