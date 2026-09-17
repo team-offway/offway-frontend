@@ -210,9 +210,12 @@ class PlaceInfoSheet extends ConsumerWidget {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
     // **서버가 판정했으면 그것이 먼저다**(#331). 공휴일 예외처럼 앱이 못 읽는
-    // 조건까지 서버가 본다. 여행일이 오늘일 때만 실리므로, 없으면 예전처럼
-    // 원문을 뜯어 짐작한다
-    final status = todayOpeningOf(place);
+    // 조건까지 서버가 본다. 없으면 예전처럼 원문을 뜯어 짐작한다.
+    //
+    // **[isToday] 가 아니면 쓰지 않는다.** 서버 판정은 장소 단위로 실려 와
+    // 어느 날 탭에서 열든 같은 값이다 — 게이트가 없으면 이미 지나간 날의
+    // 장소에 '오늘은 휴무일이에요' 가 뜬다
+    final status = isToday ? todayOpeningOf(place) : null;
 
     // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
     var useValue = loading ? '—' : (useTime ?? '정보없음');

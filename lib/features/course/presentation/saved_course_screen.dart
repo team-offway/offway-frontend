@@ -240,16 +240,19 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final today = DateUtils.dateOnly(DateTime.now());
     final past = end != null && DateUtils.dateOnly(end).isBefore(today);
 
-    // **여행 중인가** — 오늘이 출발일과 종료일 사이(양끝 포함)다.
+    // **보고 있는 날이 오늘인가** — 운영 안내(휴무일·운영시간 확인)를 띄울지
+    // 이 값이 정한다.
     //
-    // 운영 안내(휴무일·운영시간 확인)를 띄울지 이 값이 정한다. 예전에는
-    // 출발일 하루만 봐서(`dDay == 0`) 2박3일 코스의 2·3일차가 오늘이어도
-    // 안내가 없었다 — 정작 오늘 갈 곳인데 휴무인지 몰랐다
-    final onTrip =
-        start != null &&
-        end != null &&
-        !DateUtils.dateOnly(start).isAfter(today) &&
-        !DateUtils.dateOnly(end).isBefore(today);
+    // 코스 기간이 아니라 **탭으로 고른 날**을 본다. 기간으로 보면 2박3일의
+    // 3일차가 오늘일 때 1일차 탭에도 오늘 기준 안내가 붙어, 이미 지나간 날의
+    // 장소에 '오늘은 휴무일이에요' 가 뜬다.
+    //
+    // 예전에는 출발일 하루만 봐서(`dDay == 0`) 2·3일차가 오늘이어도 안내가
+    // 아예 없었다 — 정작 오늘 갈 곳인데 휴무인지 몰랐다. 그 반대쪽으로
+    // 기울지 않게 **고른 날 하나**로 가른다
+    final selectedDate = DateTime.tryParse(day['date'] as String? ?? '');
+    final isTodaySelected =
+        selectedDate != null && DateUtils.dateOnly(selectedDate) == today;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,12 +407,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _SavedPlaceList(
                   places: places,
-                  // **여행 기간 안이면 알린다.** 예전에는 출발일 하루만
-                  // 봤는데(`dDay == 0`), 2박3일 코스의 2·3일차가 오늘이어도
-                  // 안내가 없었다 — 정작 오늘 갈 곳인데 휴무인지 몰랐다
-                  showOpeningWarnings: onTrip,
+                  // **탭으로 고른 날이 오늘일 때만** 알린다 — 지나간 날의
+                  // 장소에 오늘 기준 안내가 붙지 않게
+                  showOpeningWarnings: isTodaySelected,
                   onTapPlace: (place) =>
-                      _showPlaceSheet(place, isToday: onTrip),
+                      _showPlaceSheet(place, isToday: isTodaySelected),
                   // 담고 처음 열었을 때, 목록까지 내려온 뒤에만 나온다
                   detailHint: _detailHintPending && _scrolledToPlaces
                       ? _buildDetailHint()
@@ -1231,8 +1233,10 @@ class _PlaceRow extends ConsumerWidget {
             ? ref.watch(poiScheduleProvider(contentId)).value
             : null);
 
-    // 서버가 판정했으면 원문이 없어도 배지를 띄운다 — 판정이 곧 근거다
-    final status = todayOpeningOf(place);
+    // 서버가 판정했으면 원문이 없어도 배지를 띄운다 — 판정이 곧 근거다.
+    // 고른 날이 오늘이 아니면 읽지 않는다(시트와 같은 규칙) — 판정은 장소
+    // 단위로 실려 와 어느 날 탭에서든 같은 값이다
+    final status = showOpeningWarning ? todayOpeningOf(place) : null;
     final warning = !showOpeningWarning || (schedule == null && status == null)
         ? null
         : openingWarning(

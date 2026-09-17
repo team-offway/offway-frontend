@@ -55,22 +55,23 @@ void main() {
                 'durationDays': endOffset - startOffset + 1,
                 'travelDate': iso(start),
                 'days': [
-                  {
-                    'day': 1,
-                    'date': iso(start),
-                    'dayOfWeek': '월',
-                    'places': [
-                      {
-                        'name': '삼탄아트마인',
-                        'category': '관광지',
-                        'kind': 'SIGHT',
-                        'poiContentId': '126508',
-                        'useTime': ?useTime,
-                        'restDate': ?restDate,
-                        'openingStatus': ?status,
-                      },
-                    ],
-                  },
+                  for (var i = 0; i <= endOffset - startOffset; i++)
+                    {
+                      'day': i + 1,
+                      'date': iso(start.add(Duration(days: i))),
+                      'dayOfWeek': '월',
+                      'places': [
+                        {
+                          'name': i == 0 ? '삼탄아트마인' : '${i + 1}일차장소',
+                          'category': '관광지',
+                          'kind': 'SIGHT',
+                          'poiContentId': '126508',
+                          'useTime': ?useTime,
+                          'restDate': ?restDate,
+                          'openingStatus': ?status,
+                        },
+                      ],
+                    },
                 ],
               },
             ),
@@ -132,17 +133,29 @@ void main() {
   });
 
   group('언제 뜨는가', () {
-    testWidgets('여행 2일차가 오늘이면 뜬다 — 출발일만 보던 것을 고쳤다', (tester) async {
+    testWidgets('오늘에 해당하는 날 탭에서 뜬다 — 출발일만 보던 것을 고쳤다', (tester) async {
       // 2박3일 코스에서 어제 떠나 오늘이 2일차다. 예전에는 출발일 하루만
       // 봐서(`dDay == 0`) 정작 오늘 갈 곳의 휴무를 몰랐다
       await pump(tester, status: 'CLOSED_TODAY', startOffset: -1, endOffset: 1);
 
+      // 기본은 Day 1(어제) — 지나간 날이라 안 뜬다
+      expect(find.text('휴무일'), findsNothing);
+
+      await tester.tap(find.text('Day 2'));
+      await tester.pumpAndSettle();
       expect(find.text('휴무일'), findsOneWidget);
     });
 
-    testWidgets('마지막 날이 오늘이어도 뜬다', (tester) async {
+    testWidgets('지나간 날 탭에는 오늘 기준 안내가 안 붙는다', (tester) async {
+      // 3일차가 오늘인데 1일차 탭을 열면, 이미 지나간 날의 장소에
+      // '오늘은 휴무일이에요' 가 뜨면 안 된다 — 서버 판정은 장소 단위로
+      // 실려 와 어느 날 탭에서든 같은 값이다
       await pump(tester, status: 'CLOSED_TODAY', startOffset: -2, endOffset: 0);
 
+      expect(find.text('휴무일'), findsNothing);
+
+      await tester.tap(find.text('Day 3'));
+      await tester.pumpAndSettle();
       expect(find.text('휴무일'), findsOneWidget);
     });
 
