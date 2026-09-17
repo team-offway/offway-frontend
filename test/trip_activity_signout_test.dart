@@ -210,7 +210,10 @@ class _SpyService implements TripActivityService {
   Future<bool> start(TripCountdown trip, {DateTime? now}) async => true;
 
   @override
-  void listenPushToken(PushTokenListener listener) {}
+  void listenPushToken(
+    PushTokenListener listener, {
+    PushToStartTokenListener? onPushToStartToken,
+  }) {}
 
   /// 로그아웃 때 위젯도 비웠는가
   bool widgetCleared = false;

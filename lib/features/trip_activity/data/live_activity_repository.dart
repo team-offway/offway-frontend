@@ -50,6 +50,50 @@ class LiveActivityRepository {
     }
   }
 
+  /// 이 **기기**의 push-to-start 토큰을 등록한다 (core #585).
+  ///
+  /// 서버가 이 토큰으로 카드를 **처음** 띄운다 — 앱을 안 열어도 출발 5일
+  /// 전부터 잠금화면에 뜬다. [register] 의 카드 토큰과 다른 값이다: 저쪽은
+  /// 이미 떠 있는 카드 하나를 가리키고 카드가 죽으면 함께 죽지만, 이건 기기를
+  /// 가리키고 앱을 지울 때까지 산다.
+  ///
+  /// **몇 번을 보내도 결과가 같다** — 서버가 (사용자, 토큰)으로 한 행만 둔다.
+  /// 앱을 켤 때마다 같은 토큰이 오므로 매번 보내도 된다
+  Future<void> registerPushToStart(String token) async {
+    try {
+      final response = await _dio.put<dynamic>(
+        '/api/v1/live-activities/push-to-start',
+        data: {'token': token},
+      );
+      ApiEnvelope.unwrap(response);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
+  /// 이 기기의 push-to-start 등록을 지운다 — 로그아웃.
+  ///
+  /// **토큰을 본문에 담는다.** 경로에 실으면 프록시 접근 로그에 남는데, 이
+  /// 값을 아는 쪽은 그 기기 잠금화면에 카드를 만들 수 있어 비밀값에 준한다
+  /// (core #585).
+  ///
+  /// [token] 을 주면 **그 기기만**, 비우면 이 사용자의 모든 기기가 풀린다.
+  /// 로그아웃은 기기별로 갈리므로(`refreshToken` 을 보낸다) 이 기기 토큰을
+  /// 준다 — 전부 풀면 폰에서 로그아웃한 사용자의 태블릿 잠금화면이 같이 빈다
+  Future<void> unregisterPushToStart({String? token}) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        '/api/v1/live-activities/push-to-start',
+        // 토큰을 모르면 본문을 비운다 — 서버가 '이 사용자 전부' 로 받는다.
+        // 로그아웃인데 아무것도 못 지우는 것보다는 낫다
+        data: token == null ? null : {'token': token},
+      );
+      ApiEnvelope.unwrap(response);
+    } on DioException catch (e) {
+      throw ApiEnvelope.toApiException(e);
+    }
+  }
+
   /// 이 코스의 등록을 지운다 — 카드를 내렸을 때.
   ///
   /// **안 불러도 결국 정리된다.** 여행이 끝나면 자정 배치가 지우고, 토큰이

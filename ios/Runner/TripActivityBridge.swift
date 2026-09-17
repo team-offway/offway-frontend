@@ -18,12 +18,16 @@ enum TripActivityBridge {
     /// Dart 를 되부를 때 쓴다 — 푸시 토큰이 나오면 이 채널로 올린다
     private static var channel: FlutterMethodChannel?
 
+    /// push-to-start 토큰 관찰 — 앱이 사는 동안 하나만 돈다
+    private static var pushToStartWatcher: Task<Void, Never>?
+
     static func register(with controller: FlutterViewController) {
         let channel = FlutterMethodChannel(
             name: channelName,
             binaryMessenger: controller.binaryMessenger
         )
         self.channel = channel
+        watchPushToStartToken()
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "isAvailable":
@@ -55,6 +59,35 @@ enum TripActivityBridge {
             "onPushToken",
             arguments: ["courseId": courseId, "token": token]
         )
+    }
+
+    /// **기기**의 push-to-start 토큰이 나왔다 — 서버가 이걸로 카드를 처음
+    /// 띄운다(core #585). 카드 토큰(`onPushToken`)과 달리 코스가 없다
+    @MainActor
+    static func deliverPushToStartToken(_ token: String) {
+        channel?.invokeMethod("onPushToStartToken", arguments: ["token": token])
+    }
+
+    /// push-to-start 토큰을 지켜본다 — 앱이 켜지면 바로 시작한다.
+    ///
+    /// **카드가 떠 있지 않아도 나온다.** 그것이 이 토큰의 요점이다 — 서버가
+    /// 이걸 쥐고 있어야 앱을 안 연 사람의 잠금화면에 카드를 *처음* 만들 수
+    /// 있다(core #585). 카드 토큰은 띄운 카드마다 따로 나오지만 이건 기기
+    /// 하나에 하나고, 앱을 지울 때까지 산다.
+    ///
+    /// **iOS 17.2 부터다.** 16.1~17.1 은 카드를 앱이 띄우는 것까지만 되고,
+    /// 그 기기는 예전처럼 앱을 열어야 카드가 뜬다
+    private static func watchPushToStartToken() {
+        guard #available(iOS 17.2, *) else { return }
+        // 채널을 다시 걸어도 관찰은 하나만 — 두 개가 돌면 같은 토큰을 두 번
+        // 올린다(서버가 멱등이라 해는 없지만 부를 이유도 없다)
+        guard pushToStartWatcher == nil else { return }
+        pushToStartWatcher = Task {
+            for await data in Activity<TripActivityAttributes>.pushToStartTokenUpdates {
+                let hex = data.map { String(format: "%02x", $0) }.joined()
+                await TripActivityBridge.deliverPushToStartToken(hex)
+            }
+        }
     }
 
     private static func isAvailable() -> Bool {

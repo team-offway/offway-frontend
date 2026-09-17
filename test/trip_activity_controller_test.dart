@@ -22,8 +22,17 @@ class _FakeService implements TripActivityService {
   /// 컨트롤러가 걸어 둔 토큰 수신자 — 테스트가 네이티브인 척 부른다
   PushTokenListener? listener;
 
+  /// 기기의 push-to-start 토큰 수신자 (core #585)
+  PushToStartTokenListener? pushToStartListener;
+
   @override
-  void listenPushToken(PushTokenListener listener) => this.listener = listener;
+  void listenPushToken(
+    PushTokenListener listener, {
+    PushToStartTokenListener? onPushToStartToken,
+  }) {
+    this.listener = listener;
+    pushToStartListener = onPushToStartToken;
+  }
 
   @override
   Future<bool> isAvailable() async => available;
@@ -68,6 +77,9 @@ class _FakeService implements TripActivityService {
 }
 
 void main() {
+  // start() 가 앱 생명주기 옵저버를 단다 — 바인딩이 없으면 그 자리에서 터진다
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   final now = DateTime(2026, 9, 20);
 
   Map<String, dynamic> card({
@@ -178,6 +190,89 @@ void main() {
     await c.read(tripActivityControllerProvider).sync(now: now);
 
     expect(service.started?.regionName, '가평군');
+  });
+
+  group('push-to-start 등록 (core #585)', () {
+    // 서버가 **앱을 안 열어도** 카드를 처음 띄우려면 기기 토큰을 알아야 한다.
+    // 카드 토큰(#577)과 달리 코스가 없고, 카드가 없어도 온다
+
+    test('세션 중에 토큰이 오면 서버에 올린다', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      addTearDown(controller.dispose);
+
+      service.pushToStartListener!('80a1b2');
+      await settle();
+
+      expect(repo.pushToStartRegistered, ['80a1b2']);
+    });
+
+    test('로그인 전에 온 토큰은 세션이 열릴 때 올린다', () async {
+      // 기기 토큰은 앱을 켜자마자 온다 — 대개 로그인보다 먼저다. 그때
+      // 올리면 JWT 가 없어 403 이고, 버리면 이 기기는 앱을 다시 켤 때까지
+      // 서버가 카드를 못 띄운다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider);
+      addTearDown(controller.dispose);
+
+      service.pushToStartListener!('80a1b2'); // 아직 start() 전이다
+      await settle();
+      expect(repo.pushToStartRegistered, isEmpty);
+
+      controller.start();
+      await settle();
+
+      expect(repo.pushToStartRegistered, ['80a1b2']);
+    });
+
+    test('카드가 없어도 올린다', () async {
+      // 이것이 push-to-start 의 요점이다 — 띄울 카드가 없는 상태에서
+      // 서버가 처음 띄울 열쇠를 쥔다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      addTearDown(controller.dispose);
+      await controller.sync(now: now);
+
+      service.pushToStartListener!('80a1b2');
+      await settle();
+
+      expect(repo.pushToStartRegistered, ['80a1b2']);
+      expect(service.started, isNull); // 띄운 카드는 없다
+    });
+
+    test('로그아웃하면 이 기기 토큰으로만 해제한다', () async {
+      // **전부 해제하면 안 된다.** 로그아웃은 기기별로 갈리는데(refreshToken)
+      // 전부 풀면 폰에서 로그아웃한 사용자의 태블릿 잠금화면이 같이 빈다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+
+      service.pushToStartListener!('80a1b2');
+      await settle();
+      await controller.stop();
+
+      expect(repo.pushToStartUnregistered, ['80a1b2']);
+    });
+
+    test('토큰을 받은 적이 없으면 해제하지 않는다', () async {
+      // iOS 17.2 미만은 토큰이 영영 안 온다 — 등록된 적이 없으니 지울 것도
+      // 없다. null 을 보내면 '이 사용자 전부' 가 되어 다른 기기까지 푼다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+
+      await controller.stop();
+
+      expect(repo.pushToStartUnregistered, isEmpty);
+    });
   });
 
   group('서버 갱신 등록 (core #577)', () {
@@ -519,4 +614,19 @@ class _FakeRepository implements LiveActivityRepository {
 
   @override
   Future<void> unregister(String courseId) async => unregistered.add(courseId);
+
+  /// 이 기기의 push-to-start 등록 (core #585)
+  final pushToStartRegistered = <String>[];
+
+  /// 해제에 실린 토큰. **비어 있음(null)과 기록 없음은 다르다** — null 은
+  /// '이 사용자 전부' 라는 뜻이라 기기별 해제와 구별해야 한다
+  final pushToStartUnregistered = <String?>[];
+
+  @override
+  Future<void> registerPushToStart(String token) async =>
+      pushToStartRegistered.add(token);
+
+  @override
+  Future<void> unregisterPushToStart({String? token}) async =>
+      pushToStartUnregistered.add(token);
 }

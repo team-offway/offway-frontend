@@ -9,6 +9,10 @@ import '../domain/trip_countdown.dart';
 /// 네이티브가 카드의 푸시 토큰을 받았다 — 카드 하나마다 토큰이 따로다
 typedef PushTokenListener = void Function(String courseId, String token);
 
+/// 네이티브가 **기기**의 push-to-start 토큰을 받았다 — 코스가 없다.
+/// 서버가 이걸로 카드를 처음 띄운다(core #585)
+typedef PushToStartTokenListener = void Function(String token);
+
 /// 잠금화면·다이나믹 아일랜드(Live Activity)를 여닫는 다리.
 ///
 /// **UI는 Swift가 그린다.** Flutter 위젯으로는 잠금화면을 그릴 수 없어,
@@ -134,22 +138,38 @@ class TripActivityService {
   /// 안 비우면 앞사람의 여행이 위젯에 남는다
   Future<bool> clearWidget() => _invokeOk('clearWidget', const {});
 
-  /// 네이티브가 카드의 푸시 토큰을 올려 보내면 받는다.
+  /// 네이티브가 푸시 토큰을 올려 보내면 받는다 — **두 종류**다.
   ///
-  /// 서버 등록은 JWT 를 쥔 Dart 가 한다(`LiveActivityRepository`). iOS 는
-  /// 카드를 띄운 직후 첫 토큰을 주고, 도중에 갈아 끼우면 또 준다 — 그때마다
-  /// 같은 등록을 다시 보내면 된다(서버가 (사용자, 코스)로 한 행만 둔다)
-  void listenPushToken(PushTokenListener listener) {
+  /// 서버 등록은 JWT 를 쥔 Dart 가 한다(`LiveActivityRepository`).
+  ///
+  /// - [listener] : 떠 있는 **카드** 하나의 갱신 토큰. 카드를 띄운 직후 첫
+  ///   토큰이 오고, 도중에 갈아 끼우면 또 온다 — 그때마다 같은 등록을 다시
+  ///   보내면 된다(서버가 (사용자, 코스)로 한 행만 둔다)
+  /// - [onPushToStartToken] : **기기**의 push-to-start 토큰. 카드가 없어도
+  ///   오고, 서버가 이걸로 카드를 처음 띄운다(core #585). iOS 17.2+ 에서만
+  ///   온다 — 그 아래 기기에서는 영영 안 온다
+  ///
+  /// **핸들러는 한 번만 걸린다.** 채널이 하나라 따로 걸면 앞의 것을 덮어써,
+  /// 카드 토큰이 조용히 끊긴다 — 그래서 둘을 여기서 함께 받는다
+  void listenPushToken(
+    PushTokenListener listener, {
+    PushToStartTokenListener? onPushToStartToken,
+  }) {
     if (!_isSupportedPlatform) return;
     _channel.setMethodCallHandler((call) async {
-      if (call.method != 'onPushToken') {
-        throw MissingPluginException('${call.method} 은 받지 않는다');
-      }
       final args = (call.arguments as Map?)?.cast<String, Object?>();
-      final courseId = args?['courseId'] as String?;
       final token = args?['token'] as String?;
-      if (courseId == null || token == null || token.isEmpty) return;
-      listener(courseId, token);
+      switch (call.method) {
+        case 'onPushToken':
+          final courseId = args?['courseId'] as String?;
+          if (courseId == null || token == null || token.isEmpty) return;
+          listener(courseId, token);
+        case 'onPushToStartToken':
+          if (token == null || token.isEmpty) return;
+          onPushToStartToken?.call(token);
+        default:
+          throw MissingPluginException('${call.method} 은 받지 않는다');
+      }
     });
   }
 
