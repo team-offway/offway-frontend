@@ -155,6 +155,7 @@
         <tr><td>저장한 여행 코스, 여행 날짜</td><td>이용자가 코스를 담을 때</td><td>코스 조회·일정 안내</td></tr>
         <tr><td>위치 정보 (위도·경도)</td><td>코스 추천 시<br>(권한 허용한 경우)</td><td>현재 위치 기준<br>도달 가능 지역 추천</td></tr>
         <tr><td>푸시 알림 토큰</td><td>알림 권한을 허용한 경우</td><td>여행 일정·혜택 알림 발송</td></tr>
+        <tr><td>잠금화면 카드 토큰</td><td>여행 출발이 가까워졌을 때<br>(iOS 16.1 이상)</td><td>잠금화면 여행 카드 표시·갱신</td></tr>
       </tbody>
     </table>
   </div>
@@ -171,6 +172,7 @@
     <li>잔여 연차에 맞는 여행지·코스 추천</li>
     <li>저장한 코스 및 연차 사용 내역 관리</li>
     <li>여행 일정 및 혜택 안내 알림 발송</li>
+    <li>잠금화면·위젯의 여행 일정 표시</li>
     <li>서비스 운영 및 오류 개선</li>
   </ul>
   <p>수집한 개인정보는 위 목적 외의 용도로 이용하지 않으며, 목적이 변경될 경우 사전에 동의를 받습니다.</p>
@@ -182,11 +184,45 @@
     <li>위치 권한은 기기 설정에서 언제든 철회할 수 있습니다. 다만 권한을 허용하지 않으면 현재 위치 기반 추천은 이용할 수 없습니다.</li>
   </ul>
 
-  <h2>4. 푸시 알림</h2>
+  <h2>4. 푸시 알림과 잠금화면 카드</h2>
+
+  <h3>4-1. 푸시 알림</h3>
   <ul>
     <li>알림 권한을 허용하면 여행 일정·혜택 안내를 위한 푸시 알림을 보냅니다.</li>
     <li>이를 위해 기기별 알림 토큰을 저장하며, 이 값은 개인을 식별하지 않습니다.</li>
     <li>알림 수신은 기기 설정 또는 앱 내에서 언제든 끌 수 있습니다.</li>
+  </ul>
+
+  <h3>4-2. 잠금화면 여행 카드 (iOS 16.1 이상)</h3>
+  <ul>
+    <li>여행 출발이 가까워지면 <strong>잠금화면과 다이나믹 아일랜드에 남은 날짜를 보여주는 카드</strong>를 띄웁니다.</li>
+    <li>
+      이를 위해 <strong>기기별 카드 토큰</strong>을 저장합니다. 이 값은 개인을 식별하지 않으며,
+      알림 토큰과는 <strong>다른 값</strong>입니다. 앱을 열지 않아도 날짜가 바뀌도록
+      회사 서버가 이 토큰으로 카드를 띄우고 갱신합니다.
+    </li>
+    <li>
+      카드를 띄우고 갱신하는 과정에서 <strong>여행 지역명과 날짜가 Apple의 푸시 서버를 거칩니다.</strong>
+      자세한 내용은 7항(처리 위탁 및 국외 이전)을 확인해 주십시오.
+    </li>
+    <li>
+      <strong>잠금화면에 표시되는 정보는 기기를 잠근 상태에서도 보입니다.</strong>
+      곁에 있는 사람이 여행 지역과 날짜를 볼 수 있으므로, 원하지 않으면 아래 방법으로 끌 수 있습니다.
+    </li>
+    <li>
+      끄는 방법 — iOS <strong>설정 → Face ID 및 암호 → 잠금 상태에서 접근 허용 → 실시간 현황</strong>을 끄거나,
+      카드를 왼쪽으로 밀어 삭제합니다. 카드를 끄면 이후 토큰도 저장하지 않습니다.
+    </li>
+  </ul>
+
+  <h3>4-3. 홈 화면·잠금화면 위젯</h3>
+  <ul>
+    <li>이용자가 직접 위젯을 추가하면 다음 여행까지 남은 날짜를 보여줍니다.</li>
+    <li>
+      위젯이 읽는 여행 정보는 <strong>기기 안에만 저장</strong>되며 회사 서버로 다시 전송하지 않습니다.
+      날짜 계산도 기기에서 이루어집니다.
+    </li>
+    <li>위젯 역시 잠금화면에 둔 경우 기기를 잠근 상태에서 보이며, 위젯을 길게 눌러 삭제할 수 있습니다.</li>
   </ul>
 
   <h2>5. 개인정보의 보유 및 이용 기간</h2>
@@ -227,6 +263,7 @@
         <tr><td>Amazon Web Services, Inc.</td><td>서비스 서버 운영 및 데이터 보관</td></tr>
         <tr><td>Vercel Inc.</td><td>공유 링크 웹페이지 제공</td></tr>
         <tr><td>Google LLC</td><td>푸시 알림 발송 (Firebase Cloud Messaging)</td></tr>
+        <tr><td>Apple Inc.</td><td>잠금화면 여행 카드 전달 (Apple Push Notification service)</td></tr>
       </tbody>
     </table>
   </div>
@@ -249,6 +286,12 @@
           <td>Google LLC</td><td>미국</td>
           <td>푸시 알림 토큰</td><td>알림 권한 허용 시 전송</td><td>회원 탈퇴 또는<br>알림 해제 시까지</td>
         </tr>
+        <tr>
+          <td>Apple Inc.</td><td>미국</td>
+          <td>잠금화면 카드 토큰,<br>여행 지역명·날짜</td>
+          <td>잠금화면 카드를<br>띄우거나 갱신할 때 전송</td>
+          <td>Apple 전달 후 즉시 파기<br>(Apple 보관 정책에 따름)</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -264,7 +307,7 @@
       <thead><tr><th>서비스</th><th>이용 목적</th><th>처리방침</th></tr></thead>
       <tbody>
         <tr><td>카카오 로그인 ·<br>카카오톡 공유</td><td>로그인, 코스 공유</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
-        <tr><td>Apple 로그인</td><td>로그인</td><td><a href="https://www.apple.com/legal/privacy/ko/" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>Apple 로그인 ·<br>Apple 푸시 서비스</td><td>로그인, 잠금화면 카드 전달</td><td><a href="https://www.apple.com/legal/privacy/ko/" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>Google 로그인 · Firebase</td><td>로그인, 푸시 알림</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>네이버 지도</td><td>코스 지도 표시</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>한국관광공사 TourAPI</td><td>여행지·장소 정보 제공</td><td>개인정보를 전송하지 않음</td></tr>
@@ -370,6 +413,7 @@
         <tr><td>Saved travel courses and dates</td><td>When you save a course</td><td>Displaying courses and schedules</td></tr>
         <tr><td>Location (latitude, longitude)</td><td>When recommending courses<br>(if permission granted)</td><td>Recommending reachable<br>destinations from your location</td></tr>
         <tr><td>Push notification token</td><td>If notification permission granted</td><td>Sending trip and benefit notices</td></tr>
+        <tr><td>Lock screen card token</td><td>As your trip start date<br>approaches (iOS 16.1+)</td><td>Displaying and updating the<br>lock screen trip card</td></tr>
       </tbody>
     </table>
   </div>
@@ -386,6 +430,7 @@
     <li>Recommending destinations and courses that fit your remaining leave</li>
     <li>Managing saved courses and leave usage records</li>
     <li>Sending trip schedule and benefit notifications</li>
+    <li>Displaying your trip schedule on the lock screen and in widgets</li>
     <li>Operating the Service and fixing errors</li>
   </ul>
   <p>We do not use collected information for purposes beyond those listed above. If the purpose changes, we will obtain your consent in advance.</p>
@@ -397,11 +442,45 @@
     <li>You may withdraw location permission at any time in your device settings. Without it, location-based recommendations are unavailable.</li>
   </ul>
 
-  <h2>4. Push Notifications</h2>
+  <h2>4. Push Notifications and Lock Screen Cards</h2>
+
+  <h3>4-1. Push Notifications</h3>
   <ul>
     <li>If you grant notification permission, we send push notifications about trip schedules and benefits.</li>
     <li>For this purpose we store a per-device notification token, which does not identify an individual.</li>
     <li>You may turn notifications off at any time in your device settings or within the app.</li>
+  </ul>
+
+  <h3>4-2. Lock Screen Trip Card (iOS 16.1 and later)</h3>
+  <ul>
+    <li>As your trip approaches, we display a <strong>card showing the days remaining on your lock screen and in the Dynamic Island</strong>.</li>
+    <li>
+      For this purpose we store a <strong>per-device card token</strong>. It does not identify an individual and is a
+      <strong>different value</strong> from the notification token. So that the countdown updates without opening the app,
+      our server uses this token to start and update the card.
+    </li>
+    <li>
+      When starting or updating the card, <strong>your trip region name and dates pass through Apple's push servers.</strong>
+      See Section 7 (Outsourcing and Overseas Transfer) for details.
+    </li>
+    <li>
+      <strong>Information shown on the lock screen is visible while your device is locked.</strong>
+      Anyone nearby can see your trip region and dates, so you may turn it off as described below.
+    </li>
+    <li>
+      To turn it off — disable <strong>Settings → Face ID &amp; Passcode → Allow Access When Locked → Live Activities</strong> in iOS,
+      or swipe the card left to remove it. Once disabled, we no longer store the token.
+    </li>
+  </ul>
+
+  <h3>4-3. Home Screen and Lock Screen Widgets</h3>
+  <ul>
+    <li>If you add a widget yourself, it shows the days remaining until your next trip.</li>
+    <li>
+      The trip information a widget reads is <strong>stored only on your device</strong> and is not sent back to our servers.
+      The date calculation also happens on your device.
+    </li>
+    <li>Widgets placed on the lock screen are likewise visible while the device is locked; press and hold a widget to remove it.</li>
   </ul>
 
   <h2>5. Retention Period</h2>
@@ -442,6 +521,7 @@
         <tr><td>Amazon Web Services, Inc.</td><td>Server operation and data storage</td></tr>
         <tr><td>Vercel Inc.</td><td>Hosting the share-link web page</td></tr>
         <tr><td>Google LLC</td><td>Push notification delivery (Firebase Cloud Messaging)</td></tr>
+        <tr><td>Apple Inc.</td><td>Lock screen trip card delivery (Apple Push Notification service)</td></tr>
       </tbody>
     </table>
   </div>
@@ -464,6 +544,12 @@
           <td>Google LLC</td><td>United States</td>
           <td>Push notification token</td><td>Transmitted when notification<br>permission is granted</td><td>Until account deletion or<br>notifications are disabled</td>
         </tr>
+        <tr>
+          <td>Apple Inc.</td><td>United States</td>
+          <td>Lock screen card token,<br>trip region name and dates</td>
+          <td>Transmitted when starting or<br>updating a lock screen card</td>
+          <td>Discarded immediately after delivery<br>(subject to Apple's retention policy)</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -479,7 +565,7 @@
       <thead><tr><th>Service</th><th>Purpose</th><th>Policy</th></tr></thead>
       <tbody>
         <tr><td>Kakao Login ·<br>KakaoTalk Sharing</td><td>Sign-in, course sharing</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">Link</a></td></tr>
-        <tr><td>Apple Sign In</td><td>Sign-in</td><td><a href="https://www.apple.com/legal/privacy/en-ww/" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Apple Sign In ·<br>Apple Push Notification service</td><td>Sign-in, lock screen card delivery</td><td><a href="https://www.apple.com/legal/privacy/en-ww/" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Google Sign-In · Firebase</td><td>Sign-in, push notifications</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Naver Map</td><td>Displaying course maps</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Korea Tourism Organization TourAPI</td><td>Destination and place data</td><td>No personal information transmitted</td></tr>
