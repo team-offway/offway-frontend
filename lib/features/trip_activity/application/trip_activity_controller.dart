@@ -61,6 +61,16 @@ class TripActivityController with WidgetsBindingObserver {
   /// 같은 값이고, iOS 가 다시 주지 않을 수 있다
   String? _pushToStartToken;
 
+  /// 기기 등록·해제를 **한 줄로 세운다**.
+  ///
+  /// 등록은 기다리지 않고 보내는데 해제는 로그아웃이 기다린다 — 그대로 두면
+  /// 아직 날아가는 중인 PUT 이 DELETE 뒤에 서버에 닿아 **로그아웃한 사람의
+  /// 등록이 되살아난다.** 그러면 다음 정오에 그 기기 잠금화면에 앞사람의
+  /// 여행이 뜬다.
+  ///
+  /// 줄을 세우면 DELETE 가 앞의 PUT 이 끝난 뒤에 나간다
+  Future<void>? _pushToStartOp;
+
   /// 예정 코스 목록 구독 — 앱 안에서 코스를 담거나 지우거나 날짜를 바꾸면
   /// 화면이 목록을 다시 읽는데(invalidate), 그때 위젯·잠금화면도 따라간다.
   /// 이게 없으면 앱을 다시 앞으로 낼 때까지 위젯이 지운 여행을 센다
@@ -258,18 +268,27 @@ class TripActivityController with WidgetsBindingObserver {
 
   /// 보관해 둔 기기 토큰을 서버에 올린다.
   ///
-  /// **기다리지 않는다.** 실패하면 서버가 카드를 처음 띄우지 못하는 것뿐이고,
-  /// 앱을 열면 예전처럼 앱이 띄운다. 다음에 앱을 켤 때 토큰이 또 오므로
-  /// 그때 다시 시도된다
+  /// **부르는 쪽은 기다리지 않는다.** 실패하면 서버가 카드를 처음 띄우지
+  /// 못하는 것뿐이고, 앱을 열면 예전처럼 앱이 띄운다. 다음에 앱을 켤 때
+  /// 토큰이 또 오므로 그때 다시 시도된다.
+  ///
+  /// 다만 **해제와는 줄을 맞춘다**(`_pushToStartOp`) — 늦게 닿은 등록이
+  /// 로그아웃을 되돌리면 안 된다
   void _registerPushToStart() {
-    final token = _pushToStartToken;
-    if (token == null) return;
-    _ref
-        .read(liveActivityRepositoryProvider)
-        .registerPushToStart(token)
-        .catchError((Object e) {
-          debugPrint('push-to-start 토큰을 올리지 못했다: $e');
-        });
+    if (_pushToStartToken == null) return;
+    _pushToStartOp = (_pushToStartOp ?? Future<void>.value()).then((_) async {
+      // 줄을 서는 사이에 세션이 끝났을 수 있다 — 그때는 올리지 않는다.
+      // 여기서 막지 않으면 방금 지운 등록을 다시 만든다
+      final token = _pushToStartToken;
+      if (_stopped || token == null) return;
+      try {
+        await _ref
+            .read(liveActivityRepositoryProvider)
+            .registerPushToStart(token);
+      } on Object catch (e) {
+        debugPrint('push-to-start 토큰을 올리지 못했다: $e');
+      }
+    });
   }
 
   /// 이 기기의 push-to-start 등록을 지운다 — 로그아웃.
@@ -281,16 +300,22 @@ class TripActivityController with WidgetsBindingObserver {
   /// 토큰을 모르면(iOS 17.2 미만이라 받은 적이 없다) 부르지 않는다 — 등록된
   /// 적도 없다. 실패는 삼킨다. 탈퇴는 서버가 이벤트로 지우므로 여기서
   /// 실패해도 남지 않는다
-  Future<void> _unregisterPushToStart() async {
+  Future<void> _unregisterPushToStart() {
     final token = _pushToStartToken;
-    if (token == null) return;
-    try {
-      await _ref
-          .read(liveActivityRepositoryProvider)
-          .unregisterPushToStart(token: token);
-    } on Object catch (e) {
-      debugPrint('push-to-start 등록을 지우지 못했다: $e');
-    }
+    if (token == null) return Future<void>.value();
+    // **앞의 등록이 끝난 뒤에 나간다.** 먼저 보내면 아직 날아가던 PUT 이
+    // 뒤에 닿아 등록이 되살아난다
+    final op = (_pushToStartOp ?? Future<void>.value()).then((_) async {
+      try {
+        await _ref
+            .read(liveActivityRepositoryProvider)
+            .unregisterPushToStart(token: token);
+      } on Object catch (e) {
+        debugPrint('push-to-start 등록을 지우지 못했다: $e');
+      }
+    });
+    _pushToStartOp = op;
+    return op;
   }
 
   /// 떠 있던 코스의 서버 등록을 지운다.

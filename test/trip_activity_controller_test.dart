@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart'
@@ -259,6 +261,43 @@ void main() {
       await controller.stop();
 
       expect(repo.pushToStartUnregistered, ['80a1b2']);
+    });
+
+    test('날아가던 등록이 로그아웃을 되돌리지 않는다', () async {
+      // 등록은 기다리지 않고 보내는데 해제는 로그아웃이 기다린다. 줄을
+      // 세우지 않으면 아직 날아가던 PUT 이 DELETE 뒤에 서버에 닿아 **등록이
+      // 되살아난다** — 다음 정오에 로그아웃한 기기에 앞사람의 여행이 뜬다
+      final service = _FakeService();
+      final repo = _FakeRepository()..holdRegister = Completer<void>();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+
+      service.pushToStartListener!('80a1b2');
+      await settle();
+      // 등록이 아직 서버에 닿지 않았다
+      expect(repo.pushToStartCalls, isEmpty);
+
+      final stopping = controller.stop();
+      await settle();
+      repo.holdRegister!.complete(); // 이제야 등록이 도착한다
+      await stopping;
+
+      // 해제가 **뒤에** 갔다 — 최종 상태는 '이 기기는 풀렸다'
+      expect(repo.pushToStartCalls, ['register', 'unregister']);
+    });
+
+    test('멈춘 뒤 늦게 온 토큰은 올리지 않는다', () async {
+      // 로그아웃 뒤 도착한 기기 토큰을 올리면 앞사람의 계정으로 등록된다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      await controller.stop();
+
+      service.pushToStartListener!('late');
+      await settle();
+
+      expect(repo.pushToStartRegistered, isEmpty);
     });
 
     test('토큰을 받은 적이 없으면 해제하지 않는다', () async {
@@ -618,15 +657,27 @@ class _FakeRepository implements LiveActivityRepository {
   /// 이 기기의 push-to-start 등록 (core #585)
   final pushToStartRegistered = <String>[];
 
+  /// 등록·해제가 **서버에 닿은 순서**. 뒤집히면 로그아웃이 되돌려진다
+  final pushToStartCalls = <String>[];
+
+  /// 등록을 일부러 늦춘다 — 느린 네트워크를 흉내 내 경쟁을 만든다
+  Completer<void>? holdRegister;
+
   /// 해제에 실린 토큰. **비어 있음(null)과 기록 없음은 다르다** — null 은
   /// '이 사용자 전부' 라는 뜻이라 기기별 해제와 구별해야 한다
   final pushToStartUnregistered = <String?>[];
 
   @override
-  Future<void> registerPushToStart(String token) async =>
-      pushToStartRegistered.add(token);
+  Future<void> registerPushToStart(String token) async {
+    // 붙잡아 두면 '아직 날아가는 중' 이 된다
+    if (holdRegister != null) await holdRegister!.future;
+    pushToStartRegistered.add(token);
+    pushToStartCalls.add('register');
+  }
 
   @override
-  Future<void> unregisterPushToStart({String? token}) async =>
-      pushToStartUnregistered.add(token);
+  Future<void> unregisterPushToStart({String? token}) async {
+    pushToStartUnregistered.add(token);
+    pushToStartCalls.add('unregister');
+  }
 }

@@ -171,6 +171,11 @@ class TripActivityService {
           throw MissingPluginException('${call.method} 은 받지 않는다');
       }
     });
+    // **수신자를 건 뒤에 알린다.** 네이티브는 `didFinishLaunching` 에서 뜨고
+    // 여기는 위젯 트리가 선 뒤라, 그 사이에 나온 기기 토큰은 Flutter 가
+    // 버퍼링하지 않아 사라진다 — 네이티브가 담아 뒀다가 이 신호에 넘긴다.
+    // 기다리지 않는다: 담아 둔 것이 없으면 아무 일도 없다
+    _invokeOk('pushToStartReady', const {});
   }
 
   /// 네이티브가 답하지 않을 때 기다리는 한도.
