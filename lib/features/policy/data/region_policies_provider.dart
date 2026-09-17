@@ -59,7 +59,10 @@ RegionPolicyIndex buildRegionPolicyIndex(
       policyType: policy['type'] as String?,
       policyId: (policy['id'] as num?)?.toInt(),
       applyUrl: policy['applyUrl'] as String?,
+      // 카드가 그릴 이름·설명을 **여기서 함께 싣는다.** 버리면 카드가 같은
+      // 정책을 다시 불러야 한다 — 이미 이 응답에 들어 있는 값이다
       policyName: policy['name'] as String?,
+      benefitDetail: policy['benefitDetail'] as String?,
     );
     if (benefit.text.isEmpty || benefit.policyId == null) continue;
     for (final region in (policy['regions'] as List?) ?? const []) {
