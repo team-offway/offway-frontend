@@ -65,4 +65,23 @@ class RegionBenefit {
   /// **이 값이 있으면 카드가 정책 상세를 다시 부르지 않는다.** 색인이 이미
   /// 받아 둔 응답에서 온 값이라, 버리면 카드마다 같은 요청이 한 번씩 더 나갔다
   final String? benefitDetail;
+
+  /// 색인이 아는 이름·설명을 채워 넣은 사본.
+  ///
+  /// **서버가 준 값이 먼저다.** 뱃지 문구(`text`)와 신청 주소(`applyUrl`)는
+  /// 지역 응답이 정본이라 그대로 두고, 서버 혜택 값에 아예 없는 두 칸만
+  /// 색인에서 가져온다.
+  ///
+  /// 대표 혜택은 지역 응답에서 오므로 이름이 비어 있다 — 그대로 두면 카드가
+  /// 그 이름을 그리려고 정책 상세를 다시 부른다(#313 이 색인 쪽만 고쳤다)
+  RegionBenefit mergedWith(RegionBenefit? known) => known == null
+      ? this
+      : RegionBenefit(
+          text: text,
+          policyType: policyType ?? known.policyType,
+          policyId: policyId,
+          applyUrl: applyUrl ?? known.applyUrl,
+          policyName: policyName ?? known.policyName,
+          benefitDetail: benefitDetail ?? known.benefitDetail,
+        );
 }

@@ -131,8 +131,48 @@ void main() {
       };
       final benefits = benefitsForCard(card, index);
       expect(benefits.map((b) => b.policyId), [1, 3]);
-      // 대표는 서버 값 그대로다 — 색인 유무로 뱃지 문구가 달라지면 안 된다
-      expect(benefits.first.policyName, isNull);
+      // **뱃지 문구는 서버 값 그대로다** — 색인이 읽힌 날과 못 읽힌 날의
+      // 뱃지가 달라지면 안 된다. 색인의 badgeText('여행경비 50% 환급')와
+      // 우연히 같지 않게, 여기서는 서버가 다른 문구를 준 것으로 둔다
+      expect(benefits.first.text, '여행경비 50% 환급');
+    });
+
+    test('대표에도 색인이 아는 이름·설명이 붙는다', () {
+      // 지역 응답의 혜택 값에는 이름·설명이 없다. 안 붙이면 대표 카드만
+      // 정책 상세를 다시 부른다 — 색인 쪽만 고친 #313 이 놓친 자리다
+      final card = {
+        'id': '15',
+        'benefit': {'text': '여행경비 50% 환급', 'policyId': 1},
+      };
+      final representative = benefitsForCard(card, index).first;
+
+      expect(representative.policyName, '반값여행');
+      // 뱃지 문구와 policyId 는 서버 값 그대로
+      expect(representative.text, '여행경비 50% 환급');
+      expect(representative.policyId, 1);
+    });
+
+    test('서버가 준 신청 주소가 색인보다 먼저다', () {
+      // 지역 응답의 주소가 이 지역 기준이라 정본이다
+      final withUrl = buildRegionPolicyIndex([
+        {
+          ...policy(1, '반값여행', '환급', regions: [15]),
+          'applyUrl': 'https://policy.example.com',
+        },
+      ], today);
+      final card = {
+        'id': '15',
+        'benefit': {
+          'text': '환급',
+          'policyId': 1,
+          'applyUrl': 'https://region.example.com',
+        },
+      };
+
+      expect(
+        benefitsForCard(card, withUrl).first.applyUrl,
+        'https://region.example.com',
+      );
     });
 
     test('장소 카드는 regionId로 찾는다 — id는 장소 id다', () {

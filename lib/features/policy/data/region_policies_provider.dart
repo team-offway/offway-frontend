@@ -98,13 +98,22 @@ List<RegionBenefit> benefitsForCard(
   // 홈·지역 상세가 `benefits[]`를 싣기 시작하면 여기서 바로 그 값을 쓴다
   final served = RegionBenefit.parseList(card['benefits']);
   if (served.isNotEmpty) return served;
-  final representative = RegionBenefit.tryParse(card['benefit']);
+  final fromCard = RegionBenefit.tryParse(card['benefit']);
   // 장소 카드는 지역 id를 따로 든다(`id`는 장소 id다)
   final regionId =
       card['regionId']?.toString() ??
       (card['placeName'] == null ? card['id']?.toString() : null);
+  final known = index[regionId] ?? const <RegionBenefit>[];
+  // **대표에도 색인이 아는 이름·설명을 붙인다.** 지역 응답의 혜택 값에는 그
+  // 두 칸이 없어, 안 붙이면 대표 카드만 정책 상세를 다시 부른다 — 색인 쪽만
+  // 고친 #313 이 놓친 자리다(CodeRabbit 리뷰).
+  //
+  // 뱃지 문구와 신청 주소는 서버 값을 그대로 둔다 — 그쪽이 이 지역 기준이다
+  final representative = fromCard?.mergedWith(
+    known.where((b) => b.policyId == fromCard.policyId).firstOrNull,
+  );
   final others = [
-    for (final b in index[regionId] ?? const <RegionBenefit>[])
+    for (final b in known)
       if (b.policyId != representative?.policyId) b,
   ];
   return [?representative, ...others];
