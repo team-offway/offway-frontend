@@ -1180,23 +1180,25 @@ class _PlaceRow extends ConsumerWidget {
     // **코스 응답에 이미 실려 온 값을 먼저 쓴다**(core CourseResponse).
     // 예전에는 이걸 두고 장소마다 상세를 따로 받아, 여행 당일 화면이 열릴
     // 때마다 하루 장소 수만큼 요청이 나갔다(#326)
-    final servedUseTime = place['useTime'] as String?;
-    final servedRestDate = place['restDate'] as String?;
-    final hasServed = servedUseTime != null || servedRestDate != null;
+    //
+    // 고르는 규칙은 시트와 **같은 함수**가 쥔다 — 따로 두면 같은 장소인데
+    // 배지와 시트가 다른 문구를 보인다(#330)
+    final served = servedScheduleOf(place);
 
-    // 코스 응답에 없는 장소만 상세로 물러난다 — 옛 응답이거나 서버가 아직
-    // 운영시간을 못 받은 장소다
-    final fetched = showOpeningWarning && contentId != null && !hasServed
-        ? ref.watch(poiScheduleProvider(contentId)).value
-        : null;
+    // 코스 응답에 없는 장소만 상세로 물러난다 — 옛 응답, 서버가 아직
+    // 운영시간을 못 받은 장소, 그리고 체크인·체크아웃을 합성해야 하는 숙소다
+    final schedule =
+        served ??
+        (showOpeningWarning && contentId != null
+            ? ref.watch(poiScheduleProvider(contentId)).value
+            : null);
 
-    final warning = !showOpeningWarning
+    final warning = !showOpeningWarning || schedule == null
         ? null
-        : hasServed
-        ? openingWarning(useTime: servedUseTime, restDate: servedRestDate)
-        : fetched == null
-        ? null
-        : openingWarning(useTime: fetched.useTime, restDate: fetched.restDate);
+        : openingWarning(
+            useTime: schedule.useTime,
+            restDate: schedule.restDate,
+          );
 
     final row = _buildRow(
       imageUrl,
