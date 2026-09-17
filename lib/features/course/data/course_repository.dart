@@ -443,6 +443,17 @@ class CourseRepository {
                   'travelMinutes': item['travelMinutes'],
                   // 사진이 없는 장소에만 온다 — 지도 검색으로 대신 보낸다
                   'mapSearchUrl': item['mapSearchUrl'],
+                  // 운영 정보는 **코스 응답에 이미 실려 온다**(core CourseResponse).
+                  // 예전에는 이걸 버리고 여행 당일마다 장소 상세를 따로 받았다 —
+                  // 하루 6~8곳이면 그만큼 나갔다(#326).
+                  //
+                  // 값이 없는 장소는 키가 아예 안 온다(서버 NON_NULL) — null 로
+                  // 메우면 화면이 "값이 있다"와 구분하지 못해 상세로 물러나지 않는다
+                  'useTime': ?item['useTime'],
+                  'restDate': ?item['restDate'],
+                  // 오늘 여는지 — **여행일이 오늘일 때만** 온다. 서버가 운영시간
+                  // 원문을 뜯어 판정한 결과다
+                  'openingStatus': ?item['openingStatus'],
                   // 장소 성격 뱃지의 재료 (core #567·#568). 둘 다 **없으면
                   // 키가 아예 안 온다** — 서버가 "모른다"와 "아니다"를 갈라
                   // 두었으므로 여기서 false·빈 문자열로 메우지 않는다
