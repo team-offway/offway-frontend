@@ -240,6 +240,20 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final today = DateUtils.dateOnly(DateTime.now());
     final past = end != null && DateUtils.dateOnly(end).isBefore(today);
 
+    // **보고 있는 날이 오늘인가** — 운영 안내(휴무일·운영시간 확인)를 띄울지
+    // 이 값이 정한다.
+    //
+    // 코스 기간이 아니라 **탭으로 고른 날**을 본다. 기간으로 보면 2박3일의
+    // 3일차가 오늘일 때 1일차 탭에도 오늘 기준 안내가 붙어, 이미 지나간 날의
+    // 장소에 '오늘은 휴무일이에요' 가 뜬다.
+    //
+    // 예전에는 출발일 하루만 봐서(`dDay == 0`) 2·3일차가 오늘이어도 안내가
+    // 아예 없었다 — 정작 오늘 갈 곳인데 휴무인지 몰랐다. 그 반대쪽으로
+    // 기울지 않게 **고른 날 하나**로 가른다
+    final selectedDate = DateTime.tryParse(day['date'] as String? ?? '');
+    final isTodaySelected =
+        selectedDate != null && DateUtils.dateOnly(selectedDate) == today;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -393,10 +407,11 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _SavedPlaceList(
                   places: places,
-                  // 당일에만 장소 운영 정보를 조회해 휴무일·운영시간을 알린다
-                  showOpeningWarnings: dDay == 0,
+                  // **탭으로 고른 날이 오늘일 때만** 알린다 — 지나간 날의
+                  // 장소에 오늘 기준 안내가 붙지 않게
+                  showOpeningWarnings: isTodaySelected,
                   onTapPlace: (place) =>
-                      _showPlaceSheet(place, isToday: dDay == 0),
+                      _showPlaceSheet(place, isToday: isTodaySelected),
                   // 담고 처음 열었을 때, 목록까지 내려온 뒤에만 나온다
                   detailHint: _detailHintPending && _scrolledToPlaces
                       ? _buildDetailHint()
@@ -1152,11 +1167,36 @@ class _PlaceRow extends ConsumerWidget {
   final bool showOpeningWarning;
   final VoidCallback onTap;
 
-  /// 운영 정보(자유 텍스트)에서 당일 안내 문구를 고른다.
+  /// 당일 안내 문구를 고른다 — **서버 판정이 먼저**(#331).
   ///
-  /// 휴무일 텍스트에 오늘 요일이 명시돼 있으면 '휴무일', 아니면서 상시 개방이
-  /// 아닌 운영시간이 있으면 '운영시간 확인'. 확신할 수 없는 표현은 조용히 넘긴다.
-  static String? openingWarning({String? useTime, String? restDate}) {
+  /// 이 함수를 부르는 것 자체가 **여행 당일**일 때뿐이다
+  /// (`showOpeningWarnings: dDay == 0`). 그 위에 두 규칙이 얹힌다.
+  ///
+  /// **지금 못 들어가는 때만 알린다.** 영업 중이면 아무것도 띄우지 않는다 —
+  /// 여는 시간이 적혀 있다는 이유만으로 뜨던 예전 규칙은 문 연 곳까지 붉게
+  /// 표시해, 무엇을 확인하라는 것인지 알 수 없었다.
+  ///
+  /// **배지는 두 마디만 쓴다.** 아직 안 열었든 이미 닫혔든 '운영시간 확인'
+  /// 이다 — 시안에 없는 문구를 배지에 늘리지 않는다. 그 구분은 눌러서 여는
+  /// 시트가 문장으로 말한다.
+  ///
+  /// [status]가 없으면(서버가 판정 못 한 장소) 예전처럼 원문을 본다 —
+  /// 지우면 그런 장소에서 안내가 통째로 사라진다
+  static String? openingWarning({
+    String? useTime,
+    String? restDate,
+    TodayOpening? status,
+  }) {
+    if (status != null) {
+      // **지금 못 들어가는 때만 알린다.** 영업 중이면 배지를 띄우지 않는다 —
+      // 여는 시간이 적혀 있다는 이유만으로 뜨던 예전 규칙은, 문 연 곳까지
+      // 붉게 표시해 무엇을 확인하라는 것인지 알 수 없었다
+      return switch (status) {
+        TodayOpening.closedToday => '휴무일',
+        TodayOpening.closedNow || TodayOpening.beforeOpen => '운영시간 확인',
+        TodayOpening.open => null,
+      };
+    }
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     final today = weekdays[DateTime.now().weekday - 1];
     if (restDate != null && restDate.contains('$today요일')) return '휴무일';
@@ -1193,11 +1233,16 @@ class _PlaceRow extends ConsumerWidget {
             ? ref.watch(poiScheduleProvider(contentId)).value
             : null);
 
-    final warning = !showOpeningWarning || schedule == null
+    // 서버가 판정했으면 원문이 없어도 배지를 띄운다 — 판정이 곧 근거다.
+    // 고른 날이 오늘이 아니면 읽지 않는다(시트와 같은 규칙) — 판정은 장소
+    // 단위로 실려 와 어느 날 탭에서든 같은 값이다
+    final status = showOpeningWarning ? todayOpeningOf(place) : null;
+    final warning = !showOpeningWarning || (schedule == null && status == null)
         ? null
         : openingWarning(
-            useTime: schedule.useTime,
-            restDate: schedule.restDate,
+            useTime: schedule?.useTime,
+            restDate: schedule?.restDate,
+            status: status,
           );
 
     final row = _buildRow(

@@ -170,6 +170,9 @@ void main() {
                         'poiContentId': '126508',
                         'useTime': '09:00 - 18:00',
                         'restDate': '매주 월요일',
+                        // 서버가 영업 중으로 판정 — 원문 파싱(시각 비교)에
+                        // 기대지 않게 해 테스트가 시각에 흔들리지 않는다
+                        'openingStatus': 'OPEN',
                       },
                     ],
                   },

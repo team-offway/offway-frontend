@@ -56,6 +56,56 @@ final poiScheduleProvider = FutureProvider.autoDispose
   return (useTime: useTime, restDate: restDate);
 }
 
+/// 서버가 판정한 **오늘** 영업 상태 (core `OpeningStatus`).
+///
+/// 원문을 뜯어 오늘 여는지 가르는 일은 **서버가 소유한다** — core 주석이
+/// "클라이언트마다 파싱하면 클라이언트마다 다르게 틀린다" 고 적어 두었다.
+/// 실제로 앱의 요일 매칭은 이런 값에서 틀렸다(#331):
+///
+/// - `매주 월요일 (단, 공휴일인 경우 … 휴관)` → 공휴일 월요일에 여는데 닫혔다고 함
+/// - `매월 첫째, 셋째 수요일` → 아예 못 잡음
+///
+/// **여행일이 오늘일 때만 실린다.** 그래서 이 값이 없으면 예전처럼 원문을
+/// 본다 — 지우면 그 외 상황에서 판정이 통째로 사라진다
+enum TodayOpening {
+  /// 지금 영업 중 — **알릴 말은 없지만 판정은 있다.**
+  ///
+  /// 버리면 "판정했고 문제없음" 과 "판정 자체가 없음" 이 구분되지 않아,
+  /// 원문 폴백이 돌아 서버가 읽은 예외를 앱이 도로 무시한다
+  open,
+
+  /// 오늘은 쉬는 날
+  closedToday,
+
+  /// 오늘 운영이 이미 끝남
+  closedNow,
+
+  /// 아직 여는 시각 전
+  beforeOpen;
+
+  /// 시트에 그대로 쓰는 문구 — core `OpeningStatus` 가 가진 말과 같다.
+  /// 영업 중이면 알릴 것이 없다
+  String? get message => switch (this) {
+    open => null,
+    closedToday => '오늘은 휴무일이에요',
+    closedNow => '오늘 운영이 끝났어요',
+    beforeOpen => '아직 문을 열기 전이에요',
+  };
+}
+
+/// 코스 응답에 실려 온 영업 상태. 서버가 판정하지 못했으면 null.
+///
+/// `UNKNOWN` 은 서버가 아예 안 내려보낸다(`isDisplayable`) — 키가 없는 것과
+/// 같고, 그때만 앱이 원문을 뜯어 짐작한다
+TodayOpening? todayOpeningOf(Map<String, dynamic> place) =>
+    switch (place['openingStatus']) {
+      'OPEN' => TodayOpening.open,
+      'CLOSED_TODAY' => TodayOpening.closedToday,
+      'CLOSED_NOW' => TodayOpening.closedNow,
+      'BEFORE_OPEN' => TodayOpening.beforeOpen,
+      _ => null,
+    };
+
 /// 장소를 눌렀을 때 운영 정보 시트를 띄운다.
 ///
 /// 코스 확정·내 코스 상세가 함께 쓴다. 두 화면이 장소 줄을 다르게 그리지만
@@ -159,19 +209,44 @@ class PlaceInfoSheet extends ConsumerWidget {
     final now = DateTime.now();
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
+    // **서버가 판정했으면 그것이 먼저다**(#331). 공휴일 예외처럼 앱이 못 읽는
+    // 조건까지 서버가 본다. 없으면 예전처럼 원문을 뜯어 짐작한다.
+    //
+    // **[isToday] 가 아니면 쓰지 않는다.** 서버 판정은 장소 단위로 실려 와
+    // 어느 날 탭에서 열든 같은 값이다 — 게이트가 없으면 이미 지나간 날의
+    // 장소에 '오늘은 휴무일이에요' 가 뜬다
+    final status = isToday ? todayOpeningOf(place) : null;
+
     // 당일 기준 위험 상태면 값 대신 빨간 경고 문구를 보여준다
     var useValue = loading ? '—' : (useTime ?? '정보없음');
     var useEmpty = !loading && useTime == null;
     var useDanger = false;
-    if (isToday && useTime != null && closingPassed(useTime, now)) {
+    // 운영시간 칸이 받는 것 — 아직 안 열었거나 이미 닫혔거나
+    final hoursMessage = switch (status) {
+      TodayOpening.closedNow || TodayOpening.beforeOpen => status!.message,
+      _ => null,
+    };
+    if (hoursMessage != null) {
+      useValue = hoursMessage;
+      useEmpty = false;
+      useDanger = true;
+    } else if (status == null &&
+        isToday &&
+        useTime != null &&
+        closingPassed(useTime, now)) {
       useValue = '오늘 운영이 끝났어요';
       useEmpty = false;
       useDanger = true;
     }
+
     var restValue = loading ? '—' : (restDate ?? '정보없음');
     final restEmpty = !loading && restDate == null;
     var restDanger = false;
-    if (isToday &&
+    if (status == TodayOpening.closedToday) {
+      restValue = TodayOpening.closedToday.message!;
+      restDanger = true;
+    } else if (status == null &&
+        isToday &&
         restDate != null &&
         restDate.contains('${weekdays[now.weekday - 1]}요일')) {
       restValue = '오늘은 휴무일이에요';
