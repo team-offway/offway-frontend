@@ -1,7 +1,22 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/core/storage/device_id.dart';
 import 'package:offway/features/trip_activity/data/live_activity_repository.dart';
+
+/// Keychain 을 타지 않는 대역 — 늘 같은 기기 id 를 준다
+class _FakeDeviceId extends DeviceIdStorage {
+  _FakeDeviceId() : super(const FlutterSecureStorage());
+
+  int calls = 0;
+
+  @override
+  Future<String> get() async {
+    calls++;
+    return 'device-abc';
+  }
+}
 
 /// 잠금화면 카드의 갱신 토큰 등록(core #577) — 요청 본문과 실패 처리를 고정한다.
 ///
@@ -10,11 +25,14 @@ import 'package:offway/features/trip_activity/data/live_activity_repository.dart
 void main() {
   late List<({String path, String method, Object? body})> sent;
 
+  late _FakeDeviceId deviceId;
+
   LiveActivityRepository repositoryWith({int status = 200}) {
     sent = [];
+    deviceId = _FakeDeviceId();
     final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
     dio.httpClientAdapter = _RecordingAdapter(sent, status);
-    return LiveActivityRepository(dio);
+    return LiveActivityRepository(dio, deviceId);
   }
 
   test('코스 id 는 숫자로, 토큰은 그대로 보낸다', () async {
@@ -30,6 +48,24 @@ void main() {
     expect(body['courseId'], 122);
     expect(body['courseId'], isA<int>());
     expect(body['pushToken'], '80a1b2c3');
+    expect(body['deviceId'], 'device-abc');
+  });
+
+  test('두 등록이 같은 기기 id 를 싣는다', () async {
+    // **이것이 core #587 이 요구한 계약이다.** 값이 갈리면 서버가 갱신
+    // 토큰과 띄우기 토큰을 다른 기기로 보고, 기기 둘인 사용자의 둘째
+    // 기기에 카드가 영영 안 뜬다
+    final repository = repositoryWith();
+    await repository.register(courseId: '122', token: 'card-token');
+    await repository.registerPushToStart('start-token');
+
+    final card = sent[0].body! as Map;
+    final start = sent[1].body! as Map;
+
+    expect(sent[0].path, '/api/v1/live-activities');
+    expect(sent[1].path, '/api/v1/live-activities/push-to-start');
+    expect(card['deviceId'], start['deviceId']);
+    expect(card['deviceId'], 'device-abc');
   });
 
   test('숫자가 아닌 코스 id 는 보내지 않고 거절한다', () async {
