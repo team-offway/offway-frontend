@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/storage/device_id.dart';
 
 final liveActivityRepositoryProvider = Provider<LiveActivityRepository>(
-  (ref) => LiveActivityRepository(ref.watch(dioProvider)),
+  (ref) => LiveActivityRepository(
+    ref.watch(dioProvider),
+    ref.watch(deviceIdStorageProvider),
+  ),
 );
 
 /// 잠금화면 카드의 갱신 토큰 등록 (`/api/v1/live-activities`, core #577).
@@ -17,9 +21,14 @@ final liveActivityRepositoryProvider = Provider<LiveActivityRepository>(
 /// 앱을 지울 때까지 살지만, 이 토큰은 잠금화면에 띄운 **카드 하나**를 가리키고
 /// 그 카드가 사라지면 함께 죽는다.
 class LiveActivityRepository {
-  LiveActivityRepository(this._dio);
+  LiveActivityRepository(this._dio, this._deviceId);
 
   final Dio _dio;
+
+  /// 이 기기를 가리키는 값 — **두 등록이 같은 것을 실어야** 서버가 갱신
+  /// 토큰과 띄우기 토큰을 한 기기로 묶는다(core #587). 안 실으면 기기 둘인
+  /// 사용자의 둘째 기기에 카드가 영영 안 뜬다
+  final DeviceIdStorage _deviceId;
 
   /// 카드의 토큰을 등록하거나 갱신한다.
   ///
@@ -40,7 +49,13 @@ class LiveActivityRepository {
     try {
       final response = await _dio.post<dynamic>(
         '/api/v1/live-activities',
-        data: {'courseId': id, 'pushToken': token},
+        // 기기 id 는 **띄우기 토큰 등록과 같은 값**이어야 한다 — 서버가 그걸로
+        // 둘을 한 기기로 묶는다(core #587)
+        data: {
+          'courseId': id,
+          'pushToken': token,
+          'deviceId': await _deviceId.get(),
+        },
       );
       // 공통 래퍼는 200에도 실패 code를 담을 수 있다 — 그것까지 걸러야
       // '등록됐다'가 사실이 된다
@@ -63,7 +78,7 @@ class LiveActivityRepository {
     try {
       final response = await _dio.put<dynamic>(
         '/api/v1/live-activities/push-to-start',
-        data: {'token': token},
+        data: {'token': token, 'deviceId': await _deviceId.get()},
       );
       ApiEnvelope.unwrap(response);
     } on DioException catch (e) {
