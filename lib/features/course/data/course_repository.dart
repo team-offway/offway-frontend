@@ -447,10 +447,12 @@ class CourseRepository {
                   // 예전에는 이걸 버리고 여행 당일마다 장소 상세를 따로 받았다 —
                   // 하루 6~8곳이면 그만큼 나갔다(#326).
                   //
-                  // 값이 없는 장소는 키가 아예 안 온다(서버 NON_NULL) — null 로
-                  // 메우면 화면이 "값이 있다"와 구분하지 못해 상세로 물러나지 않는다
-                  'useTime': ?item['useTime'],
-                  'restDate': ?item['restDate'],
+                  // **장소 상세와 같은 규칙으로 거른다**(`scheduleText`). 서버가
+                  // `""` 를 실어 보내면 키가 남아 화면이 "값이 있다"로 보고
+                  // 상세로 물러나지 않는데, 그 빈 값으로는 안내를 못 만들어
+                  // 휴무일인데도 배지가 사라진다(#329)
+                  'useTime': ?scheduleText(item['useTime']),
+                  'restDate': ?scheduleText(item['restDate']),
                   // 오늘 여는지 — **여행일이 오늘일 때만** 온다. 서버가 운영시간
                   // 원문을 뜯어 판정한 결과다
                   'openingStatus': ?item['openingStatus'],
@@ -624,20 +626,26 @@ class CourseRepository {
 /// 줄바꿈 사이에 공백뿐인 줄이 하나 이상 — 빈 줄. `poiScheduleOf`가 접는다
 final _blankLines = RegExp(r'\n[ \t ]*(?:\n[ \t ]*)+');
 
+/// 운영 정보 한 줄을 화면에 쓸 값으로 고른다. 쓸 게 없으면 null.
+///
+/// **빈 문자열은 없는 값으로 본다.** 서버가 최상위를 `""`로 채워 보내면
+/// null만 걸러서는 그 빈 값이 이겨, 블록에 든 진짜 운영시간이 묻힌다.
+///
+/// **빈 줄은 접는다.** TourAPI 원문에 `<br><br>`이 흔해(문단 여백) 서버가
+/// 연속 빈 줄을 하나로 줄여 주지만, 그 하나가 "- 3월~10월 …" 과
+/// "- 11월 …" 사이에 남아 정보 상자에서 줄 하나가 통째로 빈다(QA 9/16).
+/// 줄마다 항목이 하나라 빈 줄이 없어도 뜻은 그대로다.
+///
+/// **장소 상세와 코스 응답이 함께 쓴다.** 두 경로가 다른 규칙으로 걸러내면
+/// 같은 장소에 대해 행 배지와 시트가 다른 문구를 보인다(#329)
+String? scheduleText(Object? value) {
+  final s = (value as String?)?.replaceAll(_blankLines, '\n').trim();
+  return (s == null || s.isEmpty) ? null : s;
+}
+
 ({String? useTime, String? restDate}) poiScheduleOf(Map<String, dynamic> data) {
   Map<String, dynamic>? block(String key) => data[key] as Map<String, dynamic>?;
-
-  // **빈 문자열은 없는 값으로 본다.** 서버가 최상위를 `""`로 채워 보내면
-  // null만 걸러서는 그 빈 값이 이겨, 블록에 든 진짜 운영시간이 묻힌다.
-  //
-  // **빈 줄은 접는다.** TourAPI 원문에 `<br><br>`이 흔해(문단 여백) 서버가
-  // 연속 빈 줄을 하나로 줄여 주지만, 그 하나가 "- 3월~10월 …" 과
-  // "- 11월 …" 사이에 남아 정보 상자에서 줄 하나가 통째로 빈다(QA 9/16).
-  // 줄마다 항목이 하나라 빈 줄이 없어도 뜻은 그대로다
-  String? text(Object? value) {
-    final s = (value as String?)?.replaceAll(_blankLines, '\n').trim();
-    return (s == null || s.isEmpty) ? null : s;
-  }
+  const text = scheduleText;
 
   final food = block('food');
   final stay = block('stay');

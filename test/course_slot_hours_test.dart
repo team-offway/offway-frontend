@@ -129,7 +129,11 @@ void main() {
   group('응답 파싱', () {
     /// 서버가 실제로 내려주는 모양 — `CourseResponse` 의 슬롯에 운영 정보가
     /// 함께 실린다. 값이 없는 장소는 키가 아예 안 온다(NON_NULL)
-    Map<String, dynamic> body({required bool withHours}) => {
+    Map<String, dynamic> body({
+      required bool withHours,
+      String useTime = '09:00 - 18:00',
+      String restDate = '매주 월요일',
+    }) => {
       'status': 200,
       'data': {
         'courseId': 1,
@@ -151,8 +155,8 @@ void main() {
                 'kind': 'SIGHT',
                 'poiContentId': '126508',
                 if (withHours) ...{
-                  'useTime': '09:00 - 18:00',
-                  'restDate': '매주 월요일',
+                  'useTime': useTime,
+                  'restDate': restDate,
                   'openingStatus': 'CLOSED_TODAY',
                 },
               },
@@ -166,13 +170,26 @@ void main() {
       'pageResponse': null,
     };
 
-    CourseRepository repositoryFor({required bool withHours}) =>
-        CourseRepository(
-          Dio(BaseOptions())
-            ..httpClientAdapter = _FixedResponseAdapter(
-              body(withHours: withHours),
-            ),
-        );
+    CourseRepository repositoryFor({
+      required bool withHours,
+      String useTime = '09:00 - 18:00',
+      String restDate = '매주 월요일',
+    }) => CourseRepository(
+      Dio(BaseOptions())
+        ..httpClientAdapter = _FixedResponseAdapter(
+          body(withHours: withHours, useTime: useTime, restDate: restDate),
+        ),
+    );
+
+    /// 첫 장소 하나를 꺼낸다
+    Future<Map<String, dynamic>> firstPlace(CourseRepository r) async {
+      final detail = await r.savedCourseDetail('1');
+      return (((detail!.course['days'] as List).first
+                      as Map<String, dynamic>)['places']
+                  as List)
+              .first
+          as Map<String, dynamic>;
+    }
 
     test('코스 응답의 운영 정보를 장소에 담는다', () async {
       // 서버가 보내는데 파싱에서 버리면 화면이 쓸 방법이 없다 — 예전이 그랬다
@@ -188,6 +205,30 @@ void main() {
       expect(first['useTime'], '09:00 - 18:00');
       expect(first['restDate'], '매주 월요일');
       expect(first['openingStatus'], 'CLOSED_TODAY');
+    });
+
+    test('빈 문자열·공백은 값으로 치지 않는다 — 상세로 물러날 수 있어야 한다', () async {
+      // 서버가 최상위를 `""` 로 채워 보내는 일이 실제로 있었다
+      // (`poiScheduleOf` 주석). 키가 남으면 화면이 "값이 있다" 로 보고
+      // 상세로 물러나지 않는데, 그 빈 값으로는 안내를 못 만든다 —
+      // 휴무일인데 배지가 사라진다(#329)
+      final first = await firstPlace(
+        repositoryFor(withHours: true, useTime: '', restDate: '   '),
+      );
+
+      expect(first.containsKey('useTime'), isFalse);
+      expect(first.containsKey('restDate'), isFalse);
+    });
+
+    test('연속 빈 줄은 접는다 — 장소 상세와 같은 규칙', () async {
+      final first = await firstPlace(
+        repositoryFor(
+          withHours: true,
+          useTime: '- 3월~10월 09:00\n\n\n- 11월~2월 10:00',
+        ),
+      );
+
+      expect(first['useTime'], '- 3월~10월 09:00\n- 11월~2월 10:00');
     });
 
     test('없는 장소는 키를 만들지 않는다', () async {
