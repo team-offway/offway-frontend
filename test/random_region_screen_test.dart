@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
@@ -106,5 +107,36 @@ void main() {
       find.ancestor(of: circle, matching: find.byType(Transform)),
       findsWidgets,
     );
+  });
+
+  testWidgets('핀이 도는 동안 지도와 비행기를 다시 만들지 않는다', (tester) async {
+    // 핀은 대기 중 쉬지 않고 돈다(`_spin..repeat()`). 그 회전을 보드 전체에서
+    // 들으면 지도 SVG 세 장과 칩 전부가 **매 프레임** 다시 만들어진다 —
+    // 화면을 켜 두기만 해도 초당 60번이다(#312).
+    //
+    // 회전은 핀만 듣고, 그림들은 재사용되어야 한다. 위젯 인스턴스가 그대로인지로
+    // 확인한다 — 인라인으로 되돌리면 프레임마다 새 인스턴스가 나와 깨진다
+    await pump(tester);
+
+    List<Widget> pictures() =>
+        tester.widgetList(find.byType(SvgPicture)).toList(growable: false);
+
+    final before = pictures();
+    expect(before, isNotEmpty, reason: '지도 세 장과 핀의 비행기가 있어야 한다');
+
+    // 핀이 여러 바퀴 돌 만큼 프레임을 민다
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+
+    final after = pictures();
+    expect(after.length, before.length);
+    for (var i = 0; i < before.length; i++) {
+      expect(
+        identical(before[i], after[i]),
+        isTrue,
+        reason: '회전할 때마다 그림을 새로 만들고 있다 — AnimatedBuilder 범위를 확인할 것',
+      );
+    }
   });
 }
