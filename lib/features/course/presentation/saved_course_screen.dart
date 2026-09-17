@@ -1177,16 +1177,26 @@ class _PlaceRow extends ConsumerWidget {
     final isTransitPoint =
         place['kind'] == 'ARRIVAL' || place['kind'] == 'DEPARTURE';
     final contentId = place['poiContentId'] as String?;
-    // 당일에만 장소 운영 정보를 불러 안내 문구를 만든다 (실패하면 조용히 생략)
-    final schedule = showOpeningWarning && contentId != null
+    // **코스 응답에 이미 실려 온 값을 먼저 쓴다**(core CourseResponse).
+    // 예전에는 이걸 두고 장소마다 상세를 따로 받아, 여행 당일 화면이 열릴
+    // 때마다 하루 장소 수만큼 요청이 나갔다(#326)
+    final servedUseTime = place['useTime'] as String?;
+    final servedRestDate = place['restDate'] as String?;
+    final hasServed = servedUseTime != null || servedRestDate != null;
+
+    // 코스 응답에 없는 장소만 상세로 물러난다 — 옛 응답이거나 서버가 아직
+    // 운영시간을 못 받은 장소다
+    final fetched = showOpeningWarning && contentId != null && !hasServed
         ? ref.watch(poiScheduleProvider(contentId)).value
         : null;
-    final warning = schedule == null
+
+    final warning = !showOpeningWarning
         ? null
-        : openingWarning(
-            useTime: schedule.useTime,
-            restDate: schedule.restDate,
-          );
+        : hasServed
+        ? openingWarning(useTime: servedUseTime, restDate: servedRestDate)
+        : fetched == null
+        ? null
+        : openingWarning(useTime: fetched.useTime, restDate: fetched.restDate);
 
     final row = _buildRow(
       imageUrl,
