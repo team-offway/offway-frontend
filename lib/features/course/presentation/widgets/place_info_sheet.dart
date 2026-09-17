@@ -20,8 +20,12 @@ import 'place_content_badge.dart';
 /// **실패는 보관하지 않는다.** `keepAlive` 를 성공한 뒤에 걸어, 통신이 한 번
 /// 실패했다고 그 장소의 안내가 세션 내내 비어 있지 않게 한다.
 ///
-/// TODO(server): 코스 상세 응답의 각 장소에 `useTime`·`restDate` 가 실리면
-/// 이 조회 자체가 없어진다 — 코스 한 번으로 끝난다(#315).
+/// **코스 응답에 값이 실려 온 장소는 여기까지 오지 않는다**(#326·#330) —
+/// [servedScheduleOf] 가 먼저 답한다. 이 조회는 그것이 없는 장소의 폴백이다:
+/// 옛 응답, 서버가 아직 운영시간을 못 받은 장소, 그리고 숙소다.
+///
+/// 숙소는 서버 `OpeningHours` 가 `useTime`·`restDate` 두 값만 담아 체크인·
+/// 체크아웃을 싣지 못한다 — 그 합성은 `poiScheduleOf` 가 장소 상세에서 한다
 final poiScheduleProvider = FutureProvider.autoDispose
     .family<({String? useTime, String? restDate}), String>((
       ref,
@@ -33,6 +37,24 @@ final poiScheduleProvider = FutureProvider.autoDispose
       ref.keepAlive();
       return schedule;
     });
+
+/// 코스 응답에 **이미 실려 온** 운영 정보. 없으면 null — 그때만 장소 상세로
+/// 물러난다.
+///
+/// **행 배지와 시트가 이 하나를 같이 쓴다.** 두 곳에 같은 판단이 따로 살면
+/// 어긋난다 — 실제로 #326 이 행만 고치고 시트를 놓쳐, 같은 장소에 배지와
+/// 시트가 다른 문구를 보일 수 있었다(#330).
+///
+/// 파싱에서 빈 문자열·공백을 이미 걸렀으므로(`scheduleText`, #329) 여기서
+/// 키가 있다는 것은 **쓸 수 있는 값이 있다**는 뜻이다
+({String? useTime, String? restDate})? servedScheduleOf(
+  Map<String, dynamic> place,
+) {
+  final useTime = place['useTime'] as String?;
+  final restDate = place['restDate'] as String?;
+  if (useTime == null && restDate == null) return null;
+  return (useTime: useTime, restDate: restDate);
+}
 
 /// 장소를 눌렀을 때 운영 정보 시트를 띄운다.
 ///
@@ -124,13 +146,16 @@ class PlaceInfoSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // **코스 응답에 실려 온 값이 먼저다**(#330). 행 배지와 같은 규칙을 쓴다 —
+    // 두 곳이 다른 값을 보이면 같은 장소인데 말이 갈린다
+    final served = servedScheduleOf(place);
     final contentId = place['poiContentId'] as String?;
-    final schedule = contentId == null
+    final schedule = served != null || contentId == null
         ? null
         : ref.watch(poiScheduleProvider(contentId));
     final loading = schedule?.isLoading ?? false;
-    final useTime = schedule?.value?.useTime;
-    final restDate = schedule?.value?.restDate;
+    final useTime = served?.useTime ?? schedule?.value?.useTime;
+    final restDate = served?.restDate ?? schedule?.value?.restDate;
     final now = DateTime.now();
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 

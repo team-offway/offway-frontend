@@ -126,6 +126,77 @@ void main() {
     expect(find.text('운영시간 확인'), findsOneWidget);
   });
 
+  testWidgets('시트도 같은 값을 쓴다 — 눌러도 상세를 부르지 않는다', (tester) async {
+    // 행 배지만 고치고 시트를 놓치면, 같은 장소인데 배지와 시트가 다른
+    // 문구를 보인다. 둘이 같은 함수를 쓰는지 여기서 잠근다(#330)
+    var fetched = false;
+    tester.view.physicalSize = const Size(402 * 3, 1800 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          poiScheduleProvider('126508').overrideWith((ref) async {
+            fetched = true;
+            return (useTime: '상세에서 온 값', restDate: null);
+          }),
+          savedCourseDetailProvider('1').overrideWith(
+            (ref) async => (
+              saved: {
+                'id': '1',
+                'regionName': '정선군',
+                'travelDate': iso(today),
+                'startDate': iso(today),
+                'endDate': iso(today),
+                'shareToken': 'abc',
+                'leaveDeducted': false,
+                'consumedLeaveDays': 1.0,
+              },
+              course: {
+                'regionName': '정선군',
+                'durationDays': 1,
+                'travelDate': iso(today),
+                'days': [
+                  {
+                    'day': 1,
+                    'date': iso(today),
+                    'dayOfWeek': '월',
+                    'places': [
+                      {
+                        'name': '삼탄아트마인',
+                        'category': '관광지',
+                        'kind': 'SIGHT',
+                        'poiContentId': '126508',
+                        'useTime': '09:00 - 18:00',
+                        'restDate': '매주 월요일',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const SavedCourseScreen(savedId: '1'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // 장소를 눌러 시트를 연다
+    await tester.tap(find.text('삼탄아트마인'));
+    await tester.pumpAndSettle();
+
+    // 코스 응답 값이 뜬다 — 상세에서 온 값이 아니다
+    expect(find.text('09:00 - 18:00'), findsOneWidget);
+    expect(find.text('상세에서 온 값'), findsNothing);
+    expect(fetched, isFalse, reason: '시트가 이미 받아 둔 값을 두고 상세를 불렀다');
+  });
+
   group('응답 파싱', () {
     /// 서버가 실제로 내려주는 모양 — `CourseResponse` 의 슬롯에 운영 정보가
     /// 함께 실린다. 값이 없는 장소는 키가 아예 안 온다(NON_NULL)
