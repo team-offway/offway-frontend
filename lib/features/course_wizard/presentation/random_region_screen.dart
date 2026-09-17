@@ -76,6 +76,24 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
 
   final _random = math.Random();
 
+  /// 지도 세 겹 — **한 번 만들어 계속 쓴다.**
+  ///
+  /// 어느 애니메이션과도 무관한데 `build` 마다 새로 만들면 그때마다 위젯이
+  /// 갈리고 element 를 다시 맞춰야 한다. 파싱된 그림 자체는 flutter_svg 가
+  /// 전역 캐시하므로 다시 읽지는 않지만, 위젯을 새로 만드는 비용은 남는다
+  static final _mapBase = SvgPicture.asset(
+    'assets/images/random_korea_base.svg',
+    fit: BoxFit.fill,
+  );
+  static final _mapOverlay = SvgPicture.asset(
+    'assets/images/random_korea_overlay.svg',
+    fit: BoxFit.fill,
+  );
+  static final _mapJeju = SvgPicture.asset(
+    'assets/images/random_jeju.svg',
+    fit: BoxFit.fill,
+  );
+
   _Phase _phase = _Phase.idle;
   Offset _pinPos = RandomBoard.pinRest;
 
@@ -375,28 +393,32 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
         alignment: Alignment.topCenter,
         child: SizedBox.fromSize(
           size: RandomBoard.size,
+          // **`_spin` 을 여기서 듣지 않는다.** 핀은 대기 중 쉬지 않고 도는데
+          // (`_spin..repeat()`), 이 자리에서 들으면 지도 SVG 세 장과 칩 전부가
+          // 매 프레임 다시 만들어진다 — 화면을 켜 두기만 해도 초당 60번이다.
+          // 회전이 필요한 것은 핀 하나뿐이라 `_buildPin` 이 스스로 듣는다.
+          //
+          // `_aim` 도 조준선 전용이라 그 안에서 듣는다. 여기 남는 것은 지도를
+          // 당기는 `_zoom` 뿐이고, 이건 착지할 때만 2초 돈다
           child: AnimatedBuilder(
-            animation: Listenable.merge([_spin, _aim, _zoom]),
+            animation: _zoom,
             builder: (context, _) => Transform(
               transform: _zoomMatrix(),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   // 지도는 두 겹이다 — 본토 실루엣(base) 위에 시도 조각(overlay).
-                  // 내려앉은 시군구의 연두 면은 그 위에 그린다
+                  // 내려앉은 시군구의 연두 면은 그 위에 그린다.
+                  //
+                  // 세 장 모두 한 번 만들어 재사용한다 — 어느 애니메이션과도
+                  // 무관한데 매번 새로 만들면 element 를 계속 갈아 끼운다
                   Positioned.fromRect(
                     rect: RandomBoard.mapRect,
-                    child: SvgPicture.asset(
-                      'assets/images/random_korea_base.svg',
-                      fit: BoxFit.fill,
-                    ),
+                    child: _mapBase,
                   ),
                   Positioned.fromRect(
                     rect: RandomBoard.mapRect,
-                    child: SvgPicture.asset(
-                      'assets/images/random_korea_overlay.svg',
-                      fit: BoxFit.fill,
-                    ),
+                    child: _mapOverlay,
                   ),
                   if (_landedRings case final rings?)
                     Positioned.fill(
@@ -406,23 +428,25 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                     ),
                   Positioned.fromRect(
                     rect: RandomBoard.jejuRect,
-                    child: SvgPicture.asset(
-                      'assets/images/random_jeju.svg',
-                      fit: BoxFit.fill,
-                    ),
+                    child: _mapJeju,
                   ),
-                  for (final chip in chips) _buildChip(chip),
+                  // 반짝임 판정에 쓸 시각을 **한 번만** 읽는다 — 칩마다
+                  // DateTime.now() 를 부르면 칩 수만큼 곱해진다
+                  for (final chip in chips) _buildChip(chip, DateTime.now()),
                   if (_phase == _Phase.aiming)
                     Positioned.fill(
                       child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _AimLinePainter(
-                            from: _pinPos,
-                            direction: _direction,
-                            startGap: RandomBoard.pinDiameter / 2 + 6,
-                            length:
-                                _aimLength *
-                                Curves.easeOut.transform(_aim.value),
+                        child: AnimatedBuilder(
+                          animation: _aim,
+                          builder: (context, _) => CustomPaint(
+                            painter: _AimLinePainter(
+                              from: _pinPos,
+                              direction: _direction,
+                              startGap: RandomBoard.pinDiameter / 2 + 6,
+                              length:
+                                  _aimLength *
+                                  Curves.easeOut.transform(_aim.value),
+                            ),
                           ),
                         ),
                       ),
@@ -471,9 +495,10 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
       ..translateByDouble(-landed.center.dx, -landed.center.dy, 0, 1);
   }
 
-  Widget _buildChip(MapChip chip) {
-    final flashing =
-        _flashUntil[chip.regionId]?.isAfter(DateTime.now()) ?? false;
+  /// [now] 는 호출부가 한 번 읽어 넘긴다 — 칩마다 `DateTime.now()` 를 부르면
+  /// 후보 지역 수만큼 곱해진다
+  Widget _buildChip(MapChip chip, DateTime now) {
+    final flashing = _flashUntil[chip.regionId]?.isAfter(now) ?? false;
     final landed = identical(chip, _landed);
     // 내려앉으면 그 칩만 남고 나머지는 사라진다(시안 착지 화면)
     final hidden = _landed != null && !landed;
@@ -523,9 +548,6 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
     // 바깥 상자일 뿐이다). 내려앉으면 칩이 파랗게 굳고 핀은 사라진다 —
     // 남아 있으면 지역을 가린다
     final landed = _phase == _Phase.landing || _phase == _Phase.result;
-    final heading = _phase == _Phase.idle
-        ? _spin.value * 2 * math.pi
-        : _heading;
     const d = RandomBoard.pinDiameter;
     return Positioned(
       left: _pinPos.dx - d / 2,
@@ -550,8 +572,14 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
             // 에셋(vuesax direct-right)은 오른쪽을 보는 종이비행기다 — 90°를
             // 빼야 위를 향하고, 거기에 조준 방향을 더한다. 조준 점선이 이
             // 앞머리에서 시작한다
-            child: Transform.rotate(
-              angle: heading - math.pi / 2,
+            // **회전만 여기서 듣는다.** 대기 중 쉬지 않고 도는 것은 `_spin`
+            // 하나인데, 이걸 보드 전체에서 들으면 지도와 칩이 매 프레임 다시
+            // 만들어진다. 도는 것은 핀뿐이므로 핀이 스스로 듣는다.
+            //
+            // 원과 비행기는 `child:` 로 빼 **한 번만** 만든다 — 각도만 바뀌지
+            // 내용은 그대로다
+            child: AnimatedBuilder(
+              animation: _spin,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: AppColors.backgroundNormal,
@@ -570,6 +598,17 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
                     height: d * 0.63,
                   ),
                 ),
+              ),
+              // 대기 중에는 `_spin` 이 각도를 만들고, 누른 뒤에는 그때 멈춘
+              // 방향(`_heading`)으로 고정된다 — 그 단계에서는 `_spin` 이 멈춰
+              // 있어 이 builder 도 다시 불리지 않는다
+              builder: (context, child) => Transform.rotate(
+                angle:
+                    (_phase == _Phase.idle
+                        ? _spin.value * 2 * math.pi
+                        : _heading) -
+                    math.pi / 2,
+                child: child,
               ),
             ),
           ),
