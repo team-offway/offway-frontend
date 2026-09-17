@@ -105,4 +105,74 @@ void main() {
 
     expect(find.text('숙박 할인'), findsOneWidget);
   });
+
+  testWidgets('이름이 실려 오면 정책 상세를 다시 부르지 않는다', (tester) async {
+    // 지역별 혜택 색인이 정책 상세를 모을 때 이름·설명을 함께 싣는다.
+    // 그런데 카드가 그것을 안 보고 같은 정책을 또 불러, 카드 수만큼
+    // `GET /policies/{id}` 가 더 나갔다(#313)
+    var fetched = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          policyDetailProvider(1).overrideWith((ref) async {
+            fetched = true;
+            return policy;
+          }),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(
+            body: RegionBenefitCard(
+              benefit: RegionBenefit(
+                text: '여행경비 50% 환급',
+                policyId: 1,
+                policyName: '지역사랑 휴가지원(반값여행)',
+                benefitDetail: '여행경비의 50%를 지역화폐로 환급',
+                applyUrl: 'https://korean.visitkorea.or.kr',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // 첫 프레임부터 다 그려져 있다 — 기다릴 것이 없다
+    expect(find.text('여행경비 50% 환급'), findsOneWidget);
+    expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
+    expect(find.text('여행경비의 50%를 지역화폐로 환급'), findsOneWidget);
+    expect(find.byType(GestureDetector), findsOneWidget);
+
+    expect(fetched, isFalse, reason: '이미 받아 둔 값을 두고 정책 상세를 다시 불렀다');
+  });
+
+  testWidgets('이름이 없으면 그때만 정책 상세로 채운다', (tester) async {
+    // 서버가 `benefits[]` 를 직접 준 경우는 색인을 거치지 않아 이름이 빈다.
+    // 그 경로는 그대로 물러나 채운다
+    var fetched = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          policyDetailProvider(1).overrideWith((ref) async {
+            fetched = true;
+            return policy;
+          }),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(
+            body: RegionBenefitCard(
+              benefit: RegionBenefit(text: '여행경비 50% 환급', policyId: 1),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(fetched, isTrue);
+    expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
+  });
 }

@@ -9,6 +9,7 @@ class RegionBenefit {
     this.policyId,
     this.applyUrl,
     this.policyName,
+    this.benefitDetail,
   });
 
   /// 혜택 목록(`benefits[]`) → 화면이 읽는 형태. 목록이 아니면 빈 목록이다
@@ -37,6 +38,7 @@ class RegionBenefit {
       policyId: (map['policyId'] as num?)?.toInt(),
       applyUrl: map['applyUrl'] as String?,
       policyName: map['policyName'] as String?,
+      benefitDetail: map['benefitDetail'] as String?,
     );
   }
 
@@ -56,4 +58,11 @@ class RegionBenefit {
   /// 정책 상세에서 모은 목록([RegionPolicyIndex])에만 실린다 — 고르는 시트가
   /// 뱃지 문구만으로는 무엇인지 알기 어려워 이름을 함께 보여준다
   final String? policyName;
+
+  /// 한 줄 설명('숙박비의 50%를 최대 10만원까지'). [policyName]과 같은
+  /// 자리에서 온다 — 혜택 카드가 이름 아래 그린다.
+  ///
+  /// **이 값이 있으면 카드가 정책 상세를 다시 부르지 않는다.** 색인이 이미
+  /// 받아 둔 응답에서 온 값이라, 버리면 카드마다 같은 요청이 한 번씩 더 나갔다
+  final String? benefitDetail;
 }
