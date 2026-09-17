@@ -288,12 +288,13 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       // 날짜가 없으면 정하러 가는 링크가 날짜 자리를 대신한다
                       GestureDetector(
                         onTap: () async {
+                          // **여기서 다시 읽지 않는다.** 날짜를 실제로 바꾼
+                          // 경우에만 일정 화면이 스스로 무효화한다 — 이 화면은
+                          // push 중에도 살아 있어 그 무효화가 바로 먹는다.
+                          // 양쪽이 하면 같은 `GET /courses/{id}` 가 두 번 나가고,
+                          // 날짜를 안 바꾸고 뒤로만 나와도 한 번 나갔다(#316)
                           await context.push(
                             AppRoutes.courseSchedulePath(widget.savedId),
-                          );
-                          // 일정 화면에서 날짜가 바뀌었을 수 있으니 다시 불러온다
-                          ref.invalidate(
-                            savedCourseDetailProvider(widget.savedId),
                           );
                         },
                         behavior: HitTestBehavior.opaque,
@@ -748,9 +749,9 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     if (!mounted) return;
     switch (action) {
       case 'reschedule':
+        // 날짜를 바꾼 경우에만 일정 화면이 스스로 무효화한다 — 위 '날짜 변경'
+        // 진입점과 같다(#316)
         await context.push(AppRoutes.courseSchedulePath(widget.savedId));
-        // 일정 화면에서 날짜가 바뀌었을 수 있으니 상세를 다시 불러온다
-        ref.invalidate(savedCourseDetailProvider(widget.savedId));
       case 'delete':
         await _confirmDelete();
     }
