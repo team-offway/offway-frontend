@@ -12,9 +12,11 @@ import '../domain/region_benefit.dart';
 /// 뱃지 + 정책 이름 + 한 줄 설명, 오른쪽 위에 링크 아이콘. 누르면 신청
 /// 페이지가 앱 안 브라우저로 열린다.
 ///
-/// **이름과 설명은 정책 상세를 한 번 더 불러 받는다.** 지역 상세의 `benefit`은
-/// 뱃지 문구(`text`)와 `policyId`만 주는데, 카드에 그릴 이름(`name`)과
-/// 설명(`benefitDetail`)이 거기 없다. 아직 안 온 동안에는 뱃지와 이름 자리를
+/// **이름과 설명은 이미 받아 둔 값을 쓴다.** 지역별 혜택 색인
+/// ([RegionPolicyIndex])이 정책 상세를 모을 때 이름·설명을 함께 싣는다.
+///
+/// 색인을 거치지 않고 온 혜택(서버가 `benefits[]`를 직접 준 경우)만 이름이
+/// 비는데, 그때만 정책 상세를 따로 부른다. 아직 안 온 동안에는 이름 자리를
 /// 비워 두지 않고 뱃지만 먼저 그린다 — 이미 아는 값이라 기다릴 이유가 없다.
 class RegionBenefitCard extends ConsumerWidget {
   const RegionBenefitCard({super.key, required this.benefit});
@@ -24,17 +26,21 @@ class RegionBenefitCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final policyId = benefit.policyId;
-    final policy = policyId == null
-        ? null
-        : ref.watch(policyDetailProvider(policyId)).value;
+    // **이름이 실려 왔으면 그것으로 끝이다.** 색인이 정책 상세에서 이름·설명·
+    // 신청 주소를 모두 담아 오므로 같은 정책을 다시 부를 이유가 없다 —
+    // 예전에는 카드마다 `GET /policies/{id}` 가 한 건씩 더 나갔다(#313)
+    final needsDetail = benefit.policyName == null && policyId != null;
+    final policy = needsDetail
+        ? ref.watch(policyDetailProvider(policyId)).value
+        : null;
 
     // 신청 주소는 지역 상세에 실려 오는 값이 먼저다(core #418). 아직 안 적은
     // 정책이 있어 null일 수 있고, 그때는 정책 상세의 값으로 물러난다
     final applyUri = safeExternalUri(
       benefit.applyUrl ?? policy?['applyUrl'] as String?,
     );
-    final name = policy?['name'] as String?;
-    final detail = policy?['benefitDetail'] as String?;
+    final name = benefit.policyName ?? policy?['name'] as String?;
+    final detail = benefit.benefitDetail ?? policy?['benefitDetail'] as String?;
 
     final card = Container(
       width: double.infinity,
