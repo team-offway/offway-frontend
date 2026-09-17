@@ -321,6 +321,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                         end,
                         dDay,
                         visited: saved['leaveDeducted'] as bool? ?? false,
+                        // 차감한 코스면 서버가 확정한 값이 상세에 실려 온다 —
+                        // 그때는 available-time 을 다시 부르지 않는다
+                        consumedLeaveDays:
+                            saved['consumedLeaveDays'] as double?,
                       ),
                     ],
                     const SizedBox(height: 28),
@@ -587,11 +591,17 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     DateTime end,
     int dDay, {
     required bool visited,
+    double? consumedLeaveDays,
   }) {
-    // 서버가 평일−공휴일로 계산 (실패 시 provider가 로컬 근사로 폴백)
-    final consumed = ref
-        .watch(tripConsumedLeaveProvider((start: start, end: end)))
-        .value;
+    // **상세에 실려 온 값이 먼저다**(core #322). 차감한 코스면 서버가 확정한
+    // 실제 차감량이 이미 와 있어, 그걸 두고 다시 물으면 `POST /leaves/
+    // available-time` 이 화면에 들어올 때마다 한 번씩 더 나간다(#314).
+    // 공유 이미지 경로(`_consumedLeave`)가 쓰는 규칙과 같다.
+    //
+    // 없을 때만 서버가 평일−공휴일로 계산 (실패 시 provider 가 로컬 근사로 폴백)
+    final consumed =
+        consumedLeaveDays ??
+        ref.watch(tripConsumedLeaveProvider((start: start, end: end))).value;
     return Row(
       children: [
         if (consumed != null) ...[
