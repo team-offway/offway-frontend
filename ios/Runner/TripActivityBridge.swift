@@ -18,12 +18,32 @@ enum TripActivityBridge {
     /// Dart 를 되부를 때 쓴다 — 푸시 토큰이 나오면 이 채널로 올린다
     private static var channel: FlutterMethodChannel?
 
+    /// push-to-start 토큰 관찰 — 앱이 사는 동안 하나만 돈다
+    private static var pushToStartWatcher: Task<Void, Never>?
+
+    /// 아직 Dart 로 넘기지 못한 기기 토큰.
+    ///
+    /// **네이티브가 Dart 보다 먼저 뜬다.** 이 다리는 `didFinishLaunching` 에서
+    /// 걸리는데 Dart 쪽 수신자는 위젯 트리가 선 뒤에 걸린다. 그 사이에 올려
+    /// 보내면 Flutter 가 버퍼링하지 않아 **조용히 사라진다** — 토큰은 바뀔
+    /// 때만 다시 오므로 그 실행에서는 영영 등록하지 못한다.
+    ///
+    /// 그래서 받아 두고, Dart 가 준비됐다고 말할 때 넘긴다
+    private static var pendingPushToStartToken: String?
+
+    /// Dart 수신자가 걸렸는가 — 서기 전에는 담아만 둔다
+    private static var isDartReady = false
+
     static func register(with controller: FlutterViewController) {
         let channel = FlutterMethodChannel(
             name: channelName,
             binaryMessenger: controller.binaryMessenger
         )
         self.channel = channel
+        // 엔진이 새로 뜨면(핫 리스타트 포함) Dart 수신자도 사라진다 —
+        // 준비 표시를 내려 다음 토큰을 담아 두게 한다
+        isDartReady = false
+        watchPushToStartToken()
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "isAvailable":
@@ -40,6 +60,8 @@ enum TripActivityBridge {
                 markWidgetSignedIn(result: result)
             case "clearWidget":
                 clearWidget(result: result)
+            case "pushToStartReady":
+                markDartReady(result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -55,6 +77,56 @@ enum TripActivityBridge {
             "onPushToken",
             arguments: ["courseId": courseId, "token": token]
         )
+    }
+
+    /// Dart 수신자가 섰다 — 담아 둔 토큰이 있으면 지금 넘긴다.
+    ///
+    /// Dart 가 `listenPushToken` 을 건 **직후** 부른다. 이 왕복이 없으면 앱을
+    /// 켜자마자 나온 토큰이 사라진다
+    @MainActor
+    private static func markDartReady(result: FlutterResult) {
+        isDartReady = true
+        if let token = pendingPushToStartToken {
+            pendingPushToStartToken = nil
+            channel?.invokeMethod("onPushToStartToken", arguments: ["token": token])
+        }
+        result(nil)
+    }
+
+    /// **기기**의 push-to-start 토큰이 나왔다 — 서버가 이걸로 카드를 처음
+    /// 띄운다(core #585). 카드 토큰(`onPushToken`)과 달리 코스가 없다.
+    ///
+    /// Dart 가 아직 안 섰으면 **담아 둔다** — 그대로 올려 보내면 Flutter 가
+    /// 버퍼링하지 않아 사라진다
+    @MainActor
+    static func deliverPushToStartToken(_ token: String) {
+        guard isDartReady else {
+            pendingPushToStartToken = token
+            return
+        }
+        channel?.invokeMethod("onPushToStartToken", arguments: ["token": token])
+    }
+
+    /// push-to-start 토큰을 지켜본다 — 앱이 켜지면 바로 시작한다.
+    ///
+    /// **카드가 떠 있지 않아도 나온다.** 그것이 이 토큰의 요점이다 — 서버가
+    /// 이걸 쥐고 있어야 앱을 안 연 사람의 잠금화면에 카드를 *처음* 만들 수
+    /// 있다(core #585). 카드 토큰은 띄운 카드마다 따로 나오지만 이건 기기
+    /// 하나에 하나고, 앱을 지울 때까지 산다.
+    ///
+    /// **iOS 17.2 부터다.** 16.1~17.1 은 카드를 앱이 띄우는 것까지만 되고,
+    /// 그 기기는 예전처럼 앱을 열어야 카드가 뜬다
+    private static func watchPushToStartToken() {
+        guard #available(iOS 17.2, *) else { return }
+        // 채널을 다시 걸어도 관찰은 하나만 — 두 개가 돌면 같은 토큰을 두 번
+        // 올린다(서버가 멱등이라 해는 없지만 부를 이유도 없다)
+        guard pushToStartWatcher == nil else { return }
+        pushToStartWatcher = Task {
+            for await data in Activity<TripActivityAttributes>.pushToStartTokenUpdates {
+                let hex = data.map { String(format: "%02x", $0) }.joined()
+                await TripActivityBridge.deliverPushToStartToken(hex)
+            }
+        }
     }
 
     private static func isAvailable() -> Bool {

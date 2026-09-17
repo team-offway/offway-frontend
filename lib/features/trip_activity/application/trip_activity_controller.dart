@@ -22,8 +22,14 @@ final tripActivityServiceProvider = Provider<TripActivityService>(
 class TripActivityController with WidgetsBindingObserver {
   TripActivityController(this._ref) {
     // 토큰 수신자는 **한 번만** 건다. 카드가 떠야 토큰이 오므로 start()
-    // 전에는 어차피 안 오고, 세션이 끝난 뒤 늦게 온 것은 _stopped 가 거른다
-    _ref.read(tripActivityServiceProvider).listenPushToken(_onPushToken);
+    // 전에는 어차피 안 오고, 세션이 끝난 뒤 늦게 온 것은 _stopped 가 거른다.
+    //
+    // push-to-start 토큰은 다르다 — 카드가 없어도 앱이 켜지면 바로 온다.
+    // 로그인 전에 올 수 있어 여기서는 **보관만** 하고 등록은 세션이 열린
+    // 뒤에 한다(`_registerPushToStart`)
+    _ref
+        .read(tripActivityServiceProvider)
+        .listenPushToken(_onPushToken, onPushToStartToken: _onPushToStartToken);
   }
 
   final Ref _ref;
@@ -45,6 +51,26 @@ class TripActivityController with WidgetsBindingObserver {
   /// 있어, 코스를 갈아타는 도중 내린 코스의 토큰이 늦게 닿을 수 있다
   String? _liveCourseId;
 
+  /// 이 **기기**의 push-to-start 토큰 — 서버가 카드를 처음 띄우는 열쇠다.
+  ///
+  /// 카드와 무관하게 앱이 켜지면 온다. 로그인 전에 올 수 있어 보관해 뒀다가
+  /// 세션이 열리면 등록하고, 로그아웃할 때 **이 값으로 이 기기만** 해제한다
+  /// (전부 해제하면 다른 기기의 잠금화면이 같이 빈다).
+  ///
+  /// 세션이 끝나도 지우지 않는다 — 기기 토큰이라 다음 사람이 로그인해도
+  /// 같은 값이고, iOS 가 다시 주지 않을 수 있다
+  String? _pushToStartToken;
+
+  /// 기기 등록·해제를 **한 줄로 세운다**.
+  ///
+  /// 등록은 기다리지 않고 보내는데 해제는 로그아웃이 기다린다 — 그대로 두면
+  /// 아직 날아가는 중인 PUT 이 DELETE 뒤에 서버에 닿아 **로그아웃한 사람의
+  /// 등록이 되살아난다.** 그러면 다음 정오에 그 기기 잠금화면에 앞사람의
+  /// 여행이 뜬다.
+  ///
+  /// 줄을 세우면 DELETE 가 앞의 PUT 이 끝난 뒤에 나간다
+  Future<void>? _pushToStartOp;
+
   /// 예정 코스 목록 구독 — 앱 안에서 코스를 담거나 지우거나 날짜를 바꾸면
   /// 화면이 목록을 다시 읽는데(invalidate), 그때 위젯·잠금화면도 따라간다.
   /// 이게 없으면 앱을 다시 앞으로 낼 때까지 위젯이 지운 여행을 센다
@@ -58,6 +84,10 @@ class TripActivityController with WidgetsBindingObserver {
     // 로그인 여부는 목록보다 먼저 — 첫 조회가 실패해도 위젯이 "로그인하세요"
     // 로 보이지 않게. 기다리지 않는다
     _ref.read(tripActivityServiceProvider).markWidgetSignedIn();
+    // 로그인 전에 받아 둔 기기 토큰이 있으면 지금 올린다 — 앱을 켜자마자
+    // 오는 값이라 대개 세션보다 먼저다. 이걸 빠뜨리면 이 기기는 앱을 다시
+    // 켤 때까지 서버가 카드를 못 띄운다(core #585)
+    _registerPushToStart();
     // 목록이 새로 읽힐 때마다 맞춘다. 로딩 중은 건너뛴다 — 값이 오면 온다.
     // sync() 는 읽기만 하고 invalidate 하지 않으므로 돌지 않는다
     _courses = _ref.listen(savedCoursesProvider('UPCOMING'), (_, next) {
@@ -84,8 +114,12 @@ class TripActivityController with WidgetsBindingObserver {
     // 앞의 맞추기가 끝나길 기다린다 — 실패했든 말든 순서만 지키면 된다
     await (_syncing ?? Future<void>.value()).catchError((_) {});
     // 서버 등록을 먼저 지운다 — 아직 이 사람의 토큰이 살아 있을 때라야
-    // 요청이 통한다(로그아웃 뒤에는 401 이다)
-    await _unregisterLive();
+    // 요청이 통한다(로그아웃 뒤에는 401 이다).
+    //
+    // 카드 등록과 기기 등록은 **다른 표**다(core #585). 카드 쪽만 지우면
+    // 서버가 내일 정오에 이 기기로 새 카드를 띄운다 — 로그아웃한 사람의
+    // 잠금화면에 앞사람의 여행이 뜬다. 둘은 독립된 왕복이라 같이 보낸다
+    await (_unregisterLive(), _unregisterPushToStart()).wait;
     final service = _ref.read(tripActivityServiceProvider);
     // 위젯도 앞사람의 것이다 — 카드처럼 비운다. 둘은 독립된 왕복이라 같이 보낸다.
     // 돌려주는 값은 **카드**가 내려갔는가다 — 호출부가 그 뜻으로 안내를 띄운다.
@@ -217,6 +251,71 @@ class TripActivityController with WidgetsBindingObserver {
         .catchError((Object e) {
           debugPrint('잠금화면 갱신 토큰을 올리지 못했다: $e');
         });
+  }
+
+  /// 네이티브가 **기기**의 push-to-start 토큰을 올려 보냈다 (core #585).
+  ///
+  /// **카드와 무관하다** — 떠 있는 카드가 없어도 온다. 그래서 `_liveCourseId`
+  /// 와 맞춰 보지 않는다. 앱이 켜지면 iOS 가 곧 주고, 갈아 끼우면 또 준다.
+  ///
+  /// 로그인 전에 올 수 있어 **보관부터** 한다 — 그때 등록하면 JWT 가 없어
+  /// 403 만 남는다. 세션이 열려 있으면 바로 올린다
+  void _onPushToStartToken(String token) {
+    _pushToStartToken = token;
+    if (_stopped || !_started) return;
+    _registerPushToStart();
+  }
+
+  /// 보관해 둔 기기 토큰을 서버에 올린다.
+  ///
+  /// **부르는 쪽은 기다리지 않는다.** 실패하면 서버가 카드를 처음 띄우지
+  /// 못하는 것뿐이고, 앱을 열면 예전처럼 앱이 띄운다. 다음에 앱을 켤 때
+  /// 토큰이 또 오므로 그때 다시 시도된다.
+  ///
+  /// 다만 **해제와는 줄을 맞춘다**(`_pushToStartOp`) — 늦게 닿은 등록이
+  /// 로그아웃을 되돌리면 안 된다
+  void _registerPushToStart() {
+    if (_pushToStartToken == null) return;
+    _pushToStartOp = (_pushToStartOp ?? Future<void>.value()).then((_) async {
+      // 줄을 서는 사이에 세션이 끝났을 수 있다 — 그때는 올리지 않는다.
+      // 여기서 막지 않으면 방금 지운 등록을 다시 만든다
+      final token = _pushToStartToken;
+      if (_stopped || token == null) return;
+      try {
+        await _ref
+            .read(liveActivityRepositoryProvider)
+            .registerPushToStart(token);
+      } on Object catch (e) {
+        debugPrint('push-to-start 토큰을 올리지 못했다: $e');
+      }
+    });
+  }
+
+  /// 이 기기의 push-to-start 등록을 지운다 — 로그아웃.
+  ///
+  /// **이 기기 토큰만 보낸다.** 로그아웃은 기기별로 갈리는데(refreshToken 을
+  /// 보낸다) 전부 풀면 폰에서 로그아웃한 사용자의 태블릿 잠금화면이 같이
+  /// 빈다 — "아무것도 안 했는데 사라졌다" 가 된다.
+  ///
+  /// 토큰을 모르면(iOS 17.2 미만이라 받은 적이 없다) 부르지 않는다 — 등록된
+  /// 적도 없다. 실패는 삼킨다. 탈퇴는 서버가 이벤트로 지우므로 여기서
+  /// 실패해도 남지 않는다
+  Future<void> _unregisterPushToStart() {
+    final token = _pushToStartToken;
+    if (token == null) return Future<void>.value();
+    // **앞의 등록이 끝난 뒤에 나간다.** 먼저 보내면 아직 날아가던 PUT 이
+    // 뒤에 닿아 등록이 되살아난다
+    final op = (_pushToStartOp ?? Future<void>.value()).then((_) async {
+      try {
+        await _ref
+            .read(liveActivityRepositoryProvider)
+            .unregisterPushToStart(token: token);
+      } on Object catch (e) {
+        debugPrint('push-to-start 등록을 지우지 못했다: $e');
+      }
+    });
+    _pushToStartOp = op;
+    return op;
   }
 
   /// 떠 있던 코스의 서버 등록을 지운다.
