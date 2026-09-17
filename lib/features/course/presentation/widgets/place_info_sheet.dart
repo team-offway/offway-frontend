@@ -7,12 +7,32 @@ import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../data/course_repository.dart';
 import 'place_content_badge.dart';
 
-/// 장소 운영 정보 — 여행 당일 휴무일·운영시간 안내에만 조회한다
+/// 장소 운영 정보 — 여행 당일 휴무일·운영시간 안내에만 조회한다.
+///
+/// **한 번 받으면 세션 동안 들고 있는다.** 이 값을 쓰는 자리가 여행 당일
+/// 코스 상세인데, 하루 6~8곳을 화면이 열릴 때마다 각각 받아 왔다. 날짜 탭을
+/// 오가거나 화면을 나갔다 들어와도 그만큼 다시 나갔다(#315).
+///
+/// 운영시간·휴무일은 하루 사이에 바뀌는 값이 아니라 다시 물을 이유가 없다.
+/// 보관하는 것도 두 문자열뿐이다 — 응답 자체는 장소 상세 전문이지만
+/// `poiScheduleOf` 가 필요한 두 칸만 뽑는다.
+///
+/// **실패는 보관하지 않는다.** `keepAlive` 를 성공한 뒤에 걸어, 통신이 한 번
+/// 실패했다고 그 장소의 안내가 세션 내내 비어 있지 않게 한다.
+///
+/// TODO(server): 코스 상세 응답의 각 장소에 `useTime`·`restDate` 가 실리면
+/// 이 조회 자체가 없어진다 — 코스 한 번으로 끝난다(#315).
 final poiScheduleProvider = FutureProvider.autoDispose
-    .family<({String? useTime, String? restDate}), String>(
-      (ref, contentId) =>
-          ref.watch(courseRepositoryProvider).poiSchedule(contentId),
-    );
+    .family<({String? useTime, String? restDate}), String>((
+      ref,
+      contentId,
+    ) async {
+      final schedule = await ref
+          .watch(courseRepositoryProvider)
+          .poiSchedule(contentId);
+      ref.keepAlive();
+      return schedule;
+    });
 
 /// 장소를 눌렀을 때 운영 정보 시트를 띄운다.
 ///
