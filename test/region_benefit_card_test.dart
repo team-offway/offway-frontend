@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
+import 'package:offway/features/policy/data/region_policies_provider.dart';
 import 'package:offway/features/policy/domain/region_benefit.dart';
 import 'package:offway/features/policy/presentation/region_benefit_card.dart';
 
@@ -145,6 +146,53 @@ void main() {
     expect(find.byType(GestureDetector), findsOneWidget);
 
     expect(fetched, isFalse, reason: '이미 받아 둔 값을 두고 정책 상세를 다시 불렀다');
+  });
+
+  testWidgets('지역 응답의 대표 혜택도 상세를 다시 부르지 않는다', (tester) async {
+    // 지역 응답의 혜택 값에는 이름이 없어, `benefitsForCard` 가 색인에서
+    // 채워 준다. 그게 빠지면 **대표 카드만** 정책 상세를 다시 불렀다(#313 후속)
+    final index = buildRegionPolicyIndex([
+      {
+        'id': 1,
+        'type': 'T1',
+        'name': '지역사랑 휴가지원(반값여행)',
+        'badgeText': '여행경비 50% 환급',
+        'benefitDetail': '여행경비의 50%를 지역화폐로 환급',
+        'applyUrl': 'https://korean.visitkorea.or.kr',
+        'period': null,
+        'regions': [
+          {'regionId': 15, 'name': '영월군'},
+        ],
+      },
+    ], DateTime(2026, 9, 17));
+    // 홈·지역 상세가 주는 모양 그대로
+    final card = {
+      'id': '15',
+      'benefit': {'text': '여행경비 50% 환급', 'policyId': 1},
+    };
+    final representative = benefitsForCard(card, index).first;
+
+    var fetched = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          policyDetailProvider(1).overrideWith((ref) async {
+            fetched = true;
+            return policy;
+          }),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(body: RegionBenefitCard(benefit: representative)),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
+    expect(find.text('여행경비의 50%를 지역화폐로 환급'), findsOneWidget);
+    expect(fetched, isFalse, reason: '대표 혜택 카드가 정책 상세를 다시 불렀다');
   });
 
   testWidgets('이름이 없으면 그때만 정책 상세로 채운다', (tester) async {
