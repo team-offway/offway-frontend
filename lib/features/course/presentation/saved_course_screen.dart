@@ -61,16 +61,23 @@ final savedCourseDetailProvider = FutureProvider.autoDispose
 /// 가까우면 날씨가 붙고, 당일에는 기온까지 보여준다. 지도는 탭하면 크게
 /// 펼쳐지고 ▲로 되돌린다.
 class SavedCourseScreen extends ConsumerStatefulWidget {
-  const SavedCourseScreen({super.key, required this.savedId});
+  const SavedCourseScreen({super.key, required this.savedId, this.initialDay});
 
   final String savedId;
+
+  /// 열자마자 선택해 둘 일자 — 위젯·잠금화면이 '2일차'를 보여 주고 있었으면
+  /// 눌렀을 때도 2일차다(#338). 없으면 첫날.
+  ///
+  /// **코스 길이를 넘는 값은 첫날로 되돌린다.** 코스를 받아야 길이를 알므로
+  /// 여기서 막지 않고, 일자를 고르는 자리에서 거른다
+  final int? initialDay;
 
   @override
   ConsumerState<SavedCourseScreen> createState() => _SavedCourseScreenState();
 }
 
 class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
-  int _selectedDay = 1;
+  late int _selectedDay = widget.initialDay ?? 1;
 
   /// 지도를 크게 펼친 상태(지도뷰)인지
   bool _mapExpanded = false;
@@ -111,6 +118,22 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+  }
+
+  /// 보고 있는 화면에 **다른 일자**가 오면 따라간다.
+  ///
+  /// 코스 상세를 열어 둔 채 위젯을 누르면 `go` 로 같은 경로에 쿼리만 바뀌어
+  /// 들어온다. go_router 는 그때 화면을 새로 만들지 않고 이 State 를 그대로
+  /// 쓰므로, 여기서 받지 않으면 2일차를 눌러도 1일차가 남는다(#338).
+  ///
+  /// **사용자가 탭으로 고른 값은 건드리지 않는다** — 링크가 실제로 바뀐
+  /// 때만 맞춘다
+  @override
+  void didUpdateWidget(covariant SavedCourseScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDay != widget.initialDay) {
+      _selectedDay = widget.initialDay ?? 1;
+    }
   }
 
   /// 이 코스에 어떤 안내가 남았는지 읽는다.
@@ -367,7 +390,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CourseDayTabs(
                   durationDays: durationDays,
-                  selectedDay: _selectedDay,
+                  // 고른 값이 아니라 **실제로 펴 놓은 일자**를 가리킨다 —
+                  // 딥링크로 코스 길이를 넘는 값이 와도 본문(첫날)과
+                  // 탭이 어긋나지 않는다
+                  selectedDay: day['day'] as int,
                   onSelect: (d) => setState(() => _selectedDay = d),
                 ),
               ),

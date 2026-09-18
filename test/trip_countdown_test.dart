@@ -159,15 +159,15 @@ void main() {
       expect(picked, isNull);
     });
 
-    test('D-5 부터 띄운다 — 그 밖은 고르지 않는다', () {
+    test('D-7 부터 띄운다 — 그 밖은 고르지 않는다', () {
       // 기본값을 못 박는다. 경계가 조용히 늘어나면 잠금화면에 먼 여행이
-      // 앉아 있게 된다
+      // 앉아 있게 된다. 마이의 위젯 안내도 이 숫자를 적어 두었다(#338)
       expect(
-        TripCountdown.pick([trip(start: DateTime(2026, 9, 25))], now),
+        TripCountdown.pick([trip(start: DateTime(2026, 9, 27))], now),
         isNotNull,
       );
       expect(
-        TripCountdown.pick([trip(start: DateTime(2026, 9, 26))], now),
+        TripCountdown.pick([trip(start: DateTime(2026, 9, 28))], now),
         isNull,
       );
     });

@@ -24,7 +24,7 @@ struct TripActivityWidget: Widget {
                 // 카드를 누르면 그 코스로 — 펼침의 '코스 보기' 와 같은 주소다.
                 // 카드 전체를 Link 로 감싸지 않는다: 잠금화면 카드의 탭은
                 // 시스템이 다루는 자리라 widgetURL 로 목적지만 알려 준다
-                .widgetURL(context.attributes.courseURL)
+                .widgetURL(context.attributes.courseURL(dayNth: context.state.dayNth))
         } dynamicIsland: { context in
             DynamicIsland {
                 // 펼침은 **center 한 덩이**로 넣는다 — leading/trailing 으로
@@ -55,14 +55,18 @@ struct TripActivityWidget: Widget {
 
 @available(iOS 16.1, *)
 extension TripActivityAttributes {
-    /// 누르면 갈 곳 — 그 코스 상세.
+    /// 누르면 갈 곳 — 그 코스 상세의 [dayNth]일차.
     ///
-    /// 위젯이 쓰는 주소와 같은 형태다(`offway://course/{id}`). 코스 id 는
-    /// 카드가 살아 있는 동안 바뀌지 않으므로 `attributes` 가 들고 있다.
+    /// 위젯이 쓰는 주소와 같은 형태다(`offway://course/{id}?day=2`). 코스 id 는
+    /// 카드가 살아 있는 동안 바뀌지 않으므로 `attributes` 가 들고 있고,
+    /// 며칠째인지는 날마다 바뀌므로 `state` 에서 받아 온다.
     /// 잠금화면 카드와 펼침의 '코스 보기' 가 이 하나를 같이 쓴다 —
     /// 두 자리가 다른 곳으로 가면 안 된다
-    var courseURL: URL {
-        URL(string: "offway://course/\(courseId)")
+    ///
+    /// **출발 전이면 [dayNth] 가 nil 이라 안 붙는다** — 앱이 첫날을 연다(#338)
+    func courseURL(dayNth: Int?) -> URL {
+        let day = dayNth.map { "?day=\($0)" } ?? ""
+        return URL(string: "offway://course/\(courseId)\(day)")
             ?? URL(string: "offway://home")!
     }
 }
@@ -117,8 +121,8 @@ private struct ExpandedView: View {
             }
             .padding(.horizontal, 12)
 
-            // 누르면 그 코스로 — 위젯과 같은 주소다(`offway://course/{id}`)
-            Link(destination: context.attributes.courseURL) {
+            // 누르면 그 코스의 오늘 일자로 — 위젯·잠금화면 카드와 같은 주소다
+            Link(destination: context.attributes.courseURL(dayNth: context.state.dayNth)) {
                 Text("코스 보기")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(WidgetPalette.islandAccent)

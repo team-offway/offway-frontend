@@ -87,7 +87,11 @@ abstract final class AppRoutes {
   /// 저장한 코스 상세. `:savedId` 경로 파라미터 사용
   static const savedCourse = '/my-courses/:savedId';
 
-  static String savedCoursePath(String savedId) => '/my-courses/$savedId';
+  /// [day]를 주면 그 일자 탭이 열린 채로 들어간다 — 위젯·잠금화면이
+  /// '2일차'를 보여 주고 있었으면 눌렀을 때도 2일차다(#338).
+  /// 코스 길이를 넘는 값은 화면이 첫날로 되돌린다
+  static String savedCoursePath(String savedId, {int? day}) =>
+      '/my-courses/$savedId${day == null ? '' : '?day=$day'}';
 
   /// 저장한 코스의 여행 일정 지정 (캘린더)
   static const courseSchedule = '/my-courses/:savedId/schedule';
@@ -347,8 +351,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.savedCourse,
         name: 'savedCourse',
-        builder: (context, state) =>
-            SavedCourseScreen(savedId: state.pathParameters['savedId']!),
+        builder: (context, state) => SavedCourseScreen(
+          savedId: state.pathParameters['savedId']!,
+          // 위젯·잠금화면이 보여 주던 일자. 없거나 숫자가 아니면 첫날이다
+          initialDay: int.tryParse(state.uri.queryParameters['day'] ?? ''),
+        ),
       ),
       GoRoute(
         path: AppRoutes.poiDetail,

@@ -156,9 +156,14 @@ struct TripWidgetSnapshot: Equatable {
 
     /// 위젯을 눌렀을 때 앱이 받는 주소. 여행이 있으면 그 코스 상세,
     /// 없으면 코스 만들기, 로그인 전이면 홈. 앱의 `widgetDeepLinkRoute` 가 푼다
+    ///
+    /// **보여 주던 일자를 함께 싣는다**(`?day=2`, #338). 위젯이 '2일차' 라고
+    /// 적어 놓고 눌렀더니 1일차가 열리면 방금 본 날을 다시 찾아야 한다.
+    /// 출발 전이면 `dayNth` 가 없어 안 붙고, 앱은 첫날을 연다
     var deepLink: URL? {
         if let id = courseId {
-            return URL(string: "offway://course/\(id)")
+            let day = state?.dayNth.map { "?day=\($0)" } ?? ""
+            return URL(string: "offway://course/\(id)\(day)")
         }
         return URL(string: signedIn ? "offway://wizard" : "offway://home")
     }

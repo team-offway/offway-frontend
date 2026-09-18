@@ -21,6 +21,30 @@ void main() {
     );
   });
 
+  test('여행 중이면 보여주던 일자로 연다 — 방금 본 날을 다시 찾지 않게', () {
+    expect(
+      widgetDeepLinkRoute(Uri.parse('offway://course/122?day=2')),
+      AppRoutes.savedCoursePath('122', day: 2),
+    );
+  });
+
+  test('일자가 없으면 첫날이다 — 출발 전에는 며칠째가 없다', () {
+    expect(
+      widgetDeepLinkRoute(Uri.parse('offway://course/122')),
+      isNot(contains('day=')),
+    );
+  });
+
+  test('일자가 1 보다 작거나 숫자가 아니면 버린다', () {
+    for (final bad in ['0', '-1', 'two', '']) {
+      expect(
+        widgetDeepLinkRoute(Uri.parse('offway://course/122?day=$bad')),
+        AppRoutes.savedCoursePath('122'),
+        reason: 'day=$bad 는 첫날로 떨어져야 한다',
+      );
+    }
+  });
+
   test('예정 여행이 없으면 코스 만들기로', () {
     expect(
       widgetDeepLinkRoute(Uri.parse('offway://wizard')),
