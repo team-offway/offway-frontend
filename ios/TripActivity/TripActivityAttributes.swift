@@ -71,10 +71,11 @@ extension TripActivityAttributes.ContentState {
         }
     }
 
-    /// '9.23 (수) - 9.25 (금)' — 위젯처럼 좁은 자리라 연도는 해를 넘길 때만
+    /// '9.23(수) - 9.25(금)' — 위젯처럼 좁은 자리라 연도는 해를 넘길 때만.
+    /// **요일 앞에 공백을 두지 않는다**(시안 1669:41763)
     var shortRangeLabel: String {
         rangeLabel(startYear: false) { d, withYear in
-            (withYear ? "\(d.y).\(d.m).\(d.d)" : "\(d.m).\(d.d)") + " (\(d.weekday))"
+            (withYear ? "\(d.y).\(d.m).\(d.d)" : "\(d.m).\(d.d)") + "(\(d.weekday))"
         }
     }
 

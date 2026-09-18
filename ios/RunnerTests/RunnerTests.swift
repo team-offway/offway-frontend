@@ -248,13 +248,13 @@ final class TripWidgetTests: XCTestCase {
             regionName: "정선군", daysLeft: 3, dayNth: nil,
             startDate: "2026-09-23", endDate: "2026-09-25"
         )
-        XCTAssertEqual(s.shortRangeLabel, "9.23 (수) - 9.25 (금)")
+        XCTAssertEqual(s.shortRangeLabel, "9.23(수) - 9.25(금)")
         XCTAssertEqual(YMD(y: 2026, m: 9, d: 20).weekday, "일")
         let same = TripActivityAttributes.ContentState(
             regionName: "정선군", daysLeft: 3, dayNth: nil,
             startDate: "2026-09-23", endDate: "2026-09-23"
         )
-        XCTAssertEqual(same.shortRangeLabel, "9.23 (수)")
+        XCTAssertEqual(same.shortRangeLabel, "9.23(수)")
     }
 
     func test날짜는시간대의그레고리력으로센다() {
