@@ -107,11 +107,14 @@ class TripCountdown {
   /// 고르지 않는다 — 끝난 여행이 잠금화면에 남아 있을 이유가 없다.
   ///
   /// **며칠 뒤까지 띄울지는 [within]이 정한다.** 두 달 뒤 여행에 D-60을
-  /// 띄우면 잠금화면만 차지한다 — D-5 부터 띄운다
+  /// 띄우면 잠금화면만 차지한다 — D-7 부터 띄운다(#338).
+  ///
+  /// 위젯과 잠금화면 카드가 **이 값을 함께 쓴다.** 한쪽만 넓히려면 부르는
+  /// 쪽에서 나눠 준다 — 지금은 두 자리가 같은 날 나타나는 편이 덜 헷갈린다
   static TripCountdown? pick(
     List<TripCountdown> trips,
     DateTime now, {
-    int within = 5,
+    int within = 7,
   }) {
     final ongoing = trips.where((t) => t.isOngoing(now)).toList()
       ..sort((a, b) => a.startDate.compareTo(b.startDate));
