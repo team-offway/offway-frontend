@@ -88,62 +88,86 @@ class AppTooltipBubble extends StatelessWidget {
       ),
     );
 
-    // 화살표와 말풍선을 **불투명으로 그린 뒤 한 번에** 투명도를 준다.
-    // 각각 반투명으로 칠하면 겹친 자리만 진해져 경계가 다시 보인다
-    return Opacity(
+    // **바탕만** 한 겹으로 합성한다. 화살표와 말풍선을 불투명으로 그린 뒤
+    // 투명도를 한 번 주면 맞닿는 줄이 생기지 않는다.
+    //
+    // 글자와 닫기 아이콘은 이 레이어 **밖**이다 — 같이 감싸면 글자까지
+    // 88.6%로 흐려진다
+    final background = Opacity(
       opacity: _bubbleOpacity,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        // 글자만큼만 넓어진다 — stretch로 두면 부모 폭을 다 먹어 시안(191)과
-        // 어긋나고, 화살표도 붙일 자리를 잃는다
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!arrowAtBottom) arrow,
-          Container(
-            constraints: const BoxConstraints(minWidth: 64, maxWidth: 256),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: _opaqueColor,
-              borderRadius: BorderRadius.circular(_bubbleRadius),
+          // 화살표는 제 폭(20)만 차지하고 오른쪽에 붙는다
+          if (!arrowAtBottom)
+            Align(alignment: Alignment.centerRight, child: arrow),
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _opaqueColor,
+                borderRadius: BorderRadius.circular(_bubbleRadius),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    text,
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.inverseLabel,
-                    ),
-                  ),
-                ),
-                if (onClose != null) ...[
-                  const SizedBox(width: 6),
-                  GestureDetector(
-                    onTap: onClose,
-                    behavior: HitTestBehavior.opaque,
-                    child: Semantics(
-                      button: true,
-                      label: '안내 닫기',
-                      child: SvgPicture.asset(
-                        'assets/icons/ic_circle_close.svg',
-                        width: _closeSize,
-                        height: _closeSize,
-                        excludeFromSemantics: true,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.inverseLabel,
-                          BlendMode.srcIn,
-                        ),
+          ),
+          if (arrowAtBottom)
+            Align(alignment: Alignment.centerRight, child: arrow),
+        ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        // 바탕은 내용이 정한 크기를 그대로 채운다
+        Positioned.fill(child: background),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          // 글자만큼만 넓어진다 — stretch로 두면 부모 폭을 다 먹어 시안(191)과
+          // 어긋나고, 화살표도 붙일 자리를 잃는다
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!arrowAtBottom) const SizedBox(height: _arrowHeight),
+            Container(
+              constraints: const BoxConstraints(minWidth: 64, maxWidth: 256),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      text,
+                      style: AppTypography.label1NormalMedium.copyWith(
+                        color: AppColors.inverseLabel,
                       ),
                     ),
                   ),
+                  if (onClose != null) ...[
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: onClose,
+                      behavior: HitTestBehavior.opaque,
+                      child: Semantics(
+                        button: true,
+                        label: '안내 닫기',
+                        child: SvgPicture.asset(
+                          'assets/icons/ic_circle_close.svg',
+                          width: _closeSize,
+                          height: _closeSize,
+                          excludeFromSemantics: true,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.inverseLabel,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          if (arrowAtBottom) arrow,
-        ],
-      ),
+            if (arrowAtBottom) const SizedBox(height: _arrowHeight),
+          ],
+        ),
+      ],
     );
   }
 
