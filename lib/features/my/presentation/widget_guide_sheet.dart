@@ -70,9 +70,10 @@ class _GuideBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          // 언제부터 보이는지를 함께 적는다 — 붙여 놓고 아무것도 안 뜨면
-          // 위젯이 고장 난 줄 안다(#338). 기준은 `TripCountdown.pick`
-          '여행 7일 전부터 보이고, iOS 16.1 이상에서 쓸 수 있어요.',
+          // **언제부터 보이는지는 적지 않는다.** 위젯은 사용자가 붙여 둔
+          // 자리라 예정 여행이 있으면 D-30 이든 뜬다 — 창이 있는 것은
+          // 잠금화면 카드 쪽이다(`TripCountdown.pick`)
+          'iOS 16.1 이상에서 쓸 수 있어요.',
           style: AppTypography.caption1Medium.copyWith(
             color: AppColors.labelAssistive,
           ),
