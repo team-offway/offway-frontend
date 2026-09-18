@@ -197,7 +197,7 @@ private struct WidgetLeadingIcon: View {
     var body: some View {
         Image(sky.flatMap { Self.assets[$0] } ?? "WidgetLogo")
             .resizable()
-            .aspectRatio(contentMode: .fit)
+            .scaledToFit()
             .frame(width: size, height: size)
     }
 }
