@@ -120,6 +120,22 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     _scroll.addListener(_onScroll);
   }
 
+  /// 보고 있는 화면에 **다른 일자**가 오면 따라간다.
+  ///
+  /// 코스 상세를 열어 둔 채 위젯을 누르면 `go` 로 같은 경로에 쿼리만 바뀌어
+  /// 들어온다. go_router 는 그때 화면을 새로 만들지 않고 이 State 를 그대로
+  /// 쓰므로, 여기서 받지 않으면 2일차를 눌러도 1일차가 남는다(#338).
+  ///
+  /// **사용자가 탭으로 고른 값은 건드리지 않는다** — 링크가 실제로 바뀐
+  /// 때만 맞춘다
+  @override
+  void didUpdateWidget(covariant SavedCourseScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDay != widget.initialDay) {
+      _selectedDay = widget.initialDay ?? 1;
+    }
+  }
+
   /// 이 코스에 어떤 안내가 남았는지 읽는다.
   ///
   /// 담고 처음 열면 '눌러서 자세히 보기', 그 다음부터는 공유 안내다(시안

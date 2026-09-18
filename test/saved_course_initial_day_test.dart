@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
@@ -15,51 +17,54 @@ void main() {
 
   final today = DateUtils.dateOnly(DateTime.now());
 
-  /// 하루에 한 곳씩, 2박3일 코스를 띄운다 — 장소 이름으로 어느 날인지 안다
-  Future<void> pump(WidgetTester tester, {int? initialDay}) async {
+  /// 하루에 한 곳씩, 2박3일 코스 — 장소 이름으로 어느 날인지 안다
+  final courseOverride = savedCourseDetailProvider('1').overrideWith(
+    (ref) async => (
+      saved: {
+        'id': '1',
+        'regionName': '정선군',
+        'travelDate': iso(today),
+        'startDate': iso(today),
+        'endDate': iso(today.add(const Duration(days: 2))),
+        'shareToken': 'abc',
+        'leaveDeducted': false,
+        'consumedLeaveDays': 3.0,
+      },
+      course: {
+        'regionName': '정선군',
+        'durationDays': 3,
+        'travelDate': iso(today),
+        'days': [
+          for (var i = 0; i < 3; i++)
+            {
+              'day': i + 1,
+              'date': iso(today.add(Duration(days: i))),
+              'dayOfWeek': '월',
+              'places': [
+                {
+                  'name': '${i + 1}일차장소',
+                  'category': '관광지',
+                  'kind': 'SIGHT',
+                  'poiContentId': '10$i',
+                },
+              ],
+            },
+        ],
+      },
+    ),
+  );
+
+  void sizeScreen(WidgetTester tester) {
     tester.view.physicalSize = const Size(402 * 3, 1800 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
+  }
 
+  Future<void> pump(WidgetTester tester, {int? initialDay}) async {
+    sizeScreen(tester);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          savedCourseDetailProvider('1').overrideWith(
-            (ref) async => (
-              saved: {
-                'id': '1',
-                'regionName': '정선군',
-                'travelDate': iso(today),
-                'startDate': iso(today),
-                'endDate': iso(today.add(const Duration(days: 2))),
-                'shareToken': 'abc',
-                'leaveDeducted': false,
-                'consumedLeaveDays': 3.0,
-              },
-              course: {
-                'regionName': '정선군',
-                'durationDays': 3,
-                'travelDate': iso(today),
-                'days': [
-                  for (var i = 0; i < 3; i++)
-                    {
-                      'day': i + 1,
-                      'date': iso(today.add(Duration(days: i))),
-                      'dayOfWeek': '월',
-                      'places': [
-                        {
-                          'name': '${i + 1}일차장소',
-                          'category': '관광지',
-                          'kind': 'SIGHT',
-                          'poiContentId': '10$i',
-                        },
-                      ],
-                    },
-                ],
-              },
-            ),
-          ),
-        ],
+        overrides: [courseOverride],
         child: MaterialApp(
           theme: AppTheme.light,
           home: SavedCourseScreen(savedId: '1', initialDay: initialDay),
@@ -81,6 +86,43 @@ void main() {
     await pump(tester);
 
     expect(find.text('1일차장소'), findsOneWidget);
+  });
+
+  testWidgets('열어 둔 화면에 다른 일자가 오면 따라간다', (tester) async {
+    // 코스 상세를 보고 있는데 위젯을 누르면 `go` 로 같은 경로에 쿼리만
+    // 바뀌어 들어온다. go_router 가 화면을 새로 만들지 않아, 받지 않으면
+    // 2일차를 눌러도 1일차가 남는다
+    sizeScreen(tester);
+    final router = GoRouter(
+      initialLocation: AppRoutes.savedCoursePath('1'),
+      routes: [
+        GoRoute(
+          path: AppRoutes.savedCourse,
+          builder: (context, state) => SavedCourseScreen(
+            savedId: state.pathParameters['savedId']!,
+            initialDay: int.tryParse(state.uri.queryParameters['day'] ?? ''),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [courseOverride],
+        child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('1일차장소'), findsOneWidget);
+
+    router.go(AppRoutes.savedCoursePath('1', day: 2));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('2일차장소'), findsOneWidget);
+    expect(find.text('1일차장소'), findsNothing);
   });
 
   testWidgets('코스 길이를 넘는 일자는 첫날로 되돌린다 — 탭도 함께', (tester) async {
