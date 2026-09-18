@@ -60,8 +60,29 @@ enum TripWidgetStore {
     static var isSignedIn: Bool { defaults.bool(forKey: signedInKey) }
 }
 
-/// 위젯이 아는 여행 하나. 라이브 액티비티 `ContentState` 와 같은 칸이다 —
-/// 새 계약이 아니라 그 재료를 목록으로 둔 것
+/// 여행 하루치 — 그날의 날씨와 들를 곳.
+///
+/// **위젯에만 있다.** 라이브 액티비티 `ContentState` 는 서버 푸시와 칸이
+/// 1:1 이라(core #577) 여기를 건드리면 서버도 바뀐다
+struct TripWidgetDay: Codable, Equatable {
+    /// 1 부터. 출발 당일이 1 이다
+    let day: Int
+    /// '맑음'·'비' — 서버가 주는 한글 값. 없으면 위젯이 로고를 그린다
+    let sky: String?
+    /// 그날 들를 곳 이름. **최대 넷**까지 온다(시안이 네 줄이다)
+    let places: [String]
+
+    /// Flutter 채널 인자에서 읽는다. `day` 가 없으면 쓸 수 없다
+    init?(channelArgs args: [String: Any]) {
+        guard let day = args["day"] as? Int else { return nil }
+        self.day = day
+        self.sky = args["sky"] as? String
+        self.places = args["places"] as? [String] ?? []
+    }
+}
+
+/// 위젯이 아는 여행 하나. 라이브 액티비티 `ContentState` 와 같은 칸에
+/// **일자별 날씨·장소**([days])를 더한 것이다
 struct TripWidgetTrip: Codable, Equatable {
     let courseId: String
     /// '정선군'
@@ -70,23 +91,53 @@ struct TripWidgetTrip: Codable, Equatable {
     let startDate: String
     /// `2026-09-25` — 마지막날(포함)
     let endDate: String
+    /// 일자별 날씨·장소. **비어 있을 수 있다** — 코스 상세를 못 읽었거나
+    /// 위젯에 뜰 여행이 아니면 앱이 싣지 않는다
+    let days: [TripWidgetDay]
 
-    init(courseId: String, regionName: String, startDate: String, endDate: String) {
+    init(
+        courseId: String,
+        regionName: String,
+        startDate: String,
+        endDate: String,
+        days: [TripWidgetDay] = []
+    ) {
         self.courseId = courseId
         self.regionName = regionName
         self.startDate = startDate
         self.endDate = endDate
+        self.days = days
+    }
+
+    /// **`days` 가 없는 옛 데이터도 읽는다.** 앱을 업데이트한 직후 디스크에는
+    /// 이 칸이 없는 목록이 들어 있다 — 기본값을 안 두면 통째로 디코딩에
+    /// 실패해 위젯이 "예정된 여행이 없어요" 로 보인다
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        courseId = try c.decode(String.self, forKey: .courseId)
+        regionName = try c.decode(String.self, forKey: .regionName)
+        startDate = try c.decode(String.self, forKey: .startDate)
+        endDate = try c.decode(String.self, forKey: .endDate)
+        days = try c.decodeIfPresent([TripWidgetDay].self, forKey: .days) ?? []
     }
 
     /// Flutter 채널 인자에서 읽는다 — 라이브 액티비티 `start` 와 위젯 목록이
-    /// 같은 네 칸을 같은 이름으로 싣는다. 하나라도 빠지면 nil
+    /// 같은 네 칸을 같은 이름으로 싣는다. 하나라도 빠지면 nil.
+    /// `days` 는 위젯만 싣는 값이라 없어도 된다
     init?(channelArgs args: [String: Any]) {
         guard let courseId = args["courseId"] as? String,
               let regionName = args["regionName"] as? String,
               let startDate = args["startDate"] as? String,
               let endDate = args["endDate"] as? String
         else { return nil }
-        self.init(courseId: courseId, regionName: regionName, startDate: startDate, endDate: endDate)
+        self.init(
+            courseId: courseId,
+            regionName: regionName,
+            startDate: startDate,
+            endDate: endDate,
+            days: (args["days"] as? [[String: Any]] ?? [])
+                .compactMap(TripWidgetDay.init(channelArgs:))
+        )
     }
 }
 
@@ -144,14 +195,22 @@ struct TripWidgetSnapshot: Equatable {
     /// 로그인 전이면 "로그인하고 여행을 담아보세요"
     let signedIn: Bool
 
+    /// 그날 보여줄 하루치 — 날씨와 들를 곳.
+    ///
+    /// **출발 전에는 첫날 것을 보여준다.** D-1 에 "곧 갈 날" 의 날씨와 코스를
+    /// 미리 보는 자리라, 아직 시작 안 한 여행에 2일차를 띄울 이유가 없다.
+    /// 여행 중이면 그 일자 것이다
+    let day: TripWidgetDay?
+
     /// 빈 상태 문구 — 다섯 자리가 같은 말을 한다
+    /// (시안 1669:42215 · 1669:42239)
     var emptyTitle: String {
-        signedIn ? "예정된 여행이 없어요" : "로그인하고 여행을 담아보세요"
+        signedIn ? "예정된 여행이 없어요" : "로그인이 필요해요"
     }
 
-    /// 빈 상태 둘째 줄 — 로그인 전에는 없다
-    var emptySubtitle: String? {
-        signedIn ? "남은 연차로 떠날 곳을 찾아보세요" : nil
+    /// 빈 상태 둘째 줄 — **로그인 전에도 있다**(시안 1669:42253)
+    var emptySubtitle: String {
+        signedIn ? "다음 여행을 계획해보세요" : "여행 D-day를 확인해보세요"
     }
 
     /// 위젯을 눌렀을 때 앱이 받는 주소. 여행이 있으면 그 코스 상세,
@@ -204,11 +263,14 @@ enum TripWidgetTimeline {
     ) -> TripWidgetSnapshot {
         let today = YMD(date, timeZone: timeZone)
         let picked = TripWidgetTrip.pick(trips, today: today)
+        let state = picked?.contentState(today: today)
         return TripWidgetSnapshot(
             date: date,
-            state: picked?.contentState(today: today),
+            state: state,
             courseId: picked?.courseId,
-            signedIn: signedIn
+            signedIn: signedIn,
+            // 출발 전(`dayNth` 가 nil)이면 첫날 것을 미리 보여준다
+            day: picked?.days.first { $0.day == (state?.dayNth ?? 1) }
         )
     }
 }

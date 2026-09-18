@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../course/data/course_repository.dart';
 import '../../course/presentation/my_courses_screen.dart'
     show savedCoursesProvider;
 import '../data/live_activity_repository.dart';
@@ -206,7 +207,12 @@ class TripActivityController with WidgetsBindingObserver {
     // 위젯은 라이브 액티비티가 안 되는 기기(설정에서 껐거나)에서도 그린다.
     // 목록을 그대로 넘긴다 — 지난 여행을 거르는 규칙은 위젯이 날짜별로 갖고
     // 있다. 여기서도 거르면 같은 규칙이 두 곳에 산다
-    if (widgetOk) await service.setWidgetTrips(trips);
+    if (widgetOk) {
+      await service.setWidgetTrips(
+        trips,
+        daysByCourse: await _widgetDays(trips, at),
+      );
+    }
 
     if (!liveOk) return;
     if (_stopped) return;
@@ -229,6 +235,54 @@ class TripActivityController with WidgetsBindingObserver {
     // 생기면 등록된 적 없는 코스의 DELETE 는 서버가 성공으로 받는다
     _liveCourseId = picked.courseId;
     await service.start(picked, now: now);
+  }
+
+  /// 위젯에 실을 **일자별 날씨·장소**를 코스 상세에서 뽑는다.
+  ///
+  /// 카드 목록에는 없는 값이라 상세를 따로 읽어야 한다. **위젯에 뜰 여행
+  /// 하나만** 읽는다 — 저장 코스가 열 개여도 요청은 한 번이다.
+  ///
+  /// **창을 두지 않는다**(`within: null`). 위젯은 잠금화면 카드와 달리
+  /// D-30 이든 뜨므로(네이티브 `TripWidgetTrip.pick`), 카드의 창(7일)으로
+  /// 고르면 먼 여행일 때 위젯에만 날씨·장소가 빠진다
+  ///
+  /// **실패해도 위젯은 뜬다.** 날씨·장소가 없으면 시안대로 로고와 날짜만
+  /// 그린다 — 통신 한 번 실패로 위젯이 비면 그게 더 나쁘다
+  Future<Map<String, List<Map<String, Object?>>>> _widgetDays(
+    List<TripCountdown> trips,
+    DateTime at,
+  ) async {
+    final picked = TripCountdown.pick(trips, at, within: null);
+    if (picked == null) return const {};
+    try {
+      final detail = await _ref
+          .read(courseRepositoryProvider)
+          .savedCourseDetail(picked.courseId)
+          // **위젯 갱신이 이 응답을 하염없이 기다리지 않는다.** 날씨·장소는
+          // 덤이고, 못 받아도 날짜와 지역명은 그려야 한다
+          .timeout(const Duration(seconds: 3));
+      final days = (detail?.course['days'] as List?) ?? const [];
+      return {
+        picked.courseId: [
+          for (final day in days.cast<Map<String, dynamic>>())
+            TripActivityService.widgetDay(
+              day: (day['day'] as num).toInt(),
+              sky: (day['weather'] as Map<String, dynamic>?)?['sky'] as String?,
+              places: [
+                // 시안은 네 줄까지다. 적으면 있는 만큼만 그린다
+                for (final p
+                    in ((day['places'] as List?) ?? const [])
+                        .cast<Map<String, dynamic>>()
+                        .take(4))
+                  if (p['name'] case final String name) name,
+              ],
+            ),
+        ],
+      };
+    } on Object catch (e) {
+      debugPrint('위젯에 실을 코스 상세를 읽지 못했다: $e');
+      return const {};
+    }
   }
 
   /// 네이티브가 카드의 토큰을 올려 보냈다 — 서버에 등록한다.
