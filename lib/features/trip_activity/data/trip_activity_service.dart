@@ -105,10 +105,31 @@ class TripActivityService {
   /// 날짜별 시간표를 만들 때 정한다 — 하나만 넘기면 그 여행이 끝난 다음 날
   /// 앱을 안 열었을 때 다음 여행으로 못 넘어간다. 칸은 라이브 액티비티와
   /// 같다(`courseId`·`regionName`·`startDate`·`endDate`)
-  Future<bool> setWidgetTrips(List<TripCountdown> trips) =>
-      _invokeOk('setWidgetTrips', {
-        'trips': [for (final t in trips) _tripArgs(t)],
-      });
+  /// [daysByCourse]는 코스 id → 일자별 날씨·장소([widgetDay]). **위젯에 뜰
+  /// 여행 하나만** 담는다 — 나머지는 날짜·지역명만으로도 충분하고, 코스마다
+  /// 상세를 읽으면 그만큼 요청이 늘어난다
+  Future<bool> setWidgetTrips(
+    List<TripCountdown> trips, {
+    Map<String, List<Map<String, Object?>>> daysByCourse = const {},
+  }) => _invokeOk('setWidgetTrips', {
+    'trips': [
+      for (final t in trips)
+        {..._tripArgs(t), 'days': daysByCourse[t.courseId] ?? const []},
+    ],
+  });
+
+  /// 위젯 하나에 실을 **일자별 날씨·장소** — 코스 상세에서 뽑아 온다.
+  ///
+  /// 카드 목록(`savedCourses`)에는 없는 값이라 상세를 따로 읽어야 한다.
+  /// 위젯에 뜰 여행 하나만 읽으므로 호출은 한 번이다.
+  ///
+  /// [day]는 1부터다. 위젯이 날짜를 보고 어느 칸을 쓸지 정한다 —
+  /// 출발 전과 1일차는 1번, 2일차는 2번이다
+  static Map<String, Object?> widgetDay({
+    required int day,
+    String? sky,
+    required List<String> places,
+  }) => {'day': day, 'sky': ?sky, 'places': places};
 
   /// 위젯을 그릴 수 있는 기기인가 — iOS 16.1 이상. 라이브 액티비티와 달리
   /// 사용자가 끌 수 있는 것이 아니라 버전만 본다

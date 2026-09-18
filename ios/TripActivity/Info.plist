@@ -7,5 +7,11 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<!-- 위젯 제목에 쓰는 시안 서체(Wanted Sans, SIL OFL 1.1).
+	     앱 본체는 Pretendard 라 여기에만 싣는다 -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>WantedSansStd-Bold.otf</string>
+	</array>
 </dict>
 </plist>

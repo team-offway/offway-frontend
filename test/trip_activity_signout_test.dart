@@ -219,7 +219,10 @@ class _SpyService implements TripActivityService {
   bool widgetCleared = false;
 
   @override
-  Future<bool> setWidgetTrips(List<TripCountdown> trips) async => true;
+  Future<bool> setWidgetTrips(
+    List<TripCountdown> trips, {
+    Map<String, List<Map<String, Object?>>> daysByCourse = const {},
+  }) async => true;
 
   @override
   Future<bool> isWidgetAvailable() async => true;

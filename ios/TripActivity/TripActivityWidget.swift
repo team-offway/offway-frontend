@@ -82,7 +82,7 @@ private struct IslandLogo: View {
     var body: some View {
         Image("TripLogo")
             .resizable()
-            .aspectRatio(contentMode: .fit)
+            .scaledToFit()
             .frame(width: size, height: size)
             .foregroundStyle(WidgetPalette.islandAccent)
     }
