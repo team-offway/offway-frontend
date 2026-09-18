@@ -71,68 +71,79 @@ class AppTooltipBubble extends StatelessWidget {
           width: _arrowWidth,
           height: _arrowShapeHeight,
           excludeFromSemantics: true,
-          colorFilter: ColorFilter.mode(_bubbleColor, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(_opaqueColor, BlendMode.srcIn),
         ),
       ),
     );
     final arrow = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: arrowAtBottom
-          ? Transform.rotate(angle: math.pi, child: arrowAsset)
-          : arrowAsset,
+      // **말풍선 쪽으로 반 픽셀 밀어 넣는다.** 딱 맞대면 맞닿는 줄이 서로를
+      // 덮지 못해 가는 선이 남는다. 자리(높이 8)는 그대로라 시안 간격은
+      // 달라지지 않는다 — 그리는 위치만 옮긴다
+      child: Transform.translate(
+        offset: Offset(0, arrowAtBottom ? -0.5 : 0.5),
+        child: arrowAtBottom
+            ? Transform.rotate(angle: math.pi, child: arrowAsset)
+            : arrowAsset,
+      ),
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      // 글자만큼만 넓어진다 — stretch로 두면 부모 폭을 다 먹어 시안(191)과
-      // 어긋나고, 화살표도 붙일 자리를 잃는다
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (!arrowAtBottom) arrow,
-        Container(
-          constraints: const BoxConstraints(minWidth: 64, maxWidth: 256),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _bubbleColor,
-            borderRadius: BorderRadius.circular(_bubbleRadius),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  text,
-                  style: AppTypography.label1NormalMedium.copyWith(
-                    color: AppColors.inverseLabel,
-                  ),
-                ),
-              ),
-              if (onClose != null) ...[
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: onClose,
-                  behavior: HitTestBehavior.opaque,
-                  child: Semantics(
-                    button: true,
-                    label: '안내 닫기',
-                    child: SvgPicture.asset(
-                      'assets/icons/ic_circle_close.svg',
-                      width: _closeSize,
-                      height: _closeSize,
-                      excludeFromSemantics: true,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.inverseLabel,
-                        BlendMode.srcIn,
-                      ),
+    // 화살표와 말풍선을 **불투명으로 그린 뒤 한 번에** 투명도를 준다.
+    // 각각 반투명으로 칠하면 겹친 자리만 진해져 경계가 다시 보인다
+    return Opacity(
+      opacity: _bubbleOpacity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        // 글자만큼만 넓어진다 — stretch로 두면 부모 폭을 다 먹어 시안(191)과
+        // 어긋나고, 화살표도 붙일 자리를 잃는다
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!arrowAtBottom) arrow,
+          Container(
+            constraints: const BoxConstraints(minWidth: 64, maxWidth: 256),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _opaqueColor,
+              borderRadius: BorderRadius.circular(_bubbleRadius),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    text,
+                    style: AppTypography.label1NormalMedium.copyWith(
+                      color: AppColors.inverseLabel,
                     ),
                   ),
                 ),
+                if (onClose != null) ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: onClose,
+                    behavior: HitTestBehavior.opaque,
+                    child: Semantics(
+                      button: true,
+                      label: '안내 닫기',
+                      child: SvgPicture.asset(
+                        'assets/icons/ic_circle_close.svg',
+                        width: _closeSize,
+                        height: _closeSize,
+                        excludeFromSemantics: true,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.inverseLabel,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        if (arrowAtBottom) arrow,
-      ],
+          if (arrowAtBottom) arrow,
+        ],
+      ),
     );
   }
 
@@ -142,4 +153,14 @@ class AppTooltipBubble extends StatelessWidget {
     AppColors.primaryNormal.withValues(alpha: AppOpacity.o5),
     AppColors.inverseBackground.withValues(alpha: AppOpacity.o88),
   );
+
+  /// 같은 색의 **불투명** 판 — 화살표와 말풍선은 이것으로 그리고, 투명도는
+  /// 둘을 합친 뒤 [_bubbleOpacity]로 **한 번만** 준다.
+  ///
+  /// 반투명으로 각각 칠하면 맞닿는 줄이 부분 커버리지로 남아(측정값: 꽉 찬
+  /// 26 대비 12) 뒤 배경이 더 비친다 — 그게 화살표 밑에 보이던 가는 선이다
+  static final _opaqueColor = _bubbleColor.withValues(alpha: 1);
+
+  /// 말풍선 전체에 한 번 적용할 투명도
+  static final _bubbleOpacity = _bubbleColor.a;
 }
