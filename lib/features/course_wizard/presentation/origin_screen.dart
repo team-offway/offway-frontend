@@ -346,12 +346,25 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     );
   }
 
-  /// 친 부분은 굵게, 서버가 채운 나머지는 옅게 (시안 '작성영역/자동완성영역')
+  /// 친 부분은 굵게, 나머지는 옅게 (시안 '작성영역/자동완성영역')
+  ///
+  /// **검색어가 이름 가운데 있어도 굵게 한다.** '충주' 를 치면 서충주터미널·
+  /// 건국대(충주)터미널도 함께 오는데, 앞자리만 보면 이 둘은 통째로 옅어져
+  /// 왜 걸렸는지 알 수 없는 줄이 된다
   Widget _buildCell(OriginHub hub) {
     final typed = _controller.text.trim();
-    final matchLength = hub.name.toLowerCase().startsWith(typed.toLowerCase())
-        ? typed.length
-        : 0;
+    final at = typed.isEmpty
+        ? -1
+        : hub.name.toLowerCase().indexOf(typed.toLowerCase());
+    final spans = at < 0
+        // 서버가 별칭·구두점으로 찾아 준 경우다 — 굵게 할 자리가 없다
+        ? [_plain(hub.name)]
+        : [
+            if (at > 0) _plain(hub.name.substring(0, at)),
+            _strong(hub.name.substring(at, at + typed.length)),
+            if (at + typed.length < hub.name.length)
+              _plain(hub.name.substring(at + typed.length)),
+          ];
     return InkWell(
       onTap: () => _choose(hub),
       child: Padding(
@@ -363,22 +376,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
               child: Text.rich(
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: hub.name.substring(0, matchLength),
-                      style: AppTypography.body1NormalBold.copyWith(
-                        color: AppColors.labelNormal,
-                      ),
-                    ),
-                    TextSpan(
-                      text: hub.name.substring(matchLength),
-                      style: AppTypography.body1NormalRegular.copyWith(
-                        color: AppColors.labelAlternative,
-                      ),
-                    ),
-                  ],
-                ),
+                TextSpan(children: spans),
               ),
             ),
           ],
@@ -386,6 +384,18 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
       ),
     );
   }
+
+  TextSpan _strong(String text) => TextSpan(
+    text: text,
+    style: AppTypography.body1NormalBold.copyWith(color: AppColors.labelNormal),
+  );
+
+  TextSpan _plain(String text) => TextSpan(
+    text: text,
+    style: AppTypography.body1NormalRegular.copyWith(
+      color: AppColors.labelAlternative,
+    ),
+  );
 
   Widget _buildTopBar(BuildContext context) {
     return Padding(
