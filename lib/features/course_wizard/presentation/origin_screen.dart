@@ -155,7 +155,8 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
         child: Column(
           children: [
             _buildTopBar(context),
-            const SizedBox(height: 60),
+            // 시안 실측 — 상단바(44) 아래 아이콘 박스까지 68
+            const SizedBox(height: 68),
             SvgPicture.asset(
               'assets/icons/ic_building_blue.svg',
               width: 48,
@@ -400,7 +401,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   Widget _buildTopBar(BuildContext context) {
     return Padding(
       // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다
-      padding: const EdgeInsets.fromLTRB(6, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         children: [
           AppBackButton(
