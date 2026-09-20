@@ -88,7 +88,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(results.single.answer, TripOutcomeAnswer.visited);
-    expect(results.single.comment, isEmpty);
+    expect(results.single.comment, isNull);
+  });
+
+  testWidgets('공백만 쳤으면 남기지 않은 것으로 본다', (tester) async {
+    // 입력창을 눌렀다 지우면 빈 문자열이 남는다 — 그대로 올리면
+    // '남겼다' 와 '비웠다' 가 같은 모양이 된다
+    final results = await pumpResult(tester);
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('네, 다녀왔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.comment, isNull);
   });
 
   testWidgets('시안대로 50자까지만 받는다', (tester) async {

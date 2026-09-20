@@ -84,11 +84,17 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
     super.dispose();
   }
 
-  /// 안 갔으면 한 줄을 싣지 않는다 — 서버가 거절한다(`ITINERARY-012`)
+  /// 안 갔으면 한 줄을 싣지 않는다 — 서버가 거절한다(`ITINERARY-012`).
+  ///
+  /// **비워 뒀으면 null 이다.** 입력창을 눌렀다 지우면 빈 문자열이 남는데,
+  /// 그대로 올리면 "남겼다" 와 "비웠다" 가 같은 모양이 된다
   void _close(TripOutcomeAnswer answer) {
+    final text = _comment.text.trim();
     Navigator.of(context).pop((
       answer: answer,
-      comment: answer == TripOutcomeAnswer.visited ? _comment.text : null,
+      comment: answer == TripOutcomeAnswer.visited && text.isNotEmpty
+          ? text
+          : null,
     ));
   }
 
