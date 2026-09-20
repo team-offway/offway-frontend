@@ -157,7 +157,7 @@ class PeriodStyleScreen extends ConsumerWidget {
           AppBackButton(onTap: () => context.pop()),
           const Spacer(),
           Text(
-            '2/4',
+            '3/5',
             style: AppTypography.body1NormalBold.copyWith(
               color: AppColors.labelAssistive,
             ),

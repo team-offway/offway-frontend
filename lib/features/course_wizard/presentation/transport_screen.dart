@@ -19,7 +19,7 @@ class TransportScreen extends ConsumerWidget {
     );
 
     return WizardChoiceStep(
-      stepLabel: '3/4',
+      stepLabel: '4/5',
       iconAsset: 'assets/icons/ic_car.svg',
       title: '어떻게 이동하세요?',
       subtitle: '이동수단을 선택해주세요.',

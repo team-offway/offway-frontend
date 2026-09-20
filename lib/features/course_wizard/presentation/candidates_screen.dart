@@ -30,9 +30,9 @@ import '../../../core/utils/bottom_inset.dart';
 /// 도달 한계는 가용시간 계산이 정한다 — 당일치기는 반나절 거리만, 2박3일은
 /// 멀리까지. 계산에 실패하면 기본값(420분)으로 폴백해 추천은 계속된다.
 ///
-/// **출발지를 앱이 정하지 않는다.** GPS 를 걷어내면서(core #591) 고른 허브가
-/// 없으면 아무것도 싣지 않고, 서버가 기본 출발지를 쓴다. 출발지를 고르는
-/// 화면이 붙으면 그 값이 `originCode` 로 실린다
+/// **출발지를 앱이 정하지 않는다.** GPS 를 걷어내면서(core #591) 사용자가
+/// 첫 단계에서 고른 허브를 코드로 싣는다. 고른 것이 없으면 아무것도 싣지
+/// 않고 서버가 기본 출발지를 쓴다
 final wizardRecommendProvider =
     FutureProvider.autoDispose<
       ({List<Map<String, dynamic>> regions, List<DataSource> sources})
@@ -40,11 +40,14 @@ final wizardRecommendProvider =
       final transport = ref.watch(
         courseWizardProvider.select((draft) => draft.transportMode),
       );
+      final origin = ref.watch(
+        courseWizardProvider.select((draft) => draft.origin),
+      );
       final availableTime = await ref.watch(availableTimeProvider.future);
       return ref
           .read(regionRecommendRepositoryProvider)
           .recommend(
-            originCode: null,
+            originCode: origin?.code,
             transport: transport == TransportMode.publicTransit
                 ? 'TRANSIT'
                 : 'CAR',

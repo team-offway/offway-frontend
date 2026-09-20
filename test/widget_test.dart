@@ -16,7 +16,9 @@ import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/poi_detail_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
+import 'package:offway/features/course_wizard/data/origin_search_repository.dart';
 import 'package:offway/features/course_wizard/data/region_recommend_repository.dart';
+import 'package:offway/features/course_wizard/domain/origin_hub.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
 import 'package:offway/features/update/application/app_update_provider.dart';
@@ -156,6 +158,30 @@ class _FakeRegionListRepository extends RegionListRepository {
 
 /// 후보지역 추천 — mock 후보를 새 카드 형태로 돌려준다.
 /// id가 mock 코스의 키('정선')와 같아 코스 화면까지 이어지는 플로우가 유지된다.
+/// 출발지 자동완성 — 무엇을 쳐도 한 곳을 돌려준다.
+/// 이 파일이 재는 것은 위저드가 이어지는가이지 검색 품질이 아니다
+class _FakeOriginSearchRepository extends OriginSearchRepository {
+  _FakeOriginSearchRepository() : super(Dio());
+
+  @override
+  Future<List<OriginHub>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
+    if (query.trim().length < OriginSearchRepository.minQueryLength) {
+      return const [];
+    }
+    return const [
+      OriginHub(
+        code: 'TRAIN:NAT010000',
+        name: '서울역',
+        area: '서울',
+        kind: 'TRAIN_STATION',
+      ),
+    ];
+  }
+}
+
 class _FakeRegionRecommendRepository extends RegionRecommendRepository {
   _FakeRegionRecommendRepository() : super(Dio());
 
@@ -387,6 +413,9 @@ final _serverOverrides = [
     _FakeRegionDetailRepository(),
   ),
   leaveRepositoryProvider.overrideWithValue(_FakeLeaveRepository()),
+  originSearchRepositoryProvider.overrideWithValue(
+    _FakeOriginSearchRepository(),
+  ),
   regionRecommendRepositoryProvider.overrideWithValue(
     _FakeRegionRecommendRepository(),
   ),
@@ -395,6 +424,22 @@ final _serverOverrides = [
     (ref) => _FakeAuthRepository(ref.watch(secureStorageProvider)),
   ),
 ];
+
+/// 위저드 첫 단계(출발지)를 통과한다.
+///
+/// 출발지는 코스 추천의 1/5 단계라 뒤의 어느 단계를 재든 먼저 지난다.
+/// 검색은 손이 멈춘 뒤(디바운스 300ms) 한 번만 나가므로 그만큼 흘려보낸다.
+Future<void> _passOriginStep(WidgetTester tester) async {
+  await tester.enterText(find.byType(TextField), '서울');
+  await tester.pump(const Duration(milliseconds: 350)); // 디바운스
+  await tester.pump();
+  await tester.tap(find.text('서울역').last);
+  await tester.pump();
+  await tester.tap(find.text('다음'));
+  // 전환이 끝나야 출발지 화면이 트리에서 빠진다 — 400ms 만 흘리면 두 화면의
+  // '다음' 버튼이 함께 잡혀 뒤 화면을 재는 finder 가 전부 어긋난다
+  await tester.pumpAndSettle();
+}
 
 void main() {
   setUp(() {
@@ -1031,9 +1076,10 @@ void main() {
     await tester.tap(find.text('바로 추천받기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400)); // 페이지 전환
+    await _passOriginStep(tester);
 
     expect(find.text('여행 날짜가 있나요?'), findsOneWidget);
-    expect(find.text('1/4'), findsOneWidget);
+    expect(find.text('2/5'), findsOneWidget);
 
     // 선택 전에는 다음 버튼 비활성
     final nextButton = find.widgetWithText(FilledButton, '다음');
@@ -1063,6 +1109,7 @@ void main() {
     await tester.tap(find.text('바로 추천받기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await _passOriginStep(tester);
 
     await tester.tap(find.text('가고싶은 날짜가 있어요'));
     await tester.pump();
@@ -1120,6 +1167,7 @@ void main() {
     await tester.tap(find.text('바로 추천받기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await _passOriginStep(tester);
 
     await tester.tap(find.text('아직 안 정했어요'));
     await tester.pump();
@@ -1129,7 +1177,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('어떻게 떠날까요?'), findsOneWidget);
-    expect(find.text('2/4'), findsOneWidget);
+    expect(find.text('3/5'), findsOneWidget);
     expect(find.text('남은 연차일수 11일'), findsOneWidget); // mock 연차
 
     // 이전 화면(갈림길)의 '다음'이 트리에 남아있을 수 있어 최상단 것만 조회
@@ -1183,6 +1231,7 @@ void main() {
     await tester.tap(find.text('바로 추천받기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    await _passOriginStep(tester);
     await tester.tap(find.text('아직 안 정했어요'));
     await tester.pump();
     await tester.tap(find.text('다음'));
@@ -1196,7 +1245,7 @@ void main() {
 
     // O-05 이동수단
     expect(find.text('어떻게 이동하세요?'), findsOneWidget);
-    expect(find.text('3/4'), findsOneWidget);
+    expect(find.text('4/5'), findsOneWidget);
     await tester.tap(find.text('대중교통'));
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, '다음').last);
@@ -1205,7 +1254,7 @@ void main() {
 
     // O-06 일정밀도
     expect(find.text('내가 선호하는 여행 스타일은?'), findsOneWidget);
-    expect(find.text('4/4'), findsOneWidget);
+    expect(find.text('5/5'), findsOneWidget);
     await tester.tap(find.text('널널한 일정'));
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, '다음').last);

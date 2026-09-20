@@ -16,5 +16,5 @@ import '../application/course_wizard_provider.dart';
 /// 비운다 — 진입점이 늘어도 이 함수를 부르면 된다.
 void startCourseWizard(BuildContext context, WidgetRef ref) {
   ref.read(courseWizardProvider.notifier).reset();
-  context.push(AppRoutes.wizardDateGate);
+  context.push(AppRoutes.wizardOrigin);
 }

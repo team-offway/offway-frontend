@@ -64,7 +64,7 @@ final courseProvider = FutureProvider.autoDispose
             transport: draft.transportMode == TransportMode.publicTransit
                 ? 'TRANSIT'
                 : 'CAR',
-            originCode: null,
+            originCode: draft.origin?.code,
             travelDate:
                 availableTime?.startDate ??
                 draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
@@ -212,7 +212,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
             transport: draft.transportMode == TransportMode.publicTransit
                 ? 'TRANSIT'
                 : 'CAR',
-            originCode: null,
+            originCode: draft.origin?.code,
             travelDate:
                 availableTime?.startDate ??
                 draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
