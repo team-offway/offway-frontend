@@ -65,4 +65,31 @@ void main() {
     );
     expect(widgetDeepLinkRoute(Uri.parse('https://offway.cloud/m/x')), isNull);
   });
+  group('로그인 전', () {
+    // 위젯은 로그인 전이면 홈으로 보낸다(`offway://home`). 그 링크를 그대로
+    // 따라가면 스플래시가 정해 둔 온보딩을 덮어써 **로그인을 건너뛴 채**
+    // 홈으로 들어가고, 연차 입력의 '시작하기' 에서 서버가 401 로 막는다
+    test('어떤 위젯 링크도 따라가지 않는다', () {
+      for (final url in [
+        'offway://home',
+        'offway://wizard',
+        'offway://course/122',
+        'offway://course/122?day=2',
+      ]) {
+        expect(
+          widgetDeepLinkRoute(Uri.parse(url), signedIn: false),
+          isNull,
+          reason: '$url 을 따라가면 로그인을 건너뛴다',
+        );
+      }
+    });
+
+    test('로그인돼 있으면 그대로 따라간다', () {
+      // 늘 막으면 위젯이 아무 데도 못 보내는 것과 같다
+      expect(
+        widgetDeepLinkRoute(Uri.parse('offway://wizard'), signedIn: true),
+        AppRoutes.wizardDateGate,
+      );
+    });
+  });
 }

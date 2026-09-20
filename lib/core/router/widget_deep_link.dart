@@ -13,8 +13,15 @@ import 'app_router.dart';
 ///
 /// 우리 스킴이 아니면 null — 공유 링크(`shareToken`)는 따로 푼다.
 /// 모르는 주소면 홈이다 — 위젯을 눌렀는데 아무 일도 없는 것보다 낫다
-String? widgetDeepLinkRoute(Uri uri) {
+/// [signedIn] 이 false 면 **어떤 위젯 링크도 따라가지 않는다**(null).
+///
+/// 위젯은 로그인 전이면 홈으로 보내는데(`offway://home`), 그 링크가 스플래시가
+/// 정해 둔 온보딩을 덮어써 **로그인을 건너뛴 채 홈으로 들어간다.** 그 뒤
+/// 연차 입력의 '시작하기' 에서 서버가 401 로 막아 나갈 길이 없다.
+/// 로그인 전에는 스플래시가 정한 곳(온보딩)에 그대로 둔다.
+String? widgetDeepLinkRoute(Uri uri, {bool signedIn = true}) {
   if (uri.scheme != widgetDeepLinkScheme) return null;
+  if (!signedIn) return null;
   switch (uri.host) {
     case 'course':
       // pathSegments 는 디코드된 값이다 — '/' 가 든 id 를 그대로 끼우면 경로가

@@ -50,16 +50,21 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
   }
 
   void _handle(Uri uri) {
-    // 위젯을 눌러 열렸다 — 공유 링크와 다른 스킴이라 먼저 가른다
-    final widgetRoute = widgetDeepLinkRoute(uri);
+    // 위젯을 눌러 열렸다 — 공유 링크와 다른 스킴이라 먼저 가른다.
+    //
+    // 홈이 스플래시의 다음 화면이라는 것이 곧 로그인돼 있다는 뜻이다(main 이
+    // 토큰을 보고 정한다). 로그인 전이면 푸는 쪽이 null 을 주어 여기를 지나
+    // 간다 — 스플래시가 정한 온보딩에 그대로 두기 위해서다
+    final signedIn = ref.read(postSplashRouteProvider) == AppRoutes.home;
+    final widgetRoute = widgetDeepLinkRoute(uri, signedIn: signedIn);
     if (widgetRoute != null) {
       // **스택을 바꾼다(go).** 위저드 중간에 위젯을 누르면 push 는 옛 위저드
       // 화면 위에 새 위저드를 얹어, 뒤로 가면 비워진 초안의 옛 화면이 나온다.
       // 코스 상세도 같은 화면이 두 장 쌓이지 않게 같은 규칙이다.
       //
-      // 홈으로 가는 링크(로그인 전)도 그대로 보낸다 — 위저드·코스 상세에
-      // 있을 수 있어 조기 반환하면 눌러도 아무 일이 없다. go 라 이미 홈이면
-      // 같은 화면이 쌓이지 않는다
+      // 홈으로 가는 링크도 그대로 보낸다 — 위저드·코스 상세에 있을 수 있어
+      // 조기 반환하면 눌러도 아무 일이 없다. go 라 이미 홈이면 같은 화면이
+      // 쌓이지 않는다
       _open(
         widgetRoute,
         replace: true,
