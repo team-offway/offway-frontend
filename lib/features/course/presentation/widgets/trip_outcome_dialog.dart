@@ -59,6 +59,10 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
   /// 한 줄로 남기는 자리라 시안을 따른다
   static const _maxLength = 50;
 
+  /// 입력란 테두리 — 시안 `line/normal/neutral`(`#70737C` 16%).
+  /// 앱 토큰은 같은 이름인데 32%라 쓸 수 없다
+  static const _borderColor = Color(0x2970737C);
+
   final _comment = TextEditingController();
 
   PendingTrip get trip => widget.trip;
@@ -125,9 +129,13 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            // 시안 실측(1683:43616) — 좌우 20 · 위 24(아이콘 y) ·
-            // 아래 44(입력란 끝 240 → Actions 284)
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 44),
+            // 시안 실측(1683:43616) — 좌우 20 · 위 24(아이콘 y).
+            //
+            // 아래는 **보이는 것을 기준으로 잡았다.** Figma 좌표로는 44지만
+            // (입력란 끝 240 → Actions 284) 실제 시안 렌더는 41이고,
+            // 여기에 버튼이 자체로 가진 세로 여백 4와 글자 줄 높이 여백이
+            // 더해지므로 28을 준다 — 그래야 실측이 시안과 맞는다
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               // **가운데 정렬이다.** 시안이 아이콘·글자·날짜를 모두 가운데
@@ -213,17 +221,23 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
   Widget _buildCommentField() {
     final region = trip.shortRegionName;
     return Container(
-      // 시안 실측 80 — 두 줄짜리 안내와 카운터가 들어가는 높이다
-      height: 80,
+      // 시안 실측(1683:43632) — 안쪽 12, 입력 영역과 카운터 사이 12,
+      // 카운터 칸 24. 입력 영역은 안내 두 줄이 들어가게 잡는다
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lineNormalNeutral),
+        // **토큰을 쓰지 않는다.** 시안의 `line/normal/neutral` 은 16% 인데
+        // 앱 토큰(`lineNormalNeutral`)은 32% 라 두 배 진하다. 토큰을 고치면
+        // 그것을 쓰는 다른 12곳이 함께 옅어져, 이 자리만 시안 값으로 둔다
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          SizedBox(
+            // 안내가 두 줄이라 그만큼 — 한 줄로 잡으면 둘째 줄이 잘린다
+            height: 40,
             child: TextField(
               controller: _comment,
               maxLength: _maxLength,
@@ -248,6 +262,8 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
               ),
             ),
           ),
+          // 시안: 입력 영역(끝 32)과 카운터(44) 사이 12
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
