@@ -22,8 +22,9 @@ void main() {
         theme: AppTheme.light,
         home: Builder(
           builder: (context) => ElevatedButton(
-            onPressed: () async =>
-                answers.add(await showTripOutcomeDialog(context, trip: trip)),
+            onPressed: () async => answers.add(
+              (await showTripOutcomeDialog(context, trip: trip)).answer,
+            ),
             child: const Text('열기'),
           ),
         ),
@@ -33,6 +34,84 @@ void main() {
     await tester.pumpAndSettle();
     return answers;
   }
+
+  /// 답과 한 줄을 함께 받는다 — 평가가 실리는지 보려면 둘 다 필요하다
+  Future<List<TripOutcomeResult>> pumpResult(WidgetTester tester) async {
+    final results = <TripOutcomeResult>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () async =>
+                results.add(await showTripOutcomeDialog(context, trip: trip)),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    return results;
+  }
+
+  testWidgets('남긴 한 줄이 답과 함께 나온다', (tester) async {
+    // 지자체에 전할 평가다(core #593) — 모달이 들고만 있으면 쓸 데가 없다
+    final results = await pumpResult(tester);
+
+    await tester.enterText(find.byType(TextField), '버스 배차가 아쉬웠어요');
+    await tester.tap(find.text('네, 다녀왔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.answer, TripOutcomeAnswer.visited);
+    expect(results.single.comment, '버스 배차가 아쉬웠어요');
+  });
+
+  testWidgets('안 갔다면 쓰던 한 줄을 싣지 않는다', (tester) async {
+    // 가지 않은 여행의 평가는 성립하지 않아 서버가 거절한다(ITINERARY-012).
+    // 쓰다가 마음을 바꿔 '안갔어요'를 눌러도 400 이 되면 안 된다
+    final results = await pumpResult(tester);
+
+    await tester.enterText(find.byType(TextField), '쓰다 말았다');
+    await tester.tap(find.text('안갔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.answer, TripOutcomeAnswer.notVisited);
+    expect(results.single.comment, isNull);
+  });
+
+  testWidgets('비워 두고 답해도 된다 — 평가는 선택이다', (tester) async {
+    // 모달의 본업은 연차 차감이라, 평가가 그것을 막으면 안 된다
+    final results = await pumpResult(tester);
+
+    await tester.tap(find.text('네, 다녀왔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.answer, TripOutcomeAnswer.visited);
+    expect(results.single.comment, isNull);
+  });
+
+  testWidgets('공백만 쳤으면 남기지 않은 것으로 본다', (tester) async {
+    // 입력창을 눌렀다 지우면 빈 문자열이 남는다 — 그대로 올리면
+    // '남겼다' 와 '비웠다' 가 같은 모양이 된다
+    final results = await pumpResult(tester);
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('네, 다녀왔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.comment, isNull);
+  });
+
+  testWidgets('시안대로 50자까지만 받는다', (tester) async {
+    final results = await pumpResult(tester);
+
+    await tester.enterText(find.byType(TextField), '가' * 60);
+    await tester.tap(find.text('네, 다녀왔어요'));
+    await tester.pumpAndSettle();
+
+    expect(results.single.comment, hasLength(50));
+  });
 
   testWidgets('시안 문구를 그대로 보여준다', (tester) async {
     await pump(tester);

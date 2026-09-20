@@ -82,11 +82,11 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Future<void> _ask(PendingTrip trip) async {
     _askedCourseId = trip.courseId;
     _tripDialogOpen = true;
-    final answer = await showTripOutcomeDialog(context, trip: trip);
+    final result = await showTripOutcomeDialog(context, trip: trip);
     _tripDialogOpen = false;
     if (!mounted) return;
 
-    if (answer == TripOutcomeAnswer.later) {
+    if (result.answer == TripOutcomeAnswer.later) {
       // 오늘만 접는다 — 내일 들어오면 다시 묻는다
       await ref
           .read(tripOutcomeSnoozeProvider)
@@ -98,12 +98,16 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
-    final visited = answer == TripOutcomeAnswer.visited;
+    final visited = result.answer == TripOutcomeAnswer.visited;
     final double? remainingDays;
     try {
       remainingDays = await ref
           .read(courseRepositoryProvider)
-          .answerTripOutcome(trip.courseId, visited: visited);
+          .answerTripOutcome(
+            trip.courseId,
+            visited: visited,
+            comment: result.comment,
+          );
     } on ApiException catch (e) {
       if (!mounted) return;
       // 409(이미 답함)면 목록에서 빠지므로 다시 묻지 않는다.

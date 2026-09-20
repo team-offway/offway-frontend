@@ -235,6 +235,7 @@ class _FakeCourseRepository extends CourseRepository {
   Future<double?> answerTripOutcome(
     int courseId, {
     required bool visited,
+    String? comment,
   }) async => null;
 
   @override
