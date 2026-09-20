@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course_wizard/application/course_wizard_provider.dart';
 import 'package:offway/features/course_wizard/data/origin_search_repository.dart';
 import 'package:offway/features/course_wizard/domain/origin_hub.dart';
@@ -232,6 +233,81 @@ void main() {
 
     expect(find.text('서울역'), findsOneWidget);
   });
+
+  testWidgets('검색어가 이름 가운데 있어도 그 부분만 굵다', (tester) async {
+    // '충주' 를 치면 서충주터미널·건국대(충주)터미널도 함께 온다. 앞자리만
+    // 보면 이 둘은 통째로 옅어져, 왜 걸렸는지 알 수 없는 줄이 된다
+    final repo = _NamedRepository(const [
+      OriginHub(
+        code: 'TRAIN:A',
+        name: '충주역',
+        area: '충북',
+        kind: 'TRAIN_STATION',
+      ),
+      OriginHub(
+        code: 'BUS:B',
+        name: '서충주터미널',
+        area: '충북',
+        kind: 'BUS_TERMINAL',
+      ),
+      OriginHub(
+        code: 'BUS:C',
+        name: '건국대(충주)터미널',
+        area: '충북',
+        kind: 'BUS_TERMINAL',
+      ),
+    ]);
+    final router = GoRouter(
+      initialLocation: AppRoutes.wizardOrigin,
+      routes: [
+        GoRoute(
+          path: AppRoutes.wizardOrigin,
+          builder: (_, _) => const OriginScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.wizardDateGate,
+          builder: (_, _) => const Text('날짜 갈림길'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [originSearchRepositoryProvider.overrideWithValue(repo)],
+        child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '충주');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    /// 그 줄에서 굵게 그려진 조각들
+    List<String> boldPartsOf(String name) {
+      final widget = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.byWidgetPredicate(
+            (w) => w is Text && w.textSpan?.toPlainText() == name,
+          ),
+        ),
+      );
+      final root = widget.textSpan! as TextSpan;
+      return [
+        for (final child in root.children ?? const <InlineSpan>[])
+          if (child is TextSpan &&
+              (child.text ?? '').isNotEmpty &&
+              child.style?.fontWeight ==
+                  AppTypography.body1NormalBold.fontWeight)
+            child.text!,
+      ];
+    }
+
+    expect(boldPartsOf('충주역'), ['충주']);
+    expect(boldPartsOf('서충주터미널'), ['충주'], reason: '가운데 있어도 굵어야 한다');
+    expect(boldPartsOf('건국대(충주)터미널'), ['충주'], reason: '괄호 안도 마찬가지다');
+  });
 }
 
 class _RecordingRepository extends OriginSearchRepository {
@@ -292,5 +368,23 @@ class _SlowRepository extends OriginSearchRepository {
     // 빈 목록을 돌려주고, 그 판단은 화면이 아니라 저장소의 몫이다.
     // 여기서는 응답이 **그대로 도착하는** 상황을 만들어 화면을 시험한다
     return completer.future;
+  }
+}
+
+/// 정해 준 목록을 그대로 돌려준다
+class _NamedRepository extends OriginSearchRepository {
+  _NamedRepository(this.hubs) : super(Dio());
+
+  final List<OriginHub> hubs;
+
+  @override
+  Future<List<OriginHub>> search(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
+    if (query.trim().length < OriginSearchRepository.minQueryLength) {
+      return const [];
+    }
+    return hubs;
   }
 }
