@@ -13,6 +13,7 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 import '../domain/weekday_range.dart';
+import 'widgets/wizard_choice_step.dart';
 
 /// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.
@@ -36,7 +37,7 @@ class PeriodStyleScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     _buildTopBar(context),
-                    const SizedBox(height: 68),
+                    const SizedBox(height: kWizardTopGap),
                     SvgPicture.asset(
                       'assets/icons/ic_plane.svg',
                       width: 48,

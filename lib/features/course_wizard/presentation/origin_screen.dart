@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../application/course_wizard_provider.dart';
+import 'widgets/wizard_choice_step.dart';
 import '../data/origin_search_repository.dart';
 import '../domain/origin_hub.dart';
 
@@ -155,8 +156,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
         child: Column(
           children: [
             _buildTopBar(context),
-            // 시안 실측 — 상단바(44) 아래 아이콘 박스까지 68
-            const SizedBox(height: 68),
+            const SizedBox(height: kWizardTopGap),
             SvgPicture.asset(
               'assets/icons/ic_building_blue.svg',
               width: 48,

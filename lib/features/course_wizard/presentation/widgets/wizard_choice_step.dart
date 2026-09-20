@@ -6,6 +6,12 @@ import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import 'wizard_option_button.dart';
 
+/// 상단바(44) 아래 아이콘까지의 여백 — 위저드 다섯 화면이 같은 자리에 선다.
+///
+/// 시안 좌표로 날짜갈림길 165 · 출발지 166 인데, 그 1 은 시안 제작상의
+/// 오차다. 단계를 넘길 때 아이콘이 들썩이지 않게 한 값으로 맞춘다
+const double kWizardTopGap = 67;
+
 /// 위저드 공통 선택 스텝 레이아웃 (STEP0/이동수단/일정밀도가 공유하는 패턴)
 /// 상단 뒤로가기+스텝, 아이콘, 질문, 선택 버튼들, 하단 다음 CTA.
 class WizardChoiceStep extends StatelessWidget {
@@ -48,7 +54,7 @@ class WizardChoiceStep extends StatelessWidget {
                 child: Column(
                   children: [
                     _buildTopBar(context),
-                    const SizedBox(height: 67),
+                    const SizedBox(height: kWizardTopGap),
                     SvgPicture.asset(iconAsset, width: 48, height: 48),
                     const SizedBox(height: 20),
                     Text(
