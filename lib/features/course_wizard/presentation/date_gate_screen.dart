@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../application/course_wizard_provider.dart';
+import 'widgets/wizard_choice_step.dart';
 import 'widgets/wizard_option_button.dart';
 
 /// O-04-0 · 날짜 갈림길 (STEP 0)
@@ -26,7 +27,7 @@ class DateGateScreen extends ConsumerWidget {
         child: Column(
           children: [
             _buildTopBar(context),
-            const SizedBox(height: 60),
+            const SizedBox(height: kWizardTopGap),
             SvgPicture.asset(
               'assets/icons/ic_calendar_blue.svg',
               width: 48,
@@ -105,7 +106,7 @@ class DateGateScreen extends ConsumerWidget {
     return Padding(
       // 버튼이 아이콘보다 넓으므로 좌측 여백을 줄여 아이콘 위치를 맞춘다 —
       // 위저드의 다른 단계와 같은 자리에 선다
-      padding: const EdgeInsets.fromLTRB(6, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(6, 0, 16, 0),
       child: Row(
         children: [
           AppBackButton(
