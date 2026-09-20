@@ -195,10 +195,23 @@ private struct WidgetLeadingIcon: View {
     ]
 
     var body: some View {
-        Image(sky.flatMap { Self.assets[$0] } ?? "WidgetLogo")
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
+        if let asset = sky.flatMap({ Self.assets[$0] }) {
+            Image(asset)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+        } else {
+            // **잠금화면 카드와 같은 에셋을 쓴다**(`TripLogo`). 시안에서 받은
+            // 로고는 부모의 45° 회전이 빠진 채로 와서 각도가 달랐다 — 두 자리가
+            // 같은 파일을 쓰면 앞으로도 어긋나지 않는다.
+            //
+            // 템플릿이라 색을 여기서 정한다
+            Image("TripLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .foregroundStyle(WidgetPalette.islandAccent)
+        }
     }
 }
 
