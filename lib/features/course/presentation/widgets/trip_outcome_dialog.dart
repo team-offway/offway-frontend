@@ -25,25 +25,68 @@ enum TripOutcomeAnswer {
 /// **'나중에 할게요'가 모달 카드 바깥, 딤 레이어 위에 흰 밑줄 글씨로**
 /// 놓인다 — 공통 모달의 2버튼 구조로는 담기지 않는 형태다.
 ///
-/// 어떻게 닫히든 [TripOutcomeAnswer]가 나온다. 딤 탭·뒤로가기는
+/// 모달이 돌려주는 것 — 답과, 남겼다면 그 한 줄.
+///
+/// [comment]는 **다녀왔을 때만** 값이 있다. 안 갔거나 비워 뒀으면 null 이다
+typedef TripOutcomeResult = ({TripOutcomeAnswer answer, String? comment});
+
+/// 어떻게 닫히든 [TripOutcomeResult]가 나온다. 딤 탭·뒤로가기는
 /// [TripOutcomeAnswer.later]다 — 시안이 '나중에 할게요와 동일'로 못박았고,
 /// 답을 못 받은 채 영영 안 묻는 상태가 되면 연차가 틀린 채 남는다.
-Future<TripOutcomeAnswer> showTripOutcomeDialog(
+Future<TripOutcomeResult> showTripOutcomeDialog(
   BuildContext context, {
   required PendingTrip trip,
 }) async {
-  final answer = await showDialog<TripOutcomeAnswer>(
+  final result = await showDialog<TripOutcomeResult>(
     context: context,
     barrierColor: AppColors.materialDimmer,
     builder: (dialogContext) => _TripOutcomeDialog(trip: trip),
   );
-  return answer ?? TripOutcomeAnswer.later;
+  return result ?? (answer: TripOutcomeAnswer.later, comment: null);
 }
 
-class _TripOutcomeDialog extends StatelessWidget {
+class _TripOutcomeDialog extends StatefulWidget {
   const _TripOutcomeDialog({required this.trip});
 
   final PendingTrip trip;
+
+  @override
+  State<_TripOutcomeDialog> createState() => _TripOutcomeDialogState();
+}
+
+class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
+  /// 시안 실측 — 카운터가 `0/50`이다. 서버는 200자까지 받지만(core #593)
+  /// 한 줄로 남기는 자리라 시안을 따른다
+  static const _maxLength = 50;
+
+  final _comment = TextEditingController();
+
+  PendingTrip get trip => widget.trip;
+
+  @override
+  void initState() {
+    super.initState();
+    // 글자 수 카운터가 따라 움직인다
+    _comment.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _comment
+      ..removeListener(_onChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  /// 안 갔으면 한 줄을 싣지 않는다 — 서버가 거절한다(`ITINERARY-012`)
+  void _close(TripOutcomeAnswer answer) {
+    Navigator.of(context).pop((
+      answer: answer,
+      comment: answer == TripOutcomeAnswer.visited ? _comment.text : null,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,56 +122,62 @@ class _TripOutcomeDialog extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            // 시안: 가로 28 · 위 42. 아래는 42가 아니라 17이다 —
-            // Actions(y=205)가 Information(높이 230) 안으로 25 파고든다.
-            // 42로 두면 모달이 시안(257)보다 25 높아진다.
-            // 차감 문구가 없는 변형은 날짜~버튼이 25다 (Actions y=175,
-            // 날짜 글자 끝 y=150)
-            padding: EdgeInsets.fromLTRB(28, 42, 28, deductsLeave ? 17 : 25),
+            // 시안 실측(1683:43616) — 좌우 20 · 위 24(아이콘 y) ·
+            // 아래 44(입력란 끝 240 → Actions 284)
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 44),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              // **가운데 정렬이다.** 시안이 아이콘·글자·날짜를 모두 가운데
+              // 두고(`items-center`·`text-center`), 그 아래 입력란만 폭을 채운다
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 시안 36 — 예전 판(48)보다 작다
                 SvgPicture.asset(
                   'assets/icons/ic_briefcase.svg',
-                  width: 48,
-                  height: 48,
+                  width: 36,
+                  height: 36,
                 ),
-                // 시안: 아이콘~제목 8
+                // 시안: 아이콘 끝 60 → 글자 블록 68
                 const SizedBox(height: 8),
                 Text(
                   trip.title,
+                  textAlign: TextAlign.center,
                   style: AppTypography.heading2Bold.copyWith(
-                    color: AppColors.labelNormal,
-                  ),
-                ),
-                // 시안: 제목~날짜 4
-                const SizedBox(height: 4),
-                Text(
-                  tripPeriodLabel(trip.startDate, trip.endDate),
-                  style: AppTypography.label1NormalMedium.copyWith(
-                    color: AppColors.primaryNormal,
+                    color: AppColors.labelNeutral,
                   ),
                 ),
                 if (deductsLeave) ...[
-                  // 시안: 날짜~본문 16
-                  const SizedBox(height: 16),
+                  // 시안: 제목 끝 28 → 차감 안내 32
+                  const SizedBox(height: 4),
                   Text(
                     '다녀오셨다면 연차 '
                     '${formatLeaveDays(trip.consumedLeaveDays)}일을 차감할게요.',
+                    textAlign: TextAlign.center,
                     style: AppTypography.body2NormalMedium.copyWith(
                       color: AppColors.labelAlternative,
                     ),
                   ),
                 ],
+                // **날짜가 맨 아래다**(시안 y=58). 차감 안내와 자리가 바뀌었다
+                const SizedBox(height: 4),
+                Text(
+                  tripPeriodLabel(trip.startDate, trip.endDate),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.label2Medium.copyWith(
+                    color: AppColors.primaryNormal,
+                  ),
+                ),
+                // 시안: 날짜 끝 76 → 입력란 92
+                const SizedBox(height: 16),
+                _buildCommentField(),
               ],
             ),
           ),
           Padding(
-            // 위 여백 없음 — 본문 블록의 아래 17이 곧 버튼과의 간격이다.
+            // 위 여백 없음 — 본문 블록의 아래 44가 곧 버튼과의 간격이다.
             // 우측 20 = 시안 28 − 버튼이 자체로 가진 좌우 여백 8
             padding: const EdgeInsets.fromLTRB(28, 0, 20, 20),
             child: Row(
@@ -137,18 +186,75 @@ class _TripOutcomeDialog extends StatelessWidget {
                 _DialogAction(
                   label: '안갔어요',
                   color: AppColors.labelAlternative,
-                  onTap: () =>
-                      Navigator.of(context).pop(TripOutcomeAnswer.notVisited),
+                  onTap: () => _close(TripOutcomeAnswer.notVisited),
                 ),
                 // 시안 간격 24 − 양쪽 버튼 여백 8+8
                 const SizedBox(width: 8),
                 _DialogAction(
                   label: '네, 다녀왔어요',
                   color: AppColors.primaryNormal,
-                  onTap: () =>
-                      Navigator.of(context).pop(TripOutcomeAnswer.visited),
+                  onTap: () => _close(TripOutcomeAnswer.visited),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 그 지역이 어땠는지 남기는 한 줄 (시안 1683:43632).
+  ///
+  /// **선택이다.** 비워 두고 답해도 되고, 서버도 없으면 없는 대로 받는다 —
+  /// 모달의 본업은 연차 차감이라 평가가 그것을 막으면 안 된다(core #593).
+  ///
+  /// 안 갔다고 답하면 실어 보내지 않으므로, 쓰다가 '안갔어요'를 눌러도
+  /// 버려질 뿐 오류가 되지 않는다
+  Widget _buildCommentField() {
+    final region = trip.shortRegionName;
+    return Container(
+      // 시안 실측 80 — 두 줄짜리 안내와 카운터가 들어가는 높이다
+      height: 80,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.lineNormalNeutral),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _comment,
+              maxLength: _maxLength,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: AppTypography.label1NormalMedium.copyWith(
+                color: AppColors.labelNormal,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                // 기본 카운터를 끈다 — 시안은 입력란 **안쪽 아래**에 둔다
+                counterText: '',
+                hintText: region == null
+                    ? '이번 여행은 어떠셨나요?\n좋았던 점이나 아쉬웠던 점을 남겨주세요.'
+                    : '$region 여행은 어떠셨나요?\n좋았던 점이나 아쉬웠던 점을 남겨주세요.',
+                hintStyle: AppTypography.label1NormalMedium.copyWith(
+                  color: AppColors.labelAssistive,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '${_comment.text.characters.length}/$_maxLength',
+              style: AppTypography.label2Medium.copyWith(
+                color: AppColors.labelAlternative,
+              ),
             ),
           ),
         ],
@@ -163,7 +269,7 @@ class _TripOutcomeDialog extends StatelessWidget {
   Widget _buildLaterButton(BuildContext context) {
     return Center(
       child: GestureDetector(
-        onTap: () => Navigator.of(context).pop(TripOutcomeAnswer.later),
+        onTap: () => _close(TripOutcomeAnswer.later),
         behavior: HitTestBehavior.opaque,
         child: Padding(
           // 시안 버튼 높이 28 = 글자 20 + 위아래 4. 좌우로도 6을 둬

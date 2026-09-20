@@ -248,14 +248,29 @@ class CourseRepository {
   /// 답한 뒤의 잔여 연차를 돌려주므로 화면이 바로 고쳐 그릴 수 있다.
   ///
   /// 이미 답했거나 아직 끝나지 않은 여행이면 409가 온다.
+  ///
+  /// [comment]는 그 지역이 어땠는지 남기는 한 줄 — **선택이다**(core #593).
+  /// 서버는 사용자·코스와 잇지 않은 **익명 표**에 지역과 함께만 쌓아,
+  /// 인구감소지역 지자체에 전할 근거로 쓴다.
+  ///
+  /// **안 갔다면 보내지 않는다.** 가지 않은 여행의 평가는 성립하지 않아
+  /// 서버가 거절한다(`ITINERARY-012`)
   Future<double?> answerTripOutcome(
     int courseId, {
     required bool visited,
+    String? comment,
   }) async {
     try {
+      final trimmed = comment?.trim();
       final response = await _dio.post<dynamic>(
         '/api/v1/courses/$courseId/trip-outcome',
-        data: {'outcome': visited ? 'VISITED' : 'NOT_VISITED'},
+        data: {
+          'outcome': visited ? 'VISITED' : 'NOT_VISITED',
+          // 공백뿐이면 안 보낸다 — 서버도 접어서 버리지만, 보내지 않는 쪽이
+          // "남겼다" 와 "비웠다" 를 앱에서부터 가른다
+          if (visited && trimmed != null && trimmed.isNotEmpty)
+            'comment': trimmed,
+        },
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>?;
       return (data?['remainingDays'] as num?)?.toDouble();
