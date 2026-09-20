@@ -7,6 +7,7 @@ import '../constants/trip_constants.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/course_wizard/presentation/calendar_screen.dart';
 import '../../features/course_wizard/presentation/date_gate_screen.dart';
+import '../../features/course_wizard/presentation/origin_screen.dart';
 import '../../features/course/presentation/course_screen.dart';
 import '../../features/course/presentation/course_save_date_screen.dart';
 import '../../features/course/presentation/course_schedule_screen.dart';
@@ -72,6 +73,7 @@ abstract final class AppRoutes {
   /// 추천코스 형태로 보여준다 — 웹 공유 페이지와 같은 분기다.
   static String sharedCoursePath(String shareToken, {String? kind}) =>
       '/shared/$shareToken${kind == null ? '' : '?kind=$kind'}';
+  static const wizardOrigin = '/wizard/origin';
   static const wizardDateGate = '/wizard/date-gate';
   static const wizardCalendar = '/wizard/calendar';
   static const wizardPeriodStyle = '/wizard/period-style';
@@ -305,6 +307,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.notifications,
         name: 'notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.wizardOrigin,
+        name: 'wizardOrigin',
+        builder: (context, state) => const OriginScreen(),
       ),
       GoRoute(
         path: AppRoutes.wizardDateGate,
