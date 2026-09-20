@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/trip_constants.dart';
+import '../domain/origin_hub.dart';
 
 /// STEP0 갈림길 선택지
 enum DatePathChoice {
@@ -74,6 +75,7 @@ enum ScheduleDensity { packed, relaxed }
 /// 코스 추천 위저드(O-04-0 ~ O-08)가 단계별로 채워가는 조건.
 class CourseWizardDraft {
   const CourseWizardDraft({
+    this.origin,
     this.datePath,
     this.startDate,
     this.endDate,
@@ -83,6 +85,9 @@ class CourseWizardDraft {
     this.transportMode,
     this.scheduleDensity,
   });
+
+  /// 사용자가 고른 출발지. null 이면 서버가 기본 출발지(서울역)를 쓴다.
+  final OriginHub? origin;
 
   final DatePathChoice? datePath;
 
@@ -148,6 +153,7 @@ class CourseWizardDraft {
 
   /// 날짜 필드(startDate/endDate)는 별도 시맨틱이 있어 _withDates로만 변경한다.
   CourseWizardDraft copyWith({
+    OriginHub? origin,
     DatePathChoice? datePath,
     PeriodStyle? periodStyle,
     WeekendDays? weekendPattern,
@@ -156,6 +162,7 @@ class CourseWizardDraft {
     ScheduleDensity? scheduleDensity,
   }) {
     return CourseWizardDraft(
+      origin: origin ?? this.origin,
       datePath: datePath ?? this.datePath,
       startDate: startDate,
       endDate: endDate,
@@ -169,6 +176,7 @@ class CourseWizardDraft {
 
   CourseWizardDraft _withDates(DateTime? start, DateTime? end) {
     return CourseWizardDraft(
+      origin: origin,
       datePath: datePath,
       startDate: start,
       endDate: end,
@@ -184,6 +192,10 @@ class CourseWizardDraft {
 class CourseWizardNotifier extends Notifier<CourseWizardDraft> {
   @override
   CourseWizardDraft build() => const CourseWizardDraft();
+
+  void selectOrigin(OriginHub origin) {
+    state = state.copyWith(origin: origin);
+  }
 
   void selectDatePath(DatePathChoice choice) {
     state = state.copyWith(datePath: choice);

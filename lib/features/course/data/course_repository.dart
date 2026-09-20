@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_format.dart';
@@ -32,7 +31,7 @@ class CourseRepository {
     required int travelDays,
     required String density,
     required String transport,
-    required Origin origin,
+    required String? originCode,
     required DateTime travelDate,
     DateTime? confirmedDate,
   }) async {
@@ -44,8 +43,8 @@ class CourseRepository {
           'travelDays': travelDays,
           'density': density,
           'transport': transport,
-          'originLat': origin.lat,
-          'originLng': origin.lng,
+          // 없으면 서버가 기본 출발지(서울역)를 쓴다 — 전환기 계약(core #591)
+          'originCode': ?originCode,
           'travelDate': isoDate(travelDate),
         },
       );
@@ -58,7 +57,7 @@ class CourseRepository {
           density: density,
           transport: transport,
           confirmedDate: confirmedDate,
-          origin: origin,
+          originCode: originCode,
         ),
       );
     } on DioException catch (e) {
@@ -77,7 +76,7 @@ class CourseRepository {
     required int travelDays,
     required String density,
     required String transport,
-    required Origin origin,
+    required String? originCode,
     required DateTime travelDate,
     DateTime? confirmedDate,
     int? previousSeed,
@@ -90,8 +89,8 @@ class CourseRepository {
           'travelDays': travelDays,
           'density': density,
           'transport': transport,
-          'originLat': origin.lat,
-          'originLng': origin.lng,
+          // 없으면 서버가 기본 출발지(서울역)를 쓴다 — 전환기 계약(core #591)
+          'originCode': ?originCode,
           'travelDate': isoDate(travelDate),
           'previousSeed': ?previousSeed,
         },
@@ -107,7 +106,7 @@ class CourseRepository {
             density: density,
             transport: transport,
             confirmedDate: confirmedDate,
-            origin: origin,
+            originCode: originCode,
           ),
         ),
         seed: (data['seed'] as num).toInt(),
@@ -517,7 +516,7 @@ class CourseRepository {
     required String density,
     required String transport,
     required DateTime? confirmedDate,
-    required Origin origin,
+    required String? originCode,
   }) {
     final days = (course['days'] as List).cast<Map<String, dynamic>>();
     return {
@@ -525,8 +524,7 @@ class CourseRepository {
       'density': density,
       'transport': transport,
       // 상세 조회가 이 값으로 도착 정보를 다시 계산한다
-      'originLat': origin.lat,
-      'originLng': origin.lng,
+      'originCode': ?originCode,
       if (confirmedDate != null) 'travelDate': isoDate(confirmedDate),
       'days': [
         for (final day in days)

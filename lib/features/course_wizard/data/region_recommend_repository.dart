@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../region/domain/region_visit_metrics.dart';
 import '../../../core/network/dio_client.dart';
@@ -20,7 +19,7 @@ class RegionRecommendRepository {
   /// [maxReachMinutes]는 가용시간 계산이 준 도달 한계 — 일정이 짧을수록 줄어든다.
   Future<({List<Map<String, dynamic>> regions, List<DataSource> sources})>
   recommend({
-    required Origin origin,
+    required String? originCode,
     required String transport,
     required int maxReachMinutes,
   }) async {
@@ -28,8 +27,8 @@ class RegionRecommendRepository {
       final response = await _dio.post<dynamic>(
         '/api/v1/regions/recommendations',
         data: {
-          'originLat': origin.lat,
-          'originLng': origin.lng,
+          // 없으면 서버가 기본 출발지(서울역)를 쓴다 — 전환기 계약(core #591)
+          'originCode': ?originCode,
           'transport': transport,
           'maxReachMinutes': maxReachMinutes,
         },

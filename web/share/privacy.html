@@ -153,7 +153,7 @@
         <tr><td>잔여 연차 일수</td><td>이용자가 직접 입력</td><td>여행 가능 기간 계산</td></tr>
         <tr><td>연차 사용 내역<br>(사용일·일수·사유)</td><td>이용자가 직접 등록</td><td>잔여 연차 관리</td></tr>
         <tr><td>저장한 여행 코스, 여행 날짜</td><td>이용자가 코스를 담을 때</td><td>코스 조회·일정 안내</td></tr>
-        <tr><td>위치 정보 (위도·경도)</td><td>코스 추천 시<br>(권한 허용한 경우)</td><td>현재 위치 기준<br>도달 가능 지역 추천</td></tr>
+        <tr><td>출발지<br>(이용자가 고른 역·터미널·장소)</td><td>코스 추천 시<br>이용자가 직접 선택</td><td>출발지 기준<br>도달 가능 지역 추천</td></tr>
         <tr><td>푸시 알림 토큰</td><td>알림 권한을 허용한 경우</td><td>여행 일정·혜택 알림 발송</td></tr>
         <tr><td>잠금화면 카드 토큰</td><td>여행 출발이 가까워졌을 때<br>(iOS 16.1 이상)</td><td>잠금화면 여행 카드 표시·갱신</td></tr>
       </tbody>
@@ -177,11 +177,12 @@
   </ul>
   <p>수집한 개인정보는 위 목적 외의 용도로 이용하지 않으며, 목적이 변경될 경우 사전에 동의를 받습니다.</p>
 
-  <h2>3. 위치정보의 이용</h2>
+  <h2>3. 출발지 정보의 이용</h2>
   <ul>
-    <li>회사는 <strong>코스를 추천하는 시점에만</strong> 이용자의 현재 위치를 확인합니다.</li>
-    <li>위치 정보는 도달 가능한 지역을 계산하기 위해 일시적으로 사용하며, <strong>개인을 식별할 수 있는 형태로 저장하지 않습니다.</strong></li>
-    <li>위치 권한은 기기 설정에서 언제든 철회할 수 있습니다. 다만 권한을 허용하지 않으면 현재 위치 기반 추천은 이용할 수 없습니다.</li>
+    <li>회사는 <strong>이용자의 기기 위치(GPS)를 수집하지 않습니다.</strong> 위치 권한을 요구하지 않으며, 기기의 위치를 확인하거나 전송하지 않습니다.</li>
+    <li>코스 추천에 필요한 출발지는 <strong>이용자가 역·터미널·장소를 직접 검색해 고른 값</strong>이며, 이는 이용자가 입력한 정보입니다.</li>
+    <li>고른 출발지는 도달 가능한 지역과 이동 시간을 계산하는 데 사용하며, 저장한 코스의 교통 안내를 다시 계산하기 위해 해당 코스와 함께 보관합니다.</li>
+    <li>출발지는 언제든 다시 골라 바꿀 수 있고, 저장한 코스를 삭제하면 그 코스에 딸린 출발지도 함께 삭제됩니다.</li>
   </ul>
 
   <h2>4. 푸시 알림과 잠금화면 카드</h2>
@@ -310,10 +311,17 @@
         <tr><td>Apple 로그인 ·<br>Apple 푸시 서비스</td><td>로그인, 잠금화면 카드 전달</td><td><a href="https://www.apple.com/legal/privacy/ko/" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>Google 로그인 · Firebase</td><td>로그인, 푸시 알림</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>네이버 지도</td><td>코스 지도 표시</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">바로가기</a></td></tr>
+        <tr><td>카카오 로컬<br>(출발지 검색)</td><td>이용자가 입력한 검색어로<br>역·터미널·장소를 찾기</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">바로가기</a></td></tr>
         <tr><td>한국관광공사 TourAPI</td><td>여행지·장소 정보 제공</td><td>개인정보를 전송하지 않음</td></tr>
       </tbody>
     </table>
   </div>
+
+  <p>
+    출발지 검색은 <strong>회사 서버가 이용자를 대신해</strong> 카카오 로컬에 검색어를 전달하는 방식이며,
+    앱이 직접 호출하지 않습니다. 전달되는 값은 이용자가 입력한 검색어뿐이고,
+    회사는 <strong>검색어를 저장하거나 기록으로 남기지 않습니다.</strong>
+  </p>
 
   <h2>9. 이용자의 권리와 행사 방법</h2>
   <p>이용자는 언제든지 아래 권리를 행사할 수 있습니다.</p>
@@ -411,7 +419,7 @@
         <tr><td>Remaining annual leave days</td><td>Entered by the user</td><td>Calculating available travel periods</td></tr>
         <tr><td>Leave usage records<br>(date, days, reason)</td><td>Entered by the user</td><td>Managing remaining leave</td></tr>
         <tr><td>Saved travel courses and dates</td><td>When you save a course</td><td>Displaying courses and schedules</td></tr>
-        <tr><td>Location (latitude, longitude)</td><td>When recommending courses<br>(if permission granted)</td><td>Recommending reachable<br>destinations from your location</td></tr>
+        <tr><td>Departure point<br>(a station, terminal or place you select)</td><td>Selected by you<br>when requesting a course</td><td>Recommending reachable<br>destinations from your departure point</td></tr>
         <tr><td>Push notification token</td><td>If notification permission granted</td><td>Sending trip and benefit notices</td></tr>
         <tr><td>Lock screen card token</td><td>As your trip start date<br>approaches (iOS 16.1+)</td><td>Displaying and updating the<br>lock screen trip card</td></tr>
       </tbody>
@@ -435,11 +443,12 @@
   </ul>
   <p>We do not use collected information for purposes beyond those listed above. If the purpose changes, we will obtain your consent in advance.</p>
 
-  <h2>3. Use of Location Information</h2>
+  <h2>3. Use of Departure Point Information</h2>
   <ul>
-    <li>We check your current location <strong>only at the moment a course is recommended</strong>.</li>
-    <li>Location data is used temporarily to calculate reachable regions and is <strong>not stored in a personally identifiable form</strong>.</li>
-    <li>You may withdraw location permission at any time in your device settings. Without it, location-based recommendations are unavailable.</li>
+    <li>We <strong>do not collect your device location (GPS)</strong>. The app does not request location permission and never reads or transmits your device's location.</li>
+    <li>The departure point used for recommendations is a value <strong>you select yourself</strong> by searching for a station, terminal or place — it is information you enter.</li>
+    <li>We use it to calculate reachable regions and travel times, and store it with a saved course so that the course's transit guidance can be recalculated later.</li>
+    <li>You may change your departure point at any time. Deleting a saved course also deletes the departure point stored with it.</li>
   </ul>
 
   <h2>4. Push Notifications and Lock Screen Cards</h2>
@@ -568,10 +577,17 @@
         <tr><td>Apple Sign In ·<br>Apple Push Notification service</td><td>Sign-in, lock screen card delivery</td><td><a href="https://www.apple.com/legal/privacy/en-ww/" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Google Sign-In · Firebase</td><td>Sign-in, push notifications</td><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Naver Map</td><td>Displaying course maps</td><td><a href="https://policy.naver.com/policy/privacy.html" target="_blank" rel="noopener">Link</a></td></tr>
+        <tr><td>Kakao Local<br>(departure point search)</td><td>Finding stations, terminals and places<br>from the term you enter</td><td><a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noopener">Link</a></td></tr>
         <tr><td>Korea Tourism Organization TourAPI</td><td>Destination and place data</td><td>No personal information transmitted</td></tr>
       </tbody>
     </table>
   </div>
+
+  <p>
+    Departure point search is performed by <strong>our server on your behalf</strong>, which passes the search term
+    to Kakao Local; the app never calls it directly. Only the term you type is sent, and we
+    <strong>do not store or log search terms.</strong>
+  </p>
 
   <h2>9. Your Rights and How to Exercise Them</h2>
   <p>You may exercise the following rights at any time.</p>

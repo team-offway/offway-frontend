@@ -115,7 +115,7 @@ class DateGateScreen extends ConsumerWidget {
           ),
           const Spacer(),
           Text(
-            '1/4',
+            '2/5',
             // 시안: Body 1 Bold + Label/Assistive (하드코딩 색을 쓰고 있었다)
             style: AppTypography.body1NormalBold.copyWith(
               color: AppColors.labelAssistive,

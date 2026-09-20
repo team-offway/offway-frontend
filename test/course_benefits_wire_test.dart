@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/policy/domain/region_benefit.dart';
 
@@ -55,7 +54,7 @@ void main() {
       travelDays: 1,
       density: 'RELAXED',
       transport: 'CAR',
-      origin: const Origin(lat: 37.5, lng: 127.0, isFallback: false),
+      originCode: null,
       travelDate: DateTime(2026, 9, 20),
     );
   }
