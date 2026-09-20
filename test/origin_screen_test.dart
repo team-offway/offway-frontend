@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -160,6 +162,76 @@ void main() {
     final next = find.widgetWithText(FilledButton, '다음');
     expect(tester.widget<FilledButton>(next).onPressed, isNull);
   });
+
+  testWidgets('늦게 온 옛 검색 결과가 새 검색어의 목록에 뜨지 않는다', (tester) async {
+    // 디바운스(300ms)가 끝나 요청이 나간 뒤 글자를 고치면, 그 사이 도착한
+    // 옛 응답이 새 검색어 화면에 뜬다. 그때 누르면 엉뚱한 출발지가 잡힌다
+    final slow = _SlowRepository();
+    final router = GoRouter(
+      initialLocation: AppRoutes.wizardOrigin,
+      routes: [
+        GoRoute(
+          path: AppRoutes.wizardOrigin,
+          builder: (_, _) => const OriginScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.wizardDateGate,
+          builder: (_, _) => const Text('날짜 갈림길'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [originSearchRepositoryProvider.overrideWithValue(slow)],
+        child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // '정선' 을 치고 디바운스가 끝나 요청이 나간다
+    await tester.enterText(find.byType(TextField), '정선');
+    await tester.pump(const Duration(milliseconds: 350));
+
+    // 응답이 오기 전에 '서울' 로 고친다
+    await tester.enterText(find.byType(TextField), '서울');
+    await tester.pump();
+
+    // 옛 응답('정선역')이 이제 도착한다
+    slow.complete('정선', const [
+      OriginHub(
+        code: 'TRAIN:NAT610226',
+        name: '정선역',
+        area: '강원',
+        kind: 'TRAIN_STATION',
+      ),
+    ]);
+    await tester.pump();
+
+    // 화면 어디에도 없어야 한다. ListView 안으로 한정하면, 목록이 아예
+    // 안 그려진 경우에도 통과해 버려 무엇을 재는지 흐려진다
+    expect(
+      find.text('정선역'),
+      findsNothing,
+      reason: "'서울' 을 친 화면에 '정선' 의 결과가 남으면 안 된다",
+    );
+
+    // 새 검색어의 응답은 정상으로 뜬다 — 위 단언이 '아무것도 안 뜬다' 로
+    // 통과하는 것이 아님을 못박는다.
+    // '서울' 의 디바운스가 끝나야 그 요청이 나간다
+    await tester.pump(const Duration(milliseconds: 350));
+    slow.complete('서울', const [
+      OriginHub(
+        code: 'TRAIN:NAT010000',
+        name: '서울역',
+        area: '서울',
+        kind: 'TRAIN_STATION',
+      ),
+    ]);
+    await tester.pump();
+
+    expect(find.text('서울역'), findsOneWidget);
+  });
 }
 
 class _RecordingRepository extends OriginSearchRepository {
@@ -192,5 +264,33 @@ class _RecordingRepository extends OriginSearchRepository {
         kind: 'BUS_TERMINAL',
       ),
     ];
+  }
+}
+
+/// 검색어마다 응답을 붙잡아 두었다가 원할 때 돌려준다 — 늦게 온 응답을 만든다
+class _SlowRepository extends OriginSearchRepository {
+  _SlowRepository() : super(Dio());
+
+  final _pending = <String, Completer<List<OriginHub>>>{};
+
+  /// 취소로 이미 끝났을 수 있다 — 그 자체가 올바른 동작이라 조용히 넘어간다
+  void complete(String query, List<OriginHub> hubs) {
+    final c = _pending.remove(query);
+    if (c != null && !c.isCompleted) c.complete(hubs);
+  }
+
+  @override
+  Future<List<OriginHub>> search(String query, {CancelToken? cancelToken}) {
+    final trimmed = query.trim();
+    if (trimmed.length < OriginSearchRepository.minQueryLength) {
+      return Future.value(const []);
+    }
+    final completer = Completer<List<OriginHub>>();
+    _pending[trimmed] = completer;
+    // **취소를 대신 처리하지 않는다.** 대역이 빈 목록으로 끝내 버리면 화면이
+    // 취소를 제대로 다루는지 재지 못한다 — 실제 저장소는 취소된 요청에
+    // 빈 목록을 돌려주고, 그 판단은 화면이 아니라 저장소의 몫이다.
+    // 여기서는 응답이 **그대로 도착하는** 상황을 만들어 화면을 시험한다
+    return completer.future;
   }
 }

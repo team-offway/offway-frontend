@@ -78,9 +78,11 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
       setState(() => _selected = null);
     }
     _debounceTimer?.cancel();
+    // 나가 있는 요청도 **여기서** 끊는다. _search 에서만 끊으면 다음 디바운스
+    // (300ms)까지 살아 있어, 그 사이 도착한 옛 응답이 새 검색어 화면에 뜬다
+    _inFlight?.cancel();
     final query = _controller.text.trim();
     if (query.length < OriginSearchRepository.minQueryLength) {
-      _inFlight?.cancel();
       setState(() {
         _results = const [];
         _searching = false;
@@ -92,21 +94,25 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   }
 
   Future<void> _search(String query) async {
-    // 앞선 요청이 늦게 도착해 새 검색어의 목록을 덮지 않게 끊는다
-    _inFlight?.cancel();
     final token = CancelToken();
     _inFlight = token;
     try {
       final hubs = await ref
           .read(originSearchRepositoryProvider)
           .search(query, cancelToken: token);
-      if (!mounted || token.isCancelled) return;
+      // 취소가 늦게 반영될 수 있어 검색어를 직접 대조한다 — 응답이 지금
+      // 칸에 있는 글자의 것일 때만 목록에 올린다
+      if (!mounted || token.isCancelled || query != _controller.text.trim()) {
+        return;
+      }
       setState(() {
         _results = hubs;
         _searching = false;
       });
     } on Object {
-      if (!mounted || token.isCancelled) return;
+      if (!mounted || token.isCancelled || query != _controller.text.trim()) {
+        return;
+      }
       // 검색 실패로 화면을 막지 않는다 — 다시 치면 또 부른다
       setState(() {
         _results = const [];
