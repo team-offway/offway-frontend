@@ -109,12 +109,14 @@ class TripCountdown {
   /// **며칠 뒤까지 띄울지는 [within]이 정한다.** 두 달 뒤 여행에 D-60을
   /// 띄우면 잠금화면만 차지한다 — D-7 부터 띄운다(#338).
   ///
-  /// 위젯과 잠금화면 카드가 **이 값을 함께 쓴다.** 한쪽만 넓히려면 부르는
-  /// 쪽에서 나눠 준다 — 지금은 두 자리가 같은 날 나타나는 편이 덜 헷갈린다
+  /// **이 창은 잠금화면 카드의 것이다.** 위젯은 사용자가 스스로 붙여 둔
+  /// 자리라 창이 없다 — 붙여 뒀는데 빈칸이면 그게 더 나쁘다. 위젯이 고르는
+  /// 규칙은 네이티브 `TripWidgetTrip.pick` 에 따로 있고, 그쪽과 같은 코스를
+  /// 골라야 할 때는 [within] 에 null 을 준다
   static TripCountdown? pick(
     List<TripCountdown> trips,
     DateTime now, {
-    int within = 7,
+    int? within = 7,
   }) {
     final ongoing = trips.where((t) => t.isOngoing(now)).toList()
       ..sort((a, b) => a.startDate.compareTo(b.startDate));
@@ -133,7 +135,8 @@ class TripCountdown {
                   ).isBefore(DateUtils.dateOnly(t.startDate)) &&
                   !t.isPast(now) &&
                   t.daysUntil(now) >= 0 &&
-                  t.daysUntil(now) <= within,
+                  // null 이면 창이 없다 — 위젯과 같은 코스를 고를 때
+                  (within == null || t.daysUntil(now) <= within),
             )
             .toList()
           ..sort((a, b) => a.startDate.compareTo(b.startDate));

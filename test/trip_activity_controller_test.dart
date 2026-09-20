@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart'
     show savedCoursesProvider;
 import 'package:offway/features/trip_activity/application/trip_activity_controller.dart';
@@ -53,6 +56,9 @@ class _FakeService implements TripActivityService {
 
   /// 위젯 저장소에 마지막으로 쓴 목록 — 쓴 적 없으면 null
   List<TripCountdown>? widgetTrips;
+
+  /// 위젯에 실린 일자별 날씨·장소 — 코스 id 별
+  Map<String, List<Map<String, Object?>>> widgetDays = const {};
   int clearWidgetCount = 0;
   int signedInCount = 0;
 
@@ -60,8 +66,12 @@ class _FakeService implements TripActivityService {
   Future<bool> isWidgetAvailable() async => widgetAvailable;
 
   @override
-  Future<bool> setWidgetTrips(List<TripCountdown> trips) async {
+  Future<bool> setWidgetTrips(
+    List<TripCountdown> trips, {
+    Map<String, List<Map<String, Object?>>> daysByCourse = const {},
+  }) async {
     widgetTrips = trips;
+    widgetDays = daysByCourse;
     return true;
   }
 
@@ -101,12 +111,17 @@ void main() {
     List<Map<String, dynamic>> cards,
     _FakeService service, {
     _FakeRepository? repository,
+    _FakeCourseRepository? courses,
   }) {
     final c = ProviderContainer(
       overrides: [
         tripActivityServiceProvider.overrideWithValue(service),
         liveActivityRepositoryProvider.overrideWithValue(
           repository ?? _FakeRepository(),
+        ),
+        // 위젯에 실을 날씨·장소를 읽는 자리 — 서버를 부르지 않게 막는다
+        courseRepositoryProvider.overrideWithValue(
+          courses ?? _FakeCourseRepository(),
         ),
         // 목록을 나중에 바꿔 다시 읽게 할 수 있게 같은 리스트를 돌려준다
         savedCoursesProvider('UPCOMING').overrideWith((ref) async => cards),
@@ -605,6 +620,44 @@ void main() {
       expect(service.signedInCount, 1);
     });
 
+    test('위젯에 그날 날씨와 들를 곳을 함께 싣는다', () async {
+      // 시안(1669:42131·42467)이 날씨 아이콘과 장소 네 줄을 요구한다.
+      // 카드 목록에는 없는 값이라 코스 상세를 따로 읽어 채운다
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final service = _FakeService();
+      final soon = DateTime.now().add(const Duration(days: 2));
+      final c = containerWith(
+        [card(id: '1', start: TripCountdown.isoDate(soon))],
+        service,
+        courses: _FakeCourseRepository(
+          days: [
+            {
+              'day': 1,
+              'weather': {'sky': '맑음'},
+              'places': [
+                {'name': '삼탄아트마인'},
+                {'name': '정선5일장'},
+              ],
+            },
+          ],
+        ),
+      );
+      final controller = c.read(tripActivityControllerProvider);
+      addTearDown(controller.dispose);
+
+      controller.start();
+      await settle();
+      await settle();
+
+      expect(service.widgetDays['1'], [
+        {
+          'day': 1,
+          'sky': '맑음',
+          'places': ['삼탄아트마인', '정선5일장'],
+        },
+      ]);
+    });
+
     test('앱 안에서 코스 목록이 바뀌면 위젯도 따라간다', () async {
       // 코스를 담고·지우고·날짜를 바꾸면 화면이 목록을 다시 읽는다(invalidate).
       // 그때 위젯도 맞춰야 앱을 다시 앞으로 낼 때까지 지운 여행을 세지 않는다
@@ -680,4 +733,20 @@ class _FakeRepository implements LiveActivityRepository {
     pushToStartUnregistered.add(token);
     pushToStartCalls.add('unregister');
   }
+}
+
+/// 위젯에 실을 **날씨·장소**를 주는 대역 — 서버를 부르지 않는다.
+///
+/// 컨트롤러가 코스 상세를 읽어 일자별 값을 뽑는데, 테스트에서 진짜 Dio 가
+/// 나가면 통신 오류로 위젯 갱신 자체가 늦어진다
+class _FakeCourseRepository extends CourseRepository {
+  _FakeCourseRepository({this.days = const []}) : super(Dio());
+
+  /// `_toCourseMap` 이 주는 모양 — `day`·`weather`·`places`
+  final List<Map<String, dynamic>> days;
+
+  @override
+  Future<({Map<String, dynamic> saved, Map<String, dynamic> course})?>
+  savedCourseDetail(String courseId) async =>
+      (saved: <String, dynamic>{}, course: <String, dynamic>{'days': days});
 }
