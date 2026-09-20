@@ -6,7 +6,6 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/app/app.dart';
-import 'package:offway/core/location/origin_locator.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/widgets/trip_date_range_picker.dart';
@@ -163,7 +162,7 @@ class _FakeRegionRecommendRepository extends RegionRecommendRepository {
   @override
   Future<({List<Map<String, dynamic>> regions, List<DataSource> sources})>
   recommend({
-    required Origin origin,
+    required String? originCode,
     required String transport,
     required int maxReachMinutes,
   }) async {
@@ -197,7 +196,7 @@ class _FakeCourseRepository extends CourseRepository {
     required int travelDays,
     required String density,
     required String transport,
-    required Origin origin,
+    required String? originCode,
     required DateTime travelDate,
     DateTime? confirmedDate,
   }) async {
@@ -1211,10 +1210,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, '다음').last);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
 
-    // O-07 로딩 — 후보지역 화면이 검색 동안 직접 보여준다
-    expect(find.textContaining('여행지를 찾고 있어요'), findsOneWidget);
+    // O-07 로딩은 여기서 보지 않는다 — GPS 조회를 걷어내며(core #591)
+    // 남은 비동기가 목 호출뿐이라, 화면 전환이 끝날 때쯤 결과도 와 있어
+    // 로딩을 붙잡을 시점이 없다. 로딩 화면 자체는
+    // `candidates_loading_test.dart` 가 느린 응답으로 고정한다
 
     // 검색(mock 로드)이 끝나면 같은 화면이 결과로 바뀐다
     await tester.pump();

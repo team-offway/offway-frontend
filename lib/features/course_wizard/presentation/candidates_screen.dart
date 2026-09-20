@@ -7,7 +7,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/trip_constants.dart';
-import '../../../core/location/origin_locator.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../../core/router/app_router.dart';
@@ -26,13 +25,14 @@ import '../application/course_wizard_provider.dart';
 import '../data/region_recommend_repository.dart';
 import '../../../core/utils/bottom_inset.dart';
 
-/// 위저드 조건(이동수단·기간)과 현재 위치로 후보지역을 추천받는다.
+/// 위저드 조건(이동수단·기간)으로 후보지역을 추천받는다.
 ///
 /// 도달 한계는 가용시간 계산이 정한다 — 당일치기는 반나절 거리만, 2박3일은
 /// 멀리까지. 계산에 실패하면 기본값(420분)으로 폴백해 추천은 계속된다.
 ///
-/// 위치 권한은 이 시점에 처음 묻는다 — "여행지를 찾는 중"이라는 맥락이 있어야
-/// 왜 위치가 필요한지 납득된다. 거부하면 서울 출발로 가정하고 계속 간다.
+/// **출발지를 앱이 정하지 않는다.** GPS 를 걷어내면서(core #591) 고른 허브가
+/// 없으면 아무것도 싣지 않고, 서버가 기본 출발지를 쓴다. 출발지를 고르는
+/// 화면이 붙으면 그 값이 `originCode` 로 실린다
 final wizardRecommendProvider =
     FutureProvider.autoDispose<
       ({List<Map<String, dynamic>> regions, List<DataSource> sources})
@@ -41,11 +41,10 @@ final wizardRecommendProvider =
         courseWizardProvider.select((draft) => draft.transportMode),
       );
       final availableTime = await ref.watch(availableTimeProvider.future);
-      final origin = await ref.read(originLocatorProvider).resolve();
       return ref
           .read(regionRecommendRepositoryProvider)
           .recommend(
-            origin: origin,
+            originCode: null,
             transport: transport == TransportMode.publicTransit
                 ? 'TRANSIT'
                 : 'CAR',
