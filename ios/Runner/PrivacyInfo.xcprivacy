@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  앱 본체의 개인정보 매니페스트.
+
+	  **개인정보처리방침(web/share/privacy.html 1항)과 같은 내용이어야 한다.**
+	  한쪽만 고치면 앱이 선언한 것과 문서가 어긋나고, 심사에서 그 불일치가
+	  드러난다. 항목을 더하거나 뺄 때는 두 곳을 함께 본다.
+
+	  **위치는 없다.** GPS 수집을 그만두고 사용자가 출발지를 고르는 방식으로
+	  바꿨다(#342 · core #591). 출발지는 이용자가 목록에서 고른 입력값이라
+	  Apple 이 말하는 Location(기기에서 얻은 위치)이 아니다.
+
+	  서드파티 SDK(Firebase·카카오·구글 로그인 등)는 각자 매니페스트를 갖고
+	  있어 여기 적지 않는다.
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<!-- 추적을 하지 않으므로 비운다. 광고 식별자(IDFA)도 쓰지 않는다 -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<dict>
+			<!-- 소셜 로그인이 주는 이메일 — 회원 식별에만 쓴다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- 이름(닉네임) — 마이 화면에 보여준다 -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!--
+			  소셜 제공자의 사용자 식별자(카카오 회원번호·Apple/Google sub),
+			  푸시 알림 토큰, 잠금화면 카드 토큰
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!--
+			  잔여 연차·연차 사용 내역·저장한 코스·여행 날짜·출발지.
+			  모두 이용자가 직접 입력하거나 고른 값이다
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<!--
+			  UserDefaults — 앱과 위젯이 App Group 으로 여행 목록을 주고받는다
+			  (`group.com.nth.offway`). 기기를 식별하는 데 쓰지 않는다
+			-->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!--
+			  파일 타임스탬프 — 이미지 캐시(`appImageCacheManager`)가 오래된
+			  항목을 걷어낼 때 본다. 앱 안에서만 쓰고 밖으로 내보내지 않는다
+			-->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!--
+			  디스크 여유 공간 — 이미지 캐시가 쓸 수 있는 양을 가늠한다.
+			  E174.1: 사용자에게 보여주거나 기기를 식별하는 용도가 아니다
+			-->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
