@@ -18,7 +18,7 @@ void main() {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('여행 D-day 위젯'));
+    await tester.tap(find.text('여행 일정 위젯 설정'));
     await tester.pumpAndSettle();
 
     // 설명은 두 줄 — 디자인 요청(9/16)

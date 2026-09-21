@@ -74,7 +74,7 @@ class MyScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             // 위젯은 사용자가 직접 붙여야 한다 — 어디서 넣는지 알려주는 자리
             _MenuRow(
-              label: '여행 D-day 위젯',
+              label: '여행 일정 위젯 설정',
               onTap: () => showWidgetGuideSheet(context),
             ),
             // 로그인 화면의 동의 문구와 같은 순서로 둔다

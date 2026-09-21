@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 
-/// 여행 D-day 위젯을 붙이는 법 — 마이 메뉴에서 연다(#297).
+/// 여행 일정 위젯을 붙이는 법 — 마이 메뉴에서 연다(#297).
 ///
 /// **위젯은 앱이 대신 붙여 줄 수 없다.** iOS 에 그런 API 가 없어 사용자가
 /// 직접 넣어야 하고, 어디서 넣는지 모르면 기능이 있는 줄도 모른다.
@@ -22,7 +22,7 @@ Future<void> showWidgetGuideSheet(BuildContext context) {
         // 다른 시트와 같은 배치
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const AppSheetTitleBar(title: '여행 D-day 위젯'),
+          const AppSheetTitleBar(title: '여행 일정 위젯'),
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
@@ -65,7 +65,7 @@ class _GuideBody extends StatelessWidget {
           steps: [
             '홈 화면의 빈 곳을 길게 눌러요',
             '왼쪽 위 ‘+’(편집)를 눌러요',
-            'Offway를 찾아 ‘여행 D-day’를 추가해요',
+            'Offway를 찾아 ‘여행 일정’을 추가해요',
           ],
         ),
         const SizedBox(height: 20),

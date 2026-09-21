@@ -20,8 +20,8 @@ struct TripWidget: Widget {
         StaticConfiguration(kind: TripWidgetStore.widgetKind, provider: TripWidgetProvider()) { entry in
             TripWidgetView(snapshot: entry)
         }
-        .configurationDisplayName("여행 D-day")
-        .description("다음 여행까지 남은 날을 보여줘요.")
+        .configurationDisplayName("여행 일정")
+        .description("여행까지 남은 날과, 여행 중에는 그날 일정을 보여줘요.")
         .supportedFamilies([
             .systemSmall,
             .systemMedium,
