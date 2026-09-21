@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/tokens/tokens.dart';
+import '../../../../core/utils/korean_josa.dart';
 import '../../domain/transit_access.dart';
 import 'dotted_line.dart';
 
@@ -179,11 +180,13 @@ class _TransitAccessCardState extends State<TransitAccessCard> {
   /// 이 줄이 자연히 '돌아가기'가 된다 — 따로 기억할 것이 없다
   String? get _swapLabel {
     final next = _next;
-    return next == null ? null : '${next.modeLabel}로 보기';
+    return next == null ? null : '${withEuro(next.modeLabel)} 보기';
   }
 
-  /// `기차로 정선까지` — 수단 이름은 서버가 정한 한글을 그대로 쓴다
-  String get _headline => '${_shown.modeLabel}로 ${_shown.toPlace}까지';
+  /// `기차로 정선까지` — 수단 이름은 서버가 정한 한글을 그대로 쓴다.
+  ///
+  /// 조사는 받침을 보고 고른다 — `여객선`처럼 받침이 있으면 '으로'다
+  String get _headline => '${withEuro(_shown.modeLabel)} ${_shown.toPlace}까지';
 
   /// 둘째 줄 — 아는 만큼만 말한다.
   ///
