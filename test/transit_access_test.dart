@@ -228,6 +228,17 @@ void main() {
       expect(find.text('시외버스로 정선까지'), findsOneWidget);
     });
 
+    testWidgets('받침 있는 수단은 조사가 으로다', (tester) async {
+      // 부산역 출발 · 영도구에서 나온다. 받침을 안 보고 '로'를 박으면
+      // '여객선로 ... 까지'가 된다 — 서버 수단 이름 중 받침이 있는 것은
+      // 지금 여객선뿐이라 이 하나가 어긋났다
+      await pump(
+        tester,
+        TransitAccess.tryParse(raw(modeLabel: '여객선', toPlace: '영도여객선터미널'))!,
+      );
+      expect(find.text('여객선으로 영도여객선터미널까지'), findsOneWidget);
+    });
+
     testWidgets('아는 만큼만 덧붙인다', (tester) async {
       // 버스도 어디서 타는지를 함께 준다(core #424) — 예전에는 이 값이 늘
       // null이라 같은 카드가 수단에 따라 다른 모양이었다. 소요시간은 아직
