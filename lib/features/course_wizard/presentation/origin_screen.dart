@@ -150,20 +150,42 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 포커스가 아니라 실제 키보드 높이로 가른다 — 하드웨어 키보드나 포커스만
+    // 있고 키보드가 내려간 경우에 안내를 접을 이유가 없다
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
         child: Column(
           children: [
             _buildTopBar(context),
-            const SizedBox(height: kWizardTopGap),
-            SvgPicture.asset(
-              'assets/icons/ic_building_blue.svg',
-              width: 48,
-              height: 48,
+            // 키보드가 올라오면 안내를 접어 목록에 자리를 준다.
+            //
+            // 화면이 키보드 높이만큼 줄어드는데 위쪽은 고정 크기라, 그 손실을
+            // 목록이 혼자 떠안는다. 큰 기기에서 두 줄 반, iPhone 15 Pro 에서는
+            // **아예 0** 이었다 — 검색은 되는데 고를 수가 없다.
+            //
+            // 이때 사용자는 이미 무엇을 하는지 아니까 아이콘·부제는 없어도
+            // 된다 — 무슨 화면인지 잃지 않게 제목만 남긴다
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              child: keyboardUp
+                  ? const SizedBox(height: 24)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: kWizardTopGap),
+                        SvgPicture.asset(
+                          'assets/icons/ic_building_blue.svg',
+                          width: 48,
+                          height: 48,
+                        ),
+                        // 시안 측정값 — 아이콘과 질문 사이 20
+                        const SizedBox(height: 20),
+                      ],
+                    ),
             ),
-            // 시안 측정값 — 아이콘과 질문 사이 20
-            const SizedBox(height: 20),
             Text(
               '출발지를 입력해주세요',
               textAlign: TextAlign.center,
@@ -171,16 +193,27 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                 color: AppColors.labelNormal,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
-              textAlign: TextAlign.center,
-              style: AppTypography.body1NormalMedium.copyWith(
-                color: AppColors.labelAlternative,
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              child: keyboardUp
+                  ? const SizedBox(height: 20)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.body1NormalMedium.copyWith(
+                            color: AppColors.labelAlternative,
+                          ),
+                        ),
+                        // 시안 측정값 — 부제(88) 아래 입력칸까지 33
+                        const SizedBox(height: 33),
+                      ],
+                    ),
             ),
-            // 시안 측정값 — 부제(88) 아래 입력칸까지 33
-            const SizedBox(height: 33),
             // 목록이 입력칸을 덮으며 아래로 펼쳐진다. Stack 으로 띄우지 않으면
             // 목록이 화면을 밀어 입력칸이 위로 튄다
             Expanded(

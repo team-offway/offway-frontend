@@ -54,6 +54,35 @@ void main() {
     await tester.pump();
   }
 
+  testWidgets('키보드가 올라오면 안내를 접어 목록에 자리를 준다', (tester) async {
+    // 실기기에서 목록이 두 줄 반만 보이고 잘렸다. 화면이 키보드 높이만큼
+    // 줄어드는데 위쪽은 고정 크기라, 그 손실을 목록이 혼자 떠안는다
+    tester.view.physicalSize = const Size(1179, 2556); // iPhone 15 Pro
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+
+    await pumpScreen(tester);
+    repo.bulk = 20; // 실제 응답은 최대 20건이라 목록이 상한까지 찬다
+    await type(tester, '충주');
+    await tester.pumpAndSettle();
+    final before = tester.getRect(find.byType(ListView).first).height;
+
+    // 키보드가 올라온다
+    tester.view.viewInsets = const FakeViewPadding(bottom: 336 * 3);
+    await tester.pumpAndSettle();
+    final after = tester.getRect(find.byType(ListView).first).height;
+
+    // 안내는 접히고 제목만 남는다 — 무엇을 하는 화면인지는 잃지 않는다
+    expect(find.text('출발지를 입력해주세요'), findsOneWidget);
+    expect(find.textContaining('이동 시간을 고려해'), findsNothing);
+
+    // 접기 전에는 이 기기에서 목록이 **아예 안 보였다**(높이 0).
+    // 세 줄은 남아야 고를 수 있다 — 한 줄 56
+    expect(before, greaterThan(after), reason: '키보드가 뜨면 목록은 줄어든다');
+    expect(after, greaterThan(56 * 3), reason: '접기를 되돌리면 이 기기에서 목록이 0이 된다');
+  });
+
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
     await pumpScreen(tester);
 
@@ -316,6 +345,9 @@ class _RecordingRepository extends OriginSearchRepository {
   final queries = <String>[];
   bool fail = false;
 
+  /// 목록 높이를 재는 테스트가 실제 응답(최대 20건)만큼 채우려고 쓴다
+  int bulk = 0;
+
   @override
   Future<List<OriginHub>> search(
     String query, {
@@ -326,6 +358,17 @@ class _RecordingRepository extends OriginSearchRepository {
     }
     queries.add(query.trim());
     if (fail) throw Exception('서버가 답하지 않았다');
+    if (bulk > 0) {
+      return [
+        for (var i = 0; i < bulk; i++)
+          OriginHub(
+            code: 'TRAIN:$i',
+            name: '충주역$i',
+            area: '충북',
+            kind: 'TRAIN_STATION',
+          ),
+      ];
+    }
     return const [
       OriginHub(
         code: 'TRAIN:NAT610226',
