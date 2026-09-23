@@ -186,93 +186,98 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
           child: Stack(
             key: _stackKey,
             children: [
-              Column(
-                children: [
-                  _buildTopBar(context),
-                  // 키보드가 올라오면 이 여백만 24 로 줄어든다 (시안 1730:40132).
-                  //
-                  // 화면이 키보드 높이만큼 줄어드는데 위쪽은 전부 고정 크기라, 그
-                  // 손실을 목록이 혼자 떠안는다. iPhone 15 Pro 에서는 목록이 **아예
-                  // 0** 이었다 — 검색은 되는데 고를 수가 없었다.
-                  //
-                  // 안내를 지우지는 않는다. 아이콘·제목·부제는 그대로 두고 여백만
-                  // 43 을 내놓는 것이 시안이 고른 답이다
-                  // 자리가 모자라면 안내부터 줄인다 — 작은 화면(SE)에 키보드가
-                  // 올라오면 고정 높이만으로 화면을 넘겼다. 입력칸과 목록은
-                  // 끝까지 온전해야 하므로 이 묶음만 스크롤에 둔다
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
-                            child: SizedBox(
-                              height: keyboardUp
-                                  ? _topGapWithKeyboard
-                                  : kWizardTopGap,
-                            ),
-                          ),
-                          SvgPicture.asset(
-                            'assets/icons/ic_building_blue.svg',
-                            width: 48,
-                            height: 48,
-                          ),
-                          // 시안 측정값 — 아이콘과 질문 사이 20
-                          const SizedBox(height: 20),
-                          Text(
-                            '출발지를 입력해주세요',
-                            textAlign: TextAlign.center,
-                            style: AppTypography.title3Bold.copyWith(
-                              color: AppColors.labelNormal,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
-                            textAlign: TextAlign.center,
-                            style: AppTypography.body1NormalMedium.copyWith(
-                              color: AppColors.labelAlternative,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // 시안 측정값 — 부제(88) 아래 입력칸까지 33
-                  const SizedBox(height: 33),
-                  Padding(
-                    key: _fieldKey,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _fieldSideMargin,
-                    ),
-                    child: _buildField(),
-                  ),
-                  // 남는 공간은 전부 여기로 — 안내(Flexible)와 1:1 로 나누면
-                  // '다음' 버튼이 위로 밀린다. 자리가 모자랄 때만 안내가 줄고
-                  // 이 Spacer 는 0 이 된다
-                  const Spacer(flex: 1000),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _selected == null ? null : _next,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primaryNormal,
-                          disabledBackgroundColor: AppColors.interactionDisable,
-                          foregroundColor: AppColors.staticWhite,
-                          disabledForegroundColor: AppColors.labelAssistive,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+              // 평소에는 화면을 꽉 채워 '다음' 이 아래에 붙고, 자리가 모자라면
+              // (작은 화면 + 키보드) 스크롤된다 — 넘쳐서 잘리는 것을 막는다
+              LayoutBuilder(
+                builder: (context, c) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: c.maxHeight),
+                    child: Column(
+                      children: [
+                        _buildTopBar(context),
+                        // 키보드가 올라오면 이 여백만 24 로 줄어든다 (시안 1730:40132).
+                        //
+                        // 화면이 키보드 높이만큼 줄어드는데 위쪽은 전부 고정 크기라, 그
+                        // 손실을 목록이 혼자 떠안는다. iPhone 15 Pro 에서는 목록이 **아예
+                        // 0** 이었다 — 검색은 되는데 고를 수가 없었다.
+                        //
+                        // 안내를 지우지는 않는다. 아이콘·제목·부제는 그대로 두고 여백만
+                        // 43 을 내놓는 것이 시안이 고른 답이다
+                        // 자리가 모자라면 안내부터 줄인다 — 작은 화면(SE)에 키보드가
+                        // 올라오면 고정 높이만으로 화면을 넘겼다. 입력칸과 목록은
+                        // 끝까지 온전해야 하므로 이 묶음만 스크롤에 둔다
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          child: SizedBox(
+                            height: keyboardUp
+                                ? _topGapWithKeyboard
+                                : kWizardTopGap,
                           ),
                         ),
-                        child: Text('다음', style: AppTypography.body1NormalBold),
-                      ),
+                        SvgPicture.asset(
+                          'assets/icons/ic_building_blue.svg',
+                          width: 48,
+                          height: 48,
+                        ),
+                        // 시안 측정값 — 아이콘과 질문 사이 20
+                        const SizedBox(height: 20),
+                        Text(
+                          '출발지를 입력해주세요',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.title3Bold.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.body1NormalMedium.copyWith(
+                            color: AppColors.labelAlternative,
+                          ),
+                        ),
+                        // 시안 측정값 — 부제(88) 아래 입력칸까지 33
+                        const SizedBox(height: 33),
+                        Padding(
+                          key: _fieldKey,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _fieldSideMargin,
+                          ),
+                          child: _buildField(),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+              ),
+              // 버튼은 늘 화면 아래에 붙는다 — Column 안에 Spacer 로 밀면
+              // 스크롤이 걸릴 때 flex 를 못 써 터진다. 목록과 같은 Stack 에
+              // 두되 먼저 그려, 목록이 이 위를 덮을 수 있게 한다
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _selected == null ? null : _next,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryNormal,
+                        disabledBackgroundColor: AppColors.interactionDisable,
+                        foregroundColor: AppColors.staticWhite,
+                        disabledForegroundColor: AppColors.labelAssistive,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('다음', style: AppTypography.body1NormalBold),
+                    ),
+                  ),
+                ),
               ),
               // 입력칸의 **실측** 아래 8. 여백을 더해 짚으면 글자 크기를
               // 키웠을 때 제목·부제가 늘어 목록이 입력칸을 덮는다
