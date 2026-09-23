@@ -152,7 +152,7 @@ lib/
     └── my/                        # 마이
 
 ios/TripActivity/              # Live Activity 확장 (Swift) — 카드 그리기·문구 조립
-docs/                          # 백엔드 요청서 · Live Activity 설정 기록
+docs/live-activity-setup.md    # Live Activity 설정 기록 · 겪은 함정
 ```
 
 잠금화면·위젯은 Swift 확장(`ios/TripActivity/`)이 그립니다. Flutter 는 재료(지역·날짜)만 넘기고, **'D-3'·'내일 …'·'2일차' 같은 문구는 네이티브 한 곳**에서 만듭니다.
