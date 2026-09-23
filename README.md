@@ -19,8 +19,8 @@ Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 1. [서비스 소개](#서비스-소개)
 2. [주요 화면](#주요-화면)
 3. [앱에서 신경 쓴 것](#앱에서-신경-쓴-것)
-4. [시스템 아키텍처](#시스템-아키텍처)
-5. [기술 스택](#기술-스택)
+4. [기술 스택](#기술-스택)
+5. [시스템 아키텍처](#시스템-아키텍처)
 6. [앱 구조](#앱-구조)
 7. [팀 소개](#팀-소개)
 8. [개발 환경](#개발-환경)
@@ -85,56 +85,17 @@ Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 **로그인은 가볍게.**
 카카오·Apple·구글 계정으로 바로 시작합니다.
 
+## 기술 스택
+
+<img src=".github/readme/tech-stack.png" width="100%" alt="기술 스택" />
+
 ## 시스템 아키텍처
 
-<img src=".github/readme/architecture/offway-app-architecture.png" width="100%" alt="Offway iOS 앱 아키텍처" />
+<img src=".github/readme/architecture.png" width="100%" alt="Offway iOS 앱 아키텍처" />
 
 - **앱은 서버 하나만 봅니다.** 코스·연차·알림이 전부 [core](https://github.com/team-offway/core) API 에서 옵니다. 소셜 로그인 토큰은 서버에 넘겨 우리 JWT 로 바꿉니다.
 - **위젯·잠금화면은 Swift 확장이 그립니다.** 앱은 지역과 날짜만 넘기고, 'D-3'·'내일 …'·'2일차' 같은 문구는 확장이 만듭니다. 앱을 켜지 않아도 서버가 APNs 로 잠금화면 카드를 띄우고 갱신합니다.
 - **공유 링크는 앱 없이 열립니다.** 받은 사람은 브라우저에서 코스를 봅니다. 서버가 브라우저 직접 호출을 막아 두어, 웹이 같은 출처에서 서버를 대신 부릅니다.
-
-## 기술 스택
-
-**Framework & Language**
-
-<p>
-  <img src="https://img.shields.io/badge/Flutter%203.38-02569B?style=for-the-badge&logo=flutter&logoColor=white" />
-  <img src="https://img.shields.io/badge/Dart%203.10-0175C2?style=for-the-badge&logo=dart&logoColor=white" />
-  <img src="https://img.shields.io/badge/Swift-F05138?style=for-the-badge&logo=swift&logoColor=white" />
-</p>
-
-**State · Routing · Network**
-
-<p>
-  <img src="https://img.shields.io/badge/Riverpod%203-00B4AB?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/go__router-02569B?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Dio-0175C2?style=for-the-badge" />
-</p>
-
-**iOS Native**
-
-<p>
-  <img src="https://img.shields.io/badge/WidgetKit-000000?style=for-the-badge&logo=apple&logoColor=white" />
-  <img src="https://img.shields.io/badge/ActivityKit-000000?style=for-the-badge&logo=apple&logoColor=white" />
-  <img src="https://img.shields.io/badge/Keychain-000000?style=for-the-badge&logo=apple&logoColor=white" />
-</p>
-
-**SDK & 연동**
-
-<p>
-  <img src="https://img.shields.io/badge/Naver%20Map-03C75A?style=for-the-badge&logo=naver&logoColor=white" />
-  <img src="https://img.shields.io/badge/Kakao%20Login%20·%20Share-FFCD00?style=for-the-badge&logo=kakaotalk&logoColor=black" />
-  <img src="https://img.shields.io/badge/Sign%20in%20with%20Apple-000000?style=for-the-badge&logo=apple&logoColor=white" />
-  <img src="https://img.shields.io/badge/Google%20Sign--In-4285F4?style=for-the-badge&logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/FCM-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" />
-</p>
-
-**Web · CI**
-
-<p>
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
-  <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" />
-</p>
 
 ## 앱 구조
 
