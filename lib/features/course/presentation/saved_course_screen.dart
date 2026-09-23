@@ -356,7 +356,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       _buildBadges(
                         start,
                         end,
-                        dDay,
                         visited: saved['leaveDeducted'] as bool? ?? false,
                         // 차감한 코스면 서버가 확정한 값이 상세에 실려 온다 —
                         // 그때는 available-time 을 다시 부르지 않는다
@@ -629,8 +628,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
 
   Widget _buildBadges(
     DateTime start,
-    DateTime end,
-    int dDay, {
+    DateTime end, {
     required bool visited,
     double? consumedLeaveDays,
   }) {
@@ -662,16 +660,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           // 목록 카드와 같은 규칙 — 날짜가 지났다고 '여행완료'가 아니라,
           // 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'.
           //
-          // 지난 여행인지는 **종료일**로 가른다(`courseCardBadge`와 동일).
-          // dDay(출발일 기준)로 가르면 2·3일차에 '미방문'이 찍힌다
+          // 지난 여행인지는 **종료일**로 가른다([tripDDayLabel] — 목록 카드·
+          // 공유 코스와 같은 규칙). 출발일로 가르면 2·3일차에 '미방문'이 찍힌다
           label:
-              DateUtils.dateOnly(
+              tripDDayLabel(
+                start,
                 end,
-              ).isBefore(DateUtils.dateOnly(DateTime.now()))
-              ? (visited ? '여행완료' : '미방문')
-              : dDay > 0
-              ? 'D-$dDay'
-              : 'D-DAY',
+                today: DateUtils.dateOnly(DateTime.now()),
+              ) ??
+              (visited ? '여행완료' : '미방문'),
         ),
       ],
     );
