@@ -13,10 +13,11 @@ abstract final class ApiEnvelope {
   ///
   /// 반환 타입은 호출부가 안다 — 목록이면 List, 객체면 Map으로 캐스팅해 쓴다.
   ///
-  /// **출처(`sources`)는 여기서 꺼내지 않는다.** 28곳이 이 함수를 부르는데
-  /// 반환값에 얹으면 호출부마다 그 값을 들고 다녀야 하고, 한 곳만 빠뜨려도
-  /// 그 화면의 표기가 조용히 사라진다 — 표기 누락은 공모전 규정 위반이다.
-  /// 대신 인터셉터가 응답을 지나가며 [DataSourceRegistry]에 모은다
+  /// **출처(`sources`)는 여기서 꺼내지 않는다.** 30곳 넘게 이 함수를 부르는데
+  /// 반환값에 얹으면 출처가 필요 없는 호출부까지 그 값을 들고 다녀야 한다.
+  /// 출처를 그리는 화면의 repository 가 같은 응답에 [sourcesOf]를 따로 부른다
+  /// — 새 화면에서 빠뜨리면 표기가 조용히 사라지고, 표기 누락은 공모전 규정
+  /// 위반이니 출처가 실리는 API 를 새로 붙일 때 함께 챙긴다
   static dynamic unwrap(Response<dynamic> response) {
     final body = response.data;
     if (body is! Map<String, dynamic>) {

@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import '../../../core/utils/log.dart';
 
 /// 사용자가 로그인 창을 닫는 등 스스로 취소한 경우
 class KakaoLoginCancelled implements Exception {
@@ -30,7 +30,7 @@ class KakaoAuthService {
         // 카카오톡 로그인 화면에서 사용자가 취소하면 앱 전환이 중단된다
         if (e.code == 'CANCELED') throw const KakaoLoginCancelled();
         // 카카오톡은 있으나 계정 미로그인 등으로 실패하면 웹 로그인으로 대체
-        debugPrint('카카오톡 로그인 실패, 웹 로그인으로 전환: $e');
+        logDebug('카카오톡 로그인 실패, 웹 로그인으로 전환: $e');
       }
     }
     try {

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/log.dart';
 
 final deviceIdStorageProvider = Provider<DeviceIdStorage>(
   (ref) => DeviceIdStorage(const FlutterSecureStorage()),
@@ -46,14 +47,14 @@ class DeviceIdStorage {
       final saved = await _storage.read(key: _key);
       if (saved != null && saved.isNotEmpty) return saved;
     } on Object catch (e) {
-      debugPrint('기기 id 를 읽지 못했다: $e');
+      logDebug('기기 id 를 읽지 못했다: $e');
     }
     final id = newId();
     try {
       await _storage.write(key: _key, value: id);
     } on Object catch (e) {
       // 저장이 안 돼도 이번 실행에서는 이 값을 쓴다 — 없는 것보다 낫다
-      debugPrint('기기 id 를 저장하지 못했다: $e');
+      logDebug('기기 id 를 저장하지 못했다: $e');
     }
     return id;
   }

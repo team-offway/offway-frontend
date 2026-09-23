@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../domain/trip_countdown.dart';
+import '../../../core/utils/log.dart';
 
 /// 네이티브가 카드의 푸시 토큰을 받았다 — 카드 하나마다 토큰이 따로다
 typedef PushTokenListener = void Function(String courseId, String token);
@@ -50,13 +51,13 @@ class TripActivityService {
               .timeout(_timeout) ??
           false;
     } on PlatformException catch (e) {
-      debugPrint('Live Activity 가능 여부를 묻지 못했다: ${e.message}');
+      logDebug('Live Activity 가능 여부를 묻지 못했다: ${e.message}');
       return false;
     } on MissingPluginException {
       // 네이티브가 아직 안 붙은 빌드 — 기능이 없는 것이지 오류가 아니다
       return false;
     } on TimeoutException {
-      debugPrint('Live Activity 가능 여부가 제때 오지 않았다');
+      logDebug('Live Activity 가능 여부가 제때 오지 않았다');
       return false;
     }
   }
@@ -141,7 +142,7 @@ class TripActivityService {
               .timeout(_timeout) ??
           false;
     } on PlatformException catch (e) {
-      debugPrint('위젯 가능 여부를 묻지 못했다: ${e.message}');
+      logDebug('위젯 가능 여부를 묻지 못했다: ${e.message}');
       return false;
     } on MissingPluginException {
       return false;
@@ -216,15 +217,15 @@ class TripActivityService {
       await _channel.invokeMethod<void>(method, args).timeout(_timeout);
       return true;
     } on PlatformException catch (e) {
-      debugPrint('Live Activity $method 실패: ${e.message}');
+      logDebug('Live Activity $method 실패: ${e.message}');
       return false;
     } on MissingPluginException {
       // 네이티브가 없는 빌드 — 띄운 적이 없으니 남을 것도 없다
-      debugPrint('Live Activity 네이티브가 없는 빌드다 ($method)');
+      logDebug('Live Activity 네이티브가 없는 빌드다 ($method)');
       return true;
     } on TimeoutException {
       // **뜬 건지 아닌지 모른다.** 모르면 안 된 것으로 친다
-      debugPrint('Live Activity $method 가 제때 답하지 않았다');
+      logDebug('Live Activity $method 가 제때 답하지 않았다');
       return false;
     }
   }

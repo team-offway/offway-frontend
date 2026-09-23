@@ -234,7 +234,7 @@ class _TripOutcomeDialogState extends State<_TripOutcomeDialog> {
         borderRadius: BorderRadius.circular(12),
         // **토큰을 쓰지 않는다.** 시안의 `line/normal/neutral` 은 16% 인데
         // 앱 토큰(`lineNormalNeutral`)은 32% 라 두 배 진하다. 토큰을 고치면
-        // 그것을 쓰는 다른 12곳이 함께 옅어져, 이 자리만 시안 값으로 둔다
+        // 그것을 쓰는 다른 화면들이 함께 옅어져, 이 자리만 시안 값으로 둔다
         border: Border.all(color: _borderColor),
       ),
       child: Column(

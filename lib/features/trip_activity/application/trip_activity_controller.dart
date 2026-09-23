@@ -8,6 +8,7 @@ import '../data/live_activity_repository.dart';
 import '../data/trip_activity_service.dart';
 import '../domain/trip_countdown.dart';
 import '../../../core/storage/registration_memo.dart';
+import '../../../core/utils/log.dart';
 
 final tripActivityServiceProvider = Provider<TripActivityService>(
   (ref) => TripActivityService(),
@@ -127,7 +128,7 @@ class TripActivityController with WidgetsBindingObserver {
     // 돌려주는 값은 **카드**가 내려갔는가다 — 호출부가 그 뜻으로 안내를 띄운다.
     // 위젯 비우기는 네이티브가 실패할 길이 없어(타임아웃뿐) 기록만 남긴다
     final (ended, cleared) = await (service.end(), service.clearWidget()).wait;
-    if (!cleared) debugPrint('위젯을 비우지 못했다 — 앞사람의 여행이 남을 수 있다');
+    if (!cleared) logDebug('위젯을 비우지 못했다 — 앞사람의 여행이 남을 수 있다');
     return ended;
   }
 
@@ -156,7 +157,7 @@ class TripActivityController with WidgetsBindingObserver {
     _syncing = (_syncing ?? Future<void>.value())
         .then((_) => sync())
         .catchError((Object e) {
-          debugPrint('잠금화면을 맞추지 못했다: $e');
+          logDebug('잠금화면을 맞추지 못했다: $e');
         });
   }
 
@@ -187,7 +188,7 @@ class TripActivityController with WidgetsBindingObserver {
       // 위젯은 그대로 둔다 — 위젯은 날짜를 스스로 세므로 알던 여행에 대해선
       // 여전히 맞는 말을 한다. 비우면 잠깐의 통신 실패가 "예정된 여행이
       // 없어요" 로 보인다
-      debugPrint('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
+      logDebug('예정 코스를 읽지 못해 잠금화면을 내린다: $e');
       if (!_stopped) {
         await _unregisterLive();
         await service.end();
@@ -281,7 +282,7 @@ class TripActivityController with WidgetsBindingObserver {
         ],
       };
     } on Object catch (e) {
-      debugPrint('위젯에 실을 코스 상세를 읽지 못했다: $e');
+      logDebug('위젯에 실을 코스 상세를 읽지 못했다: $e');
       return const {};
     }
   }
@@ -297,14 +298,14 @@ class TripActivityController with WidgetsBindingObserver {
     // 토큰이 늦게 닿으면, 방금 지운 등록이 죽은 토큰으로 되살아난다 — 서버가
     // 자정마다 거기 보내다 410 을 받고서야 치운다
     if (courseId != _liveCourseId) {
-      debugPrint('내린 코스($courseId)의 토큰은 올리지 않는다');
+      logDebug('내린 코스($courseId)의 토큰은 올리지 않는다');
       return;
     }
     _ref
         .read(liveActivityRepositoryProvider)
         .register(courseId: courseId, token: token)
         .catchError((Object e) {
-          debugPrint('잠금화면 갱신 토큰을 올리지 못했다: $e');
+          logDebug('잠금화면 갱신 토큰을 올리지 못했다: $e');
         });
   }
 
@@ -347,7 +348,7 @@ class TripActivityController with WidgetsBindingObserver {
         if (_stopped) return;
         await memo.remember(token);
       } on Object catch (e) {
-        debugPrint('push-to-start 토큰을 올리지 못했다: $e');
+        logDebug('push-to-start 토큰을 올리지 못했다: $e');
       }
     });
   }
@@ -380,7 +381,7 @@ class TripActivityController with WidgetsBindingObserver {
             .read(liveActivityRepositoryProvider)
             .unregisterPushToStart(token: token);
       } on Object catch (e) {
-        debugPrint('push-to-start 등록을 지우지 못했다: $e');
+        logDebug('push-to-start 등록을 지우지 못했다: $e');
       }
       // 다음 사람은 같은 기기 토큰을 자기 계정으로 다시 올려야 한다
       await _forgetPushToStart();
@@ -393,7 +394,7 @@ class TripActivityController with WidgetsBindingObserver {
     try {
       await _ref.read(pushToStartMemoProvider).forget();
     } on Object catch (e) {
-      debugPrint('push-to-start 등록 기억을 지우지 못했다: $e');
+      logDebug('push-to-start 등록 기억을 지우지 못했다: $e');
     }
   }
 
@@ -409,7 +410,7 @@ class TripActivityController with WidgetsBindingObserver {
     try {
       await _ref.read(liveActivityRepositoryProvider).unregister(id);
     } on Object catch (e) {
-      debugPrint('잠금화면 갱신 등록을 지우지 못했다: $e');
+      logDebug('잠금화면 갱신 등록을 지우지 못했다: $e');
     }
   }
 }

@@ -86,8 +86,7 @@ class RegionDetailScreen extends ConsumerWidget {
 
   final String regionId;
 
-  // TODO(디자인시스템): 공통 컴포넌트/토큰 확정 후 교체
-  static const _labelNormal = Color(0xFF171719);
+  static const _labelNormal = AppColors.labelNormal;
   // 소개글 본문
   static const _storyText = AppColors.labelNeutral;
   // 화면 끝 인구감소지역 안내 — 제목은 진하게, 설명은 흐리게

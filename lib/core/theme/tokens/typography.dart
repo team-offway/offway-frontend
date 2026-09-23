@@ -13,7 +13,7 @@ import 'package:flutter/painting.dart';
 ///
 /// **fontFamily는 의도적으로 비워둔다.** 서체(Pretendard)는 [AppTheme]의
 /// `ThemeData(fontFamily:)`에서 한 번만 지정해 앱 전체에 적용한다.
-/// 토큰마다 서체를 박아두면 나중에 바꿀 때 여기 57곳을 모두 고쳐야 한다.
+/// 토큰마다 서체를 박아두면 나중에 바꿀 때 여기 토큰 전부를 고쳐야 한다.
 ///
 /// 자간은 Figma가 em(폰트 크기 대비 %)으로 정의해 px로 환산해 넣었다
 /// (예: Caption 1 = 12px × 2.52% = 0.3024).

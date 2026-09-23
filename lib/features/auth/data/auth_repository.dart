@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/storage/secure_storage.dart';
+import '../../../core/utils/log.dart';
 
 /// 소셜 로그인 제공자
 enum SocialProvider {
@@ -200,7 +200,7 @@ class AuthRepository {
       // 로컬은 아래에서 어차피 비운다 — 그게 사용자가 기대하는 결과다.
       // 다만 서버 폐기가 실패한 사실은 남긴다. 성공과 같은 모양으로 삼키면
       // refresh 토큰이 살아 있어도 아무 데도 드러나지 않는다
-      debugPrint(
+      logDebug(
         '로그아웃: 서버 refresh 폐기 실패 '
         '(${e.response?.statusCode ?? e.type}) — 로컬만 비운다',
       );

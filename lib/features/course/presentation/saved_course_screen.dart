@@ -44,6 +44,7 @@ import 'widgets/transit_access_card.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
 import 'widgets/dotted_line.dart';
+import '../../../core/utils/log.dart';
 
 /// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
 final savedCourseDetailProvider = FutureProvider.autoDispose
@@ -150,7 +151,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       detailDone = await storage.isDetailHintDone(widget.savedId);
       shareClosed = await storage.isSharePromptClosed();
     } on Object catch (e) {
-      debugPrint('툴팁 이력 읽기 실패: $e');
+      logDebug('툴팁 이력 읽기 실패: $e');
     }
     if (!mounted) return;
     setState(() {
@@ -1051,14 +1052,6 @@ class _WeatherChip extends StatelessWidget {
   }
 }
 
-/// 저장 코스 전용 장소 목록 — 색 번호·이동거리 칩이 붙는 타임라인.
-///
-/// 코스확정 화면의 목록과 달리 장소 사이 이동거리를 보여주고, 숙소는 번호
-/// 색으로 구분한다.
-/// 자리를 차지하지 않고 **위로 띄우는** 말풍선 자리.
-///
-/// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
-/// 0으로 두고 자식을 위로 끌어올려, 앞 카드 위에 겹치게 한다.
 /// 자리를 차지하지 않고 **아래로 늘어뜨리는** 말풍선 자리.
 ///
 /// 툴팁이 목록 흐름에 끼면 그만큼 아래가 밀려 카드 사이가 벌어진다. 높이를
@@ -1105,6 +1098,10 @@ class _OverlapHint extends StatelessWidget {
   }
 }
 
+/// 저장 코스 전용 장소 목록 — 색 번호·이동거리 칩이 붙는 타임라인.
+///
+/// 코스확정 화면의 목록과 달리 장소 사이 이동거리를 보여주고, 숙소는 번호
+/// 색으로 구분한다.
 class _SavedPlaceList extends StatelessWidget {
   const _SavedPlaceList({
     required this.places,

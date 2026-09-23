@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/registration_memo.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../data/device_repository.dart';
+import '../../../core/utils/log.dart';
 
 final pushRegistrationProvider = Provider<PushRegistration>(
   (ref) => PushRegistration(ref),
@@ -44,7 +44,7 @@ class PushRegistration {
           .getNotificationSettings();
       return settings.authorizationStatus != AuthorizationStatus.denied;
     } on Object catch (e) {
-      debugPrint('알림 권한을 읽지 못했다: $e');
+      logDebug('알림 권한을 읽지 못했다: $e');
       return true;
     }
   }
@@ -74,14 +74,14 @@ class PushRegistration {
       // iOS는 권한을 받아야 APNs 토큰이 나온다. 거부해도 앱은 그대로 간다
       final settings = await messaging.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('푸시 권한 거부 — 기기를 등록하지 않는다');
+        logDebug('푸시 권한 거부 — 기기를 등록하지 않는다');
         return;
       }
 
       final token = await messaging.getToken();
       if (token == null) {
         // APNs 설정이 덜 됐거나 시뮬레이터다 — 둘 다 실기기에서만 풀린다
-        debugPrint('FCM 토큰을 받지 못했다 (APNs 미설정이거나 시뮬레이터)');
+        logDebug('FCM 토큰을 받지 못했다 (APNs 미설정이거나 시뮬레이터)');
         return;
       }
       await _register(token);
@@ -92,7 +92,7 @@ class PushRegistration {
     } on Object catch (e) {
       // PlatformException까지 포함해 전부 삼킨다 — 푸시 하나가 앱을
       // 막아서는 안 된다
-      debugPrint('푸시 등록 실패: $e');
+      logDebug('푸시 등록 실패: $e');
     }
   }
 
@@ -103,14 +103,14 @@ class PushRegistration {
       // 기기를 누구 것으로 둘지 알 수 없다. 토큰 갱신 이벤트가 로그아웃
       // 상태에서 와도 같다
       if (await _ref.read(secureStorageProvider).accessToken == null) {
-        debugPrint('로그인 전이라 기기를 등록하지 않는다');
+        logDebug('로그인 전이라 기기를 등록하지 않는다');
         return;
       }
       // 같은 토큰을 이레 안에 올린 적이 있으면 건너뛴다 — 앱을 켤 때마다
       // 같은 값을 다시 보내고 있었다. 토큰이 바뀌면 값이 달라 자연히 올라간다
       final memo = _ref.read(deviceRegistrationMemoProvider);
       if (await memo.isRegistered(token)) {
-        debugPrint('같은 기기 토큰이 이미 올라가 있다 — 건너뛴다');
+        logDebug('같은 기기 토큰이 이미 올라가 있다 — 건너뛴다');
         return;
       }
       // 메모를 읽는 사이 로그아웃했을 수 있다
@@ -121,7 +121,7 @@ class PushRegistration {
       if (_stopped) return;
       await memo.remember(token);
     } on Object catch (e) {
-      debugPrint('기기 등록 실패: $e');
+      logDebug('기기 등록 실패: $e');
     }
   }
 
@@ -133,21 +133,21 @@ class PushRegistration {
       await _refreshSubscription?.cancel();
     } on Object catch (e) {
       // 구독 취소가 실패해도 해제는 해야 한다
-      debugPrint('토큰 갱신 구독 취소 실패: $e');
+      logDebug('토큰 갱신 구독 취소 실패: $e');
     } finally {
       _refreshSubscription = null;
     }
     try {
       await _ref.read(deviceRepositoryProvider).unregister();
     } on Object catch (e) {
-      debugPrint('기기 해제 실패: $e');
+      logDebug('기기 해제 실패: $e');
     }
     // 다음 사람은 같은 기기 토큰을 자기 계정으로 다시 올려야 한다 — 해제가
     // 실패했어도 잊는다. 다시 올리는 쪽이 늘 안전하다
     try {
       await _ref.read(deviceRegistrationMemoProvider).forget();
     } on Object catch (e) {
-      debugPrint('기기 등록 기억을 지우지 못했다: $e');
+      logDebug('기기 등록 기억을 지우지 못했다: $e');
     }
   }
 }

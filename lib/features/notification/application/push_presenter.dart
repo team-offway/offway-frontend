@@ -9,6 +9,7 @@ import '../../../core/router/app_router.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
 import 'notification_provider.dart';
+import '../../../core/utils/log.dart';
 
 final pushPresenterProvider = Provider<PushPresenter>((ref) {
   final presenter = PushPresenter();
@@ -47,7 +48,7 @@ final pushPresenterProvider = Provider<PushPresenter>((ref) {
 /// 시스템이 띄우므로, 여기서 또 그리면 **같은 알림이 두 번 뜬다.**
 ///
 /// 다만 `notification` 없이 오는 메시지도 있을 수 있어(옛 서버·다른 발송
-/// 경로) 그때는 앱이 대신 그린다 — [_needsLocalBanner]. 그 문구는 목록 셀과
+/// 경로) 그때는 앱이 대신 그린다 — [needsLocalBanner]. 그 문구는 목록 셀과
 /// 같은 [notificationBody]를 쓴다.
 class PushPresenter {
   PushPresenter({FlutterLocalNotificationsPlugin? plugin})
@@ -104,7 +105,7 @@ class PushPresenter {
       await _openFromLaunch();
     } on Object catch (e) {
       // 푸시는 덤이다 — 초기화가 실패해도 앱은 그대로 간다
-      debugPrint('푸시 표시 준비 실패: $e');
+      logDebug('푸시 표시 준비 실패: $e');
     }
   }
 
@@ -135,7 +136,7 @@ class PushPresenter {
         payload: jsonEncode(message.data),
       );
     } on Object catch (e) {
-      debugPrint('푸시 배너 표시 실패: $e');
+      logDebug('푸시 배너 표시 실패: $e');
     }
   }
 
@@ -184,7 +185,7 @@ class PushPresenter {
       final data = jsonDecode(payload) as Map<String, dynamic>;
       openFromPayload(data);
     } on Object catch (e) {
-      debugPrint('푸시 payload를 읽지 못했다: $e');
+      logDebug('푸시 payload를 읽지 못했다: $e');
     }
   }
 

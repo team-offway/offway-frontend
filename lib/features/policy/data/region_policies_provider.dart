@@ -23,9 +23,11 @@ typedef RegionPolicyIndex = Map<String, List<RegionBenefit>>;
 /// id가 이어진다. 404가 연달아 [_endAfterMisses]번 나오면 끝으로 본다.
 /// 세션 동안 한 번만 읽는다.
 ///
-/// TODO(server): 홈·지역 상세가 `benefits[]`를 실어 주면 이 파일을 지우고
-/// 응답을 그대로 쓴다. 화면은 `region['benefits']`만 보므로 그때 바뀔 것이
-/// 없다.
+/// TODO(server): 홈·지역 상세가 `benefits[]`를 실어 주면 색인은 필요 없다 —
+/// [benefitsForCard]가 이미 `card['benefits']`를 먼저 본다. 다만 홈
+/// (`home_screen.dart`)·지역 상세(`region_detail_screen.dart`)가 이 파일의
+/// [benefitsForCard]·[regionPoliciesProvider]를 직접 쓰므로, 지울 때는 그 두
+/// 화면에서 색인을 걷어내는 일이 함께 따른다.
 final regionPoliciesProvider = FutureProvider<RegionPolicyIndex>(
   (ref) async => buildRegionPolicyIndex(
     await ref.watch(allPoliciesProvider.future),

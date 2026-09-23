@@ -30,8 +30,8 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// 글자마다 부르면 한 단어에 요청이 여럿 나간다 — 손이 멈춘 뒤에 한 번만
   static const _debounce = Duration(milliseconds: 300);
 
-  /// 시안 `line/normal/neutral` 은 16% 인데 앱 토큰은 32% 다. 토큰은 12곳이
-  /// 쓰고 있어 전역으로 내리면 다른 화면이 함께 연해진다
+  /// 시안 `line/normal/neutral` 은 16% 인데 앱 토큰은 32% 다. 토큰은 여러
+  /// 화면이 쓰고 있어 전역으로 내리면 다른 화면이 함께 연해진다
   /// TODO(디자인시스템): 토큰 농도가 정리되면 AppColors 로 되돌린다
   static const _fieldBorderColor = Color(0x2970737C);
 

@@ -625,8 +625,10 @@ class _RegionFillPainter extends CustomPainter {
 
   final List<List<Offset>> rings;
 
-  // TODO(디자인시스템): 시안 착지 면 색. 토큰에 없는 값이라 상수로 둔다
-  static const _fill = Color(0xFFE6FFD4);
+  // 시안 착지 면 색. 팔레트(Atomic/Lime/95)에는 있지만 이 용도를 가리키는
+  // Semantic 토큰이 없어 팔레트를 직접 쓴다
+  // TODO(디자인시스템): Semantic 토큰이 생기면 교체
+  static const _fill = AppPalette.lime95;
 
   /// 지도 SVG의 경계선과 같은 색·굵기 — #37383C를 16%로, 0.6 굵기
   static const _line = Color(0x2937383C);

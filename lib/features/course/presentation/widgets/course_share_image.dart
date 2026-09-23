@@ -10,7 +10,7 @@ import '../../../../core/widgets/place_thumbnail.dart';
 /// 공유 웹페이지와 같은 얼굴을 갖되, 한 장으로 끝나는 이미지라 지도와 Day
 /// 탭은 넣지 않는다. [day]가 null이면 전체 일정을 이어 붙인다.
 ///
-/// [savedAt]이 있으면 '내 코스'(날짜·연차 뱃지), 없으면 '추천코스'(안내 문구)로
+/// 여행 날짜(`startDate`)가 있으면 '내 코스'(날짜·연차 뱃지), 없으면 '추천코스'(안내 문구)로
 /// 그린다 — 시안이 그렇게 나뉜다.
 class CourseShareImage extends StatelessWidget {
   const CourseShareImage({

@@ -5,10 +5,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-/// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
-/// 코스 추천 결과·저장한 코스·공유받은 코스 화면이 함께 쓴다.
+import '../../../../core/theme/tokens/tokens.dart';
+
 /// 경로 점선 색 — Atomic/Cool Neutral/60
-const _pathColor = Color(0xFF878A93);
+const _pathColor = AppPalette.coolNeutral60;
 
 /// 지도 마커 — 36은 지도를 덮어 장소가 겹칠 때 서로 가렸다
 const _pinSize = 28.0;
@@ -22,9 +22,11 @@ const _singlePinSize = 44.0;
 /// 처음 보여줄 확대 정도. 10.5는 군 전체가 들어와 마커가 한 덩어리로 뭉쳤다 —
 /// 코스는 대개 한 지역 안이라 더 당겨야 순서가 읽힌다
 const _initialZoom = 12.0;
-const _placeColor = Color(0xFF18D2FE);
-const _stayColor = Color(0xFFF553DA);
+const _placeColor = AppPalette.offway50;
+const _stayColor = AppAccentColors.backgroundPink;
 
+/// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
+/// 코스 추천 결과·저장한 코스·공유받은 코스 화면이 함께 쓴다.
 class CourseMap extends StatelessWidget {
   const CourseMap({super.key, required this.places, required this.dayKey});
 

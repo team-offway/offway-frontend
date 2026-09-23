@@ -1,5 +1,5 @@
 import 'package:app_badge_plus/app_badge_plus.dart';
-import 'package:flutter/foundation.dart';
+import '../../../core/utils/log.dart';
 
 /// 앱 아이콘의 숫자 배지를 서버가 아는 안읽음 수에 맞춘다.
 ///
@@ -15,7 +15,7 @@ Future<void> syncAppIconBadge(int unread) async {
   try {
     await AppBadgePlus.updateBadge(unread < 0 ? 0 : unread);
   } on Object catch (e) {
-    debugPrint('앱 아이콘 배지 갱신 실패: $e');
+    logDebug('앱 아이콘 배지 갱신 실패: $e');
   }
 }
 

@@ -13,7 +13,7 @@ abstract final class RandomBoard {
   /// 상단바 아래 본문(시안 `Frame 2147228782`) 크기
   static const size = Size(402, 752);
 
-  /// 시안 지도 프레임(`_경기도`)의 원점. 시도 조각(`sido_shapes.json`)과
+  /// 시안 지도 프레임(`_경기도`)의 원점. 시군구 경계(`assets/data/region_polygons.json`)와
   /// [project]가 이 원점 기준이다 — 디자이너가 지도를 옮기면 여기만 바꾼다
   /// (2026-09-03 시안 18824:29662에서 (6, 16) → (11.5, 89.24)로 내렸다)
   static const mapOrigin = Offset(11.5, 89.24);
