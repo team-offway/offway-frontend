@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../data/auth_repository.dart';
-import '../../home/presentation/home_screen.dart' show homeUserProvider;
+import '../../home/application/home_providers.dart';
 
 /// 지금 로그인한 사용자 — 홈·마이가 함께 읽는다.
 ///

@@ -8,6 +8,7 @@ import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 연차를 등록하지 않은 사람은 홈에 머물지 못한다.
 ///

@@ -10,10 +10,10 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
 import 'leave_date_picker_screen.dart';
 import 'widgets/leave_days_field.dart';
+import '../../home/application/home_providers.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
 const _reasons = ['여행', '개인 사유', '가족 행사', '병가', '기타'];

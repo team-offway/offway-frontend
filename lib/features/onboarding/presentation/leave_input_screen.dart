@@ -8,8 +8,8 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
-import '../../home/presentation/home_screen.dart';
 import '../data/leave_repository.dart';
+import '../../home/application/home_providers.dart';
 
 /// O-02 · 잔여연차 입력 (온보딩)
 /// 시작하기를 누르면 서버에 총 연차를 저장하고 홈으로 이동한다.

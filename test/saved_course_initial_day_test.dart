@@ -6,6 +6,7 @@ import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 위젯·잠금화면에서 들어오면 **보여 주던 일자**가 열린다(#338).
 ///

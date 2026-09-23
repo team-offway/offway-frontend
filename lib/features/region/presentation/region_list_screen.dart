@@ -8,13 +8,12 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/data_source_note.dart';
-import '../../home/presentation/home_screen.dart'
-    show homePlacesProvider, homeSnapshotProvider;
 import '../data/region_list_repository.dart';
 import '../../policy/data/region_policies_provider.dart';
 import '../../../core/utils/bottom_inset.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
+import '../../home/application/home_providers.dart';
 
 /// 이번달 추천 여행지 — 카테고리 필터 + 2열 그리드.
 ///

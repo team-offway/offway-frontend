@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
-import 'package:offway/features/course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
+import 'package:offway/features/course/application/course_providers.dart';
+import 'package:offway/features/leave/data/consumed_leave_provider.dart';
 
 /// 코스 상세의 '사용 연차' 뱃지 — **상세에 실려 온 값이 먼저다**(core #322).
 ///

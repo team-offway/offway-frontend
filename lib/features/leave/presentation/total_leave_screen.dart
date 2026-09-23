@@ -11,11 +11,11 @@ import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/async_retry.dart';
 import '../../auth/application/current_user_provider.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../onboarding/data/leave_repository.dart';
 import '../data/leave_usages_provider.dart';
 import 'widgets/sparkle.dart';
 import 'widgets/leave_days_field.dart';
+import '../../home/application/home_providers.dart';
 
 /// 총 연차일수를 고쳐 쓰는 화면 — 마이 > 내 연차 관리.
 ///

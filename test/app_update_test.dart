@@ -16,6 +16,7 @@ import 'package:offway/features/update/data/app_store_listing_repository.dart';
 import 'package:offway/features/update/data/update_prompt_snooze_storage.dart';
 import 'package:offway/features/update/domain/app_update.dart';
 import 'package:offway/features/update/presentation/update_prompt_sheet.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 업데이트 모달 (시안 18932:73769) — 스토어에 더 새 버전이 있을 때 홈에서 한 번.
 void main() {

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/data/course_repository.dart';
-import 'package:offway/features/course/presentation/my_courses_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 코스를 담은 뒤 목록이 다시 읽히는지 고정한다.
 ///

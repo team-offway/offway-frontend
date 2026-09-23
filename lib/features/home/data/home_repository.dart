@@ -56,7 +56,7 @@ class HomeRepository {
   final Dio _dio;
 
   Future<HomeSnapshot> fetch() async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/home');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       final sources = ApiEnvelope.sourcesOf(response);
@@ -84,9 +84,7 @@ class HomeRepository {
         curatedLinks: CuratedLink.parseList(data['curatedLinks']),
         sources: sources,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   Map<String, dynamic> _toRegionCardMap(Map<String, dynamic> card) =>

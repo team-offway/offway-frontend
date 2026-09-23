@@ -26,9 +26,6 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/async_retry.dart';
-import '../../course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../data/course_repository.dart';
 import '../data/course_tooltip_storage.dart';
 import 'widgets/distance_chip.dart';
@@ -45,16 +42,9 @@ import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
 import 'widgets/dotted_line.dart';
 import '../../../core/utils/log.dart';
-
-/// 저장한 코스 하나 (`GET /courses/{id}`) — 카드 정보와 일정을 함께 받는다
-final savedCourseDetailProvider = FutureProvider.autoDispose
-    .family<
-      ({Map<String, dynamic> saved, Map<String, dynamic> course})?,
-      String
-    >(
-      (ref, savedId) =>
-          ref.watch(courseRepositoryProvider).savedCourseDetail(savedId),
-    );
+import '../../home/application/home_providers.dart';
+import '../application/course_providers.dart';
+import '../../leave/data/consumed_leave_provider.dart';
 
 /// 내 코스에서 선택해 들어온 코스 상세.
 ///

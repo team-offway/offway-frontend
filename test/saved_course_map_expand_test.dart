@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/course_map.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 내 코스 상세의 지도는 펼치고 접어도 **같은 지도**여야 한다(#363).
 ///

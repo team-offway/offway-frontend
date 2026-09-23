@@ -11,8 +11,8 @@ import '../application/pending_trip_provider.dart';
 import '../data/course_repository.dart';
 import '../data/trip_outcome_snooze_storage.dart';
 import '../domain/pending_trip.dart';
-import 'my_courses_screen.dart' show savedCoursesProvider;
 import 'widgets/trip_outcome_dialog.dart';
+import '../application/course_providers.dart';
 
 /// "다녀오셨나요?" 모달을 화면에 붙인다.
 ///

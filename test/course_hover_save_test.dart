@@ -5,6 +5,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 코스 확정 화면 하단에 떠 있는 '내 코스에 담기' (시안 18860:77008).
 ///

@@ -10,6 +10,7 @@ import 'package:offway/features/course/data/course_tooltip_storage.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 화면별 툴팁 역할 분리 (시안 1505:55696 · 1505:56078).
 ///

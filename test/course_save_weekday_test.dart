@@ -5,8 +5,7 @@ import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/trip_date_range_picker.dart';
 import 'package:offway/features/course/presentation/course_save_date_screen.dart';
-import 'package:offway/features/course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
+import 'package:offway/features/leave/data/consumed_leave_provider.dart';
 
 /// 위저드에서 '목금토'로 만든 코스를 담을 때, 캘린더가 그 요일만 열고
 /// 셋 중 무엇을 눌러도 **목요일**로 시작하는지 고정한다.

@@ -10,10 +10,10 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_inline_notice.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../home/presentation/home_screen.dart';
 import '../application/course_wizard_provider.dart';
 import '../domain/weekday_range.dart';
 import 'widgets/wizard_choice_step.dart';
+import '../../home/application/home_providers.dart';
 
 /// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.

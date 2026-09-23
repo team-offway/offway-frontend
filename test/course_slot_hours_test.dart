@@ -8,6 +8,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 정해진 응답만 돌려주는 어댑터 — 파싱을 실제로 태워 보려는 것이다
 class _FixedResponseAdapter implements HttpClientAdapter {

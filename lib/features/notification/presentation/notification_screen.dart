@@ -13,19 +13,11 @@ import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/async_retry.dart';
 import '../application/notification_provider.dart';
-import '../application/push_registration.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
 import '../../../core/utils/bottom_inset.dart';
 import '../../../core/utils/log.dart';
-
-/// 기기 알림 권한이 켜져 있는지.
-///
-/// 화면에 들어올 때마다 다시 읽는다 — 설정에서 켜고 돌아온 사람에게
-/// 안내가 남아 있으면 안 된다.
-final notificationEnabledProvider = FutureProvider.autoDispose<bool>(
-  (ref) => ref.watch(pushRegistrationProvider).isAuthorized(),
-);
+import '../application/notification_permission_provider.dart';
 
 /// 알림 목록 — 홈 상단 종 아이콘에서 들어온다.
 class NotificationScreen extends ConsumerStatefulWidget {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/poi_detail_screen.dart';
 import 'package:offway/features/policy/presentation/benefit_badge.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 장소 상세 상단바 — 들어온 경로에 따라 지역명을 띄운다.
 void main() {

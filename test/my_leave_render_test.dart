@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
 import 'package:offway/features/leave/presentation/my_leave_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 void main() {
   testWidgets('내 연차 화면이 그려진다', (tester) async {

@@ -18,7 +18,7 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../application/course_wizard_provider.dart';
 import '../data/region_polygons.dart';
 import '../domain/random_map.dart';
-import 'candidates_screen.dart' show wizardCandidatesProvider;
+import '../application/wizard_recommend_provider.dart';
 
 /// 랜덤 지역 선택 — 핀을 던져 후보지역 중 한 곳을 고른다.
 ///

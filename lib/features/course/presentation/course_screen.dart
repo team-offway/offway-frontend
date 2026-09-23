@@ -29,7 +29,6 @@ import '../data/course_repository.dart';
 import '../data/course_tooltip_storage.dart';
 import 'widgets/course_benefit_section.dart';
 import 'widgets/place_info_sheet.dart';
-import 'my_courses_screen.dart' show savedCoursesProvider;
 import '../data/kakao_share.dart';
 import '../domain/share_link.dart';
 import '../../../core/utils/bottom_inset.dart';
@@ -39,41 +38,7 @@ import 'widgets/course_place_list.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
 import '../../../core/utils/log.dart';
-
-/// 위저드 조건(밀도·이동수단·기간)과 현재 위치로 코스를 생성한다.
-///
-/// 여행 날짜·일수는 가용시간 계산(서버, 공휴일 반영)이 확정한 값을 쓰고,
-/// 계산에 실패했을 때만 로컬 추정으로 폴백한다.
-final courseProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>?, ({String regionId, int desiredDays})>((
-      ref,
-      query,
-    ) async {
-      final draft = ref.read(courseWizardProvider);
-      final availableTime = await ref.watch(availableTimeProvider.future);
-      return ref
-          .read(courseRepositoryProvider)
-          .generate(
-            regionId: query.regionId,
-            travelDays: (availableTime?.travelDays ?? query.desiredDays).clamp(
-              1,
-              kMaxTripSpanDays + 1,
-            ),
-            density: draft.scheduleDensity == ScheduleDensity.relaxed
-                ? 'RELAXED'
-                : 'PACKED',
-            transport: draft.transportMode == TransportMode.publicTransit
-                ? 'TRANSIT'
-                : 'CAR',
-            originCode: draft.origin?.code,
-            travelDate:
-                availableTime?.startDate ??
-                draft.travelStartDate(DateUtils.dateOnly(DateTime.now())),
-            // 캘린더에서 직접 고른 날짜만 확정으로 저장한다 — 추정 날짜를 실으면
-            // 일정이 확정된 것처럼 보인다
-            confirmedDate: draft.startDate,
-          );
-    });
+import '../application/course_providers.dart';
 
 /// O-09 · 코스확정 (당일치기 / 1박 이상)
 class CourseScreen extends ConsumerStatefulWidget {

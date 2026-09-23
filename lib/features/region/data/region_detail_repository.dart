@@ -20,14 +20,12 @@ class RegionDetailRepository {
 
   /// 없는 지역이면 서버가 404를 준다 — [ApiException]으로 올라간다.
   Future<Map<String, dynamic>> detail(String regionId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/regions/$regionId');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       // 출처는 data가 아니라 공통 래퍼 옆에 실려 온다(core #417) — 화면이
       // 끝에 표기해야 해서 함께 실어 나른다
       return {...data, '_sources': ApiEnvelope.sourcesOf(response)};
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }

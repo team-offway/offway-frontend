@@ -22,7 +22,7 @@ class NotificationRepository {
     int page = 0,
     int size = 20,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>(
         '/api/v1/notifications',
         queryParameters: {'page': page, 'size': size},
@@ -35,36 +35,30 @@ class NotificationRepository {
             .toList(),
         unreadCount: (data['unreadCount'] as num?)?.toInt() ?? 0,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 알림 하나를 읽음으로 바꾸고 남은 안읽음 수를 돌려준다.
   ///
   /// 이미 읽은 알림에 다시 보내도 200이다 — 화면이 중복 호출을 막지 않아도 된다.
   Future<int> markRead(int notificationId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.patch<dynamic>(
         '/api/v1/notifications/$notificationId/read',
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>?;
       return (data?['unreadCount'] as num?)?.toInt() ?? 0;
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 전부 읽음 처리하고 남은 안읽음 수(0)를 돌려준다
   Future<int> markAllRead() async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/notifications/read-all',
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>?;
       return (data?['unreadCount'] as num?)?.toInt() ?? 0;
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }

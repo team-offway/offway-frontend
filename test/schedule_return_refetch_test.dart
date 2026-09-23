@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 일정 화면을 다녀와도 코스 상세를 **한 번만** 다시 읽는다(#316).
 ///

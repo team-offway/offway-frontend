@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 내 코스 상세의 D-day 뱃지 — 지난 여행인지는 **종료일**로 가른다.
 ///

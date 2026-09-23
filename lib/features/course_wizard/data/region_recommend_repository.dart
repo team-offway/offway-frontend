@@ -23,7 +23,7 @@ class RegionRecommendRepository {
     required String transport,
     required int maxReachMinutes,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/regions/recommendations',
         data: {
@@ -43,9 +43,7 @@ class RegionRecommendRepository {
         regions: regions.map((r) => _toCandidateMap(r, transport)).toList(),
         sources: sources,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 서버 추천 항목 → 후보지역 카드가 읽는 형태.

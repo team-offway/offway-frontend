@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
+import 'package:offway/features/course_wizard/application/wizard_recommend_provider.dart';
 
 /// 후보지역을 찾는 동안 **로딩 화면이 뜬다**.
 ///

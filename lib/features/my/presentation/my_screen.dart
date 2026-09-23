@@ -19,8 +19,8 @@ import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../auth/application/current_user_provider.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import 'widget_guide_sheet.dart';
+import '../../home/application/home_providers.dart';
 
 /// 마이 — 프로필과 계정 관리 메뉴
 class MyScreen extends ConsumerWidget {

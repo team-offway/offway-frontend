@@ -16,10 +16,6 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/async_retry.dart';
 import '../../course/application/pending_trip_provider.dart';
 import '../../course/data/course_repository.dart';
-import '../../course/presentation/my_courses_screen.dart'
-    show savedCoursesProvider;
-import '../../course/presentation/saved_course_screen.dart'
-    show savedCourseDetailProvider;
 import '../data/leave_usages_provider.dart';
 import '../domain/leave_usage.dart';
 import '../../onboarding/data/leave_repository.dart';
@@ -27,6 +23,7 @@ import '../../../core/utils/bottom_inset.dart';
 import 'my_leave_screen.dart' show reasonOf, memoOf, CourseDetailButton;
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
+import '../../course/application/course_providers.dart';
 
 /// O-13 · 연차 사용 내역 전체.
 ///

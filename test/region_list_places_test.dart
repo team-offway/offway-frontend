@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
 import 'package:offway/features/region/presentation/widgets/category_chip.dart';
 import 'package:offway/features/policy/data/region_policies_provider.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 홈 '이번달 추천 여행지' 더보기 — 홈 위 섹션이 장소 카드라 여기도 장소다.
 ///

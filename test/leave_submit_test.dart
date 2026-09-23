@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 서버를 부르지 않고 결과만 흉내내는 대역
 class _FakeLeaveRepository implements LeaveRepository {

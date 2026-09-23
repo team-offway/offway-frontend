@@ -2,9 +2,9 @@ import '../../../core/utils/region_name.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../course/data/course_repository.dart';
-import '../../home/presentation/home_screen.dart';
 import '../../onboarding/data/leave_repository.dart';
 import '../domain/leave_usage.dart';
+import '../../home/application/home_providers.dart';
 
 /// 연차가 바뀐 뒤 다시 읽어야 할 것들을 한꺼번에 비운다.
 ///

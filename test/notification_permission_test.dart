@@ -7,6 +7,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/notification/application/notification_provider.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/notification/presentation/notification_screen.dart';
+import 'package:offway/features/notification/application/notification_permission_provider.dart';
 
 /// 알림 권한이 꺼져 있으면 목록 대신 켜기 안내를 보여준다.
 void main() {

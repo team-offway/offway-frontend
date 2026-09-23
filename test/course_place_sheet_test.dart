@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/presentation/course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 코스 확정에서 장소를 누르면 **담은 뒤 화면과 같은 운영 정보 시트**가
 /// 뜬다 (QA 9/11).
