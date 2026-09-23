@@ -43,3 +43,29 @@ final pendingTripProvider = FutureProvider.autoDispose<PendingTrip?>((
   }
   return null;
 });
+
+/// **알림이 가리킨 여행** — 밀린 목록에 없으면(이미 답했으면) null.
+///
+/// 알림을 눌러 들어온 화면은 [pendingTripProvider]를 쓰지 않는다. 그것은
+/// "가장 오래된, 오늘 미루지 않은 여행 하나"라 두 가지가 어긋났다:
+///
+/// - 홈에서 '나중에 할게요'를 누른 여행의 알림을 누르면 **아무 일도 없었다**.
+///   알림이 곧 질문인데 미룸 기록에 걸려 걸러졌다
+/// - 밀린 여행이 둘이면 알림은 "정선 여행"인데 모달은 **더 오래된 다른 여행**
+///   을 물었다
+///
+/// 그래서 여기서는 미룸 기록을 보지 않고, 그 코스 하나만 찾는다.
+final notifiedTripProvider = FutureProvider.autoDispose
+    .family<PendingTrip?, int>((ref, courseId) async {
+      final List<Map<String, dynamic>> raw;
+      try {
+        raw = (await ref.watch(courseRepositoryProvider).pendingTrips()).trips;
+      } on ApiException {
+        return null;
+      }
+      return raw
+          .map(PendingTrip.tryParse)
+          .nonNulls
+          .where((trip) => trip.courseId == courseId)
+          .firstOrNull;
+    });

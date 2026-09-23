@@ -95,6 +95,12 @@ void main() {
         ProviderScope(
           overrides: [
             pendingTripProvider.overrideWith((ref) async => trip),
+            // 알림으로 들어오면 그 코스를 밀린 목록에서 찾는다
+            if (notificationCourseId != null)
+              notifiedTripProvider(notificationCourseId).overrideWith(
+                (ref) async =>
+                    notificationCourseId == trip.courseId ? trip : null,
+              ),
             myLeaveProvider.overrideWith(
               (ref) async => const MyLeave(
                 totalDays: 30,
