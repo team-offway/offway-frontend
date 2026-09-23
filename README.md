@@ -40,29 +40,35 @@ Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 
 ## 주요 화면
 
-**시작**
+**1 · 연차 기반 맞춤 여행 코스 추천**
 
-| 연차 입력 | 홈 | 내 연차 | 잠금화면 위젯 |
+| 연차 입력 | 홈 | 기간 스타일 | 이동수단 |
 |:---:|:---:|:---:|:---:|
-| <img src=".github/readme/leave-input.webp" width="180" alt="연차 입력"> | <img src=".github/readme/home.webp" width="180" alt="홈"> | <img src=".github/readme/my-leave.webp" width="180" alt="내 연차"> | <img src=".github/readme/lock-widget.webp" width="180" alt="잠금화면 위젯"> |
+| <img src=".github/readme/leave-input.webp" width="180" alt="연차 입력"> | <img src=".github/readme/home.webp" width="180" alt="홈"> | <img src=".github/readme/period-style.webp" width="180" alt="기간 스타일"> | <img src=".github/readme/transport.webp" width="180" alt="이동수단"> |
 
-**코스 추천**
+**2 · 조건에 맞는 지역·코스 추천**
 
-| 기간 스타일 | 이동수단 | 추천 계산 | 후보 지역 |
+| 추천 계산 | 후보 지역 | 코스 추천 | 혜택 확인·저장 |
 |:---:|:---:|:---:|:---:|
-| <img src=".github/readme/period-style.webp" width="180" alt="기간 스타일"> | <img src=".github/readme/transport.webp" width="180" alt="이동수단"> | <img src=".github/readme/loading.webp" width="180" alt="추천 계산"> | <img src=".github/readme/candidates.webp" width="180" alt="후보 지역"> |
+| <img src=".github/readme/loading.webp" width="180" alt="추천 계산"> | <img src=".github/readme/candidates.webp" width="180" alt="후보 지역"> | <img src=".github/readme/course-map.webp" width="180" alt="코스 추천"> | <img src=".github/readme/region-benefits.webp" width="180" alt="혜택 확인·저장"> |
 
-**코스**
+**3 · 저장한 여행 관리·상세 정보**
 
-| 코스 확정 | 지역 혜택 | 코스 상세 | 장소 상세 |
+| 내 코스 | 코스 상세 | 운영 정보 | 장소 상세 |
 |:---:|:---:|:---:|:---:|
-| <img src=".github/readme/course-map.webp" width="180" alt="코스 확정"> | <img src=".github/readme/region-benefits.webp" width="180" alt="지역 혜택"> | <img src=".github/readme/course-detail.webp" width="180" alt="코스 상세"> | <img src=".github/readme/place-detail.webp" width="180" alt="장소 상세"> |
+| <img src=".github/readme/my-courses.webp" width="180" alt="내 코스"> | <img src=".github/readme/course-detail.webp" width="180" alt="코스 상세"> | <img src=".github/readme/place-hours.webp" width="180" alt="운영 정보"> | <img src=".github/readme/place-detail.webp" width="180" alt="장소 상세"> |
 
-**여행 관리**
+**4 · 연차 사용 기록 및 관리**
 
-| 내 코스 | 여행 후 확인 | 추천 콘텐츠 | 연차 사용 등록 |
+| 여행 후 확인 | 내 연차 | 연차 사용 등록 | 연차 반영 |
 |:---:|:---:|:---:|:---:|
-| <img src=".github/readme/my-courses.webp" width="180" alt="내 코스"> | <img src=".github/readme/trip-outcome.webp" width="180" alt="여행 후 확인"> | <img src=".github/readme/home-contents.webp" width="180" alt="추천 콘텐츠"> | <img src=".github/readme/leave-register.webp" width="180" alt="연차 사용 등록"> |
+| <img src=".github/readme/trip-outcome.webp" width="180" alt="여행 후 확인"> | <img src=".github/readme/my-leave.webp" width="180" alt="내 연차"> | <img src=".github/readme/leave-register.webp" width="180" alt="연차 사용 등록"> | <img src=".github/readme/leave-updated.webp" width="180" alt="연차 반영"> |
+
+**5 · 여행 정보 탐색 및 일정 알림**
+
+| 여행 혜택 | 지역 상세 | 관광지·혜택 | 위젯·다이나믹 아일랜드 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/home-contents.webp" width="180" alt="여행 혜택"> | <img src=".github/readme/region-detail.webp" width="180" alt="지역 상세"> | <img src=".github/readme/region-place-benefits.webp" width="180" alt="관광지·혜택"> | <img src=".github/readme/lock-widget.webp" width="180" alt="위젯·다이나믹 아일랜드"> |
 
 ## 앱에서 신경 쓴 것
 
