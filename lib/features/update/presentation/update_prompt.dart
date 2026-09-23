@@ -54,7 +54,7 @@ mixin UpdatePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       }
     }
     if (!opened && mounted) {
-      showAppToast(context, 'App Store를 열지 못했어요. 스토어에서 OffWay를 찾아 주세요.');
+      showAppToast(context, 'App Store를 열지 못했어요. 스토어에서 Offway를 찾아 주세요.');
     }
   }
 }
