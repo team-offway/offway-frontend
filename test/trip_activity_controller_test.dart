@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/data/course_repository.dart';
@@ -89,6 +90,36 @@ class _FakeService implements TripActivityService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // push-to-start 등록 기억(RegistrationMemo)이 읽고 쓰는 Keychain 대역.
+  // 테스트 하나 안에서는 컨테이너를 새로 만들어도 같은 기기처럼 남는다
+  const keychain = MethodChannel(
+    'plugins.it_nomads.com/flutter_secure_storage',
+  );
+  late Map<String, String> keychainStore;
+  setUp(() {
+    keychainStore = {};
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(keychain, (call) async {
+          final args = (call.arguments as Map?)?.cast<String, Object?>() ?? {};
+          final key = args['key'] as String?;
+          return switch (call.method) {
+            'read' => keychainStore[key],
+            'write' => () {
+              keychainStore[key!] = args['value'] as String;
+              return null;
+            }(),
+            'delete' => keychainStore.remove(key),
+            _ => null,
+          };
+        });
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(keychain, null);
+  });
+
   // start() 가 앱 생명주기 옵저버를 단다 — 바인딩이 없으면 그 자리에서 터진다
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -212,6 +243,82 @@ void main() {
   group('push-to-start 등록 (core #585)', () {
     // 서버가 **앱을 안 열어도** 카드를 처음 띄우려면 기기 토큰을 알아야 한다.
     // 카드 토큰(#577)과 달리 코스가 없고, 카드가 없어도 온다
+
+    /// 메모 확인 → 등록 → 기억까지 채널 왕복이 여럿이라 한 번으로는 모자라다
+    Future<void> settleAll() async {
+      for (var i = 0; i < 6; i++) {
+        await settle();
+      }
+    }
+
+    test('같은 토큰이 다시 와도 이레 안이면 올리지 않는다', () async {
+      // iOS 는 앱을 켤 때마다 같은 값을 준다 — 그때마다 다시 보내고 있었다
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      addTearDown(controller.dispose);
+
+      service.pushToStartListener!('80a1b2');
+      await settleAll();
+      service.pushToStartListener!('80a1b2');
+      await settleAll();
+
+      expect(repo.pushToStartRegistered, ['80a1b2']);
+    });
+
+    test('토큰이 바뀌면 올린다', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      addTearDown(controller.dispose);
+
+      service.pushToStartListener!('80a1b2');
+      await settleAll();
+      service.pushToStartListener!('c3d4e5');
+      await settleAll();
+
+      expect(repo.pushToStartRegistered, ['80a1b2', 'c3d4e5']);
+    });
+
+    test('로그아웃 뒤 같은 토큰이 오면 다시 올린다 — 다음 사람의 계정으로', () async {
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final first = containerWith([], service, repository: repo);
+      final controller = first.read(tripActivityControllerProvider)..start();
+      service.pushToStartListener!('80a1b2');
+      await settleAll();
+      expect(repo.pushToStartRegistered, ['80a1b2']);
+
+      await controller.stop(); // 로그아웃 — 등록도 지우고 기억도 잊는다
+      await settleAll();
+      expect(repo.pushToStartUnregistered, ['80a1b2']);
+
+      // 같은 기기, 다른 사람이 로그인했다
+      final again = _FakeService();
+      final second = containerWith([], again, repository: repo);
+      final next = second.read(tripActivityControllerProvider)..start();
+      addTearDown(next.dispose);
+      again.pushToStartListener!('80a1b2');
+      await settleAll();
+
+      expect(repo.pushToStartRegistered, ['80a1b2', '80a1b2']);
+    });
+
+    test('토큰을 받기 전에 로그아웃해도 앞 실행의 기억을 지운다', () async {
+      // 앞 실행이 적어 둔 기억이 남으면 다음 사람의 등록이 건너뛰어진다
+      keychainStore['push_to_start_registered'] =
+          '80a1b2|${DateTime.now().toUtc().toIso8601String()}';
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      await controller.stop(); // 이번 실행에서는 토큰이 아직 안 왔다
+      await settleAll();
+
+      expect(keychainStore.containsKey('push_to_start_registered'), isFalse);
+    });
 
     test('세션 중에 토큰이 오면 서버에 올린다', () async {
       final service = _FakeService();

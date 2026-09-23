@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/registration_memo.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../data/device_repository.dart';
 
@@ -105,7 +106,20 @@ class PushRegistration {
         debugPrint('로그인 전이라 기기를 등록하지 않는다');
         return;
       }
+      // 같은 토큰을 이레 안에 올린 적이 있으면 건너뛴다 — 앱을 켤 때마다
+      // 같은 값을 다시 보내고 있었다. 토큰이 바뀌면 값이 달라 자연히 올라간다
+      final memo = _ref.read(deviceRegistrationMemoProvider);
+      if (await memo.isRegistered(token)) {
+        debugPrint('같은 기기 토큰이 이미 올라가 있다 — 건너뛴다');
+        return;
+      }
+      // 메모를 읽는 사이 로그아웃했을 수 있다
+      if (_stopped) return;
       await _ref.read(deviceRepositoryProvider).register(token);
+      // 등록을 기다리는 사이 로그아웃이 메모를 지웠으면 되살리지 않는다 —
+      // 되살리면 다음 사람이 같은 기기 토큰을 올리지 못한다
+      if (_stopped) return;
+      await memo.remember(token);
     } on Object catch (e) {
       debugPrint('기기 등록 실패: $e');
     }
@@ -127,6 +141,13 @@ class PushRegistration {
       await _ref.read(deviceRepositoryProvider).unregister();
     } on Object catch (e) {
       debugPrint('기기 해제 실패: $e');
+    }
+    // 다음 사람은 같은 기기 토큰을 자기 계정으로 다시 올려야 한다 — 해제가
+    // 실패했어도 잊는다. 다시 올리는 쪽이 늘 안전하다
+    try {
+      await _ref.read(deviceRegistrationMemoProvider).forget();
+    } on Object catch (e) {
+      debugPrint('기기 등록 기억을 지우지 못했다: $e');
     }
   }
 }

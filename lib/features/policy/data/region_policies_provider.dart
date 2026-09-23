@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_envelope.dart';
@@ -14,34 +16,79 @@ typedef RegionPolicyIndex = Map<String, List<RegionBenefit>>;
 /// 띄우려면 정책 상세(`GET /policies/{id}`)가 주는 "이 혜택이 되는 지역
 /// 목록"을 모아 뒤집는 수밖에 없다.
 ///
-/// **정책 목록 API가 없어 id를 1부터 차례로 읽는다.** 정책은 손으로 검증해
-/// 넣는 표라 몇 건 안 되고 id가 이어진다. 404가 연달아 [_endAfterMisses]번
-/// 나오면 끝으로 본다. 세션 동안 한 번만 읽는다.
+/// **정책 목록 API가 없어 id를 1부터 읽는다** — [fetchPoliciesInBatches]가
+/// 묶음으로 한꺼번에 띄운다. 정책은 손으로 검증해 넣는 표라 몇 건 안 되고
+/// id가 이어진다. 404가 연달아 [_endAfterMisses]번 나오면 끝으로 본다.
+/// 세션 동안 한 번만 읽는다.
 ///
 /// TODO(server): 홈·지역 상세가 `benefits[]`를 실어 주면 이 파일을 지우고
 /// 응답을 그대로 쓴다. 화면은 `region['benefits']`만 보므로 그때 바뀔 것이
 /// 없다.
 final regionPoliciesProvider = FutureProvider<RegionPolicyIndex>((ref) async {
-  final repository = ref.watch(policyRepositoryProvider);
+  final detail = ref.watch(policyRepositoryProvider).detail;
+  return buildRegionPolicyIndex(
+    await fetchPoliciesInBatches(detail),
+    DateTime.now(),
+  );
+}, retry: (retryCount, error) => null);
+
+/// 정책 상세를 [batchSize]개씩 **한꺼번에** 읽는다.
+///
+/// 하나씩 기다리면 왕복(약 0.26초)이 id 수만큼 쌓인다 — 정책 6개를 받는 데
+/// 10번을 불러 2.6초였다. 한 묶음을 같이 띄우면 왕복 한 번 값이다(실측 0.7초).
+/// 요청 수는 그대로다 — 순서만 바꿨다.
+///
+/// 끝을 보는 규칙은 그대로다: 404가 [_endAfterMisses]번 이어지면 그 뒤 묶음은
+/// 읽지 않는다. 이미 읽은 묶음 안에서 그 뒤에 온 정책은 버리지 않는다 — 손에
+/// 든 값을 버릴 이유가 없다. 404 아닌 서버 오류는 그 묶음까지만 보고 멈춘다 —
+/// 색인이 조금 모자라면 "+1"이 덜 뜰 뿐이고, 통째로 실패하면 뱃지 전부를 잃는다
+Future<List<Map<String, dynamic>>> fetchPoliciesInBatches(
+  Future<Map<String, dynamic>> Function(int policyId) detail, {
+  int maxId = _maxPolicyId,
+  int batchSize = _batchSize,
+}) async {
   final policies = <Map<String, dynamic>>[];
   var misses = 0;
-  for (var id = 1; id <= _maxPolicyId && misses < _endAfterMisses; id++) {
-    try {
-      policies.add(await repository.detail(id));
-      misses = 0;
-    } on ApiException catch (e) {
-      // 없는 id(404)는 끝의 신호다. 다른 서버 오류도 여기서 멈춘다 — 색인이
-      // 조금 모자라면 "+1"이 덜 뜰 뿐이고, 통째로 실패하면 뱃지 전부가 잃는다
-      if (e.status != 404) break;
-      misses++;
+  for (var from = 1; from <= maxId; from += batchSize) {
+    final to = math.min(from + batchSize - 1, maxId);
+    final batch = await Future.wait([
+      for (var id = from; id <= to; id++) _tryDetail(detail, id),
+    ]);
+    var halted = false;
+    for (final (:policy, :error) in batch) {
+      if (policy != null) {
+        policies.add(policy);
+        misses = 0;
+      } else if (error?.status == 404) {
+        misses++;
+      } else {
+        halted = true;
+      }
     }
+    if (halted || misses >= _endAfterMisses) break;
   }
-  return buildRegionPolicyIndex(policies, DateTime.now());
-}, retry: (retryCount, error) => null);
+  return policies;
+}
+
+/// 없는 id(404)와 서버 오류를 값으로 돌려준다 — `Future.wait` 가 첫 실패에서
+/// 묶음째 던지지 않게
+Future<({Map<String, dynamic>? policy, ApiException? error})> _tryDetail(
+  Future<Map<String, dynamic>> Function(int policyId) detail,
+  int id,
+) async {
+  try {
+    return (policy: await detail(id), error: null);
+  } on ApiException catch (e) {
+    return (policy: null, error: e);
+  }
+}
 
 /// 정책 id 상한 — 검증된 정책이 이만큼 늘면 서버가 목록을 줘야 한다
 const _maxPolicyId = 30;
 const _endAfterMisses = 3;
+
+/// 한 번에 띄우는 요청 수 — 지금 정책이 6개라 첫 묶음에서 끝난다
+const _batchSize = 10;
 
 /// 정책 상세들 → 지역별 혜택 목록. [today]에 유효한 정책만 넣는다.
 ///
