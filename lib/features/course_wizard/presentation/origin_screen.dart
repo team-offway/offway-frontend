@@ -39,6 +39,19 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// 입력칸 폭이 335 가 되는 값이다
   static const _fieldSideMargin = 33.84;
 
+  /// 키보드가 떠 있을 때의 상단 여백 — 시안 1730:40132 (평소는 [kWizardTopGap])
+  static const _topGapWithKeyboard = 24.0;
+
+  /// 목록을 입력칸 바로 아래에 붙이려면 그 자리를 알아야 한다. 여백을 더해
+  /// 계산하면 글자 크기를 키웠을 때 어긋나 목록이 입력칸을 덮는다
+  /// 목록을 입력칸에 **붙여 둔다**. 좌표를 재서 짚으면 키보드가 오르내릴 때
+  /// 입력칸은 움직이는데 목록이 옛 자리에 남아 서로 겹친다
+  final _fieldLink = LayerLink();
+
+  /// 목록 높이를 입력칸의 실제 아래부터 재려고 둔다 — 고정값 합으로 짚으면
+  /// 글자 크기를 키웠을 때 어긋나고 작은 화면에서는 음수가 된다
+  final _fieldKey = GlobalKey();
+
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -152,30 +165,51 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   Widget build(BuildContext context) {
     // 포커스가 아니라 실제 키보드 높이로 가른다 — 하드웨어 키보드나 포커스만
     // 있고 키보드가 내려간 경우에 안내를 접을 이유가 없다
-    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final keyboardUp = keyboardInset > 0;
+    final screenH = MediaQuery.sizeOf(context).height;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(context),
-            // 키보드가 올라오면 안내를 접어 목록에 자리를 준다.
-            //
-            // 화면이 키보드 높이만큼 줄어드는데 위쪽은 고정 크기라, 그 손실을
-            // 목록이 혼자 떠안는다. 큰 기기에서 두 줄 반, iPhone 15 Pro 에서는
-            // **아예 0** 이었다 — 검색은 되는데 고를 수가 없다.
-            //
-            // 이때 사용자는 이미 무엇을 하는지 아니까 아이콘·부제는 없어도
-            // 된다 — 무슨 화면인지 잃지 않게 제목만 남긴다
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              child: keyboardUp
-                  ? const SizedBox(height: 24)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
+      // 키보드 밖을 누르면 내린다 (시안 노트). 목록 항목·입력칸은 자기 탭을
+      // 먼저 먹으므로 여기까지 오지 않는다 — opaque 라야 빈 곳도 잡힌다
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _focusNode.unfocus,
+        child: SafeArea(
+          // 목록은 Column 위층에 띄운다 — Column 안에 두면 '다음' 버튼 위에서
+          // 끊긴다. 시안(1730:40493)은 버튼을 덮고 키보드까지 내려간다
+          child: Stack(
+            children: [
+              // 평소에는 화면을 꽉 채워 '다음' 이 아래에 붙고, 자리가 모자라면
+              // (작은 화면 + 키보드) 스크롤된다 — 넘쳐서 잘리는 것을 막는다
+              LayoutBuilder(
+                builder: (context, c) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: c.maxHeight),
+                    child: Column(
                       children: [
-                        const SizedBox(height: kWizardTopGap),
+                        _buildTopBar(context),
+                        // 키보드가 올라오면 이 여백만 24 로 줄어든다 (시안 1730:40132).
+                        //
+                        // 화면이 키보드 높이만큼 줄어드는데 위쪽은 전부 고정 크기라, 그
+                        // 손실을 목록이 혼자 떠안는다. iPhone 15 Pro 에서는 목록이 **아예
+                        // 0** 이었다 — 검색은 되는데 고를 수가 없었다.
+                        //
+                        // 안내를 지우지는 않는다. 아이콘·제목·부제는 그대로 두고 여백만
+                        // 43 을 내놓는 것이 시안이 고른 답이다
+                        // 자리가 모자라면 안내부터 줄인다 — 작은 화면(SE)에 키보드가
+                        // 올라오면 고정 높이만으로 화면을 넘겼다. 입력칸과 목록은
+                        // 끝까지 온전해야 하므로 이 묶음만 스크롤에 둔다
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          child: SizedBox(
+                            height: keyboardUp
+                                ? _topGapWithKeyboard
+                                : kWizardTopGap,
+                          ),
+                        ),
                         SvgPicture.asset(
                           'assets/icons/ic_building_blue.svg',
                           width: 48,
@@ -183,24 +217,13 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                         ),
                         // 시안 측정값 — 아이콘과 질문 사이 20
                         const SizedBox(height: 20),
-                      ],
-                    ),
-            ),
-            Text(
-              '출발지를 입력해주세요',
-              textAlign: TextAlign.center,
-              style: AppTypography.title3Bold.copyWith(
-                color: AppColors.labelNormal,
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              child: keyboardUp
-                  ? const SizedBox(height: 20)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                        Text(
+                          '출발지를 입력해주세요',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.title3Bold.copyWith(
+                            color: AppColors.labelNormal,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
@@ -211,53 +234,103 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                         ),
                         // 시안 측정값 — 부제(88) 아래 입력칸까지 33
                         const SizedBox(height: 33),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _fieldSideMargin,
+                          ),
+                          // 목록이 붙을 자리는 여백 **안쪽** 입력칸이다.
+                          // 바깥에 두면 목록이 좌우 여백만큼 밀린다
+                          child: CompositedTransformTarget(
+                            key: _fieldKey,
+                            link: _fieldLink,
+                            child: _buildField(),
+                          ),
+                        ),
                       ],
                     ),
-            ),
-            // 목록이 입력칸을 덮으며 아래로 펼쳐진다. Stack 으로 띄우지 않으면
-            // 목록이 화면을 밀어 입력칸이 위로 튄다
-            Expanded(
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _fieldSideMargin,
-                    ),
-                    child: _buildField(),
                   ),
-                  if (_results.isNotEmpty || _searching)
-                    Positioned(
-                      // 입력칸(48) 아래 8
-                      top: 48 + 8,
-                      left: _fieldSideMargin,
-                      right: _fieldSideMargin,
-                      bottom: 0,
-                      child: _buildSuggestions(),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _selected == null ? null : _next,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primaryNormal,
-                    disabledBackgroundColor: AppColors.interactionDisable,
-                    foregroundColor: AppColors.staticWhite,
-                    disabledForegroundColor: AppColors.labelAssistive,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text('다음', style: AppTypography.body1NormalBold),
                 ),
               ),
-            ),
-          ],
+              // 버튼은 늘 화면 아래에 붙는다 — Column 안에 Spacer 로 밀면
+              // 스크롤이 걸릴 때 flex 를 못 써 터진다. 목록과 같은 Stack 에
+              // 두되 먼저 그려, 목록이 이 위를 덮을 수 있게 한다
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _selected == null ? null : _next,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryNormal,
+                        disabledBackgroundColor: AppColors.interactionDisable,
+                        foregroundColor: AppColors.staticWhite,
+                        disabledForegroundColor: AppColors.labelAssistive,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('다음', style: AppTypography.body1NormalBold),
+                    ),
+                  ),
+                ),
+              ),
+              // 입력칸 아래 8 에 **붙어** 따라다닌다. 좌표를 재서 짚으면
+              // 키보드가 오르내릴 때 한 박자 늦어 입력칸과 겹친다
+              // 목록은 입력칸 아래 8 에 **붙어** 따라다닌다. 좌표를 재서
+              // 짚으면 키보드가 오르내릴 때 한 박자 늦어 입력칸과 겹친다.
+              //
+              // 좌우는 Positioned 로 입력칸과 같은 값을 준다 — Follower 에
+              // 폭을 계산해 넘기면 소수점·테두리에서 1~2 어긋난다
+              if (_results.isNotEmpty || _searching)
+                Positioned(
+                  left: _fieldSideMargin,
+                  right: _fieldSideMargin,
+                  top: 0,
+                  bottom: 0,
+                  child: CompositedTransformFollower(
+                    link: _fieldLink,
+                    targetAnchor: Alignment.bottomLeft,
+                    followerAnchor: Alignment.topLeft,
+                    offset: const Offset(0, 8),
+                    // Follower 는 부모 제약을 받지 않아 스스로 막지 않으면
+                    // 목록이 키보드 밖으로 넘어간다. 입력칸 위쪽은 전부
+                    // 고정값이라 그 합으로 남은 자리를 짚는다
+                    // 남은 자리는 **입력칸의 실제 아래** 부터 잰다.
+                    //
+                    // 고정값 합으로 짚으면 글자 크기를 키웠을 때 제목·부제가
+                    // 늘어난 만큼 어긋나 목록 끝이 키보드에 가리고, 작은
+                    // 화면에서는 음수가 되어 BoxConstraints assert 가 터진다
+                    child: Builder(
+                      builder: (context) {
+                        final field =
+                            _fieldKey.currentContext?.findRenderObject()
+                                as RenderBox?;
+                        final fieldBottom = field == null || !field.hasSize
+                            ? null
+                            : field.localToGlobal(Offset.zero).dy +
+                                  field.size.height;
+                        final avail = fieldBottom == null
+                            ? 404.0
+                            : screenH -
+                                  keyboardInset -
+                                  bottomPad -
+                                  fieldBottom -
+                                  8;
+                        return _buildSuggestions(
+                          // 음수는 막는다 — 자리가 아예 없으면 0 이다
+                          maxHeight: avail < 0 ? 0 : avail,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -324,13 +397,23 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     borderSide: BorderSide(color: color),
   );
 
-  /// 자동완성 목록 — radius 16, 최대 높이 400 (시안 `42563`)
-  Widget _buildSuggestions() {
+  /// 자동완성 목록 — radius 16, 최대 높이 404 (시안 실측 y 411~814).
+  ///
+  /// [maxHeight] 는 입력칸 아래로 남은 자리다. Follower 는 부모 제약을 받지
+  /// 않아 스스로 막지 않으면 키보드 위로 넘어간다
+  Widget _buildSuggestions({required double maxHeight}) {
+    // 위로 붙인다 — 이게 없으면 목록이 부모가 준 높이(화면 전체)를 그대로
+    // 채워 화면 밖까지 늘어나고 스크롤도 걸리지 않는다.
+    //
+    // 폭은 Positioned 가 좌우를 고정해 주므로 stretch 로 꽉 채운다
     return Align(
       alignment: Alignment.topCenter,
+      widthFactor: null,
       child: ConstrainedBox(
-        // 시안 실측 — 목록 y 411~814
-        constraints: const BoxConstraints(maxHeight: 404),
+        constraints: BoxConstraints(
+          maxHeight: maxHeight < 404 ? maxHeight : 404,
+          minWidth: double.infinity,
+        ),
         child: Material(
           type: MaterialType.transparency,
           child: Container(
@@ -369,7 +452,9 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    // 시안 실측 — 테두리에서 첫 글자까지 21
+                    // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     shrinkWrap: true,
                     itemCount: _results.length,
                     itemBuilder: (context, i) => _buildCell(_results[i]),
