@@ -207,6 +207,33 @@ void main() {
     expect(h - b.bottom, closeTo(54, 0.5));
   });
 
+  testWidgets('키보드를 내려도 목록이 입력칸을 따라 내려간다', (tester) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+    await pumpScreen(tester);
+    repo.bulk = 20;
+    // 키보드 올린 채 검색
+    tester.view.viewInsets = const FakeViewPadding(bottom: 336 * 3);
+    await type(tester, '충주');
+    await tester.pumpAndSettle();
+    var f = tester.getRect(find.byType(TextField));
+    var l = tester.getRect(find.byType(ListView).first);
+    expect(l.top, greaterThanOrEqualTo(f.bottom));
+    // 키보드를 내린다 (빈 곳 탭과 같은 상황)
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await tester.pumpAndSettle();
+    f = tester.getRect(find.byType(TextField));
+    l = tester.getRect(find.byType(ListView).first);
+    // 입력칸이 43 내려가는데 목록이 옛 자리에 남으면 서로 겹친다
+    expect(
+      l.top,
+      greaterThanOrEqualTo(f.bottom),
+      reason: '키보드를 내리면 목록도 따라 내려간다',
+    );
+  });
+
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
     await pumpScreen(tester);
 

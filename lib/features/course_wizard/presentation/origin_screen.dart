@@ -44,19 +44,9 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
 
   /// 목록을 입력칸 바로 아래에 붙이려면 그 자리를 알아야 한다. 여백을 더해
   /// 계산하면 글자 크기를 키웠을 때 어긋나 목록이 입력칸을 덮는다
-  final _fieldKey = GlobalKey();
-  final _stackKey = GlobalKey();
-  double? _fieldBottom;
-
-  /// 한 프레임 뒤에 잰다 — 빌드 중에는 아직 자리가 없다
-  void _measureField() {
-    final box = _fieldKey.currentContext?.findRenderObject() as RenderBox?;
-    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || stack == null || !box.hasSize) return;
-    final top = box.localToGlobal(Offset.zero, ancestor: stack).dy;
-    final bottom = top + box.size.height;
-    if (_fieldBottom != bottom) setState(() => _fieldBottom = bottom);
-  }
+  /// 목록을 입력칸에 **붙여 둔다**. 좌표를 재서 짚으면 키보드가 오르내릴 때
+  /// 입력칸은 움직이는데 목록이 옛 자리에 남아 서로 겹친다
+  final _fieldLink = LayerLink();
 
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
@@ -171,8 +161,11 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   Widget build(BuildContext context) {
     // 포커스가 아니라 실제 키보드 높이로 가른다 — 하드웨어 키보드나 포커스만
     // 있고 키보드가 내려간 경우에 안내를 접을 이유가 없다
-    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureField());
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final keyboardUp = keyboardInset > 0;
+    final screenH = MediaQuery.sizeOf(context).height;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final topPad = MediaQuery.paddingOf(context).top;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       // 키보드 밖을 누르면 내린다 (시안 노트). 목록 항목·입력칸은 자기 탭을
@@ -184,7 +177,6 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
           // 목록은 Column 위층에 띄운다 — Column 안에 두면 '다음' 버튼 위에서
           // 끊긴다. 시안(1730:40493)은 버튼을 덮고 키보드까지 내려간다
           child: Stack(
-            key: _stackKey,
             children: [
               // 평소에는 화면을 꽉 채워 '다음' 이 아래에 붙고, 자리가 모자라면
               // (작은 화면 + 키보드) 스크롤된다 — 넘쳐서 잘리는 것을 막는다
@@ -239,12 +231,14 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                         ),
                         // 시안 측정값 — 부제(88) 아래 입력칸까지 33
                         const SizedBox(height: 33),
-                        Padding(
-                          key: _fieldKey,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: _fieldSideMargin,
+                        CompositedTransformTarget(
+                          link: _fieldLink,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: _fieldSideMargin,
+                            ),
+                            child: _buildField(),
                           ),
-                          child: _buildField(),
                         ),
                       ],
                     ),
@@ -279,15 +273,41 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                   ),
                 ),
               ),
-              // 입력칸의 **실측** 아래 8. 여백을 더해 짚으면 글자 크기를
-              // 키웠을 때 제목·부제가 늘어 목록이 입력칸을 덮는다
-              if ((_results.isNotEmpty || _searching) && _fieldBottom != null)
-                Positioned(
-                  top: _fieldBottom! + 8,
-                  left: _fieldSideMargin,
-                  right: _fieldSideMargin,
-                  bottom: 0,
-                  child: _buildSuggestions(),
+              // 입력칸 아래 8 에 **붙어** 따라다닌다. 좌표를 재서 짚으면
+              // 키보드가 오르내릴 때 한 박자 늦어 입력칸과 겹친다
+              if (_results.isNotEmpty || _searching)
+                CompositedTransformFollower(
+                  link: _fieldLink,
+                  targetAnchor: Alignment.bottomLeft,
+                  followerAnchor: Alignment.topLeft,
+                  offset: const Offset(0, 8),
+                  // Follower 는 부모 제약을 받지 않으므로 폭을 직접 맞추고,
+                  // 높이는 입력칸 아래로 남은 자리에서 가져온다. 안 막으면
+                  // 목록이 화면(키보드) 밖으로 넘어간다
+                  child: SizedBox(
+                    width: screenW - _fieldSideMargin * 2,
+                    child: _buildSuggestions(
+                      // 입력칸 아래로 남은 자리. 입력칸 위쪽은 전부 고정값이라
+                      // 그 합으로 짚는다 — 상단바44 + 여백 + 아이콘48 + 20 +
+                      // 제목32 + 8 + 부제48 + 33 + 입력칸48 + 목록 위 8
+                      maxHeight:
+                          screenH -
+                          keyboardInset -
+                          topPad -
+                          (44 +
+                              (keyboardUp
+                                  ? _topGapWithKeyboard
+                                  : kWizardTopGap) +
+                              48 +
+                              20 +
+                              32 +
+                              8 +
+                              48 +
+                              33 +
+                              48 +
+                              8),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -357,13 +377,17 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     borderSide: BorderSide(color: color),
   );
 
-  /// 자동완성 목록 — radius 16, 최대 높이 400 (시안 `42563`)
-  Widget _buildSuggestions() {
+  /// 자동완성 목록 — radius 16, 최대 높이 404 (시안 실측 y 411~814).
+  ///
+  /// [maxHeight] 는 입력칸 아래로 남은 자리다. Follower 는 부모 제약을 받지
+  /// 않아 스스로 막지 않으면 키보드 위로 넘어간다
+  Widget _buildSuggestions({required double maxHeight}) {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        // 시안 실측 — 목록 y 411~814
-        constraints: const BoxConstraints(maxHeight: 404),
+        constraints: BoxConstraints(
+          maxHeight: maxHeight < 404 ? maxHeight : 404,
+        ),
         child: Material(
           type: MaterialType.transparency,
           child: Container(
