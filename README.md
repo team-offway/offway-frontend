@@ -2,6 +2,8 @@
 
 > 연차로 떠나는 로컬 여행 플래너
 
+![OffWay — 연차로 떠나는 특별한 로컬 여행](.github/readme/hero.webp)
+
 남은 연차로 다녀올 수 있는 **인구감소지역** 여행 코스를 추천하는 iOS 앱입니다. 백엔드는 별도 레포([team-offway/core](https://github.com/team-offway/core), Java Spring)에서 REST API로 제공합니다.
 
 [![App Store에서 다운로드](https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/ko-kr)](https://apps.apple.com/app/id6793610290)
@@ -14,13 +16,39 @@
 
 ```text
 로그인 → 잔여연차 입력 → 홈
-  └ 코스 추천받기
+  └ 코스 추천받기 → 출발지 선택 (역·터미널·주소 검색)
       ├ 날짜가 정해졌다면 → 캘린더에서 기간 선택
       └ 아직이라면      → 기간 스타일 선택 (당일치기 / 주말 포함 / 연차만)
           → 이동수단 → 일정 밀도 → 추천 계산 → 후보 지역 → 코스 확정
 ```
 
 **핵심 정책** — 모든 코스는 **최대 2박3일**입니다. 인구감소지역 89곳을 전수 조사한 결과 콘텐츠가 40건 수준인 지역도 있어, 그 이상 길어지면 코스가 빈약해지기 때문입니다.
+
+## 주요 화면
+
+**시작**
+
+| 연차 입력 | 홈 | 내 연차 | 잠금화면 위젯 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/leave-input.webp" width="180" alt="연차 입력"> | <img src=".github/readme/home.webp" width="180" alt="홈"> | <img src=".github/readme/my-leave.webp" width="180" alt="내 연차"> | <img src=".github/readme/lock-widget.webp" width="180" alt="잠금화면 위젯"> |
+
+**코스 추천**
+
+| 기간 스타일 | 이동수단 | 추천 계산 | 후보 지역 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/period-style.webp" width="180" alt="기간 스타일"> | <img src=".github/readme/transport.webp" width="180" alt="이동수단"> | <img src=".github/readme/loading.webp" width="180" alt="추천 계산"> | <img src=".github/readme/candidates.webp" width="180" alt="후보 지역"> |
+
+**코스**
+
+| 코스 확정 | 지역 혜택 | 코스 상세 | 장소 상세 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/course-map.webp" width="180" alt="코스 확정"> | <img src=".github/readme/region-benefits.webp" width="180" alt="지역 혜택"> | <img src=".github/readme/course-detail.webp" width="180" alt="코스 상세"> | <img src=".github/readme/place-detail.webp" width="180" alt="장소 상세"> |
+
+**여행 관리**
+
+| 내 코스 | 여행 후 확인 | 추천 콘텐츠 | 연차 사용 등록 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/my-courses.webp" width="180" alt="내 코스"> | <img src=".github/readme/trip-outcome.webp" width="180" alt="여행 후 확인"> | <img src=".github/readme/home-contents.webp" width="180" alt="추천 콘텐츠"> | <img src=".github/readme/leave-register.webp" width="180" alt="연차 사용 등록"> |
 
 ## 기술 스택
 
