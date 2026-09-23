@@ -66,12 +66,17 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (_tripDialogOpen) return true;
     // listen이 아니라 watch로 읽는다: 이 화면에 돌아왔을 때 이미 값이
     // 캐시돼 있으면 listen은 '바뀐 적 없다'며 부르지 않는다
-    final trip = ref.watch(pendingTripProvider).value;
+    // 알림을 눌러 왔으면 **그 알림의 여행만** 묻는다 — 오늘 미뤘어도, 더
+    // 오래된 여행이 밀려 있어도. 알림이 곧 질문이다. 이미 답한 여행이면
+    // 목록에 없어 조용하다
+    final notified = notificationCourseId;
+    final trip = notified != null
+        ? ref.watch(notifiedTripProvider(notified)).value
+        : ref.watch(pendingTripProvider).value;
     if (trip == null || trip.courseId == _askedCourseId) return false;
     // 알림(다음 날 20시)보다 먼저 묻지 않는다 — 자정에 넘어온 여행은
     // 저녁까지 홈에 들어와도 조용하다. 그 여행의 알림을 눌러 왔을 때만 예외
-    final fromItsNotification = trip.courseId == notificationCourseId;
-    if (!fromItsNotification && !trip.isAskableAt(DateTime.now())) return false;
+    if (notified == null && !trip.isAskableAt(DateTime.now())) return false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && trip.courseId != _askedCourseId) _ask(trip);
@@ -124,6 +129,9 @@ mixin TripOutcomePrompt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     invalidateLeaveData(ref);
     // 답을 했으니 다시 물어보지 않는다
     ref.invalidate(pendingTripProvider);
+    if (notificationCourseId case final id?) {
+      ref.invalidate(notifiedTripProvider(id));
+    }
     // 내 코스 카드의 여행완료·미방문 칩이 이 답(leaveDeducted)으로 갈리므로
     // 목록도 다시 읽는다
     ref.invalidate(savedCoursesProvider);
