@@ -3,15 +3,18 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/theme/app_theme.dart';
+import 'package:offway/core/widgets/app_back_button.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course_wizard/application/course_wizard_provider.dart';
 import 'package:offway/features/course_wizard/data/origin_search_repository.dart';
 import 'package:offway/features/course_wizard/domain/origin_hub.dart';
 import 'package:offway/features/course_wizard/presentation/origin_screen.dart';
+import 'package:offway/features/course_wizard/presentation/widgets/wizard_choice_step.dart';
 
 /// 출발지 화면 — **고른 것만 다음으로 넘어간다** (core #591).
 ///
@@ -54,9 +57,9 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('키보드가 올라오면 안내를 접어 목록에 자리를 준다', (tester) async {
-    // 실기기에서 목록이 두 줄 반만 보이고 잘렸다. 화면이 키보드 높이만큼
-    // 줄어드는데 위쪽은 고정 크기라, 그 손실을 목록이 혼자 떠안는다
+  testWidgets('키보드가 올라오면 상단 여백이 24 로 줄어든다 (시안 1730:40132)', (tester) async {
+    // 실기기에서 목록이 잘렸다 — iPhone 15 Pro 에서는 **아예 0** 이었다.
+    // 화면이 키보드만큼 줄어드는데 위쪽은 고정 크기라 목록이 혼자 떠안는다
     tester.view.physicalSize = const Size(1179, 2556); // iPhone 15 Pro
     tester.view.devicePixelRatio = 3.0;
     tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
@@ -66,21 +69,67 @@ void main() {
     repo.bulk = 20; // 실제 응답은 최대 20건이라 목록이 상한까지 찬다
     await type(tester, '충주');
     await tester.pumpAndSettle();
-    final before = tester.getRect(find.byType(ListView).first).height;
+    final titleBefore = tester.getRect(find.text('출발지를 입력해주세요')).top;
+    final listBefore = tester.getRect(find.byType(ListView).first).height;
 
     // 키보드가 올라온다
     tester.view.viewInsets = const FakeViewPadding(bottom: 336 * 3);
     await tester.pumpAndSettle();
-    final after = tester.getRect(find.byType(ListView).first).height;
+    final titleAfter = tester.getRect(find.text('출발지를 입력해주세요')).top;
+    final listAfter = tester.getRect(find.byType(ListView).first).height;
 
-    // 안내는 접히고 제목만 남는다 — 무엇을 하는 화면인지는 잃지 않는다
+    // 상단바 끝 ~ 아이콘 시작 = 그 여백
+    final barBottom = tester.getRect(find.byType(AppBackButton)).bottom;
+    final iconTop = tester
+        .getRect(
+          find
+              .descendant(
+                of: find.byType(Column),
+                matching: find.byWidgetPredicate(
+                  (w) => w is SvgPicture && w.width == 48,
+                ),
+              )
+              .first,
+        )
+        .top;
+    expect(
+      iconTop - barBottom,
+      closeTo(24, 0.5),
+      reason: '시안 1730:40132 — 키보드가 뜨면 상단 여백이 24 다',
+    );
+
+    final btn = tester.getRect(find.widgetWithText(FilledButton, '다음'));
+    final lst = tester.getRect(find.byType(ListView).first);
+    // 목록이 '다음' 버튼을 덮고 키보드까지 내려간다 (시안 1730:40493).
+    // Column 안에 두면 버튼 위에서 끊겨 두 줄만 남았다
+    expect(lst.bottom, greaterThan(btn.top), reason: "목록이 '다음' 위에서 끊기지 않는다");
+
+    // 안내를 지우지 않는다 — 아이콘·제목·부제가 그대로 있다
     expect(find.text('출발지를 입력해주세요'), findsOneWidget);
-    expect(find.textContaining('이동 시간을 고려해'), findsNothing);
+    expect(find.textContaining('이동 시간을 고려해'), findsOneWidget);
 
-    // 접기 전에는 이 기기에서 목록이 **아예 안 보였다**(높이 0).
-    // 세 줄은 남아야 고를 수 있다 — 한 줄 56
-    expect(before, greaterThan(after), reason: '키보드가 뜨면 목록은 줄어든다');
-    expect(after, greaterThan(56 * 3), reason: '접기를 되돌리면 이 기기에서 목록이 0이 된다');
+    // 줄어드는 것은 상단 여백 하나뿐이다 (67 → 24)
+    expect(
+      titleBefore - titleAfter,
+      closeTo(kWizardTopGap - 24, 0.5),
+      reason: '안내 전체가 43 만큼 올라온다',
+    );
+
+    // 그 43 이 목록으로 간다. 되돌리면 이 기기에서 목록이 0 이 된다
+    expect(listAfter, greaterThan(0), reason: '목록이 보여야 고를 수 있다');
+    expect(listBefore, greaterThan(listAfter));
+  });
+
+  testWidgets('키보드 밖을 누르면 키보드가 내려간다 (시안 노트)', (tester) async {
+    await pumpScreen(tester);
+    await tester.tap(find.byType(TextField));
+    await tester.pumpAndSettle();
+    expect(tester.testTextInput.isVisible, isTrue, reason: '입력칸을 누르면 키보드가 뜬다');
+
+    // 빈 곳 — 제목 위쪽 여백을 누른다
+    await tester.tapAt(const Offset(20, 200));
+    await tester.pumpAndSettle();
+    expect(tester.testTextInput.isVisible, isFalse);
   });
 
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {

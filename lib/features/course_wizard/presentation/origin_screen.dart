@@ -39,6 +39,9 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// 입력칸 폭이 335 가 되는 값이다
   static const _fieldSideMargin = 33.84;
 
+  /// 키보드가 떠 있을 때의 상단 여백 — 시안 1730:40132 (평소는 [kWizardTopGap])
+  static const _topGapWithKeyboard = 24.0;
+
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -155,109 +158,109 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(context),
-            // 키보드가 올라오면 안내를 접어 목록에 자리를 준다.
-            //
-            // 화면이 키보드 높이만큼 줄어드는데 위쪽은 고정 크기라, 그 손실을
-            // 목록이 혼자 떠안는다. 큰 기기에서 두 줄 반, iPhone 15 Pro 에서는
-            // **아예 0** 이었다 — 검색은 되는데 고를 수가 없다.
-            //
-            // 이때 사용자는 이미 무엇을 하는지 아니까 아이콘·부제는 없어도
-            // 된다 — 무슨 화면인지 잃지 않게 제목만 남긴다
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              child: keyboardUp
-                  ? const SizedBox(height: 24)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: kWizardTopGap),
-                        SvgPicture.asset(
-                          'assets/icons/ic_building_blue.svg',
-                          width: 48,
-                          height: 48,
-                        ),
-                        // 시안 측정값 — 아이콘과 질문 사이 20
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-            ),
-            Text(
-              '출발지를 입력해주세요',
-              textAlign: TextAlign.center,
-              style: AppTypography.title3Bold.copyWith(
-                color: AppColors.labelNormal,
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              child: keyboardUp
-                  ? const SizedBox(height: 20)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.body1NormalMedium.copyWith(
-                            color: AppColors.labelAlternative,
-                          ),
-                        ),
-                        // 시안 측정값 — 부제(88) 아래 입력칸까지 33
-                        const SizedBox(height: 33),
-                      ],
-                    ),
-            ),
-            // 목록이 입력칸을 덮으며 아래로 펼쳐진다. Stack 으로 띄우지 않으면
-            // 목록이 화면을 밀어 입력칸이 위로 튄다
-            Expanded(
-              child: Stack(
+      // 키보드 밖을 누르면 내린다 (시안 노트). 목록 항목·입력칸은 자기 탭을
+      // 먼저 먹으므로 여기까지 오지 않는다 — opaque 라야 빈 곳도 잡힌다
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _focusNode.unfocus,
+        child: SafeArea(
+          // 목록은 Column 위층에 띄운다 — Column 안에 두면 '다음' 버튼 위에서
+          // 끊긴다. 시안(1730:40493)은 버튼을 덮고 키보드까지 내려간다
+          child: Stack(
+            children: [
+              Column(
                 children: [
+                  _buildTopBar(context),
+                  // 키보드가 올라오면 이 여백만 24 로 줄어든다 (시안 1730:40132).
+                  //
+                  // 화면이 키보드 높이만큼 줄어드는데 위쪽은 전부 고정 크기라, 그
+                  // 손실을 목록이 혼자 떠안는다. iPhone 15 Pro 에서는 목록이 **아예
+                  // 0** 이었다 — 검색은 되는데 고를 수가 없었다.
+                  //
+                  // 안내를 지우지는 않는다. 아이콘·제목·부제는 그대로 두고 여백만
+                  // 43 을 내놓는 것이 시안이 고른 답이다
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: SizedBox(
+                      height: keyboardUp ? _topGapWithKeyboard : kWizardTopGap,
+                    ),
+                  ),
+                  SvgPicture.asset(
+                    'assets/icons/ic_building_blue.svg',
+                    width: 48,
+                    height: 48,
+                  ),
+                  // 시안 측정값 — 아이콘과 질문 사이 20
+                  const SizedBox(height: 20),
+                  Text(
+                    '출발지를 입력해주세요',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.title3Bold.copyWith(
+                      color: AppColors.labelNormal,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.body1NormalMedium.copyWith(
+                      color: AppColors.labelAlternative,
+                    ),
+                  ),
+                  // 시안 측정값 — 부제(88) 아래 입력칸까지 33
+                  const SizedBox(height: 33),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: _fieldSideMargin,
                     ),
                     child: _buildField(),
                   ),
-                  if (_results.isNotEmpty || _searching)
-                    Positioned(
-                      // 입력칸(48) 아래 8
-                      top: 48 + 8,
-                      left: _fieldSideMargin,
-                      right: _fieldSideMargin,
-                      bottom: 0,
-                      child: _buildSuggestions(),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _selected == null ? null : _next,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primaryNormal,
-                    disabledBackgroundColor: AppColors.interactionDisable,
-                    foregroundColor: AppColors.staticWhite,
-                    disabledForegroundColor: AppColors.labelAssistive,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _selected == null ? null : _next,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primaryNormal,
+                          disabledBackgroundColor: AppColors.interactionDisable,
+                          foregroundColor: AppColors.staticWhite,
+                          disabledForegroundColor: AppColors.labelAssistive,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text('다음', style: AppTypography.body1NormalBold),
+                      ),
                     ),
                   ),
-                  child: Text('다음', style: AppTypography.body1NormalBold),
-                ),
+                ],
               ),
-            ),
-          ],
+              if (_results.isNotEmpty || _searching)
+                Positioned(
+                  // 상단바(44) + 여백 + 아이콘48 + 20 + 제목32 + 8 + 부제48
+                  // + 33 + 입력칸48 + 8 — 전부 고정값이라 계산으로 짚는다
+                  top:
+                      44 +
+                      (keyboardUp ? _topGapWithKeyboard : kWizardTopGap) +
+                      48 +
+                      20 +
+                      32 +
+                      8 +
+                      48 +
+                      33 +
+                      48 +
+                      8,
+                  left: _fieldSideMargin,
+                  right: _fieldSideMargin,
+                  bottom: 0,
+                  child: _buildSuggestions(),
+                ),
+            ],
+          ),
         ),
       ),
     );
