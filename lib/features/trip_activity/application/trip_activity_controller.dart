@@ -340,10 +340,11 @@ class TripActivityController with WidgetsBindingObserver {
         // 같은 토큰을 이레 안에 올린 적이 있으면 건너뛴다 — iOS 는 앱을 켤
         // 때마다 같은 값을 주고, 그때마다 다시 보내고 있었다
         final memo = _ref.read(pushToStartMemoProvider);
-        if (await memo.isRegistered(token)) return;
+        if (await memo.isRegistered(token) || _stopped) return;
         await _ref
             .read(liveActivityRepositoryProvider)
             .registerPushToStart(token);
+        if (_stopped) return;
         await memo.remember(token);
       } on Object catch (e) {
         debugPrint('push-to-start 토큰을 올리지 못했다: $e');
@@ -362,7 +363,15 @@ class TripActivityController with WidgetsBindingObserver {
   /// 실패해도 남지 않는다
   Future<void> _unregisterPushToStart() {
     final token = _pushToStartToken;
-    if (token == null) return Future<void>.value();
+    // 이번 실행에서 토큰을 받기 전에 로그아웃했어도 **기억은 지운다** —
+    // 앞 실행이 적어 둔 것이 남으면 다음 사람의 등록이 건너뛰어진다
+    if (token == null) {
+      final op = (_pushToStartOp ?? Future<void>.value()).then(
+        (_) => _forgetPushToStart(),
+      );
+      _pushToStartOp = op;
+      return op;
+    }
     // **앞의 등록이 끝난 뒤에 나간다.** 먼저 보내면 아직 날아가던 PUT 이
     // 뒤에 닿아 등록이 되살아난다
     final op = (_pushToStartOp ?? Future<void>.value()).then((_) async {
@@ -374,14 +383,18 @@ class TripActivityController with WidgetsBindingObserver {
         debugPrint('push-to-start 등록을 지우지 못했다: $e');
       }
       // 다음 사람은 같은 기기 토큰을 자기 계정으로 다시 올려야 한다
-      try {
-        await _ref.read(pushToStartMemoProvider).forget();
-      } on Object catch (e) {
-        debugPrint('push-to-start 등록 기억을 지우지 못했다: $e');
-      }
+      await _forgetPushToStart();
     });
     _pushToStartOp = op;
     return op;
+  }
+
+  Future<void> _forgetPushToStart() async {
+    try {
+      await _ref.read(pushToStartMemoProvider).forget();
+    } on Object catch (e) {
+      debugPrint('push-to-start 등록 기억을 지우지 못했다: $e');
+    }
   }
 
   /// 떠 있던 코스의 서버 등록을 지운다.

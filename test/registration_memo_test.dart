@@ -11,17 +11,22 @@ void main() {
   const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
 
   late Map<String, String> stored;
+  late bool failRead;
   var now = DateTime(2026, 9, 24, 12);
 
   setUp(() {
     stored = {};
+    failRead = false;
     now = DateTime(2026, 9, 24, 12);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           final args = (call.arguments as Map?)?.cast<String, Object?>() ?? {};
           final key = args['key'] as String?;
           return switch (call.method) {
-            'read' => stored[key],
+            'read' =>
+              failRead
+                  ? throw PlatformException(code: 'keychain')
+                  : stored[key],
             'write' => () {
               stored[key!] = args['value'] as String;
               return null;
@@ -77,5 +82,24 @@ void main() {
     expect(await memo().isRegistered('no-separator'), isFalse);
     stored['device_registered'] = 't1|not-a-date';
     expect(await memo().isRegistered('t1'), isFalse);
+  });
+
+  test('시계를 되돌려 적어 둔 시각이 미래면 믿지 않는다', () async {
+    final m = memo();
+    await m.remember('t1');
+    now = now.subtract(const Duration(days: 3));
+    expect(await m.isRegistered('t1'), isFalse);
+  });
+
+  test('기억을 못 읽으면 거짓 — 등록까지 건너뛰면 안 된다', () async {
+    final m = memo();
+    await m.remember('t1');
+    failRead = true;
+    expect(await m.isRegistered('t1'), isFalse);
+  });
+
+  test('시각은 UTC 로 적는다 — 시간대를 바꿔도 만료가 틀어지지 않게', () async {
+    await memo().remember('t1');
+    expect(stored['device_registered'], endsWith('Z'));
   });
 }

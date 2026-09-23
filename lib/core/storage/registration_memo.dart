@@ -43,20 +43,35 @@ class RegistrationMemo {
 
   static const maxAge = Duration(days: 7);
 
-  /// [value] 를 [maxAge] 안에 올린 적이 있는가
+  /// [value] 를 [maxAge] 안에 올린 적이 있는가.
+  ///
+  /// **읽기가 실패하면 거짓이다** — 기억을 못 읽었다고 등록까지 건너뛰면 안
+  /// 된다. 다시 올리는 쪽이 늘 안전하다
   Future<bool> isRegistered(String value) async {
-    final raw = await _storage.read(key: _key);
+    final String? raw;
+    try {
+      raw = await _storage.read(key: _key);
+    } on Object {
+      return false;
+    }
     if (raw == null) return false;
     // 값 뒤에 시각을 붙여 둔다 — 토큰에 `|` 가 올 일은 없지만 뒤에서 자른다
     final sep = raw.lastIndexOf('|');
     if (sep < 0 || raw.substring(0, sep) != value) return false;
     final at = DateTime.tryParse(raw.substring(sep + 1));
     if (at == null) return false;
-    return _now().difference(at) < maxAge;
+    // 시계를 되돌리면 적어 둔 시각이 미래가 된다 — 그때는 믿지 않는다
+    final age = _now().difference(at);
+    return !age.isNegative && age < maxAge;
   }
 
   Future<void> remember(String value) =>
-      _storage.write(key: _key, value: '$value|${_now().toIso8601String()}');
+      // UTC 로 적는다 — 로컬 시각은 시간대 표시가 없어, 시간대를 바꾸면
+      // 다른 시각으로 읽힌다
+      _storage.write(
+        key: _key,
+        value: '$value|${_now().toUtc().toIso8601String()}',
+      );
 
   Future<void> forget() => _storage.delete(key: _key);
 }

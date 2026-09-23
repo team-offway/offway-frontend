@@ -101,4 +101,19 @@ void main() {
     expect(await storage.accessToken, 'a1');
     expect(reads, 2);
   });
+
+  test('늦게 실패한 옛 읽기가 그 사이 저장한 새 값을 지우지 않는다', () async {
+    stored['access_token'] = 'old';
+    failNextRead = true;
+    final storage = TokenStorage(const FlutterSecureStorage());
+    // 실패할 읽기에 기대를 **먼저** 건다 — 저장을 기다리는 사이 실패가 난다
+    final first = expectLater(
+      storage.accessToken,
+      throwsA(isA<PlatformException>()),
+    );
+    await storage.saveTokens(accessToken: 'new');
+    await first;
+    expect(await storage.accessToken, 'new');
+    expect(reads, 1, reason: '새 값을 들고 있으니 다시 읽지 않는다');
+  });
 }

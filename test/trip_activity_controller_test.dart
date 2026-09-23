@@ -306,6 +306,20 @@ void main() {
       expect(repo.pushToStartRegistered, ['80a1b2', '80a1b2']);
     });
 
+    test('토큰을 받기 전에 로그아웃해도 앞 실행의 기억을 지운다', () async {
+      // 앞 실행이 적어 둔 기억이 남으면 다음 사람의 등록이 건너뛰어진다
+      keychainStore['push_to_start_registered'] =
+          '80a1b2|${DateTime.now().toUtc().toIso8601String()}';
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith([], service, repository: repo);
+      final controller = c.read(tripActivityControllerProvider)..start();
+      await controller.stop(); // 이번 실행에서는 토큰이 아직 안 왔다
+      await settleAll();
+
+      expect(keychainStore.containsKey('push_to_start_registered'), isFalse);
+    });
+
     test('세션 중에 토큰이 오면 서버에 올린다', () async {
       final service = _FakeService();
       final repo = _FakeRepository();

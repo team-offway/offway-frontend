@@ -113,7 +113,12 @@ class PushRegistration {
         debugPrint('같은 기기 토큰이 이미 올라가 있다 — 건너뛴다');
         return;
       }
+      // 메모를 읽는 사이 로그아웃했을 수 있다
+      if (_stopped) return;
       await _ref.read(deviceRepositoryProvider).register(token);
+      // 등록을 기다리는 사이 로그아웃이 메모를 지웠으면 되살리지 않는다 —
+      // 되살리면 다음 사람이 같은 기기 토큰을 올리지 못한다
+      if (_stopped) return;
       await memo.remember(token);
     } on Object catch (e) {
       debugPrint('기기 등록 실패: $e');

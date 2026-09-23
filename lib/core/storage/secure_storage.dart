@@ -31,11 +31,31 @@ class TokenStorage {
   Future<String?>? _access;
   Future<String?>? _refresh;
 
-  Future<String?> get accessToken =>
-      _access ??= _read(_accessTokenKey, forget: () => _access = null);
+  Future<String?> get accessToken {
+    if (_access case final cached?) return cached;
+    late final Future<String?> read;
+    // 실패했을 때 **아직 이 읽기가 캐시일 때만** 비운다 — 그 사이 저장·
+    // 로그아웃이 새 값을 넣었으면 그것을 지우면 안 된다
+    read = _read(
+      _accessTokenKey,
+      forget: () {
+        if (identical(_access, read)) _access = null;
+      },
+    );
+    return _access = read;
+  }
 
-  Future<String?> get refreshToken =>
-      _refresh ??= _read(_refreshTokenKey, forget: () => _refresh = null);
+  Future<String?> get refreshToken {
+    if (_refresh case final cached?) return cached;
+    late final Future<String?> read;
+    read = _read(
+      _refreshTokenKey,
+      forget: () {
+        if (identical(_refresh, read)) _refresh = null;
+      },
+    );
+    return _refresh = read;
+  }
 
   Future<String?> _read(String key, {required void Function() forget}) async {
     try {
