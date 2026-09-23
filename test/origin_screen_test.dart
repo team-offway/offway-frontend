@@ -261,6 +261,39 @@ void main() {
     expect(panel.right, closeTo(f.right, 0.5));
   });
 
+  testWidgets('작은 화면에 키보드가 올라와도 터지지 않는다 (CodeRabbit #354)', (tester) async {
+    // iPhone SE 2/3 — 375x667, 상단 20, 한글 키보드 336
+    tester.view.physicalSize = const Size(750, 1334);
+    tester.view.devicePixelRatio = 2.0;
+    tester.view.padding = const FakeViewPadding(top: 40, bottom: 0);
+    addTearDown(tester.view.reset);
+    await pumpScreen(tester);
+    repo.bulk = 20;
+    await type(tester, '충주');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 336 * 2);
+    await tester.pumpAndSettle();
+    // 남은 자리를 고정값 합으로 짚으면 여기서 -2 가 되어
+    // BoxConstraints(0.0<=h<=-2.0; NOT NORMALIZED) 로 터졌다
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('글자를 키워도 목록 끝이 키보드에 가리지 않는다 (CodeRabbit #354)', (tester) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+    await pumpScreen(tester, textScale: 1.5);
+    repo.bulk = 20;
+    await type(tester, '충주');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 336 * 3);
+    await tester.pumpAndSettle();
+    final panel = tester.getRect(find.byType(Material).last);
+    final h = tester.getSize(find.byType(Scaffold).first).height;
+    // 제목·부제가 늘어난 만큼 입력칸이 내려가는데 고정값 합으로 짚으면
+    // 목록 끝이 그만큼 키보드 뒤로 들어간다
+    expect(panel.bottom, lessThanOrEqualTo(h - 336));
+  });
+
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
     await pumpScreen(tester);
 

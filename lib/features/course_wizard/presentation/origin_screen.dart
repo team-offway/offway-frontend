@@ -48,6 +48,10 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// 입력칸은 움직이는데 목록이 옛 자리에 남아 서로 겹친다
   final _fieldLink = LayerLink();
 
+  /// 목록 높이를 입력칸의 실제 아래부터 재려고 둔다 — 고정값 합으로 짚으면
+  /// 글자 크기를 키웠을 때 어긋나고 작은 화면에서는 음수가 된다
+  final _fieldKey = GlobalKey();
+
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -164,7 +168,6 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final keyboardUp = keyboardInset > 0;
     final screenH = MediaQuery.sizeOf(context).height;
-    final topPad = MediaQuery.paddingOf(context).top;
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -238,6 +241,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                           // 목록이 붙을 자리는 여백 **안쪽** 입력칸이다.
                           // 바깥에 두면 목록이 좌우 여백만큼 밀린다
                           child: CompositedTransformTarget(
+                            key: _fieldKey,
                             link: _fieldLink,
                             child: _buildField(),
                           ),
@@ -296,24 +300,32 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                     // Follower 는 부모 제약을 받지 않아 스스로 막지 않으면
                     // 목록이 키보드 밖으로 넘어간다. 입력칸 위쪽은 전부
                     // 고정값이라 그 합으로 남은 자리를 짚는다
-                    child: _buildSuggestions(
-                      maxHeight:
-                          screenH -
-                          keyboardInset -
-                          topPad -
-                          bottomPad -
-                          (44 +
-                              (keyboardUp
-                                  ? _topGapWithKeyboard
-                                  : kWizardTopGap) +
-                              48 +
-                              20 +
-                              32 +
-                              8 +
-                              48 +
-                              33 +
-                              48 +
-                              8),
+                    // 남은 자리는 **입력칸의 실제 아래** 부터 잰다.
+                    //
+                    // 고정값 합으로 짚으면 글자 크기를 키웠을 때 제목·부제가
+                    // 늘어난 만큼 어긋나 목록 끝이 키보드에 가리고, 작은
+                    // 화면에서는 음수가 되어 BoxConstraints assert 가 터진다
+                    child: Builder(
+                      builder: (context) {
+                        final field =
+                            _fieldKey.currentContext?.findRenderObject()
+                                as RenderBox?;
+                        final fieldBottom = field == null || !field.hasSize
+                            ? null
+                            : field.localToGlobal(Offset.zero).dy +
+                                  field.size.height;
+                        final avail = fieldBottom == null
+                            ? 404.0
+                            : screenH -
+                                  keyboardInset -
+                                  bottomPad -
+                                  fieldBottom -
+                                  8;
+                        return _buildSuggestions(
+                          // 음수는 막는다 — 자리가 아예 없으면 0 이다
+                          maxHeight: avail < 0 ? 0 : avail,
+                        );
+                      },
                     ),
                   ),
                 ),
