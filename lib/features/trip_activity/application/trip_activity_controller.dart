@@ -7,6 +7,7 @@ import '../../course/presentation/my_courses_screen.dart'
 import '../data/live_activity_repository.dart';
 import '../data/trip_activity_service.dart';
 import '../domain/trip_countdown.dart';
+import '../../../core/storage/registration_memo.dart';
 
 final tripActivityServiceProvider = Provider<TripActivityService>(
   (ref) => TripActivityService(),
@@ -336,9 +337,14 @@ class TripActivityController with WidgetsBindingObserver {
       final token = _pushToStartToken;
       if (_stopped || token == null) return;
       try {
+        // 같은 토큰을 이레 안에 올린 적이 있으면 건너뛴다 — iOS 는 앱을 켤
+        // 때마다 같은 값을 주고, 그때마다 다시 보내고 있었다
+        final memo = _ref.read(pushToStartMemoProvider);
+        if (await memo.isRegistered(token)) return;
         await _ref
             .read(liveActivityRepositoryProvider)
             .registerPushToStart(token);
+        await memo.remember(token);
       } on Object catch (e) {
         debugPrint('push-to-start 토큰을 올리지 못했다: $e');
       }
@@ -366,6 +372,12 @@ class TripActivityController with WidgetsBindingObserver {
             .unregisterPushToStart(token: token);
       } on Object catch (e) {
         debugPrint('push-to-start 등록을 지우지 못했다: $e');
+      }
+      // 다음 사람은 같은 기기 토큰을 자기 계정으로 다시 올려야 한다
+      try {
+        await _ref.read(pushToStartMemoProvider).forget();
+      } on Object catch (e) {
+        debugPrint('push-to-start 등록 기억을 지우지 못했다: $e');
       }
     });
     _pushToStartOp = op;
