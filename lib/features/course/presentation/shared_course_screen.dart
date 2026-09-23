@@ -14,6 +14,7 @@ import '../../../core/widgets/async_retry.dart';
 import '../../course_wizard/presentation/calendar_screen.dart'
     show tripConsumedLeaveProvider;
 import '../data/course_repository.dart';
+import 'my_courses_screen.dart' show tripDDayLabel;
 import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
@@ -281,7 +282,13 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final consumed = ref
         .watch(tripConsumedLeaveProvider((start: start, end: end)))
         .value;
-    final dDay = _dDayLabel(start);
+    // 끝난 여행엔 뱃지를 달지 않는다 — 받은 사람은 다녀왔는지(visited)를
+    // 몰라 '여행완료'·'미방문'을 가를 수 없다. 웹 공유 페이지와 같다
+    final dDay = tripDDayLabel(
+      start,
+      end,
+      today: DateUtils.dateOnly(DateTime.now()),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -295,21 +302,10 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
               iconAsset: 'assets/icons/ic_clock_filled.svg',
               label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
             ),
-          if (dDay.isNotEmpty) _SharedBadge(label: dDay),
+          if (dDay != null) _SharedBadge(label: dDay),
         ],
       ),
     );
-  }
-
-  /// 내 코스 상세와 같은 규칙 — 지난 여행도 상태를 알려 준다
-  String _dDayLabel(DateTime start) {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final diff = DateUtils.dateOnly(start).difference(today).inDays;
-    return switch (diff) {
-      0 => 'D-DAY',
-      > 0 => 'D-$diff',
-      _ => '여행완료',
-    };
   }
 
   String _durationLabel(int days) => switch (days) {

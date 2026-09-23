@@ -385,10 +385,20 @@ class _CourseCard extends StatelessWidget {
       bg: AppColors.fillNormal,
     );
   }
-  final n = calendarDaysBetween(today, start);
   return (
-    label: n > 0 ? 'D-$n' : 'D-DAY',
+    label: tripDDayLabel(start, end, today: today)!,
     fg: AppColors.primaryNormal,
     bg: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
   );
+}
+
+/// 다가오는·진행 중인 여행의 D-day 글자. 끝난 여행은 null.
+///
+/// 지난 여행인지는 **종료일**로 가른다 — 출발일로 가르면 2박3일의 둘째 날부터
+/// 끝난 여행이 된다. 여행 중(출발일 ≤ 오늘 ≤ 종료일)은 'D-DAY'다.
+/// 목록 카드·내 코스 상세·공유 코스가 같은 규칙을 쓴다.
+String? tripDDayLabel(DateTime start, DateTime end, {required DateTime today}) {
+  if (DateUtils.dateOnly(end).isBefore(DateUtils.dateOnly(today))) return null;
+  final n = calendarDaysBetween(today, start);
+  return n > 0 ? 'D-$n' : 'D-DAY';
 }
