@@ -36,6 +36,9 @@ class NotificationScreen extends ConsumerStatefulWidget {
 
 class _NotificationScreenState extends ConsumerState<NotificationScreen>
     with WidgetsBindingObserver {
+  /// 모두 읽음을 보내는 중 — 연달아 눌러 같은 요청이 여러 번 나가지 않게
+  bool _markingAll = false;
+
   @override
   void initState() {
     super.initState();
@@ -136,6 +139,14 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   }
 
   Widget _buildTopBar(BuildContext context) {
+    // 안 읽은 알림이 있을 때만 누를 수 있다. 목록이 비었거나 권한이 꺼져
+    // 목록 대신 안내가 떠 있으면 버튼 자체를 두지 않는다
+    final feed = ref.watch(notificationFeedProvider).value;
+    final enabled = ref.watch(notificationEnabledProvider).value ?? true;
+    final showMarkAll =
+        enabled && feed != null && feed.notifications.isNotEmpty;
+    final canMarkAll = showMarkAll && feed.unreadCount > 0 && !_markingAll;
+
     return SizedBox(
       height: 44,
       child: Stack(
@@ -157,9 +168,60 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
                   context.canPop() ? context.pop() : context.go(AppRoutes.home),
             ),
           ),
+          if (showMarkAll)
+            Positioned(
+              right: 8,
+              top: 0,
+              bottom: 0,
+              child: Semantics(
+                button: true,
+                enabled: canMarkAll,
+                child: GestureDetector(
+                  onTap: canMarkAll ? _markAllRead : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    // 글자만 누르기엔 작다 — 좌우로 넉넉히 받는다
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Center(
+                      child: Text(
+                        '모두 읽음',
+                        style: AppTypography.label1NormalMedium.copyWith(
+                          color: canMarkAll
+                              ? AppColors.labelNeutral
+                              : AppColors.labelDisable,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  /// 안 읽은 알림을 한 번에 읽음으로 바꾼다 (`POST /notifications/read-all`).
+  ///
+  /// 목록을 다시 읽어 하늘색 바탕을 걷고, 홈 종 아이콘의 점도 함께 끈다
+  Future<void> _markAllRead() async {
+    setState(() => _markingAll = true);
+    try {
+      final unread = await ref
+          .read(notificationRepositoryProvider)
+          .markAllRead();
+      ref.read(hasUnreadNotificationsProvider.notifier).setUnreadCount(unread);
+      ref.invalidate(notificationFeedProvider);
+      if (mounted) {
+        showAppToast(context, '모든 알림을 읽음 처리했어요.', kind: AppToastKind.success);
+      }
+    } on ApiException {
+      if (mounted) {
+        showAppToast(context, '읽음 처리하지 못했어요. 잠시 후 다시 시도해 주세요');
+      }
+    } finally {
+      if (mounted) setState(() => _markingAll = false);
+    }
   }
 }
 
