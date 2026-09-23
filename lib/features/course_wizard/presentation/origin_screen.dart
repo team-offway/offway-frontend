@@ -165,6 +165,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     final keyboardUp = keyboardInset > 0;
     final screenH = MediaQuery.sizeOf(context).height;
     final topPad = MediaQuery.paddingOf(context).top;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       // 키보드 밖을 누르면 내린다 (시안 노트). 목록 항목·입력칸은 자기 탭을
@@ -300,6 +301,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                           screenH -
                           keyboardInset -
                           topPad -
+                          bottomPad -
                           (44 +
                               (keyboardUp
                                   ? _topGapWithKeyboard
@@ -391,7 +393,12 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     // Align 을 씌우면 자식이 느슨한 제약을 받아 폭이 내용만큼 줄어든다 —
     // 입력칸과 좌우가 어긋난다
     return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxHeight < 404 ? maxHeight : 404),
+      constraints: BoxConstraints(
+        // Follower 안에서는 높이 제약이 무한이라 maxHeight 만으로는 shrinkWrap
+        // ListView 를 못 막는다 — 최소·최대를 같게 줘 높이를 확정한다
+        minHeight: maxHeight < 404 ? maxHeight : 404,
+        maxHeight: maxHeight < 404 ? maxHeight : 404,
+      ),
       child: Material(
         type: MaterialType.transparency,
         child: Container(
