@@ -683,24 +683,27 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         child: CourseMap(places: places, dayKey: _selectedDay),
       ),
     );
-    // 펼친 상태에서는 지도를 마음껏 옮기고 확대한다 — 그러라고 펼친 것이다
-    if (_mapExpanded) return map;
-
+    // 펼친 상태에서는 지도를 마음껏 옮기고 확대한다 — 그러라고 펼친 것이다.
+    //
     // 접힌 상태는 **미리보기**다. 지도 제스처를 막고 탭을 '펼치기'로 받는다
     // (시안 Note: 지도 영역을 탭하면 확장되며 지도뷰로 전환).
     //
     // 조작을 열어 두면 지도를 옮기려는 손짓과 펼치려는 탭이 구분되지 않는다 —
     // 그래서 예전에 화살표 버튼을 따로 뒀는데, 접힌 자리에 늘 떠 있어
-    // 시안에 없는 버튼이 됐다. 미리보기에서는 조작을 포기하는 편이 맞다
+    // 시안에 없는 버튼이 됐다. 미리보기에서는 조작을 포기하는 편이 맞다.
+    //
+    // **감싸는 구조는 두 상태가 같아야 한다**(#363). 펼칠 때만 껍데기를 벗기면
+    // 위젯 타입이 바뀌어 아래 트리가 통째로 버려지고, 네이버 지도가 새로
+    // 만들어져 마커를 다시 그린다 — 탭할 때마다 깜빡였다. 값만 바꾼다
     return Semantics(
-      button: true,
-      label: '지도 펼치기',
-      excludeSemantics: true,
+      button: !_mapExpanded,
+      label: _mapExpanded ? null : '지도 펼치기',
+      excludeSemantics: !_mapExpanded,
       child: GestureDetector(
-        onTap: () => setState(() => _mapExpanded = true),
+        onTap: _mapExpanded ? null : () => setState(() => _mapExpanded = true),
         behavior: HitTestBehavior.opaque,
         // 지도가 제스처를 먼저 채가지 않도록 위에 덮는다
-        child: IgnorePointer(child: map),
+        child: IgnorePointer(ignoring: !_mapExpanded, child: map),
       ),
     );
   }
