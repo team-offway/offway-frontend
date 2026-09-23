@@ -193,10 +193,12 @@ docs/                          # 백엔드 요청서 · Live Activity 설정 기
 
 ### 실행
 
-```bash
-flutter run                                          # iOS 시뮬레이터 실행
+**Flutter 3.38.4 (stable)** 기준입니다. CI 도 같은 버전으로 검사합니다.
 
-# 배포 서버 접속 (권장)
+배포 서버가 임시 Basic 게이트 뒤에 있어 계정 없이 부르면 전부 401이 납니다. 먼저 `env.json.example`을 복사해 `env.json`을 만들고 백엔드에게 받은 계정을 넣습니다. **gitignore 대상이라 커밋하지 않습니다.**
+
+```bash
+# 배포 서버 접속 (기본)
 flutter run --dart-define-from-file=env.json
 
 # 주소만 따로 지정할 때 (로컬 백엔드 등)
@@ -208,8 +210,6 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 
 실기기에 **설치해서 단독으로 켤** 때는 `flutter build ios --profile` 로 빌드합니다. `--debug` 는 Dart 코드를 Mac 의 Flutter 툴에서 받아오므로 `flutter run` 이나 Xcode 없이 홈 화면에서 열면 곧바로 죽습니다.
 
-`env.json`은 `env.json.example`을 복사해 만듭니다. 배포 서버가 임시 Basic 게이트 뒤에 있어 계정 없이 부르면 전부 401이 납니다. **gitignore 대상이라 커밋하지 않습니다.**
-
 ### 웹 (offway.cloud)
 
 공유 링크를 받은 사람이 **앱 없이 브라우저에서** 코스를 보는 페이지와, 심사에 필요한 법적 문서를 함께 배포합니다. Vercel 프로젝트의 Root Directory는 `web/share`입니다.
@@ -220,6 +220,7 @@ flutter run --dart-define=INITIAL_ROUTE=/wizard/calendar
 | `/r/{token}` | 추천코스 공유 — 담기 전 코스를 공유한 링크 |
 | `/m/{token}` | 내 코스 공유 — 담아둔 코스 (여행 날짜·사용 연차·D-DAY) |
 | `/privacy` · `/terms` | 개인정보처리방침 · 이용약관 (한국어·영문) |
+| `/support` | 고객지원 — 자주 묻는 질문 · 문의 메일 |
 
 백엔드(`https://api.offway.cloud`)가 브라우저 직접 호출에 CORS를 열어 주지 않으므로, `web/share/api/*.js`가 같은 출처에서 받아 대신 부릅니다.
 
@@ -243,6 +244,8 @@ PR마다 GitHub Actions가 포맷·분석·테스트를 검사하며, 통과해�
 - 번들 ID: `com.nth.offway` · App Store 등록명: **[Offway - 연차로 떠나는 로컬 여행](https://apps.apple.com/app/id6793610290)**
 - iOS 최소 버전은 **15.0**, Live Activity 확장만 **16.1** 입니다. 15.x 기기는 앱은 정상이고 잠금화면 카드만 없습니다 — 그 기기들은 다이나믹 아일랜드 하드웨어가 없어 앱 버전을 올려도 얻는 것이 없습니다. 확장 설정과 겪은 함정은 `docs/live-activity-setup.md`
 - Xcode 작업 시 `ios/Runner.xcworkspace`를 엽니다 (`.xcodeproj` 아님)
+- **실기기 ↔ 시뮬레이터를 오가거나 `flutter build ipa` 전에는 `flutter clean`** 을 먼저 합니다. Flutter 3.38 이 `objective_c.framework`(Dart 네이티브 에셋)를 마지막에 빌드한 플랫폼용으로 남겨, IPA 업로드가 거절되거나 사진 캐시가 죽습니다. `build/native_assets` 만 지우면 프레임워크가 빠진 채 빌드되니 반드시 `clean` 으로 합니다
+- 실기기 설치가 `0xe8008014`(objective_c.framework 서명 불일치)로 실패하는 것도 같은 Flutter 3.38 버그입니다. Runner 타깃 마지막의 **Sign Native Asset Frameworks** 단계가 ad-hoc 프레임워크를 앱 서명으로 다시 서명해 우회하니 지우지 않습니다. Flutter 가 고쳐지면 아무것도 하지 않고 지나갑니다
 - 카카오 앱 키를 바꿀 때는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 합니다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못합니다
 - 레포가 **public**이므로 시크릿은 어떤 형태로도 커밋하지 않습니다 (카카오 REST API 키·Admin 키·클라이언트 시크릿, Apple `.p8`·APNs 키, 네이버 지도 Client Secret 등 — 서버가 쓰는 값은 백엔드 환경변수로만 관리)
 - 예외적으로 **제공자가 공개 식별자로 명시했고 콘솔에서 번들 ID(`com.nth.offway`) 제한이 걸린 값**만 포함되어 있습니다: 네이버 지도 Client ID, 카카오 네이티브 앱 키, 구글 `REVERSED_CLIENT_ID`. 그 외 값은 `--dart-define`으로 주입합니다
