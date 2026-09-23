@@ -248,7 +248,10 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                     ),
                     child: _buildField(),
                   ),
-                  const Spacer(),
+                  // 남는 공간은 전부 여기로 — 안내(Flexible)와 1:1 로 나누면
+                  // '다음' 버튼이 위로 밀린다. 자리가 모자랄 때만 안내가 줄고
+                  // 이 Spacer 는 0 이 된다
+                  const Spacer(flex: 1000),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: SizedBox(

@@ -189,6 +189,22 @@ void main() {
     expect(l.height, greaterThan(56), reason: '한 줄은 보여야 고를 수 있다');
   });
 
+  testWidgets("'다음' 버튼은 화면 아래에 붙는다", (tester) async {
+    // Flexible(안내)과 Spacer 가 남는 공간을 1:1 로 나누면 버튼이 60 위로
+    // 밀렸다 — Spacer 가 사실상 전부 가져가야 한다
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+    final b = tester.getRect(find.widgetWithText(FilledButton, '다음'));
+    final h = tester.getSize(find.byType(Scaffold).first).height;
+    // 버튼 아래 = 패딩 20 + SafeArea 34
+    expect(h - b.bottom, closeTo(54, 0.5));
+  });
+
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
     await pumpScreen(tester);
 
