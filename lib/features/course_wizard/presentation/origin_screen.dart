@@ -42,6 +42,22 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// 키보드가 떠 있을 때의 상단 여백 — 시안 1730:40132 (평소는 [kWizardTopGap])
   static const _topGapWithKeyboard = 24.0;
 
+  /// 목록을 입력칸 바로 아래에 붙이려면 그 자리를 알아야 한다. 여백을 더해
+  /// 계산하면 글자 크기를 키웠을 때 어긋나 목록이 입력칸을 덮는다
+  final _fieldKey = GlobalKey();
+  final _stackKey = GlobalKey();
+  double? _fieldBottom;
+
+  /// 한 프레임 뒤에 잰다 — 빌드 중에는 아직 자리가 없다
+  void _measureField() {
+    final box = _fieldKey.currentContext?.findRenderObject() as RenderBox?;
+    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || stack == null || !box.hasSize) return;
+    final top = box.localToGlobal(Offset.zero, ancestor: stack).dy;
+    final bottom = top + box.size.height;
+    if (_fieldBottom != bottom) setState(() => _fieldBottom = bottom);
+  }
+
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -156,6 +172,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     // 포커스가 아니라 실제 키보드 높이로 가른다 — 하드웨어 키보드나 포커스만
     // 있고 키보드가 내려간 경우에 안내를 접을 이유가 없다
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureField());
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       // 키보드 밖을 누르면 내린다 (시안 노트). 목록 항목·입력칸은 자기 탭을
@@ -167,6 +184,7 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
           // 목록은 Column 위층에 띄운다 — Column 안에 두면 '다음' 버튼 위에서
           // 끊긴다. 시안(1730:40493)은 버튼을 덮고 키보드까지 내려간다
           child: Stack(
+            key: _stackKey,
             children: [
               Column(
                 children: [
@@ -179,38 +197,52 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                   //
                   // 안내를 지우지는 않는다. 아이콘·제목·부제는 그대로 두고 여백만
                   // 43 을 내놓는 것이 시안이 고른 답이다
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    child: SizedBox(
-                      height: keyboardUp ? _topGapWithKeyboard : kWizardTopGap,
-                    ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/icons/ic_building_blue.svg',
-                    width: 48,
-                    height: 48,
-                  ),
-                  // 시안 측정값 — 아이콘과 질문 사이 20
-                  const SizedBox(height: 20),
-                  Text(
-                    '출발지를 입력해주세요',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.title3Bold.copyWith(
-                      color: AppColors.labelNormal,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.body1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
+                  // 자리가 모자라면 안내부터 줄인다 — 작은 화면(SE)에 키보드가
+                  // 올라오면 고정 높이만으로 화면을 넘겼다. 입력칸과 목록은
+                  // 끝까지 온전해야 하므로 이 묶음만 스크롤에 둔다
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            child: SizedBox(
+                              height: keyboardUp
+                                  ? _topGapWithKeyboard
+                                  : kWizardTopGap,
+                            ),
+                          ),
+                          SvgPicture.asset(
+                            'assets/icons/ic_building_blue.svg',
+                            width: 48,
+                            height: 48,
+                          ),
+                          // 시안 측정값 — 아이콘과 질문 사이 20
+                          const SizedBox(height: 20),
+                          Text(
+                            '출발지를 입력해주세요',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.title3Bold.copyWith(
+                              color: AppColors.labelNormal,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '출발지부터 이동 시간을 고려해\n여행지를 추천해드려요.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body1NormalMedium.copyWith(
+                              color: AppColors.labelAlternative,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   // 시안 측정값 — 부제(88) 아래 입력칸까지 33
                   const SizedBox(height: 33),
                   Padding(
+                    key: _fieldKey,
                     padding: const EdgeInsets.symmetric(
                       horizontal: _fieldSideMargin,
                     ),
@@ -239,21 +271,11 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                   ),
                 ],
               ),
-              if (_results.isNotEmpty || _searching)
+              // 입력칸의 **실측** 아래 8. 여백을 더해 짚으면 글자 크기를
+              // 키웠을 때 제목·부제가 늘어 목록이 입력칸을 덮는다
+              if ((_results.isNotEmpty || _searching) && _fieldBottom != null)
                 Positioned(
-                  // 상단바(44) + 여백 + 아이콘48 + 20 + 제목32 + 8 + 부제48
-                  // + 33 + 입력칸48 + 8 — 전부 고정값이라 계산으로 짚는다
-                  top:
-                      44 +
-                      (keyboardUp ? _topGapWithKeyboard : kWizardTopGap) +
-                      48 +
-                      20 +
-                      32 +
-                      8 +
-                      48 +
-                      33 +
-                      48 +
-                      8,
+                  top: _fieldBottom! + 8,
                   left: _fieldSideMargin,
                   right: _fieldSideMargin,
                   bottom: 0,
@@ -372,7 +394,9 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    // 시안 실측 — 테두리에서 첫 글자까지 21
+                    // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     shrinkWrap: true,
                     itemCount: _results.length,
                     itemBuilder: (context, i) => _buildCell(_results[i]),

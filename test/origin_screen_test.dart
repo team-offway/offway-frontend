@@ -24,7 +24,7 @@ import 'package:offway/features/course_wizard/presentation/widgets/wizard_choice
 void main() {
   late _RecordingRepository repo;
 
-  Future<void> pumpScreen(WidgetTester tester) async {
+  Future<void> pumpScreen(WidgetTester tester, {double textScale = 1.0}) async {
     repo = _RecordingRepository();
     final router = GoRouter(
       initialLocation: AppRoutes.wizardOrigin,
@@ -44,7 +44,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [originSearchRepositoryProvider.overrideWithValue(repo)],
-        child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          builder: (context, child) => MediaQuery.withClampedTextScaling(
+            minScaleFactor: textScale,
+            maxScaleFactor: textScale,
+            child: child!,
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -104,6 +112,19 @@ void main() {
     // Column 안에 두면 버튼 위에서 끊겨 두 줄만 남았다
     expect(lst.bottom, greaterThan(btn.top), reason: "목록이 '다음' 위에서 끊기지 않는다");
 
+    // 목록 안쪽 — 테두리에서 첫 글자까지 21, 항목 간격 44 (시안 실측)
+    final lv = tester.getRect(find.byType(ListView).first);
+    final cells = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(InkWell),
+    );
+    final c0 = tester.getRect(cells.at(0));
+    final c1 = tester.getRect(cells.at(1));
+    expect(c0.height, 44, reason: '셀 높이');
+    expect(c1.top - c0.top, 44, reason: '항목 간격');
+    // 글자는 셀 안에서 가운데 — 잉크 14 기준 위아래 15 씩
+    expect(c0.top - lv.top + 15, 21, reason: '테두리에서 첫 글자까지');
+
     // 안내를 지우지 않는다 — 아이콘·제목·부제가 그대로 있다
     expect(find.text('출발지를 입력해주세요'), findsOneWidget);
     expect(find.textContaining('이동 시간을 고려해'), findsOneWidget);
@@ -130,6 +151,42 @@ void main() {
     await tester.tapAt(const Offset(20, 200));
     await tester.pumpAndSettle();
     expect(tester.testTextInput.isVisible, isFalse);
+  });
+
+  testWidgets('글자를 키워도 목록이 입력칸을 덮지 않는다 (CodeRabbit #354)', (tester) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+    await pumpScreen(tester, textScale: 1.5);
+    repo.bulk = 20;
+    await type(tester, '충주');
+    await tester.pumpAndSettle();
+    final f = tester.getRect(find.byType(TextField));
+    final l = tester.getRect(find.byType(ListView).first);
+    // 여백을 더해 짚으면 제목·부제가 늘어난 만큼 목록이 입력칸 위로 올라온다
+    expect(
+      l.top,
+      greaterThanOrEqualTo(f.bottom),
+      reason: '목록이 입력칸을 덮으면 다시 누르거나 고칠 수 없다',
+    );
+  });
+
+  testWidgets('작은 화면에 키보드가 올라와도 넘치지 않는다 (CodeRabbit #354)', (tester) async {
+    // iPhone SE 2/3 — 375x667, 상단 20
+    tester.view.physicalSize = const Size(750, 1334);
+    tester.view.devicePixelRatio = 2.0;
+    tester.view.padding = const FakeViewPadding(top: 40, bottom: 0);
+    addTearDown(tester.view.reset);
+    await pumpScreen(tester);
+    repo.bulk = 20;
+    await type(tester, '충주');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260 * 2);
+    await tester.pumpAndSettle();
+    final l = tester.getRect(find.byType(ListView).first);
+    // 안내를 Flexible 로 두기 전에는 RenderFlex 가 29px 넘쳤다
+    expect(tester.takeException(), isNull, reason: 'iPhone SE 에서 넘치지 않는다');
+    expect(l.height, greaterThan(56), reason: '한 줄은 보여야 고를 수 있다');
   });
 
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
