@@ -237,6 +237,30 @@ void main() {
     );
   });
 
+  testWidgets('목록이 화면 밖으로 넘치지 않는다', (tester) async {
+    // Align 을 빼면 목록이 부모가 준 높이(화면 전체)를 그대로 채워 화면
+    // 밖까지 늘어나고 스크롤도 걸리지 않는다
+    tester.view.physicalSize = const Size(1179, 2556); // iPhone 15 Pro
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 177, bottom: 102);
+    addTearDown(tester.view.reset);
+
+    await pumpScreen(tester);
+    repo.bulk = 20; // 실제 응답은 최대 20건
+    await type(tester, '충주');
+    await tester.pumpAndSettle();
+
+    final panel = tester.getRect(find.byType(Material).last);
+    final screen = tester.getSize(find.byType(Scaffold).first).height;
+    expect(panel.bottom, lessThanOrEqualTo(screen), reason: '화면 안에 들어온다');
+    expect(panel.height, lessThanOrEqualTo(404), reason: '시안 상한 404');
+
+    // 좌우는 입력칸과 같아야 한다
+    final f = tester.getRect(find.byType(TextField));
+    expect(panel.left, closeTo(f.left, 0.5));
+    expect(panel.right, closeTo(f.right, 0.5));
+  });
+
   testWidgets('시안 문구와 비활성 버튼으로 시작한다', (tester) async {
     await pumpScreen(tester);
 

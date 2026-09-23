@@ -390,60 +390,64 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// [maxHeight] 는 입력칸 아래로 남은 자리다. Follower 는 부모 제약을 받지
   /// 않아 스스로 막지 않으면 키보드 위로 넘어간다
   Widget _buildSuggestions({required double maxHeight}) {
-    // Align 을 씌우면 자식이 느슨한 제약을 받아 폭이 내용만큼 줄어든다 —
-    // 입력칸과 좌우가 어긋난다
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        // Follower 안에서는 높이 제약이 무한이라 maxHeight 만으로는 shrinkWrap
-        // ListView 를 못 막는다 — 최소·최대를 같게 줘 높이를 확정한다
-        minHeight: maxHeight < 404 ? maxHeight : 404,
-        maxHeight: maxHeight < 404 ? maxHeight : 404,
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: Container(
-          decoration: BoxDecoration(
-            // 배경을 여기서 칠한다. Material 에만 색을 주면 이 Container 의
-            // decoration 이 위를 덮어 회색 판이 된다
-            color: AppColors.backgroundElevated,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.lineSolidNeutral),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0F171717),
-                offset: Offset(0, 4),
-                blurRadius: 6,
-                spreadRadius: -1,
-              ),
-              BoxShadow(
-                color: Color(0x0F171717),
-                offset: Offset(0, 2),
-                blurRadius: 4,
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: _results.isEmpty
-              // 찾는 동안 빈 판을 띄우면 '결과 없음' 처럼 보인다
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  // 시안 실측 — 테두리에서 첫 글자까지 21
-                  // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  shrinkWrap: true,
-                  itemCount: _results.length,
-                  itemBuilder: (context, i) => _buildCell(_results[i]),
+    // 위로 붙인다 — 이게 없으면 목록이 부모가 준 높이(화면 전체)를 그대로
+    // 채워 화면 밖까지 늘어나고 스크롤도 걸리지 않는다.
+    //
+    // 폭은 Positioned 가 좌우를 고정해 주므로 stretch 로 꽉 채운다
+    return Align(
+      alignment: Alignment.topCenter,
+      widthFactor: null,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight < 404 ? maxHeight : 404,
+          minWidth: double.infinity,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Container(
+            decoration: BoxDecoration(
+              // 배경을 여기서 칠한다. Material 에만 색을 주면 이 Container 의
+              // decoration 이 위를 덮어 회색 판이 된다
+              color: AppColors.backgroundElevated,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.lineSolidNeutral),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0F171717),
+                  offset: Offset(0, 4),
+                  blurRadius: 6,
+                  spreadRadius: -1,
                 ),
+                BoxShadow(
+                  color: Color(0x0F171717),
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _results.isEmpty
+                // 찾는 동안 빈 판을 띄우면 '결과 없음' 처럼 보인다
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    // 시안 실측 — 테두리에서 첫 글자까지 21
+                    // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shrinkWrap: true,
+                    itemCount: _results.length,
+                    itemBuilder: (context, i) => _buildCell(_results[i]),
+                  ),
+          ),
         ),
       ),
     );
