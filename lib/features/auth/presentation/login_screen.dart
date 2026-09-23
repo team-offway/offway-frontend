@@ -21,6 +21,7 @@ import '../data/auth_repository.dart';
 import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
 import '../../../core/utils/bottom_inset.dart';
+import '../../../core/utils/log.dart';
 
 /// O-01 · 로그인/회원가입
 ///
@@ -128,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context.go(tokens.isNewUser ? AppRoutes.onboardingLeave : AppRoutes.home);
     } catch (e) {
       if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지
-      debugPrint('${provider.name} 로그인 실패: $e');
+      logDebug('${provider.name} 로그인 실패: $e');
       if (!mounted) return;
       // 서버 detail은 사용자에게 보여줄 문구다 — 원인을 감추면 재시도만 반복한다
       showAppToast(

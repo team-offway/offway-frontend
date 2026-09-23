@@ -7,6 +7,7 @@ import '../network/dio_client.dart';
 import '../storage/secure_storage.dart';
 import '../widgets/app_toast.dart';
 import 'app_router.dart';
+import '../utils/log.dart';
 
 /// 세션이 끊기면 로그인 화면으로 되돌린다.
 ///
@@ -41,7 +42,7 @@ class SessionExpiryListener extends ConsumerWidget {
     try {
       lockScreenCleared = await ref.read(tripActivityControllerProvider).stop();
     } on Exception catch (e) {
-      debugPrint('세션 만료 처리 중 잠금화면을 내리지 못했다: $e');
+      logDebug('세션 만료 처리 중 잠금화면을 내리지 못했다: $e');
     }
 
     try {
@@ -52,7 +53,7 @@ class SessionExpiryListener extends ConsumerWidget {
     } on Exception catch (e) {
       // Keychain이 실패해도 로그인 화면으로는 보내야 한다 — 여기서 멈추면
       // 사용자는 아무 안내 없이 만료된 화면에 갇힌다
-      debugPrint('세션 만료 처리 중 토큰 삭제 실패: $e');
+      logDebug('세션 만료 처리 중 토큰 삭제 실패: $e');
     } finally {
       // 신호를 내려 둔다 — 남아 있으면 다시 로그인해도 곧장 튕긴다
       ref.read(sessionExpiredProvider.notifier).reset();

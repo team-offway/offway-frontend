@@ -12,6 +12,7 @@ import 'core/router/app_router.dart';
 import 'core/storage/secure_storage.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'core/config/app_config.dart';
+import 'core/utils/log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,12 +24,12 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp();
   } on Exception catch (e) {
-    debugPrint('Firebase 초기화 실패 (로그인·푸시 비활성): $e');
+    logDebug('Firebase 초기화 실패 (로그인·푸시 비활성): $e');
   }
 
   await FlutterNaverMap().init(
     clientId: AppConfig.naverMapClientId,
-    onAuthFailed: (e) => debugPrint('네이버 지도 인증 실패: $e'),
+    onAuthFailed: (e) => logDebug('네이버 지도 인증 실패: $e'),
   );
   // 로그인해 둔 사람은 스플래시가 끝나면 홈으로 바로 들어간다. 라우터가
   // 만들어질 때 목적지가 정해져 있어야 스플래시에서 곧장 넘길 수 있으므로
@@ -42,7 +43,7 @@ Future<void> main() async {
   try {
     signedIn = await storage.accessToken != null;
   } on Exception catch (e) {
-    debugPrint('저장된 토큰을 읽지 못해 로그인부터 시작합니다: $e');
+    logDebug('저장된 토큰을 읽지 못해 로그인부터 시작합니다: $e');
     signedIn = false;
   }
 

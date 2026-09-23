@@ -17,6 +17,7 @@ import '../application/push_registration.dart';
 import '../data/notification_repository.dart';
 import '../domain/app_notification.dart';
 import '../../../core/utils/bottom_inset.dart';
+import '../../../core/utils/log.dart';
 
 /// 기기 알림 권한이 켜져 있는지.
 ///
@@ -373,7 +374,7 @@ class _PermissionOff extends StatelessWidget {
     try {
       opened = await launchUrl(Uri.parse('app-settings:'));
     } on Object catch (e) {
-      debugPrint('설정 화면을 열지 못했다: $e');
+      logDebug('설정 화면을 열지 못했다: $e');
     }
     if (opened || !context.mounted) return;
     // 열지 못하면 손으로 찾아가야 한다 — 어디로 갈지 알려준다

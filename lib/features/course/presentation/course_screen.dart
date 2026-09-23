@@ -38,6 +38,7 @@ import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_image.dart';
 import 'widgets/course_share_sheet.dart';
+import '../../../core/utils/log.dart';
 
 /// 위저드 조건(밀도·이동수단·기간)과 현재 위치로 코스를 생성한다.
 ///
@@ -153,7 +154,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           .read(courseTooltipStorageProvider)
           .isSharePromptClosed();
     } on Object catch (e) {
-      debugPrint('툴팁 이력 읽기 실패: $e');
+      logDebug('툴팁 이력 읽기 실패: $e');
     }
     if (!mounted) return;
     if (!closed) return;

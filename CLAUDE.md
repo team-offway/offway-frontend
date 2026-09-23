@@ -45,7 +45,7 @@ lib/
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# 토큰 Keychain 저장소
 │   └── theme/app_theme.dart       # Material 3 테마
-├── mock/mock_data_source.dart # 서버 구축 전 mock 로더 (assets/mock/*.json)
+├── mock/mock_data_source.dart # 테스트 픽스처 로더 (assets/mock/*.json) — 앱 코드는 안 씀
 └── features/
     ├── auth/                  # O-01 로그인 (카카오·Apple)
     ├── onboarding/            # O-02 잔여연차 입력

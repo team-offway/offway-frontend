@@ -2,12 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-/// 서버(Spring) 구축 전까지 화면 개발에 사용하는 mock 데이터 로더.
+/// **테스트 픽스처** 로더 — 앱 코드는 쓰지 않는다(위젯 테스트만 읽는다).
 ///
+/// 서버가 생기기 전 화면을 그리려고 만든 것이 테스트용으로 남았다.
 /// 데이터는 지어낸 값이 아니라 TourAPI 실데이터에서 추출한 것
 /// (정선·영월 실제 콘텐츠와 연관관광지 체인).
-/// 화면별 모델(freezed)이 확정되면 repository 인터페이스 뒤로 옮기고,
-/// 서버 연동 시 이 클래스만 실 API 구현으로 교체한다.
 class MockDataSource {
   MockDataSource._();
 
@@ -30,7 +29,6 @@ class MockDataSource {
 
   /// candidates + monthlyPicks를 합친 전체 지역 목록.
   /// 홈·목록·상세가 같은 집합을 봐야 하므로 병합은 여기서만 한다
-  /// (서버 연동 시 지역 목록 API 하나로 교체).
   static Future<List<Map<String, dynamic>>> allRegions() async {
     final data = await regions();
     return [
