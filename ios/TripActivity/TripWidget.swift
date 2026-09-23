@@ -489,7 +489,9 @@ private struct RectangularView: View {
                     .font(.headline)
                     .widgetAccentable()
                     .lineLimit(1)
-                Text("\(state.shortRangeLabel) · \(state.durationLabel)")
+                // 기간(`2박 3일`)은 싣지 않는다 — 요일이 붙은 날짜만으로 이 칸이
+                // 차서 뒤가 `· 2...` 로 잘렸다. 날짜 범위가 이미 기간을 말한다
+                Text(state.shortRangeLabel)
                     .font(.caption)
                     .lineLimit(1)
             } else {
