@@ -17,7 +17,7 @@ OffWay 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 ## 목차
 
 1. [서비스 소개](#서비스-소개)
-2. [주요 기능](#주요-기능)
+2. [주요 화면](#주요-화면)
 3. [앱에서 신경 쓴 것](#앱에서-신경-쓴-것)
 4. [기술 스택](#기술-스택)
 5. [앱 구조](#앱-구조)
@@ -38,104 +38,33 @@ OffWay 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 
 익숙한 인기 관광지보다 인구감소지역 89곳을 중심으로 새로운 여행지를 제안합니다. 모든 코스는 **최대 2박 3일**입니다 — 콘텐츠가 얇은 지역에서 그보다 길어지면 코스가 빈약해지기 때문입니다.
 
-## 주요 기능
+## 주요 화면
 
-### 1 · 연차 기반 맞춤 여행 코스 추천
+**시작**
 
-남은 연차와 이동수단, 여행 스타일을 바탕으로 인구감소지역과 맞춤 코스를 추천합니다.
+| 연차 입력 | 홈 | 내 연차 | 잠금화면 위젯 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/leave-input.webp" width="180" alt="연차 입력"> | <img src=".github/readme/home.webp" width="180" alt="홈"> | <img src=".github/readme/my-leave.webp" width="180" alt="내 연차"> | <img src=".github/readme/lock-widget.webp" width="180" alt="잠금화면 위젯"> |
 
-<table>
-  <tr>
-    <td align="center" width="25%"><img src=".github/readme/leave-input.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/home.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/period-style.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/transport.webp" width="200" /></td>
-  </tr>
-  <tr>
-    <td align="center">① 온보딩에서<br>남은 연차 일수를<br>입력합니다.</td>
-    <td align="center">② 홈에서 남은<br>연차를 확인하고<br>코스 추천을<br>시작합니다.</td>
-    <td align="center">③ 당일치기·주말<br>포함·연차 등 여행에<br>쓸 연차 방식을<br>고릅니다.</td>
-    <td align="center">④ 대중교통 또는<br>자차 등 이동수단을<br>고릅니다.</td>
-  </tr>
-</table>
+**코스 추천**
+
+| 기간 스타일 | 이동수단 | 추천 계산 | 후보 지역 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/period-style.webp" width="180" alt="기간 스타일"> | <img src=".github/readme/transport.webp" width="180" alt="이동수단"> | <img src=".github/readme/loading.webp" width="180" alt="추천 계산"> | <img src=".github/readme/candidates.webp" width="180" alt="후보 지역"> |
 
 > 1.1.0 부터 코스 추천은 **출발지 선택**으로 시작합니다. 역·터미널·주소를 검색해 고르면, 그곳에서 닿을 수 있는 지역을 추천합니다. 기기 위치(GPS)는 받지 않습니다.
 
-### 2 · 조건에 맞는 지역·코스 추천
+**코스**
 
-입력한 조건으로 맞춤 코스를 추천하고, 마음에 드는 코스를 저장합니다.
+| 코스 확정 | 지역 혜택 | 코스 상세 | 장소 상세 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/course-map.webp" width="180" alt="코스 확정"> | <img src=".github/readme/region-benefits.webp" width="180" alt="지역 혜택"> | <img src=".github/readme/course-detail.webp" width="180" alt="코스 상세"> | <img src=".github/readme/place-detail.webp" width="180" alt="장소 상세"> |
 
-<table>
-  <tr>
-    <td align="center" width="25%"><img src=".github/readme/loading.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/candidates.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/course-map.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/region-benefits.webp" width="200" /></td>
-  </tr>
-  <tr>
-    <td align="center">① 입력한 연차와<br>조건으로 여행 가능한<br>지역을 찾습니다.</td>
-    <td align="center">② 조건에 맞는<br>인구감소지역 중<br>원하는 곳을<br>고릅니다.</td>
-    <td align="center">③ 여행 기간과<br>스타일에 맞춘<br>날짜별 코스를<br>받습니다.</td>
-    <td align="center">④ 받을 수 있는<br>여행 혜택을 확인하고<br>코스를 저장합니다.</td>
-  </tr>
-</table>
+**여행 관리**
 
-### 3 · 저장한 여행 관리·상세 정보 확인
-
-저장한 코스의 일정과 이동 정보를 보고, 코스 속 장소의 관광정보를 확인합니다.
-
-<table>
-  <tr>
-    <td align="center" width="25%"><img src=".github/readme/my-courses.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/course-detail.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/place-hours.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/place-detail.webp" width="200" /></td>
-  </tr>
-  <tr>
-    <td align="center">① '내 코스'에서<br>예정된 여행과 지난<br>여행을 한눈에<br>봅니다.</td>
-    <td align="center">② 저장한 코스의<br>이동 정보와 날씨,<br>날짜별 일정을<br>확인합니다.</td>
-    <td align="center">③ 장소를 눌러<br>운영시간·휴무일을<br>바로 확인합니다.</td>
-    <td align="center">④ 장소의 소개,<br>기본정보, 위치 등<br>상세 정보를<br>확인합니다.</td>
-  </tr>
-</table>
-
-### 4 · 연차 사용 기록 및 관리
-
-여행 후 사용한 연차를 반영하고, 직접 사용 내역을 등록해 남은 연차를 관리합니다.
-
-<table>
-  <tr>
-    <td align="center" width="25%"><img src=".github/readme/trip-outcome.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/my-leave.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/leave-register.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/leave-updated.webp" width="200" /></td>
-  </tr>
-  <tr>
-    <td align="center">① 여행이 끝나면<br>다녀왔는지 묻고<br>사용한 연차를<br>반영합니다.</td>
-    <td align="center">② 남은 연차와<br>지금까지의 사용<br>내역을 한눈에<br>봅니다.</td>
-    <td align="center">③ 여행 외에 쓴<br>연차도 날짜와 사유를<br>입력해 등록합니다.</td>
-    <td align="center">④ 등록한 내역을<br>반영해 남은 연차가<br>자동으로 바뀝니다.</td>
-  </tr>
-</table>
-
-### 5 · 여행 정보 탐색 및 일정 알림
-
-관광정보와 여행 혜택을 살펴보고, 위젯과 다이나믹 아일랜드로 일정을 확인합니다.
-
-<table>
-  <tr>
-    <td align="center" width="25%"><img src=".github/readme/home-contents.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/region-detail.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/region-place-benefits.webp" width="200" /></td>
-    <td align="center" width="25%"><img src=".github/readme/lock-widget.webp" width="200" /></td>
-  </tr>
-  <tr>
-    <td align="center">① 홈에서<br>정부·지자체의 여행<br>정책과 혜택을<br>한눈에 봅니다.</td>
-    <td align="center">② 지역의 주요<br>관광지와 방문<br>정보를 확인합니다.</td>
-    <td align="center">③ 관광지와 함께<br>그 지역에서 받을 수<br>있는 혜택을<br>확인합니다.</td>
-    <td align="center">④ 위젯과 다이나믹<br>아일랜드에서 D-day와<br>일정을 바로<br>확인합니다.</td>
-  </tr>
-</table>
+| 내 코스 | 여행 후 확인 | 추천 콘텐츠 | 연차 사용 등록 |
+|:---:|:---:|:---:|:---:|
+| <img src=".github/readme/my-courses.webp" width="180" alt="내 코스"> | <img src=".github/readme/trip-outcome.webp" width="180" alt="여행 후 확인"> | <img src=".github/readme/home-contents.webp" width="180" alt="추천 콘텐츠"> | <img src=".github/readme/leave-register.webp" width="180" alt="연차 사용 등록"> |
 
 ## 앱에서 신경 쓴 것
 
