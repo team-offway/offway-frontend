@@ -1,6 +1,6 @@
 # offway-frontend
 
-**OffWay** — 남은 연차로 갈 수 있는 인구감소지역 여행 코스를 추천하는 iOS 앱 (Flutter).
+**Offway** — 남은 연차로 갈 수 있는 인구감소지역 여행 코스를 추천하는 iOS 앱 (Flutter).
 
 ## 서비스 개요
 
