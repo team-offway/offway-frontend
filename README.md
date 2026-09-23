@@ -87,32 +87,7 @@ Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 
 ## 시스템 아키텍처
 
-```mermaid
-flowchart TB
-  Login["카카오 · Apple · 구글 로그인"]
-  Map["네이버 지도 SDK"]
-
-  subgraph Device["📱 iPhone"]
-    direction LR
-    App["Flutter 앱"]
-    Ext["Swift 확장<br/>위젯 · 잠금화면 ·<br/>다이나믹 아일랜드"]
-    App -- "MethodChannel · App Group<br/>지역·날짜만 넘긴다" --> Ext
-  end
-
-  subgraph Cloud[" "]
-    direction LR
-    Share["🌐 공유 웹 · Vercel<br/>offway.cloud"]
-    API["☁️ Offway 서버<br/>api.offway.cloud"]
-    Share -- "서버를 대신 호출" --> API
-  end
-
-  Login -. "소셜 토큰" .-> App
-  Map -.-> App
-  App -- "HTTPS · JWT" --> API
-  API -- "FCM · 여행 알림" --> App
-  API -- "APNs · 잠금화면 카드" --> Ext
-  App -- "카카오톡 공유 · 링크" --> Share
-```
+<img src=".github/readme/architecture/offway-app-architecture.png" width="100%" alt="Offway iOS 앱 아키텍처" />
 
 - **앱은 서버 하나만 봅니다.** 코스·연차·알림이 전부 [core](https://github.com/team-offway/core) API 에서 옵니다. 소셜 로그인 토큰은 서버에 넘겨 우리 JWT 로 바꿉니다.
 - **위젯·잠금화면은 Swift 확장이 그립니다.** 앱은 지역과 날짜만 넘기고, 'D-3'·'내일 …'·'2일차' 같은 문구는 확장이 만듭니다. 앱을 켜지 않아도 서버가 APNs 로 잠금화면 카드를 띄우고 갱신합니다.
