@@ -1,8 +1,8 @@
-# OffWay
+# Offway
 
 > **연차로 떠나는 로컬 여행 플래너**
 
-![OffWay — 연차로 떠나는 특별한 로컬 여행](.github/readme/hero.webp)
+![Offway — 연차로 떠나는 특별한 로컬 여행](.github/readme/hero.webp)
 
 [![App Store에서 다운로드](https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/ko-kr)](https://apps.apple.com/app/id6793610290)
 
@@ -10,9 +10,9 @@
 
 정부와 지자체가 숙박세일페스타, 디지털관광주민증, KTX·SRT 할인 같은 지원책을 마련했지만, 정보가 부처와 지자체마다 흩어져 있어 여행자에게 잘 닿지 않습니다.
 
-OffWay 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성하고, 그 여정에서 받을 수 있는 교통·숙박 혜택을 함께 연결합니다.
+Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성하고, 그 여정에서 받을 수 있는 교통·숙박 혜택을 함께 연결합니다.
 
-이 레포는 OffWay **iOS 앱**(Flutter)입니다. 서버는 [team-offway/core](https://github.com/team-offway/core)에서 제공합니다.
+이 레포는 Offway **iOS 앱**(Flutter)입니다. 서버는 [team-offway/core](https://github.com/team-offway/core)에서 제공합니다.
 
 ## 목차
 
@@ -28,7 +28,7 @@ OffWay 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 
 **여행지를 고르는 기준을 바꿨습니다.**
 
-대부분의 여행 서비스가 '어디로 갈지'를 먼저 정한다면, OffWay 는 '이번 여행에 연차를 얼마나 쓸 수 있는지'부터 봅니다. 남은 연차와 출발지, 이동수단, 여행 스타일에 맞춰 실제로 다녀올 수 있는 지역과 코스를 추천합니다.
+대부분의 여행 서비스가 '어디로 갈지'를 먼저 정한다면, Offway 는 '이번 여행에 연차를 얼마나 쓸 수 있는지'부터 봅니다. 남은 연차와 출발지, 이동수단, 여행 스타일에 맞춰 실제로 다녀올 수 있는 지역과 코스를 추천합니다.
 
 **여행 전후의 연차까지 함께 관리합니다.**
 
@@ -51,8 +51,6 @@ OffWay 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 | 기간 스타일 | 이동수단 | 추천 계산 | 후보 지역 |
 |:---:|:---:|:---:|:---:|
 | <img src=".github/readme/period-style.webp" width="180" alt="기간 스타일"> | <img src=".github/readme/transport.webp" width="180" alt="이동수단"> | <img src=".github/readme/loading.webp" width="180" alt="추천 계산"> | <img src=".github/readme/candidates.webp" width="180" alt="후보 지역"> |
-
-> 1.1.0 부터 코스 추천은 **출발지 선택**으로 시작합니다. 역·터미널·주소를 검색해 고르면, 그곳에서 닿을 수 있는 지역을 추천합니다. 기기 위치(GPS)는 받지 않습니다.
 
 **코스**
 
