@@ -2,7 +2,7 @@
 core 쪽 그림(세 페이지)도 이 파일로 만들어지지만, 여기서는 gen_app_architecture.py 가
 가져다 쓰기만 한다.
 """
-"""OffWay 아키텍처 다이어그램(.drawio) 생성기.
+"""Offway 아키텍처 다이어그램(.drawio) 생성기.
 
 두 페이지를 한 파일에 담는다.
   p1  시스템 조감도 — Client → Cloudflare → EC2(Docker) → MySQL/S3 + 공공 API
@@ -184,7 +184,7 @@ def page_overview() -> Page:
                    "fillColor=#879196;aspect=fixed;dashed=0;verticalLabelPosition=bottom;"
                    "verticalAlign=top;align=center;html=1;fontSize=11;fontColor=#545B64;"
                    "shape=mxgraph.aws4.illustration_users;pointerEvents=1;")
-    app = p.node(lbl("OffWay iOS 앱"), 107, 313, 66, 66, img_tile("flutter"))
+    app = p.node(lbl("Offway iOS 앱"), 107, 313, 66, 66, img_tile("flutter"))
     navermap = p.node(lbl("네이버 지도 SDK"), 107, 473, 66, 66, img_tile("naver"))
 
     # ── Edge
