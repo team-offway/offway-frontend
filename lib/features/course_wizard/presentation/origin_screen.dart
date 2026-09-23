@@ -164,7 +164,6 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final keyboardUp = keyboardInset > 0;
     final screenH = MediaQuery.sizeOf(context).height;
-    final screenW = MediaQuery.sizeOf(context).width;
     final topPad = MediaQuery.paddingOf(context).top;
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -231,12 +230,14 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
                         ),
                         // 시안 측정값 — 부제(88) 아래 입력칸까지 33
                         const SizedBox(height: 33),
-                        CompositedTransformTarget(
-                          link: _fieldLink,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: _fieldSideMargin,
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _fieldSideMargin,
+                          ),
+                          // 목록이 붙을 자리는 여백 **안쪽** 입력칸이다.
+                          // 바깥에 두면 목록이 좌우 여백만큼 밀린다
+                          child: CompositedTransformTarget(
+                            link: _fieldLink,
                             child: _buildField(),
                           ),
                         ),
@@ -275,21 +276,26 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
               ),
               // 입력칸 아래 8 에 **붙어** 따라다닌다. 좌표를 재서 짚으면
               // 키보드가 오르내릴 때 한 박자 늦어 입력칸과 겹친다
+              // 목록은 입력칸 아래 8 에 **붙어** 따라다닌다. 좌표를 재서
+              // 짚으면 키보드가 오르내릴 때 한 박자 늦어 입력칸과 겹친다.
+              //
+              // 좌우는 Positioned 로 입력칸과 같은 값을 준다 — Follower 에
+              // 폭을 계산해 넘기면 소수점·테두리에서 1~2 어긋난다
               if (_results.isNotEmpty || _searching)
-                CompositedTransformFollower(
-                  link: _fieldLink,
-                  targetAnchor: Alignment.bottomLeft,
-                  followerAnchor: Alignment.topLeft,
-                  offset: const Offset(0, 8),
-                  // Follower 는 부모 제약을 받지 않으므로 폭을 직접 맞추고,
-                  // 높이는 입력칸 아래로 남은 자리에서 가져온다. 안 막으면
-                  // 목록이 화면(키보드) 밖으로 넘어간다
-                  child: SizedBox(
-                    width: screenW - _fieldSideMargin * 2,
+                Positioned(
+                  left: _fieldSideMargin,
+                  right: _fieldSideMargin,
+                  top: 0,
+                  bottom: 0,
+                  child: CompositedTransformFollower(
+                    link: _fieldLink,
+                    targetAnchor: Alignment.bottomLeft,
+                    followerAnchor: Alignment.topLeft,
+                    offset: const Offset(0, 8),
+                    // Follower 는 부모 제약을 받지 않아 스스로 막지 않으면
+                    // 목록이 키보드 밖으로 넘어간다. 입력칸 위쪽은 전부
+                    // 고정값이라 그 합으로 남은 자리를 짚는다
                     child: _buildSuggestions(
-                      // 입력칸 아래로 남은 자리. 입력칸 위쪽은 전부 고정값이라
-                      // 그 합으로 짚는다 — 상단바44 + 여백 + 아이콘48 + 20 +
-                      // 제목32 + 8 + 부제48 + 33 + 입력칸48 + 목록 위 8
                       maxHeight:
                           screenH -
                           keyboardInset -
@@ -382,58 +388,55 @@ class _OriginScreenState extends ConsumerState<OriginScreen> {
   /// [maxHeight] 는 입력칸 아래로 남은 자리다. Follower 는 부모 제약을 받지
   /// 않아 스스로 막지 않으면 키보드 위로 넘어간다
   Widget _buildSuggestions({required double maxHeight}) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: maxHeight < 404 ? maxHeight : 404,
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: Container(
-            decoration: BoxDecoration(
-              // 배경을 여기서 칠한다. Material 에만 색을 주면 이 Container 의
-              // decoration 이 위를 덮어 회색 판이 된다
-              color: AppColors.backgroundElevated,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.lineSolidNeutral),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0F171717),
-                  offset: Offset(0, 4),
-                  blurRadius: 6,
-                  spreadRadius: -1,
-                ),
-                BoxShadow(
-                  color: Color(0x0F171717),
-                  offset: Offset(0, 2),
-                  blurRadius: 4,
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: _results.isEmpty
-                // 찾는 동안 빈 판을 띄우면 '결과 없음' 처럼 보인다
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    // 시안 실측 — 테두리에서 첫 글자까지 21
-                    // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    shrinkWrap: true,
-                    itemCount: _results.length,
-                    itemBuilder: (context, i) => _buildCell(_results[i]),
-                  ),
+    // Align 을 씌우면 자식이 느슨한 제약을 받아 폭이 내용만큼 줄어든다 —
+    // 입력칸과 좌우가 어긋난다
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight < 404 ? maxHeight : 404),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Container(
+          decoration: BoxDecoration(
+            // 배경을 여기서 칠한다. Material 에만 색을 주면 이 Container 의
+            // decoration 이 위를 덮어 회색 판이 된다
+            color: AppColors.backgroundElevated,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.lineSolidNeutral),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F171717),
+                offset: Offset(0, 4),
+                blurRadius: 6,
+                spreadRadius: -1,
+              ),
+              BoxShadow(
+                color: Color(0x0F171717),
+                offset: Offset(0, 2),
+                blurRadius: 4,
+                spreadRadius: -2,
+              ),
+            ],
           ),
+          clipBehavior: Clip.antiAlias,
+          child: _results.isEmpty
+              // 찾는 동안 빈 판을 띄우면 '결과 없음' 처럼 보인다
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  // 시안 실측 — 테두리에서 첫 글자까지 21
+                  // (이 6 + 셀 세로패딩 10 + 글자 여백 5)
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  shrinkWrap: true,
+                  itemCount: _results.length,
+                  itemBuilder: (context, i) => _buildCell(_results[i]),
+                ),
         ),
       ),
     );

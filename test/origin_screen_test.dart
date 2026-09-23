@@ -220,6 +220,9 @@ void main() {
     await tester.pumpAndSettle();
     var f = tester.getRect(find.byType(TextField));
     var l = tester.getRect(find.byType(ListView).first);
+    // 좌우가 입력칸과 같아야 한다 — 목록 판은 테두리 1 만큼 안쪽이다
+    expect(l.left - f.left, closeTo(1, 0.5), reason: '왼쪽이 입력칸과 맞는다');
+    expect(f.right - l.right, closeTo(1, 0.5), reason: '오른쪽이 입력칸과 맞는다');
     expect(l.top, greaterThanOrEqualTo(f.bottom));
     // 키보드를 내린다 (빈 곳 탭과 같은 상황)
     tester.view.viewInsets = FakeViewPadding.zero;
