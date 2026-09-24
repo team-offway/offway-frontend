@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
+import 'package:offway/features/leave/data/consumed_leave_provider.dart';
 import 'package:offway/features/course/application/course_providers.dart';
 
 /// 내 코스 상세의 D-day 뱃지 — 지난 여행인지는 **종료일**로 가른다.
@@ -25,6 +26,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // 연차 계산은 서버를 부른다 — 값이 늘 있게 고정한다
+          tripConsumedLeaveProvider.overrideWith((ref, range) async => 2.0),
           savedCourseDetailProvider('1').overrideWith(
             (ref) async => (
               saved: {
@@ -98,5 +101,24 @@ void main() {
       leaveDeducted: true,
     );
     expect(find.text('여행완료'), findsOneWidget);
+  });
+
+  testWidgets('미방문 여행에는 사용 연차 뱃지를 달지 않는다', (tester) async {
+    await pump(
+      tester,
+      start: today.subtract(const Duration(days: 3)),
+      end: today.subtract(const Duration(days: 1)),
+    );
+    expect(find.text('미방문'), findsOneWidget);
+    expect(find.textContaining('사용 연차'), findsNothing);
+  });
+
+  testWidgets('다가오는 여행에는 사용 연차 뱃지가 뜬다', (tester) async {
+    await pump(
+      tester,
+      start: today.add(const Duration(days: 3)),
+      end: today.add(const Duration(days: 5)),
+    );
+    expect(find.textContaining('사용 연차'), findsOneWidget);
   });
 }
