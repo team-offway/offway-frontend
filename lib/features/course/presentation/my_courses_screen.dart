@@ -326,7 +326,7 @@ class _CourseCard extends StatelessWidget {
           Text(
             start == null || end == null
                 ? '날짜 미정'
-                : tripDateRangeLabel(start, end, collapseSameDay: false),
+                : tripDateRangeLabel(start, end),
             style: AppTypography.body2NormalMedium.copyWith(
               color: AppColors.labelAlternative,
             ),
