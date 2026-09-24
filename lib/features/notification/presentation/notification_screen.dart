@@ -134,10 +134,16 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   Widget _buildTopBar(BuildContext context) {
     // 안 읽은 알림이 있을 때만 누를 수 있다. 목록이 비었거나 권한이 꺼져
     // 목록 대신 안내가 떠 있으면 버튼 자체를 두지 않는다
-    final feed = ref.watch(notificationFeedProvider).value;
+    final feedAsync = ref.watch(notificationFeedProvider);
+    final feed = feedAsync.value;
     final enabled = ref.watch(notificationEnabledProvider).value ?? true;
+    // 목록 대신 오류 화면이 떠 있으면 두지 않는다 — Riverpod 은 실패해도
+    // 이전 값을 들고 있어, 두면 옛 안읽음 수로 버튼이 다시 켜진다
     final showMarkAll =
-        enabled && feed != null && feed.notifications.isNotEmpty;
+        enabled &&
+        !feedAsync.hasError &&
+        feed != null &&
+        feed.notifications.isNotEmpty;
     final canMarkAll = showMarkAll && feed.unreadCount > 0 && !_markingAll;
 
     return AppTitleBar(

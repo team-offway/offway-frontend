@@ -14,8 +14,15 @@ import 'package:offway/features/notification/application/notification_permission
 
 /// 알림 화면 오른쪽 위 '모두 읽음' — 안 읽은 알림을 한 번에 읽음으로 바꾼다.
 class _FakeRepository extends NotificationRepository {
-  _FakeRepository({required this.unread, this.fail = false, this.gate})
-    : super(Dio());
+  _FakeRepository({
+    required this.unread,
+    this.fail = false,
+    this.gate,
+    this.failFetchAfterMark = false,
+  }) : super(Dio());
+
+  /// 모두 읽음이 된 뒤의 목록 조회를 실패시킨다
+  final bool failFetchAfterMark;
 
   int unread;
   final bool fail;
@@ -28,19 +35,24 @@ class _FakeRepository extends NotificationRepository {
   Future<({List<AppNotification> notifications, int unreadCount})> fetch({
     int page = 0,
     int size = 20,
-  }) async => (
-    notifications: [
-      for (var i = 1; i <= 2; i++)
-        AppNotification(
-          id: i,
-          type: NotificationType.tripTomorrow,
-          read: i > unread,
-          courseId: 7,
-          createdAt: DateTime.now(),
-        ),
-    ],
-    unreadCount: unread,
-  );
+  }) async {
+    if (failFetchAfterMark && markAllCalls > 0) {
+      throw const ApiException(status: 500, code: 'X', detail: '서버 오류');
+    }
+    return (
+      notifications: [
+        for (var i = 1; i <= 2; i++)
+          AppNotification(
+            id: i,
+            type: NotificationType.tripTomorrow,
+            read: i > unread,
+            courseId: 7,
+            createdAt: DateTime.now(),
+          ),
+      ],
+      unreadCount: unread,
+    );
+  }
 
   @override
   Future<int> markAllRead() async {
@@ -156,5 +168,16 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(container.read(hasUnreadNotificationsProvider), isFalse);
+  });
+
+  testWidgets('모두 읽음 뒤 목록 조회가 실패하면 버튼을 거둔다 — 옛 수로 다시 켜지지 않게', (tester) async {
+    final repo = _FakeRepository(unread: 2, failFetchAfterMark: true);
+    await pump(tester, repo);
+
+    await tester.tap(find.text('모두 읽음'));
+    await tester.pumpAndSettle();
+
+    expect(repo.markAllCalls, 1);
+    expect(find.text('모두 읽음'), findsNothing);
   });
 }
