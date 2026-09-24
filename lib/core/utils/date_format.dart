@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart' show DateUtils;
+
 /// 서버 API가 쓰는 날짜 표기 (ISO-8601, `2026-08-14`).
 ///
 /// 시각은 버린다 — 서버의 date 필드는 날짜만 받는다.
@@ -7,7 +9,37 @@ String isoDate(DateTime d) =>
 const _weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
 
 /// 요일 한 글자 (`월` … `일`).
-String weekdayLabel(DateTime d) => _weekdayLabels[d.weekday - 1];
+String weekdayLabel(DateTime d) => weekdayLabelOf(d.weekday);
+
+/// 요일 한 글자 — `DateTime.weekday` 값(월=1 … 일=7)으로.
+String weekdayLabelOf(int weekday) => _weekdayLabels[weekday - 1];
+
+/// 요일을 띄어 붙인 날짜 (`7.26 월`) — 코스 일차 머리에 쓴다.
+String monthDaySpacedWeekday(DateTime d) =>
+    '${d.month}.${d.day} ${weekdayLabel(d)}';
+
+/// 0을 채운 연월일에 요일 (`2026.09.05(토)`) — 연차 사용 내역에 쓴다.
+String fullDateWithWeekday(DateTime d) =>
+    '${d.year}.${d.month.toString().padLeft(2, '0')}'
+    '.${d.day.toString().padLeft(2, '0')}(${weekdayLabel(d)})';
+
+/// 여행 날짜 범위 (`2026.7.20 - 7.22`). 하루짜리는 한 번만 쓴다(`2026.7.20`).
+///
+/// 내 코스 목록·상세, 공유 코스, 공유 이미지가 같은 표기를 쓴다.
+String tripDateRangeLabel(DateTime start, DateTime? end) =>
+    end == null || DateUtils.isSameDay(start, end)
+    ? '${start.year}.${start.month}.${start.day}'
+    : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}';
+
+/// 여행 일수 → 기간 라벨 (`당일치기` · `1박2일` · `2박3일`).
+///
+/// 붙여 쓴다 — 코스 제목·위저드 칩·서버 코스 이름이 모두 붙여 쓴다.
+/// 날짜와 함께 쓰는 [tripPeriodLabel]은 문장 속 표기라 띄어 쓴다.
+String tripDurationLabel(int days) => switch (days) {
+  <= 1 => '당일치기',
+  2 => '1박2일',
+  _ => '2박3일',
+};
 
 /// 요일을 괄호에 넣은 날짜 (`7.20(월)`).
 ///

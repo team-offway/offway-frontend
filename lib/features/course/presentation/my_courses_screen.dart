@@ -10,6 +10,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/place_thumbnail.dart';
 import '../../course_wizard/presentation/wizard_entry.dart';
 import '../application/course_providers.dart';
+import '../../../core/utils/date_format.dart';
 
 /// 서브탭 — 서버 scope 값과 짝을 이룬다. 빈 상태 문구도 탭마다 다르다
 enum _Scope {
@@ -325,7 +326,7 @@ class _CourseCard extends StatelessWidget {
           Text(
             start == null || end == null
                 ? '날짜 미정'
-                : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}',
+                : tripDateRangeLabel(start, end),
             style: AppTypography.body2NormalMedium.copyWith(
               color: AppColors.labelAlternative,
             ),

@@ -24,6 +24,7 @@ import 'my_leave_screen.dart' show reasonOf, memoOf, CourseDetailButton;
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
 import '../../course/application/course_providers.dart';
+import '../../../core/utils/date_format.dart';
 
 /// O-13 · 연차 사용 내역 전체.
 ///
@@ -436,15 +437,11 @@ class _UsageCard extends StatelessWidget {
   final bool selecting;
   final bool checked;
 
-  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-
   @override
   Widget build(BuildContext context) {
     final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
-    final dateLabel =
-        '${d.year}.${d.month.toString().padLeft(2, '0')}'
-        '.${d.day.toString().padLeft(2, '0')}(${_weekdays[d.weekday - 1]})';
+    final dateLabel = fullDateWithWeekday(d);
 
     return GestureDetector(
       onTap: onTap,

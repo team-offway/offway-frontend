@@ -286,7 +286,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       if (!mounted) return;
 
       final regionName = course['regionName'] as String? ?? '여행';
-      final duration = _durationLabel(course['durationDays'] as int? ?? 1);
+      final duration = tripDurationLabel(course['durationDays'] as int? ?? 1);
       final link = ShareLink.of(token, kind: SharedCourseKind.recommend);
 
       if (!kakao) {
@@ -331,7 +331,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         widget: CourseShareImage(
           saved: {
             'regionName': course['regionName'],
-            'durationLabel': _durationLabel(
+            'durationLabel': tripDurationLabel(
               course['durationDays'] as int? ?? 1,
             ),
           },
@@ -377,12 +377,6 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
             CachedNetworkImageProvider(url, cacheManager: appImageCacheManager),
     ];
   }
-
-  String _durationLabel(int days) => switch (days) {
-    1 => '당일치기',
-    2 => '1박2일',
-    _ => '2박3일',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -750,7 +744,7 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
         children: [
           TextSpan(text: '$regionName, '),
           TextSpan(
-            text: _durationLabel(durationDays),
+            text: tripDurationLabel(durationDays),
             style: base.copyWith(color: AppColors.primaryNormal),
           ),
           const TextSpan(text: '\n추천코스입니다.'),

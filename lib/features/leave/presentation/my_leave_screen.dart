@@ -18,6 +18,7 @@ import '../../../core/utils/bottom_inset.dart';
 import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
 import 'widgets/sparkle.dart';
+import '../../../core/utils/date_format.dart';
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
@@ -468,15 +469,11 @@ class LeaveUsageCard extends StatelessWidget {
   /// 펼쳐서 '코스 자세히 보기'를 보이는지 — 코스 건에만 쓴다
   final bool expanded;
 
-  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-
   @override
   Widget build(BuildContext context) {
     final fromCourse = usage.fromCourse;
     final d = usage.usedOn;
-    final dateLabel =
-        '${d.year}.${d.month.toString().padLeft(2, '0')}'
-        '.${d.day.toString().padLeft(2, '0')}(${_weekdays[d.weekday - 1]})';
+    final dateLabel = fullDateWithWeekday(d);
 
     return GestureDetector(
       onTap: onTap,

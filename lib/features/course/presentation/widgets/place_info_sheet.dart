@@ -6,6 +6,7 @@ import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../data/course_repository.dart';
 import 'place_content_badge.dart';
+import '../../../../core/utils/date_format.dart';
 
 /// 장소 운영 정보 — 여행 당일 휴무일·운영시간 안내에만 조회한다.
 ///
@@ -207,7 +208,6 @@ class PlaceInfoSheet extends ConsumerWidget {
     final useTime = served?.useTime ?? schedule?.value?.useTime;
     final restDate = served?.restDate ?? schedule?.value?.restDate;
     final now = DateTime.now();
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
     // **서버가 판정했으면 그것이 먼저다**(#331). 공휴일 예외처럼 앱이 못 읽는
     // 조건까지 서버가 본다. 없으면 예전처럼 원문을 뜯어 짐작한다.
@@ -248,7 +248,7 @@ class PlaceInfoSheet extends ConsumerWidget {
     } else if (status == null &&
         isToday &&
         restDate != null &&
-        restDate.contains('${weekdays[now.weekday - 1]}요일')) {
+        restDate.contains('${weekdayLabel(now)}요일')) {
       restValue = '오늘은 휴무일이에요';
       restDanger = true;
     }

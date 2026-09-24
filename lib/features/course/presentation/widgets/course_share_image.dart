@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/tokens/tokens.dart';
 import '../../../../core/utils/leave_format.dart';
 import '../../../../core/widgets/place_thumbnail.dart';
+import '../../../../core/utils/date_format.dart';
 
 /// 사진첩에 저장하는 코스 일정 이미지.
 ///
@@ -28,8 +29,6 @@ class CourseShareImage extends StatelessWidget {
 
   /// 사용 연차 — 서버가 계산한 값. null이면 뱃지를 그리지 않는다
   final double? consumedLeaveDays;
-
-  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
   /// 사용 연차 뱃지의 시계. 캡처하는 쪽이 이 에셋을 **먼저 캐시에 넣어야**
   /// 이미지에 그려진다 — SVG 는 첫 그리기에서 비동기로 로드된다
@@ -131,12 +130,7 @@ class CourseShareImage extends StatelessWidget {
           const SizedBox(height: 22),
           if (_isSaved) ...[
             if (start != null)
-              Text(
-                end == null || end == start
-                    ? '${start.year}.${start.month}.${start.day}'
-                    : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}',
-                style: _subtitle,
-              ),
+              Text(tripDateRangeLabel(start, end), style: _subtitle),
             const SizedBox(height: 26),
             _buildBadges(start, end),
           ] else
@@ -239,7 +233,7 @@ class CourseShareImage extends StatelessWidget {
         if (_isSaved && date != null) ...[
           const SizedBox(width: 24),
           Text(
-            '${date.month}.${date.day} ${_weekdays[date.weekday - 1]}',
+            monthDaySpacedWeekday(date),
             style: AppTypography.title3Bold.copyWith(
               color: AppColors.labelAlternative,
               fontSize: 40,

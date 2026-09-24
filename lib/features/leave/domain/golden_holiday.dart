@@ -1,3 +1,5 @@
+import '../../../core/utils/date_format.dart';
+
 /// 연차를 조금 써서 길게 쉴 수 있는 구간 하나 — '연차 쓰기 좋은 날'.
 ///
 /// **앱에 박아 둔 편집 콘텐츠다.** 서버 공휴일 API는 날짜만 주고 이름
@@ -30,10 +32,7 @@ class GoldenHoliday {
   /// `10.2(토)-10.11(월)` — 상단 카드의 표기. 큰 글자라 붙여 쓴다
   String get heroRangeLabel => '${_md(start)}-${_md(end)}';
 
-  static const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-
-  static String _md(DateTime d) =>
-      '${d.month}.${d.day}(${_weekdays[d.weekday - 1]})';
+  static String _md(DateTime d) => monthDayWithWeekday(d);
 }
 
 /// 이 콘텐츠가 다루는 해 — 카드 제목('2027 황금연휴 알아보기')에 쓴다
