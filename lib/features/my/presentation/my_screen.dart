@@ -21,6 +21,7 @@ import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../auth/application/current_user_provider.dart';
 import 'widget_guide_sheet.dart';
 import '../../home/application/home_providers.dart';
+import '../../course/application/course_providers.dart';
 
 /// 마이 — 프로필과 계정 관리 메뉴
 class MyScreen extends ConsumerWidget {
@@ -207,7 +208,9 @@ class MyScreen extends ConsumerWidget {
     // 두면 그대로 남는다
     ref
       ..invalidate(currentUserProvider)
-      ..invalidate(homeSnapshotProvider);
+      ..invalidate(homeSnapshotProvider)
+      // 내 코스 목록은 세션 동안 들고 있다 — 계정이 바뀌면 비운다
+      ..invalidate(savedCoursesProvider, asReload: true);
 
     if (!context.mounted) return;
     context.go(AppRoutes.login);

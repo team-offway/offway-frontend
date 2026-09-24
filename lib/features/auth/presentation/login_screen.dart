@@ -22,6 +22,7 @@ import '../data/kakao_auth_service.dart';
 import '../../../core/utils/bottom_inset.dart';
 import '../../../core/utils/log.dart';
 import '../../home/application/home_providers.dart';
+import '../../course/application/course_providers.dart';
 
 /// O-01 · 로그인/회원가입
 ///
@@ -112,7 +113,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // 홈·마이가 진짜 이름을 다시 묻는다
       ref
         ..invalidate(currentUserProvider)
-        ..invalidate(homeSnapshotProvider);
+        ..invalidate(homeSnapshotProvider)
+        // 내 코스 목록은 세션 동안 들고 있다 — 계정이 바뀌면 비운다
+        ..invalidate(savedCoursesProvider, asReload: true);
       // 이 기기를 이 계정 앞으로 등록한다. 앱 시작 때 돌았던 등록은 로그인
       // 전이라 건너뛰었고(`/devices`는 Bearer 전용), 로그아웃이 등록을
       // 풀어 두기도 했다 — 여기서 다시 잡지 않으면 다음 앱 실행까지

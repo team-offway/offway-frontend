@@ -9,8 +9,15 @@ import '../../course_wizard/application/course_wizard_provider.dart';
 
 /// 내 코스 목록 (`GET /courses?scope=`) — 정렬·범위는 서버가 맡는다.
 /// 담기·삭제 후에는 invalidate로 다시 불러온다.
-final savedCoursesProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, String>(
+///
+/// **세션 동안 들고 있는다**(#392). 탭 셸이 화면을 갈아 끼워 autoDispose 면
+/// 내 코스 탭에 들어올 때마다 버려지고 스켈레톤부터 다시 떴다. 대신 탭에
+/// 들어올 때 새로 받되 옛 목록을 보이는 채로 둔다(`MyCoursesScreen`).
+///
+/// 계정이 바뀌는 곳(로그인·로그아웃·탈퇴·세션 만료)에서는 `asReload: true`
+/// 로 **비운다** — 다음 사람에게 앞사람의 목록이 잠깐이라도 보이면 안 된다
+final savedCoursesProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>(
       (ref, scope) =>
           ref.watch(courseRepositoryProvider).savedCourseCards(scope: scope),
     );

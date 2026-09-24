@@ -39,6 +39,24 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
   _Scope _scope = _Scope.all;
 
   @override
+  void initState() {
+    super.initState();
+    // 탭에 들어올 때마다 새로 받는다 — 다른 기기에서 담거나 지운 것이 보이게.
+    // **옛 목록은 보이는 채로** 받는다(기본 invalidate 는 이전 값을 들고
+    // 있다) — 스켈레톤이 뜨지 않는다. 그리는 도중에는 바꿀 수 없어 첫 프레임
+    // 뒤에 한다
+    //
+    // **이미 받는 중이면 건드리지 않는다.** 계정이 바뀐 직후(로그인·로그아웃은
+    // `asReload` 로 비운다)에 여기서 또 무효화하면 '옛 값을 보이는 새로고침'
+    // 이 되어, 앞사람의 목록이 다시 보인다
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(savedCoursesProvider(_scope.serverValue)).isLoading) return;
+      ref.invalidate(savedCoursesProvider);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final courses = ref.watch(savedCoursesProvider(_scope.serverValue));
     // 다시 시도가 또 실패하면 알린다

@@ -8,6 +8,7 @@ import '../storage/secure_storage.dart';
 import '../widgets/app_toast.dart';
 import 'app_router.dart';
 import '../utils/log.dart';
+import '../../features/course/application/course_providers.dart';
 
 /// 세션이 끊기면 로그인 화면으로 되돌린다.
 ///
@@ -58,6 +59,9 @@ class SessionExpiryListener extends ConsumerWidget {
       // 신호를 내려 둔다 — 남아 있으면 다시 로그인해도 곧장 튕긴다
       ref.read(sessionExpiredProvider.notifier).reset();
     }
+    // 내 코스 목록은 세션 동안 들고 있다 — 다음에 로그인할 사람에게 앞사람의
+    // 목록이 보이지 않게 비운다
+    ref.invalidate(savedCoursesProvider, asReload: true);
 
     if (!context.mounted) return;
     ref.read(appRouterProvider).go(AppRoutes.login);
