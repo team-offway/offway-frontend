@@ -263,28 +263,51 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     _exitSelecting();
 
     // 한 건이 막혀도 나머지는 지운다 —
-    // 중간에 멈추면 사용자는 무엇이 지워졌는지 알 수 없다
+    // 중간에 멈추면 사용자는 무엇이 지워졌는지 알 수 없다.
+    //
+    // **한꺼번에 보낸다**(#397). 차례로 기다리면 N건에 N번 왕복이다. 서버는
+    // 남은 연차를 저장하지 않고 사용 내역에서 매번 셈하므로(core
+    // `MyLeaveService`) 서로 다른 행을 동시에 지워도 어긋나지 않는다.
+    // 같은 코스에 묶인 내역은 차감 취소 한 번이 함께 지우므로 코스당 한 번만
+    // 부른다 — 같은 취소를 겹쳐 보내지 않는다
     final repo = ref.read(leaveRepositoryProvider);
     final courseRepo = ref.read(courseRepositoryProvider);
-    var deleted = 0;
-    final cancelledCourseIds = <int>[];
-    String? failure;
+    final seenCourses = <int>{};
+    final jobs = <Future<({int deleted, int? courseId, String? failure})>>[];
     for (final usage in picked) {
-      try {
-        if (usage.courseId case final int courseId) {
-          // 코스 건은 내역 삭제 API가 409로 막는다(코스 확정으로 생긴 행).
-          // 대신 코스의 차감 취소를 불러 같은 결과를 낸다 — 서버가 이 행을
-          // 지우고 잔여 연차를 되돌리며, 코스는 '미방문'으로 돌아간다
-          await courseRepo.cancelLeaveDeduction(courseId);
-          cancelledCourseIds.add(courseId);
-        } else {
-          await repo.deleteUsage(usage.id);
+      final courseId = usage.courseId;
+      if (courseId != null && !seenCourses.add(courseId)) continue;
+      final count = courseId == null
+          ? 1
+          : picked.where((u) => u.courseId == courseId).length;
+      jobs.add(() async {
+        try {
+          if (courseId != null) {
+            // 코스 건은 내역 삭제 API가 409로 막는다(코스 확정으로 생긴 행).
+            // 대신 코스의 차감 취소를 불러 같은 결과를 낸다 — 서버가 이 행을
+            // 지우고 잔여 연차를 되돌리며, 코스는 '미방문'으로 돌아간다
+            await courseRepo.cancelLeaveDeduction(courseId);
+          } else {
+            await repo.deleteUsage(usage.id);
+          }
+          return (deleted: count, courseId: courseId, failure: null);
+        } on ApiException catch (e) {
+          return (
+            deleted: 0,
+            courseId: null,
+            failure: e.detail.isEmpty ? '삭제하지 못했어요' : e.detail,
+          );
         }
-        deleted++;
-      } on ApiException catch (e) {
-        failure ??= e.detail.isEmpty ? '삭제하지 못했어요' : e.detail;
-      }
+      }());
     }
+    final results = await Future.wait(jobs);
+    final deleted = results.fold(0, (sum, r) => sum + r.deleted);
+    final cancelledCourseIds = [
+      for (final r in results)
+        if (r.courseId case final int id) id,
+    ];
+    // 막힌 게 여럿이면 고른 순서에서 첫 번째 이유를 알린다 — 전과 같다
+    final failure = results.map((r) => r.failure).nonNulls.firstOrNull;
     if (!mounted) return;
     // 지운 만큼 잔여 연차가 늘었다 — 홈도 함께 다시 읽는다
     if (deleted > 0) invalidateLeaveData(ref);
