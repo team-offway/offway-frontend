@@ -28,33 +28,35 @@ class PolicyRepository {
 /// 정책 상세 **전부** — 세션 동안 한 번 읽는다.
 ///
 /// 지역별 혜택 색인([regionPoliciesProvider])이 이걸 뒤집어 만들고, 혜택 상세
-/// 시트([policyDetailProvider])가 여기서 먼저 찾는다. 원본을 들고 있지 않으면
-/// 시트가 이미 받아 둔 정책을 다시 불렀다(#364)
+/// 시트는 [knownPolicyProvider]로 여기서 먼저 꺼내 스피너 없이 연다(#364)
 final allPoliciesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => fetchPoliciesInBatches(ref.watch(policyRepositoryProvider).detail),
   retry: (retryCount, error) => null,
 );
 
-/// 정책 상세 — 뱃지를 누른 정책 하나.
+/// 정책 상세 — 뱃지를 누른 정책 하나. **늘 서버에서 새로 받는다.**
 ///
-/// **받아 둔 목록에 있으면 그것을 쓴다** — 앱을 켤 때 전부 읽어 두므로 대개
-/// 여기서 끝나고, 시트가 스피너 없이 바로 열린다. 목록이 아직 오는 중이거나
-/// 목록에 없는 정책(기간이 지나 끝난 뒤 읽은 것 등)만 서버에 묻는다.
-///
-/// 목록을 **기다리지 않는다**(`read(...).value`) — 첫 화면에서 뱃지를 바로
-/// 눌렀는데 묶음 읽기 전체를 기다리면 한 건 묻는 것보다 느리다
+/// 받아 둔 목록([allPoliciesProvider])은 앱을 켤 때의 사본이라, 그사이
+/// 운영진이 신청 링크·기간을 고치면 옛 값이다. 시트는 받아 둔 값으로 먼저
+/// 그리고([knownPolicyProvider]) 이 값이 오면 바꿔 낀다
 final policyDetailProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, int>((ref, policyId) async {
-      // 아직 아무도 안 읽었으면 건드리지 않는다 — read 만으로도 묶음 읽기가
-      // 시작된다
-      final known = ref.exists(allPoliciesProvider)
-          ? ref
-                .read(allPoliciesProvider)
-                .value
-                ?.where((p) => (p['id'] as num?)?.toInt() == policyId)
-                .firstOrNull
-          : null;
-      return known ?? ref.watch(policyRepositoryProvider).detail(policyId);
+    .family<Map<String, dynamic>, int>(
+      (ref, policyId) => ref.watch(policyRepositoryProvider).detail(policyId),
+    );
+
+/// 앱을 켤 때 받아 둔 정책 하나 — 없으면 null. 시트를 스피너 없이 여는 데 쓴다.
+///
+/// 목록을 **기다리지 않는다** — 첫 화면에서 뱃지를 바로 눌렀는데 묶음 읽기
+/// 전체를 기다리면 한 건 묻는 것보다 느리다. 아직 아무도 목록을 안 읽었으면
+/// 건드리지도 않는다 — 읽기만 해도 묶음 읽기가 시작된다
+final knownPolicyProvider = Provider.autoDispose
+    .family<Map<String, dynamic>?, int>((ref, policyId) {
+      if (!ref.exists(allPoliciesProvider)) return null;
+      return ref
+          .watch(allPoliciesProvider)
+          .value
+          ?.where((p) => (p['id'] as num?)?.toInt() == policyId)
+          .firstOrNull;
     });
 
 /// 정책 상세를 [batchSize]개씩 **한꺼번에** 읽는다.
