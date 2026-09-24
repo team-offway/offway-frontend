@@ -34,7 +34,7 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
     // 아래는 **로그인돼 있을 때만** 한다 — 셋 다 서버를 부르므로
     // 로그인 전에 부르면 401을 맞는다
     if (ref.read(postSplashRouteProvider) == AppRoutes.home) {
-      // 스플래시가 머무는 1.2초 동안 홈·내 정보를 미리 읽는다. 홈이 그려진
+      // 스플래시가 머무는 동안 홈·내 정보를 미리 읽는다. 홈이 그려진
       // 뒤에야 요청을 보내면 그 시간이 통째로 낭비되고, 사용자는 스플래시
       // 다음에 스켈레톤을 한 번 더 본다. 두 프로바이더는 autoDispose가
       // 아니라 여기서 읽어 둔 값을 홈이 그대로 받는다
