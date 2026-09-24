@@ -14,8 +14,23 @@ import 'course_wizard_provider.dart';
 final availableTimeProvider = FutureProvider.autoDispose<AvailableTime?>((
   ref,
 ) async {
-  final draft = ref.watch(courseWizardProvider);
-  final transport = draft.transportServerValue;
+  // **요청에 쓰는 값만 본다.** 초안 전체를 보면 일정 밀도만 바꿔도 다시
+  // 묻는다 — 밀도는 가용시간과 무관하다. 후보 추천을 밀도 화면에서 미리
+  // 띄우므로(#391) 밀도를 고를 때마다 두 요청이 다시 나가게 된다
+  final draft = ref.watch(
+    courseWizardProvider.select(
+      (d) => (
+        hasDateRange: d.hasDateRange,
+        startDate: d.startDate,
+        endDate: d.endDate,
+        periodStyle: d.periodStyle,
+        weekendPattern: d.weekendPattern,
+        leaveDaysToUse: d.leaveDaysToUse,
+        transport: d.transportServerValue,
+      ),
+    ),
+  );
+  final transport = draft.transport;
 
   try {
     if (draft.hasDateRange) {
