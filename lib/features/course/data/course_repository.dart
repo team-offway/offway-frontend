@@ -35,7 +35,7 @@ class CourseRepository {
     required DateTime travelDate,
     DateTime? confirmedDate,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/courses/generate',
         data: {
@@ -60,9 +60,7 @@ class CourseRepository {
           originCode: originCode,
         ),
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 같은 지역에서 코스를 다시 뽑는다 (`POST /courses/regenerate`).
@@ -81,7 +79,7 @@ class CourseRepository {
     DateTime? confirmedDate,
     int? previousSeed,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/courses/regenerate',
         data: {
@@ -112,9 +110,7 @@ class CourseRepository {
         seed: (data['seed'] as num).toInt(),
         differentFromPrevious: data['differentFromPrevious'] as bool? ?? true,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 담지 않고 공유 링크만 만든다 (`POST /courses/share`).
@@ -122,7 +118,7 @@ class CourseRepository {
   /// 내 코스 목록에는 남지 않고 링크로만 열린다 — 친구에게 보여주려고
   /// 매번 담을 필요가 없다. 요청 형태는 [save]와 같다.
   Future<String> shareWithoutSaving(Map<String, dynamic> savePayload) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/courses/share',
         data: savePayload,
@@ -133,16 +129,14 @@ class CourseRepository {
         throw StateError('공유 응답에 shareToken이 없습니다: $data');
       }
       return token;
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 생성된 코스를 내 코스로 저장한다 (`POST /courses`).
   Future<({int courseId, String? shareToken})> save(
     Map<String, dynamic> savePayload,
   ) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/courses',
         data: savePayload,
@@ -152,9 +146,7 @@ class CourseRepository {
         courseId: (data['courseId'] as num).toInt(),
         shareToken: data['shareToken'] as String?,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 내 코스 목록 카드 (`GET /courses?scope=`).
@@ -164,7 +156,7 @@ class CourseRepository {
   Future<List<Map<String, dynamic>>> savedCourseCards({
     String scope = 'ALL',
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>(
         '/api/v1/courses',
         queryParameters: {'scope': scope},
@@ -175,9 +167,7 @@ class CourseRepository {
                 .cast<Map<String, dynamic>>())
           _toSavedCardMap(summary),
       ];
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 저장한 코스 하나 (`GET /courses/{id}`) — 목록 카드와 일정 화면이 같이 쓴다.
@@ -213,11 +203,9 @@ class CourseRepository {
   /// 409로 막는다(core #268). "코스에서 취소해 달라"고 떠넘기지 않고 여기서
   /// 대신 불러 준다.
   Future<void> cancelLeaveDeduction(int courseId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       await _dio.delete<dynamic>('/api/v1/courses/$courseId/leave-deduction');
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 홈에서 물어볼 지난 여행 (`GET /courses/pending-trips`).
@@ -227,7 +215,7 @@ class CourseRepository {
   /// 비어 있으면 물어볼 게 없다는 뜻이다.
   Future<({double? remainingDays, List<Map<String, dynamic>> trips})>
   pendingTrips() async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/courses/pending-trips');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       return (
@@ -235,9 +223,7 @@ class CourseRepository {
         trips: ((data['trips'] as List?) ?? const [])
             .cast<Map<String, dynamic>>(),
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 지난 여행에 다녀왔는지 답한다 (`POST /courses/{id}/trip-outcome`).
@@ -259,7 +245,7 @@ class CourseRepository {
     required bool visited,
     String? comment,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final trimmed = comment?.trim();
       final response = await _dio.post<dynamic>(
         '/api/v1/courses/$courseId/trip-outcome',
@@ -273,18 +259,14 @@ class CourseRepository {
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>?;
       return (data?['remainingDays'] as num?)?.toDouble();
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 저장한 코스를 지운다 (`DELETE /courses/{id}`).
   Future<void> delete(String courseId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       await _dio.delete<dynamic>('/api/v1/courses/$courseId');
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 공유 링크로 받은 코스 (`GET /public/courses/{shareToken}`).
@@ -292,15 +274,13 @@ class CourseRepository {
   /// 인증이 필요 없다 — 링크를 받은 사람에게는 계정이 없다.
   /// 소유자 정보와 내부 courseId는 실리지 않고, 보기 전용이다.
   Future<Map<String, dynamic>> sharedCourse(String shareToken) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>(
         '/api/v1/public/courses/$shareToken',
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       return _toCourseMap(data, sources: ApiEnvelope.sourcesOf(response));
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 여행 날짜를 옮긴다 (`PATCH /courses/{id}`).
@@ -311,15 +291,13 @@ class CourseRepository {
     required String courseId,
     required DateTime travelDate,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.patch<dynamic>(
         '/api/v1/courses/$courseId',
         data: {'travelDate': isoDate(travelDate)},
       );
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 저장 코스의 대중교통 수단을 바꾼다 (`PATCH /courses/{id}/transit-mode`).
@@ -339,15 +317,13 @@ class CourseRepository {
     required String courseId,
     required String transitMode,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.patch<dynamic>(
         '/api/v1/courses/$courseId/transit-mode',
         data: {'transitMode': transitMode},
       );
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 장소 상세 (`GET /pois/{contentId}`) — 주소·운영시간·휴무일·소개·좌표.
@@ -355,7 +331,7 @@ class CourseRepository {
   /// useTime·restDate는 TourAPI 자유 텍스트("매주 월요일", "상시 개방" 등)라
   /// 해석은 화면 몫이다.
   Future<Map<String, dynamic>> poiDetail(String contentId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/pois/$contentId');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       // 출처는 래퍼 옆에 온다(core #417) — 장소마다 갈린다. 인허가 장소는
@@ -385,9 +361,7 @@ class CourseRepository {
         }
       }
       return data;
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 장소의 운영 정보만 — 여행 당일 휴무일·운영시간 안내에 쓴다.
@@ -396,15 +370,13 @@ class CourseRepository {
   ) async => poiScheduleOf(await poiDetail(contentId));
 
   Future<Map<String, dynamic>> _fetchCourse(int courseId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/courses/$courseId');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       // 출처는 data가 아니라 래퍼 옆에 온다(core #417) — 여기서 꺼내지
       // 않으면 저장 코스 화면이 표기할 값을 잃는다
       return {...data, '_sources': ApiEnvelope.sourcesOf(response)};
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   // ── 응답 → 화면 형태 ────────────────────────────────────────────────

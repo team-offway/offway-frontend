@@ -5,8 +5,8 @@ import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/auth/application/current_user_provider.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 마이 화면 프로필 — 로그인 상태에서는 서버 이름이 홈의 '게스트'를 덮는다.
 ///

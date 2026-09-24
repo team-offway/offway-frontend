@@ -8,6 +8,7 @@ import 'package:offway/features/notification/application/notification_provider.d
 import 'package:offway/features/notification/data/notification_repository.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/notification/presentation/notification_screen.dart';
+import 'package:offway/features/notification/application/notification_permission_provider.dart';
 
 /// 알림 화면 오른쪽 위 '모두 읽음' — 안 읽은 알림을 한 번에 읽음으로 바꾼다.
 class _FakeRepository extends NotificationRepository {

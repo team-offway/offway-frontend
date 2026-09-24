@@ -13,7 +13,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../data/apple_auth_service.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
 import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
 import '../application/current_user_provider.dart';
@@ -22,6 +21,7 @@ import '../data/google_auth_service.dart';
 import '../data/kakao_auth_service.dart';
 import '../../../core/utils/bottom_inset.dart';
 import '../../../core/utils/log.dart';
+import '../../home/application/home_providers.dart';
 
 /// O-01 · 로그인/회원가입
 ///

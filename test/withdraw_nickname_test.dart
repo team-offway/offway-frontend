@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/auth/application/current_user_provider.dart';
-import 'package:offway/features/home/presentation/home_screen.dart'
-    show homeUserProvider;
 import 'package:offway/features/my/presentation/withdraw_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 탈퇴 화면이 부르는 이름.
 ///

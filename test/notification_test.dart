@@ -6,6 +6,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/notification/application/notification_provider.dart';
 import 'package:offway/features/notification/domain/app_notification.dart';
 import 'package:offway/features/notification/presentation/notification_screen.dart';
+import 'package:offway/features/notification/application/notification_permission_provider.dart';
 
 void main() {
   AppNotification notification({

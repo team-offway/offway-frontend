@@ -9,11 +9,10 @@ import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
 import '../../leave/data/leave_usages_provider.dart';
 import '../data/course_repository.dart';
-import 'saved_course_screen.dart' show savedCourseDetailProvider;
+import '../application/course_providers.dart';
+import '../../leave/data/consumed_leave_provider.dart';
 
 /// 저장한 코스의 여행 날짜 수정 (미확정 코스의 날짜 지정도 겸한다).
 ///

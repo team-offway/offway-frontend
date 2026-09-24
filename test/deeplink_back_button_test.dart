@@ -7,6 +7,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_back_button.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course_wizard/presentation/date_gate_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 위젯·공유 링크로 **바로 들어온** 화면의 뒤로가기 (#304 후속).
 ///

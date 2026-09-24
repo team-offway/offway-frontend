@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/region/presentation/region_list_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 지역 목록 하단 — 출처 줄이 **고정**이라 다른 화면과 처리가 다르다(#300 후속).
 ///

@@ -5,6 +5,7 @@ import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/distance_chip.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 장소 사이의 이동 거리 칩 (시안 18991:85155, QA 9/11).
 ///

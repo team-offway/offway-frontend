@@ -10,6 +10,7 @@ import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/region/presentation/widgets/region_card.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 홈을 당겨서 새로고침하면 서버를 다시 읽고 카드 순서를 섞는다.
 ///

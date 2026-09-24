@@ -6,7 +6,6 @@ import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/leave/presentation/leave_date_picker_screen.dart';
 import 'package:offway/features/leave/presentation/leave_usages_screen.dart';
@@ -14,6 +13,7 @@ import 'package:offway/features/leave/presentation/my_leave_screen.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 화면 검증용 내역 — 직접 등록 2건 + 코스 차감 1건
 final _sampleUsages = [

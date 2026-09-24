@@ -8,16 +8,8 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/place_thumbnail.dart';
-import '../data/course_repository.dart';
 import '../../course_wizard/presentation/wizard_entry.dart';
-
-/// 내 코스 목록 (`GET /courses?scope=`) — 정렬·범위는 서버가 맡는다.
-/// 담기·삭제 후에는 invalidate로 다시 불러온다.
-final savedCoursesProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, String>(
-      (ref, scope) =>
-          ref.watch(courseRepositoryProvider).savedCourseCards(scope: scope),
-    );
+import '../application/course_providers.dart';
 
 /// 서브탭 — 서버 scope 값과 짝을 이룬다. 빈 상태 문구도 탭마다 다르다
 enum _Scope {

@@ -6,6 +6,7 @@ import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/course/application/pending_trip_provider.dart';
 import 'package:offway/features/home/data/home_repository.dart';
 import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 홈 인사말 — 로그인했으면 서버가 준 '게스트' 대신 진짜 이름을 부른다.
 ///

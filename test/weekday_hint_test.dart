@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course_wizard/presentation/period_style_screen.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 주말 포함 여행 시트의 안내 문구 — 완료가 잠긴 **이유**를 말하고, 조건을
 /// 채우면 **사라진다**.

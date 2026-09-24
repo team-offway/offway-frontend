@@ -46,7 +46,7 @@ class LiveActivityRepository {
     if (id == null) {
       throw ArgumentError.value(courseId, 'courseId', '서버 코스 id 는 숫자다');
     }
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/live-activities',
         // 기기 id 는 **띄우기 토큰 등록과 같은 값**이어야 한다 — 서버가 그걸로
@@ -60,9 +60,7 @@ class LiveActivityRepository {
       // 공통 래퍼는 200에도 실패 code를 담을 수 있다 — 그것까지 걸러야
       // '등록됐다'가 사실이 된다
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 이 **기기**의 push-to-start 토큰을 등록한다 (core #585).
@@ -75,15 +73,13 @@ class LiveActivityRepository {
   /// **몇 번을 보내도 결과가 같다** — 서버가 (사용자, 토큰)으로 한 행만 둔다.
   /// 앱을 켤 때마다 같은 토큰이 오므로 매번 보내도 된다
   Future<void> registerPushToStart(String token) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.put<dynamic>(
         '/api/v1/live-activities/push-to-start',
         data: {'token': token, 'deviceId': await _deviceId.get()},
       );
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 이 기기의 push-to-start 등록을 지운다 — 로그아웃.
@@ -96,7 +92,7 @@ class LiveActivityRepository {
   /// 로그아웃은 기기별로 갈리므로(`refreshToken` 을 보낸다) 이 기기 토큰을
   /// 준다 — 전부 풀면 폰에서 로그아웃한 사용자의 태블릿 잠금화면이 같이 빈다
   Future<void> unregisterPushToStart({String? token}) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.delete<dynamic>(
         '/api/v1/live-activities/push-to-start',
         // 토큰을 모르면 본문을 비운다 — 서버가 '이 사용자 전부' 로 받는다.
@@ -104,9 +100,7 @@ class LiveActivityRepository {
         data: token == null ? null : {'token': token},
       );
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 이 코스의 등록을 지운다 — 카드를 내렸을 때.
@@ -119,13 +113,11 @@ class LiveActivityRepository {
   Future<void> unregister(String courseId) async {
     final id = int.tryParse(courseId);
     if (id == null) return; // 등록된 적이 없는 값이다 — 지울 것도 없다
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.delete<dynamic>(
         '/api/v1/live-activities/$id',
       );
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }

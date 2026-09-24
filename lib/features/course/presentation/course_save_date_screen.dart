@@ -6,8 +6,7 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
 import '../../../core/widgets/app_back_button.dart';
-import '../../course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
+import '../../leave/data/consumed_leave_provider.dart';
 
 /// 담기 직전 여행 날짜 지정 (프리셋 경로 전용).
 ///

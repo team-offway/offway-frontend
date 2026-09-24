@@ -10,6 +10,7 @@ import 'package:offway/features/region/presentation/region_detail_screen.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'support/fake_url_launcher.dart';
+import 'package:offway/features/region/application/region_detail_provider.dart';
 
 /// 서버가 고른 외부 링크 (core #350) — 파싱 규칙과 접힘 규칙을 고정한다.
 ///

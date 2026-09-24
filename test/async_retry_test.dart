@@ -9,6 +9,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/widgets/app_circular_loading.dart';
 import 'package:offway/core/widgets/async_retry.dart';
 import 'package:offway/features/course/presentation/poi_detail_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 오류 화면의 '다시 시도'가 눌린 것처럼 보여야 한다 — 백엔드 피드백.
 ///

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/course/presentation/widgets/place_info_sheet.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 오늘 문 여는지는 **서버 판정을 쓴다**(#331).
 ///

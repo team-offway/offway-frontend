@@ -47,6 +47,19 @@ abstract final class ApiEnvelope {
     return DataSource.parseList(body['sources']);
   }
 
+  /// repository 한 호출을 감싸 Dio 예외를 [ApiException]으로 바꿔 던진다.
+  ///
+  /// 모든 repository 메서드가 같은 `try { … } on DioException catch (e) {
+  /// throw toApiException(e); }` 를 되풀이하던 것을 한 곳에 모았다(#366).
+  /// 화면은 [ApiException]만 알면 된다 — Dio 를 모른다
+  static Future<T> guard<T>(Future<T> Function() body) async {
+    try {
+      return await body();
+    } on DioException catch (e) {
+      throw toApiException(e);
+    }
+  }
+
   /// Dio 예외를 [ApiException]으로 바꾼다.
   ///
   /// 서버가 4xx/5xx로 답하면 Dio는 예외를 던지지만 바디에는 여전히 공통

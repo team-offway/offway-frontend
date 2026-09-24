@@ -7,6 +7,7 @@ import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/policy/data/policy_repository.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
+import 'package:offway/features/course_wizard/application/wizard_recommend_provider.dart';
 
 /// 후보지역 카드의 뱃지는 혜택이다 — 시안이 한산/인기(crowdLevel) 칩을 혜택
 /// 칩으로 바꿨다. 홈 카드와 같은 첫 번째 혜택 문구를 쓴다.

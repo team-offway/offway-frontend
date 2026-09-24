@@ -2,41 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/trip_constants.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/network/api_envelope.dart';
 import '../../../core/utils/leave_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/trip_date_range_picker.dart';
-import '../../onboarding/data/leave_repository.dart';
 import '../application/course_wizard_provider.dart';
-
-/// 고른 기간이 연차를 며칠 깎는지 — 서버가 평일−공휴일로 계산한다.
-///
-/// 이 시점엔 이동수단을 아직 안 골랐지만 연차 소모는 이동수단과 무관하므로
-/// CAR로 임시 지정해 묻는다. 서버가 안 되면 공휴일 목록(core #322)을 끼운
-/// 로컬 계산으로 폴백한다 — 그 목록마저 없으면 주말만 뺀 근사값이 된다.
-final tripConsumedLeaveProvider = FutureProvider.autoDispose
-    .family<double, ({DateTime start, DateTime end})>((ref, range) async {
-      try {
-        final result = await ref
-            .read(leaveRepositoryProvider)
-            .availableTime(
-              transport: 'CAR',
-              startDate: range.start,
-              endDate: range.end,
-            );
-        return result.consumedLeaveDays;
-      } on ApiException {
-        final holidays = await holidaysBetween(ref, range.start, range.end);
-        return leaveDaysBetween(
-          range.start,
-          range.end,
-          holidays: holidays,
-        ).toDouble();
-      }
-    });
+import '../../leave/data/consumed_leave_provider.dart';
 
 /// O-04-0 · 여행 날짜 선택 캘린더 (A 경로)
 /// 가는날~오는날 범위 선택, 최대 2박3일. X 닫기 시 위저드를 종료하고 홈으로.

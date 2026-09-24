@@ -19,13 +19,7 @@ import '../data/course_repository.dart';
 import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_map.dart';
 import 'widgets/expandable_description.dart';
-
-/// 장소 상세 (`GET /pois/{contentId}`)
-final poiDetailProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, contentId) =>
-          ref.watch(courseRepositoryProvider).poiDetail(contentId),
-    );
+import '../application/course_providers.dart';
 
 /// 장소 하나의 상세 — 대표 이미지·소개·기본정보·위치와 지도 열기.
 ///

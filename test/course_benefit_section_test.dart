@@ -7,6 +7,7 @@ import 'package:offway/features/course/presentation/widgets/course_benefit_secti
 import 'package:offway/features/policy/data/policy_repository.dart';
 import 'package:offway/features/policy/domain/region_benefit.dart';
 import 'package:offway/features/policy/presentation/region_benefit_card.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 코스 확정 화면 아래의 '이 지역에서 누릴 수 있는 혜택' (시안 1482:53418).
 ///

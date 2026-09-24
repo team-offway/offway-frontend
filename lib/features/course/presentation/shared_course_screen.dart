@@ -11,21 +11,13 @@ import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/async_retry.dart';
-import '../../course_wizard/presentation/calendar_screen.dart'
-    show tripConsumedLeaveProvider;
-import '../data/course_repository.dart';
 import 'my_courses_screen.dart' show tripDDayLabel;
 import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
-
-/// 공유 링크로 받은 코스 (`GET /public/courses/{shareToken}`)
-final sharedCourseProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, shareToken) =>
-          ref.watch(courseRepositoryProvider).sharedCourse(shareToken),
-    );
+import '../application/course_providers.dart';
+import '../../leave/data/consumed_leave_provider.dart';
 
 /// 남이 공유한 코스 — 카카오톡 '앱으로 보기'로 들어온다.
 ///

@@ -6,12 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/features/course/data/course_repository.dart';
-import 'package:offway/features/course/presentation/my_courses_screen.dart'
-    show savedCoursesProvider;
 import 'package:offway/features/trip_activity/application/trip_activity_controller.dart';
 import 'package:offway/features/trip_activity/data/live_activity_repository.dart';
 import 'package:offway/features/trip_activity/data/trip_activity_service.dart';
 import 'package:offway/features/trip_activity/domain/trip_countdown.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 예정 코스를 읽어 **어느 여행을 잠금화면에 띄울지** 정하는 자리.
 ///

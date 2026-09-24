@@ -62,7 +62,7 @@ class LeaveRepository {
   /// 서버가 요청한 연도를 응답에 되싣는다 — 어긋난 값을 캐시하면 다른
   /// 해의 공휴일로 연차를 계산하게 되므로 여기서 걸러 던진다.
   Future<Set<DateTime>> holidays(int year) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>(
         '/api/v1/holidays',
         queryParameters: {'year': year},
@@ -75,34 +75,28 @@ class LeaveRepository {
         for (final date in (data['dates'] as List? ?? const []))
           DateTime.parse(date as String),
       };
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 총 연차를 서버에 저장하고 남은 연차를 돌려받는다 (온보딩 입력).
   Future<double> updateTotalDays(double totalDays) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.patch<dynamic>(
         '/api/v1/leaves/me',
         data: {'totalDays': totalDays},
       );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       return (data['remainingDays'] as num).toDouble();
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 내 연차 — 잔여 일수와 사용 내역을 함께 받는다 (`GET /leaves/me`).
   Future<MyLeave> fetchMyLeave() async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/leaves/me');
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       return MyLeave.fromJson(data);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 사용 내역 삭제 (`DELETE /leaves/me/usages/{id}`) — core#268.
@@ -113,16 +107,14 @@ class LeaveRepository {
   /// 응답에 갱신된 연차 전체가 실려 오므로 목록을 다시 부르지 않아도 된다.
   /// 코스 확정으로 생긴 내역은 409로 막힌다 — 코스 화면에서 되돌려야 한다.
   Future<MyLeave> deleteUsage(int usageId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.delete<dynamic>(
         '/api/v1/leaves/me/usages/$usageId',
       );
       return MyLeave.fromJson(
         ApiEnvelope.unwrap(response) as Map<String, dynamic>,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 연차 사용 내역 추가 (`POST /leaves/me/usages`).
@@ -138,7 +130,7 @@ class LeaveRepository {
     String? memo,
     int? courseId,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/leaves/me/usages',
         data: {
@@ -151,9 +143,7 @@ class LeaveRepository {
       );
       // HTTP 200이어도 실패 래퍼일 수 있다 — 여기서 걸러야 등록 실패가 성공으로 보이지 않는다
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 가용시간 계산 (`POST /leaves/available-time`).
@@ -174,7 +164,7 @@ class LeaveRepository {
     String? weekendBridge,
     int? leaveDays,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/leaves/available-time',
         data: {
@@ -195,9 +185,7 @@ class LeaveRepository {
         consumedLeaveDays: (data['consumedLeaveDays'] as num).toDouble(),
         maxReachMinutes: data['maxReachMinutes'] as int,
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   static String? _isoDate(DateTime? d) => d == null ? null : isoDate(d);

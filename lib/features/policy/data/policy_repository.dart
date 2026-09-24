@@ -18,12 +18,10 @@ class PolicyRepository {
 
   /// 정책 상세와 이 혜택이 되는 여행지 목록 (`GET /policies/{id}`)
   Future<Map<String, dynamic>> detail(int policyId) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>('/api/v1/policies/$policyId');
       return ApiEnvelope.unwrap(response) as Map<String, dynamic>;
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }
 

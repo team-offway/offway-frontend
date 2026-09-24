@@ -21,7 +21,7 @@ class DeviceRepository {
   /// **몇 번을 보내도 결과가 같다** — 서버가 (소유자, 토큰)으로 한 행만 둔다.
   /// 실패했는지 애매하면 그냥 다시 보내면 된다.
   Future<void> register(String token) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.post<dynamic>(
         '/api/v1/devices',
         data: {'token': token, 'platform': Platform.isIOS ? 'IOS' : 'ANDROID'},
@@ -29,9 +29,7 @@ class DeviceRepository {
       // 공통 래퍼는 200에도 실패 code를 담을 수 있다 — 그것까지 걸러야
       // '등록됐다'가 사실이 된다
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 
   /// 이 사용자의 토큰을 전부 해제한다 (로그아웃·탈퇴).
@@ -39,11 +37,9 @@ class DeviceRepository {
   /// 토큰을 받지 않는다 — 서버가 JWT의 사용자 앞으로 등록된 기기를 전부
   /// 푼다(core #320). 지울 것이 없어도 성공이다.
   Future<void> unregister() async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.delete<dynamic>('/api/v1/devices');
       ApiEnvelope.unwrap(response);
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }

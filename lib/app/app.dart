@@ -8,11 +8,10 @@ import '../core/router/deep_link_listener.dart';
 import '../core/router/session_expiry_listener.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/application/current_user_provider.dart';
-import '../features/home/presentation/home_screen.dart'
-    show homeSnapshotProvider;
 import '../features/notification/application/push_presenter.dart';
 import '../features/notification/application/push_registration.dart';
 import '../features/trip_activity/application/trip_activity_controller.dart';
+import '../features/home/application/home_providers.dart';
 
 class OffwayApp extends ConsumerStatefulWidget {
   const OffwayApp({super.key});

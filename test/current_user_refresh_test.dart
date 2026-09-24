@@ -5,7 +5,7 @@ import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/application/current_user_provider.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 로그인 상태가 바뀌면 사용자 정보를 다시 읽는지 고정한다.
 ///

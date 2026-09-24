@@ -5,6 +5,8 @@ import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/widgets/data_source_note.dart';
 import 'package:offway/features/course/presentation/poi_detail_screen.dart';
 import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
+import 'package:offway/features/course/application/course_providers.dart';
+import 'package:offway/features/course_wizard/application/wizard_recommend_provider.dart';
 
 /// 출처 표기가 **화면까지 닿는가** (core #417).
 ///

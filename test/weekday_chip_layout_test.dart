@@ -5,7 +5,7 @@ import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/core/theme/tokens/tokens.dart';
 import 'package:offway/features/course_wizard/presentation/period_style_screen.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 요일 칩 한 줄 — 시안 간격(13.2)은 402pt 기준이라 좁은 기기에서 넘친다.
 void main() {

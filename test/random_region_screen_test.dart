@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
-import 'package:offway/features/course_wizard/presentation/candidates_screen.dart';
 import 'package:offway/features/course_wizard/presentation/random_region_screen.dart';
+import 'package:offway/features/course_wizard/application/wizard_recommend_provider.dart';
 
 /// 랜덤 지역 선택 화면 — 후보만 칩으로 놓고, 핀을 꾹 눌렀다 떼면 한 곳에 내려앉는다.
 void main() {

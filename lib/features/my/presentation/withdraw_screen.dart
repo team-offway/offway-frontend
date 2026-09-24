@@ -14,7 +14,7 @@ import '../../../core/utils/nickname.dart';
 import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
-import '../../home/presentation/home_screen.dart' show homeSnapshotProvider;
+import '../../home/application/home_providers.dart';
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
 ///

@@ -7,6 +7,7 @@ import 'package:offway/features/course/data/course_tooltip_storage.dart';
 import 'package:offway/core/widgets/app_tooltip_bubble.dart';
 import 'package:offway/features/course/presentation/saved_course_screen.dart';
 import 'package:offway/features/region/domain/region_visit_metrics.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 
 /// 저장 코스 화면의 공유 유도 툴팁 (시안 18860:76589).
 ///

@@ -38,7 +38,7 @@ class RegionListRepository {
     int page = 0,
     int size = 20,
   }) async {
-    try {
+    return ApiEnvelope.guard(() async {
       final response = await _dio.get<dynamic>(
         '/api/v1/regions',
         queryParameters: {
@@ -66,9 +66,7 @@ class RegionListRepository {
         hasMore: hasMore,
         sources: ApiEnvelope.sourcesOf(response),
       );
-    } on DioException catch (e) {
-      throw ApiEnvelope.toApiException(e);
-    }
+    });
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:offway/features/region/domain/region_visit_metrics.dart';
 import 'package:offway/features/region/presentation/region_detail_screen.dart';
 import 'package:offway/features/policy/data/region_policies_provider.dart';
 import 'package:offway/features/policy/domain/region_benefit.dart';
+import 'package:offway/features/region/application/region_detail_provider.dart';
 
 /// 지역 상세 — 시안(코스_상세)의 순서와 접힘 규칙을 고정한다.
 void main() {

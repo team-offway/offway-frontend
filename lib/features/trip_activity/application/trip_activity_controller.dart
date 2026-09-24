@@ -2,13 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../course/data/course_repository.dart';
-import '../../course/presentation/my_courses_screen.dart'
-    show savedCoursesProvider;
 import '../data/live_activity_repository.dart';
 import '../data/trip_activity_service.dart';
 import '../domain/trip_countdown.dart';
 import '../../../core/storage/registration_memo.dart';
 import '../../../core/utils/log.dart';
+import '../../course/application/course_providers.dart';
 
 final tripActivityServiceProvider = Provider<TripActivityService>(
   (ref) => TripActivityService(),

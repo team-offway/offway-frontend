@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/network/api_envelope.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/home/data/home_repository.dart';
-import 'package:offway/features/home/presentation/home_screen.dart';
 import 'package:offway/features/leave/presentation/leave_register_screen.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
+import 'package:offway/features/home/application/home_providers.dart';
 
 /// 연차 사용 등록의 **차감 일수 칸**.
 ///
