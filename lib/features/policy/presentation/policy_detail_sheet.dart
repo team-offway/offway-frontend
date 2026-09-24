@@ -28,10 +28,15 @@ class _PolicyDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final policy = ref.watch(policyDetailProvider(policyId));
+    final fresh = ref.watch(policyDetailProvider(policyId));
+    // 받아 둔 값으로 먼저 그리고, 서버 값이 오면 바꿔 낀다 — 스피너 없이
+    // 열리면서도 운영진이 고친 신청 링크·기간이 바로 반영된다. 새로 받다
+    // 실패해도 받아 둔 값이 있으면 그걸 보여 준다
+    final shown = fresh.value ?? ref.watch(knownPolicyProvider(policyId));
+    if (shown != null) return SafeArea(child: _buildBody(context, shown));
 
     return SafeArea(
-      child: policy.when(
+      child: fresh.when(
         loading: () => const SizedBox(
           height: 200,
           child: Center(child: AppCircularLoading()),
