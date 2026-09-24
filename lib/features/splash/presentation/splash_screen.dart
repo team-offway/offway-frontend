@@ -25,7 +25,10 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   /// 워드마크가 눈에 남을 만큼만 머문다. 더 끌면 앱이 느려 보인다.
-  static const _hold = Duration(milliseconds: 1200);
+  ///
+  /// 1.2초였다 — 네이티브 런치 화면까지 더하면 로고가 1.5초 넘게 떠 있었다.
+  /// 0.7초로 줄였다(#396)
+  static const _hold = Duration(milliseconds: 700);
 
   /// 워드마크 중심의 세로 위치(화면 높이 대비).
   ///

@@ -9,7 +9,7 @@ import 'package:offway/features/splash/presentation/splash_screen.dart';
 
 /// 앱이 꺼진 채 위젯·공유 링크로 열렸을 때 — 스플래시가 끝난 **뒤에** 그 화면으로.
 ///
-/// 스플래시 위에 먼저 올리면 1.2초 뒤 스플래시가 go(next) 로 스택을 갈아 치우며
+/// 스플래시 위에 먼저 올리면 잠시 뒤 스플래시가 go(next) 로 스택을 갈아 치우며
 /// 지운다 — 위젯을 눌렀는데 홈에 떨어진다.
 void main() {
   GoRouter router() => GoRouter(
