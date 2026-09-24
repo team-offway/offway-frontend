@@ -831,8 +831,10 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     if (confirmed != true || !mounted) return;
     try {
       await ref.read(courseRepositoryProvider).delete(widget.savedId);
-      // 목록이 지워진 코스를 계속 보여주지 않도록 다시 불러오게 한다
-      ref.invalidate(savedCoursesProvider);
+      // 목록이 지워진 코스를 계속 보여주지 않도록 다시 불러오게 한다 —
+      // 옛 목록을 보이지 않고(asReload). 목록은 세션 동안 남아(#402) 기본
+      // 무효화면 지운 카드가 새 응답이 올 때까지 잠깐 보였다
+      ref.invalidate(savedCoursesProvider, asReload: true);
       // 삭제하면 서버가 차감한 연차를 되돌린다 — 홈의 잔여 연차도 갱신
       ref.invalidate(homeSnapshotProvider);
       if (!mounted) return;

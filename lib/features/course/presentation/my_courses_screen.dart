@@ -61,9 +61,14 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
   /// 컨트롤러가 구독하고 있어, 그것까지 다시 받으면 탭에 들어올 때마다
   /// 잠금화면·위젯 맞추기가 한 번씩 돌았다. 예정 목록은 그 칩을 볼 때만
   /// 새로 받는다(앱 복귀 때는 컨트롤러가 따로 받는다)
+  ///
+  /// **오류 상태인 칩은 건드리지 않는다** — 오류 화면의 '다시 시도' 에 맡긴다.
+  /// 여기서 다시 받다 또 실패하면, 누르지도 않은 '다시 시도' 의 실패로 보고
+  /// "아직 불러올 수 없어요" 토스트가 떴다
   void _refresh(_Scope scope) {
     final provider = savedCoursesProvider(scope.serverValue);
-    if (ref.read(provider).isLoading) return;
+    final state = ref.read(provider);
+    if (state.isLoading || state.hasError) return;
     ref.invalidate(provider);
   }
 

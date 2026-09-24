@@ -24,8 +24,20 @@ final CacheManager appImageCacheManager = CacheManager(
 ///
 /// 같은 캐시·같은 주소는 한 번만 받는다 — 받는 중에 카드가 같은 사진을 요청하면
 /// 그 받기를 이어받는다. 테스트는 이 provider 를 바꿔 끼워 네트워크를 막는다
+///
+/// **이미 캐시에 있으면 받지 않는다.** `downloadFile` 은 디스크 캐시를 보지
+/// 않고 늘 네트워크로 간다 — 그대로 두면 앱을 켤 때마다 이미 받아 둔 첫
+/// 사진을 또 받았다
 final imagePrefetcherProvider = Provider<Future<void> Function(String url)>(
-  (ref) =>
-      (url) =>
-          appImageCacheManager.downloadFile(url).then((_) {}, onError: (_) {}),
+  (ref) => _prefetchImage,
 );
+
+Future<void> _prefetchImage(String url) async {
+  try {
+    final cached = await appImageCacheManager.getFileFromCache(url);
+    if (cached != null && cached.validTill.isAfter(DateTime.now())) return;
+    await appImageCacheManager.downloadFile(url);
+  } on Object {
+    // 미리 받기는 덤이다 — 카드가 그릴 때 다시 받는다
+  }
+}

@@ -86,6 +86,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _onPlacesScroll() {
+    // 다 풀렸으면 할 일이 없다 — 줄 끝에서는 보이는 수가 카드 수를 넘어
+    // 스크롤마다 홈 전체를 다시 그렸다
+    if (_placesReleased) return;
     if (_placesVisibleUntil() > _placesLoadUntil) setState(() {});
   }
 

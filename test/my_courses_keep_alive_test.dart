@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/theme/app_theme.dart';
 import 'package:offway/features/course/application/course_providers.dart';
 import 'package:offway/features/course/presentation/my_courses_screen.dart';
+import 'package:offway/core/network/api_envelope.dart';
+import 'package:offway/core/widgets/async_retry.dart';
 
 /// 내 코스 목록은 **세션 동안 들고 있는다**(#392).
 ///
@@ -142,5 +144,39 @@ void main() {
 
     expect(calls['UPCOMING'], 1);
     expect(calls['ALL'], greaterThanOrEqualTo(2));
+  });
+
+  testWidgets('실패한 칩으로 돌아와도 누르지 않은 다시 시도의 토스트가 뜨지 않는다', (tester) async {
+    final container = ProviderContainer(
+      retry: (_, _) => null,
+      overrides: [
+        savedCoursesProvider.overrideWith((ref, scope) async {
+          if (scope == 'PAST') {
+            throw const ApiException(status: 500, code: 'X', detail: '서버 오류');
+          }
+          return [card('정선')];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const MyCoursesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('지난 여행'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('전체'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('지난 여행'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(retryFailedMessage), findsNothing);
   });
 }

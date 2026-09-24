@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/router/widget_deep_link.dart';
+import 'package:offway/core/router/deep_link_listener.dart';
+import 'package:offway/core/storage/secure_storage.dart';
 
 /// 위젯을 눌러 앱이 열렸을 때 — `offway://` 주소를 화면으로 푼다(#297).
 ///
@@ -101,4 +103,36 @@ void main() {
       );
     });
   });
+
+  group('지금 로그인돼 있는가 — 누른 순간의 토큰으로', () {
+    // 앱을 켤 때 정한 첫 화면으로 보면, 켠 뒤 세션이 만료돼도 로그인한
+    // 사람으로 보여 위젯이 로그인을 건너뛰었다
+    test('토큰이 있으면 로그인돼 있다', () async {
+      expect(await hasStoredSession(_Storage('jwt')), isTrue);
+    });
+
+    test('세션 만료·로그아웃으로 토큰이 지워졌으면 로그인 전이다', () async {
+      expect(await hasStoredSession(_Storage(null)), isFalse);
+    });
+
+    test('못 읽으면 로그인 전으로 본다', () async {
+      expect(await hasStoredSession(_Storage(null, fail: true)), isFalse);
+    });
+  });
+}
+
+class _Storage implements TokenStorage {
+  _Storage(this.token, {this.fail = false});
+
+  final String? token;
+  final bool fail;
+
+  @override
+  Future<String?> get accessToken async {
+    if (fail) throw Exception('Keychain');
+    return token;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
