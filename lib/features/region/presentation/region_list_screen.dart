@@ -71,8 +71,12 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   }
 
   /// 바닥에 닿기 전에 미리 다음 장을 부른다
+  ///
+  /// 다음 장이 실패했으면 **스크롤로는 다시 부르지 않는다** — 바닥 근처에서
+  /// 조금만 움직여도 같은 실패 요청이 이어졌다(#390). 목록 끝의 '다시 시도'
+  /// 를 눌렀을 때만 다시 부른다
   void _onScroll() {
-    if (!_scroll.hasClients || _loading || !_hasMore) return;
+    if (!_scroll.hasClients || _loading || !_hasMore || _error != null) return;
     final remaining =
         _scroll.position.maxScrollExtent - _scroll.position.pixels;
     if (remaining < 400) _load();
@@ -241,6 +245,9 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
       builder: (context, i) => i >= regions.length
           ? const RegionCardSkeleton(style: RegionCardStyle.plain)
           : RegionCard(region: regions[i], style: RegionCardStyle.plain),
+      // 다음 장이 실패했으면 목록 끝에서 알리고 다시 부를 길을 준다 —
+      // 받아 둔 카드는 그대로 둔다
+      footer: _error != null && !_loading ? _buildNextPageError() : null,
     );
   }
 
@@ -255,6 +262,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
     required int itemCount,
     required Widget Function(BuildContext, int) builder,
     ScrollController? controller,
+    Widget? footer,
   }) {
     return CustomScrollView(
       controller: controller,
@@ -272,6 +280,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
             itemBuilder: builder,
           ),
         ),
+        if (footer != null) SliverToBoxAdapter(child: footer),
         SliverToBoxAdapter(
           // **어느 응답을 그리는지에 따라 갈린다** — 장소 카드를 쓰는
           // 중이면 홈 응답의 출처고, 지역 목록으로 폴백했으면 그쪽이다.
@@ -284,6 +293,40 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 다음 장을 못 불러왔을 때 목록 끝에 두는 한 줄 — 누르면 그 장을 다시 부른다
+  Widget _buildNextPageError() {
+    return Semantics(
+      button: true,
+      label: '더 불러오지 못했어요. 다시 시도',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: _load,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '더 불러오지 못했어요',
+                style: AppTypography.label1NormalMedium.copyWith(
+                  color: AppColors.labelAlternative,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '다시 시도',
+                style: AppTypography.label1NormalBold.copyWith(
+                  color: AppColors.primaryNormal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
