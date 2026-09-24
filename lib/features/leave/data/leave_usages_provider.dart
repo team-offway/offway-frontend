@@ -1,7 +1,7 @@
 import '../../../core/utils/region_name.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../course/application/course_providers.dart';
+import '../../course/data/course_repository.dart';
 import '../../onboarding/data/leave_repository.dart';
 import '../domain/leave_usage.dart';
 import '../../home/application/home_providers.dart';
@@ -20,6 +20,14 @@ void invalidateLeaveData(WidgetRef ref) {
     ..invalidate(myLeaveProvider);
 }
 
+/// [invalidateLeaveData] 와 같되 컨테이너로 — 화면이 이미 닫혀 `ref` 를 쓸
+/// 수 없을 때(요청이 날아가는 중에 화면을 닫은 경우) 쓴다
+void invalidateLeaveDataIn(ProviderContainer container) {
+  container
+    ..invalidate(homeSnapshotProvider)
+    ..invalidate(myLeaveProvider);
+}
+
 /// 내 연차 — 잔여 일수와 사용 내역 (`GET /leaves/me`)
 final myLeaveProvider = FutureProvider.autoDispose<MyLeave>(
   (ref) => ref.watch(leaveRepositoryProvider).fetchMyLeave(),
@@ -34,11 +42,14 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
   ref,
 ) async {
   // **코스 목록을 먼저 띄워 두고** 내역을 기다린다(#393). 둘은 서로 필요
-  // 없는데 차례로 기다리면 내역이 왕복 한 번만큼 늦게 뜬다. 내 코스 탭과 같은
-  // 목록(`savedCoursesProvider('ALL')`)을 써서 이미 받아 둔 게 있으면 요청도
-  // 없다. 여기서 오류가 나도 내역은 보여 줘야 하니 먼저 삼켜 두고(ignore)
-  // 아래에서 기다릴 때 다시 받는다
-  final coursesFuture = ref.watch(savedCoursesProvider('ALL').future)..ignore();
+  // 없는데 차례로 기다리면 내역이 왕복 한 번만큼 늦게 뜬다.
+  //
+  // 내 코스 탭의 목록(`savedCoursesProvider`)을 빌리지 않고 **매번 새로
+  // 받는다** — 그 목록은 세션 동안 남아, 한 번 실패한 채로 남거나 다른
+  // 기기에서 담은 코스가 없으면 이름이 빠졌다. 여기서 오류가 나도 내역은
+  // 보여 줘야 하니 먼저 삼켜 두고(ignore) 아래에서 기다릴 때 다시 받는다
+  final coursesFuture = ref.read(courseRepositoryProvider).savedCourseCards()
+    ..ignore();
   final leave = await ref.watch(myLeaveProvider.future);
   // 순서는 서버가 정한다 — 등록 시각 내림차순(core #384). 예전에는 서버가
   // 사용일 순으로 줘서 앱이 id로 다시 정렬했는데, 그 임시 처방을 걷어냈다

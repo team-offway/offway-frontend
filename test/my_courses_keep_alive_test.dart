@@ -108,4 +108,39 @@ void main() {
     expect(find.textContaining('영월', findRichText: true), findsWidgets);
     expect(find.textContaining('정선', findRichText: true), findsNothing);
   });
+
+  testWidgets('탭에 들어올 때 보고 있는 칩만 새로 받는다 — 예정 목록은 건드리지 않는다', (tester) async {
+    // 예정 목록(UPCOMING)은 잠금화면 컨트롤러가 구독한다. 그것까지 다시 받으면
+    // 탭에 들어올 때마다 잠금화면·위젯 맞추기가 한 번씩 돌았다
+    final calls = <String, int>{};
+    final container = ProviderContainer(
+      overrides: [
+        savedCoursesProvider.overrideWith((ref, scope) async {
+          calls[scope] = (calls[scope] ?? 0) + 1;
+          return [card('정선')];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    // 잠금화면 컨트롤러처럼 예정 목록을 붙잡고 있는다
+    container.listen(savedCoursesProvider('UPCOMING'), (_, _) {});
+    await container.read(savedCoursesProvider('UPCOMING').future);
+
+    Widget screen(bool show) => UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: show ? const MyCoursesScreen() : const SizedBox(),
+      ),
+    );
+
+    await tester.pumpWidget(screen(true));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(screen(false));
+    await tester.pumpWidget(screen(true));
+    await tester.pumpAndSettle();
+
+    expect(calls['UPCOMING'], 1);
+    expect(calls['ALL'], greaterThanOrEqualTo(2));
+  });
 }

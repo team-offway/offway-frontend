@@ -242,8 +242,12 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       // await 뒤라 화면이 이미 사라졌을 수 있다 — 그때 ref를 만지면 던진다
       if (!mounted) return;
       // 목록이 캐시를 들고 있으면 방금 담은 코스가 안 보인다 — 탭을 오갔다
-      // 와야 뜨는데, 사용자는 담기가 실패한 줄 안다
-      ref.invalidate(savedCoursesProvider);
+      // 와야 뜨는데, 사용자는 담기가 실패한 줄 안다.
+      //
+      // **옛 목록을 보이지 않고** 다시 받는다(asReload). 목록은 세션 동안
+      // 남으므로(#402) 기본 무효화는 옛 목록을 그린 채 새로 받아, 방금 담은
+      // 카드가 한 박자 늦게 나타났다
+      ref.invalidate(savedCoursesProvider, asReload: true);
       showAppToast(context, '내 코스에 담았어요', kind: AppToastKind.success);
       ref.read(courseWizardProvider.notifier).reset();
       context.go(AppRoutes.myCourses);
