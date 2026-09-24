@@ -12,20 +12,21 @@
 | `index.html` | 서비스 소개 랜딩 |
 | `recommend.html` | 추천코스 공유 화면 (`/r/{token}`) |
 | `mycourse.html` | 내 코스 공유 화면 (`/m/{token}`) — 날짜·연차가 붙는다 |
-| `privacy.html` · `terms.html` | 개인정보처리방침 · 이용약관 |
+| `privacy.html` · `terms.html` · `support.html` | 개인정보처리방침 · 이용약관 · 고객지원 (한국어·영문) |
 | `api/page.js` | `/r/`·`/m/` 주소를 받아 **og:title 에 지역 이름을 채운** HTML 을 낸다 — 카톡 미리보기용 |
 | `api/course.js` | 코스를 읽어 오는 통로 (아래 참고) |
 | `api/leave.js` | 사용 연차를 계산해 오는 통로 |
+| `api/curated.js` | 랜딩 캐러셀이 홈의 큐레이션 링크를 받아 오는 통로 |
 | `vercel.json` | 주소를 각 페이지로 넘긴다 |
 
 ## 왜 API를 직접 안 부르나
 
 백엔드(`https://api.offway.cloud`)가 이 도메인의 브라우저 직접 호출에 CORS 를
 열어 주지 않아, 페이지가 직접 부르면 막힌다. 같은 출처의 서버리스 함수
-`api/course.js`·`api/leave.js` 가 대신 받아 넘기고, 응답 캐싱도 얹는다.
+`api/course.js`·`api/leave.js`·`api/curated.js` 가 대신 받아 넘기고, 응답 캐싱도 얹는다.
 
 - `GET /api/v1/public/courses/{shareToken}` 은 **인증 불필요** (Basic 게이트 예외)
-- 연차 계산 API 는 게이트 뒤라 `api/leave.js` 가 Vercel 환경변수의 자격을 붙여 부른다
+- 연차 계산·홈 API 는 게이트 뒤라 `api/leave.js`·`api/curated.js` 가 Vercel 환경변수의 자격을 붙여 부른다
 - 서버 주소를 바꿔야 하면 Vercel 환경변수 `API_ORIGIN` 을 쓴다
 
 ## 미리보기(og) 에 지역 이름이 들어가는 이유
@@ -45,7 +46,7 @@
 3. **Framework Preset**: Other (빌드 명령 없음)
 4. **Project Name**: 원하는 이름 (현재 `offway-frontend`)
 5. 도메인은 Settings → Domains 에서 붙인다 — 현재 `offway.cloud`
-5. Deploy
+6. Deploy
 
 Flutter 코드만 바꿔도 재배포가 도는 게 신경 쓰이면,
 Settings → Git → **Ignored Build Step** 에 아래를 넣는다.
@@ -54,16 +55,9 @@ Settings → Git → **Ignored Build Step** 에 아래를 넣는다.
 git diff --quiet HEAD^ HEAD -- .
 ```
 
-## 배포한 뒤 앱에 반영
+## 앱이 만드는 링크 주소
 
-앱이 만드는 링크 주소를 실제 도메인으로 바꾼다.
-
-```bash
-flutter run --dart-define=SHARE_BASE_URL=https://offway.cloud
-```
-
-늘 쓰는 값이면 `lib/core/config/app_config.dart` 의 `shareBaseUrl` 기본값을 바꾼다.
-현재 기본값은 `https://offway.cloud` 다 (Gabia 등록 · Vercel 연결).
+앱의 공유 링크 기본값은 이미 `https://offway.cloud` 다(`lib/core/config/app_config.dart` 의 `shareBaseUrl`). 다른 주소로 시험할 때만 `--dart-define=SHARE_BASE_URL=<주소>` 로 바꾼다.
 
 ## 알아둘 점
 
