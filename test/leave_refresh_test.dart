@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offway/features/course/application/course_providers.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
@@ -71,7 +72,11 @@ void main() {
 
   ProviderContainer containerWith() {
     final container = ProviderContainer(
-      overrides: [leaveRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        leaveRepositoryProvider.overrideWithValue(repository),
+        // 사용 내역은 코스 이름을 붙이려고 내 코스 목록을 함께 띄운다(#393)
+        savedCoursesProvider.overrideWith((ref, scope) async => const []),
+      ],
     );
     addTearDown(container.dispose);
     return container;
