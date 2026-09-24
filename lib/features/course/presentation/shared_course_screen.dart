@@ -18,6 +18,7 @@ import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import '../application/course_providers.dart';
 import '../../leave/data/consumed_leave_provider.dart';
+import '../../../core/utils/date_format.dart';
 
 /// 남이 공유한 코스 — 카카오톡 '앱으로 보기'로 들어온다.
 ///
@@ -169,7 +170,6 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
   /// 'Day 1  7.26 월' — 날짜는 내 코스에서 공유된 경우에만 붙는다
   Widget _buildDayHeader(Map<String, dynamic> day) {
     final date = DateTime.tryParse(day['date'] as String? ?? '');
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     return Row(
       children: [
         Text(
@@ -181,7 +181,7 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
         if (_isSaved && date != null) ...[
           const SizedBox(width: 12),
           Text(
-            '${date.month}.${date.day} ${weekdays[date.weekday - 1]}',
+            monthDaySpacedWeekday(date),
             style: AppTypography.headline2Bold.copyWith(
               color: AppColors.labelAlternative,
             ),
@@ -216,7 +216,7 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
 
   /// 시안: 내 코스는 '정선여행, 1박2일', 추천은 '정선, 1박2일 추천코스입니다.'
   Widget _buildTitle(String regionName, int durationDays) {
-    final duration = _durationLabel(durationDays);
+    final duration = tripDurationLabel(durationDays);
     // 내 코스 상세 제목과 같은 크기를 쓴다 — 같은 성격의 제목이다
     final base = AppTypography.title3Bold.copyWith(
       color: AppColors.labelNormal,
@@ -257,10 +257,7 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final start = DateTime.tryParse(days.first['date'] as String? ?? '');
     final end = DateTime.tryParse(days.last['date'] as String? ?? '');
     if (start == null) return Text('공유받은 코스예요', style: style);
-    final text = end == null || end == start
-        ? '${start.year}.${start.month}.${start.day}'
-        : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}';
-    return Text(text, style: style);
+    return Text(tripDateRangeLabel(start, end), style: style);
   }
 
   /// 사용 연차·D-DAY — 내 코스에서 공유된 경우에만.
@@ -299,12 +296,6 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
       ),
     );
   }
-
-  String _durationLabel(int days) => switch (days) {
-    1 => '당일치기',
-    2 => '1박2일',
-    _ => '2박3일',
-  };
 }
 
 /// 옅은 Primary 면 위의 정보 뱃지 — 내 코스 상세와 같은 모양

@@ -45,6 +45,7 @@ import '../../../core/utils/log.dart';
 import '../../home/application/home_providers.dart';
 import '../application/course_providers.dart';
 import '../../leave/data/consumed_leave_provider.dart';
+import '../../../core/utils/date_format.dart';
 
 /// 내 코스에서 선택해 들어온 코스 상세.
 ///
@@ -337,7 +338,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       )
                     else
                       Text(
-                        '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}',
+                        tripDateRangeLabel(start, end),
                         style: AppTypography.body1NormalMedium.copyWith(
                           color: AppColors.labelAlternative,
                         ),
@@ -703,7 +704,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
   Widget _buildDayHeader(Map<String, dynamic> day, int? dDay) {
     final date = DateTime.tryParse(day['date'] as String? ?? '');
     final weather = day['weather'] as Map<String, dynamic>?;
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
     return Row(
       children: [
@@ -716,7 +716,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
         if (date != null) ...[
           const SizedBox(width: 8),
           Text(
-            '${date.month}.${date.day} ${weekdays[date.weekday - 1]}',
+            monthDaySpacedWeekday(date),
             style: AppTypography.headline2Bold.copyWith(
               color: AppColors.labelAlternative,
             ),
@@ -1210,8 +1210,7 @@ class _PlaceRow extends ConsumerWidget {
         TodayOpening.open => null,
       };
     }
-    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-    final today = weekdays[DateTime.now().weekday - 1];
+    final today = weekdayLabel(DateTime.now());
     if (restDate != null && restDate.contains('$today요일')) return '휴무일';
     if (useTime != null && useTime.isNotEmpty && !useTime.contains('상시')) {
       return '운영시간 확인';

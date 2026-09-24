@@ -14,6 +14,7 @@ import '../application/course_wizard_provider.dart';
 import '../domain/weekday_range.dart';
 import 'widgets/wizard_choice_step.dart';
 import '../../home/application/home_providers.dart';
+import '../../../core/utils/date_format.dart';
 
 /// O-04 · 기간스타일 (B 경로, STEP 2/4)
 /// 주말 포함/연차만 선택 시 바텀시트로 하위 선택을 받는다.
@@ -623,8 +624,6 @@ class _WeekdayChip extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
-  static const _labels = ['월', '화', '수', '목', '금', '토', '일'];
-
   /// 시안 실측 — 좁은 화면에서 간격을 계산할 때 쓴다
   static const size = 39.6;
   static const radius = 15.4;
@@ -643,7 +642,7 @@ class _WeekdayChip extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        _labels[weekday - 1],
+        weekdayLabelOf(weekday),
         style: TextStyle(
           fontSize: _fontSize,
           fontWeight: FontWeight.w600,
