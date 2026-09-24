@@ -42,8 +42,12 @@ class _FakeService implements TripActivityService {
   @override
   Future<bool> isAvailable() async => available;
 
+  /// 띄우기가 불린 횟수 — 앱을 켤 때 두 번 불리면 안 된다(#395)
+  int startCalls = 0;
+
   @override
   Future<bool> start(TripCountdown trip, {DateTime? now}) async {
+    startCalls++;
     started = trip;
     return true;
   }
@@ -166,6 +170,22 @@ void main() {
 
   /// 마이크로태스크를 비운다 — 기다리지 않는 등록이 끝나길
   Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+  test('앱을 켤 때 맞추기는 한 번이다 — 목록이 이미 있든 받는 중이든', () async {
+    // 예전에는 start() 가 바로 한 번, 목록이 로딩 → 데이터로 바뀔 때 또 한 번
+    // 맞춰 잠금화면 띄우기와 코스 상세 조회가 두 번씩 나갔다(#395)
+    final service = _FakeService();
+    // start() 는 실제 시각으로 맞춘다 — 사흘 뒤 떠나는 여행이어야 띄운다
+    final soon = DateTime.now().add(const Duration(days: 3));
+    final iso =
+        '${soon.year}-${soon.month.toString().padLeft(2, '0')}-${soon.day.toString().padLeft(2, '0')}';
+    final c = containerWith([card(id: '1', start: iso)], service);
+    c.read(tripActivityControllerProvider).start();
+    for (var i = 0; i < 5; i++) {
+      await settle();
+    }
+    expect(service.startCalls, 1);
+  });
 
   test('가장 가까운 예정 여행을 띄운다', () async {
     final service = _FakeService();
@@ -478,6 +498,45 @@ void main() {
       await settle();
 
       expect(repo.registered.map((r) => r.token), ['old', 'new']);
+    });
+
+    test('같은 토큰이 다시 오면 한 번만 올린다 — 앱에 돌아올 때마다 다시 준다', () async {
+      // 앱을 앞으로 낼 때마다 네이티브가 같은 카드의 감시를 다시 걸고, iOS 는
+      // 현재 토큰을 곧바로 다시 준다(#395)
+      final service = _FakeService();
+      final repo = _FakeRepository();
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: repo,
+      );
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      service.listener!('122', 'same');
+      service.listener!('122', 'same');
+      service.listener!('122', 'same');
+      await settle();
+
+      expect(repo.registered.map((r) => r.token), ['same']);
+    });
+
+    test('올리기가 실패하면 같은 토큰도 다음에 다시 올린다', () async {
+      final service = _FakeService();
+      final failing = _FakeRepository(failRegister: true);
+      final c = containerWith(
+        [card(id: '122', start: '2026-09-22')],
+        service,
+        repository: failing,
+      );
+      await c.read(tripActivityControllerProvider).sync(now: now);
+
+      service.listener!('122', 'tok');
+      await settle();
+      service.listener!('122', 'tok');
+      await settle();
+
+      // 실패는 기록되지 않지만 두 번 모두 시도했다 — 기억이 남아 막히지 않는다
+      expect(failing.registerAttempts, 2);
     });
 
     test('세션이 끝나면 등록을 지우고 내린다', () async {
@@ -809,11 +868,15 @@ class _FakeRepository implements LiveActivityRepository {
   final registered = <({String courseId, String token})>[];
   final unregistered = <String>[];
 
+  /// 등록을 시도한 횟수 — 실패해도 센다
+  int registerAttempts = 0;
+
   @override
   Future<void> register({
     required String courseId,
     required String token,
   }) async {
+    registerAttempts++;
     if (failRegister) throw Exception('등록 실패');
     registered.add((courseId: courseId, token: token));
   }
