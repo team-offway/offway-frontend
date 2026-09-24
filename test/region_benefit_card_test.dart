@@ -223,4 +223,38 @@ void main() {
     expect(fetched, isTrue);
     expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
   });
+
+  testWidgets('받아 둔 정책이 있으면 서버를 부르지 않고 바로 채운다', (tester) async {
+    // 코스 확정의 서버 혜택 목록에는 이름이 없다 — 카드마다 서버를 부르면
+    // 이름·설명이 늦게 떠 카드 높이가 한 번 뛴다
+    var serverCalls = 0;
+    final container = ProviderContainer(
+      overrides: [
+        allPoliciesProvider.overrideWith((ref) async => [policy]),
+        policyDetailProvider(1).overrideWith((ref) async {
+          serverCalls++;
+          return policy;
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(allPoliciesProvider.future);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(
+            body: RegionBenefitCard(
+              benefit: RegionBenefit(text: '여행경비 50% 환급', policyId: 1),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('지역사랑 휴가지원(반값여행)'), findsOneWidget);
+    expect(serverCalls, 0);
+  });
 }
