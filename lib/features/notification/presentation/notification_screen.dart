@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -18,6 +17,7 @@ import '../domain/app_notification.dart';
 import '../../../core/utils/bottom_inset.dart';
 import '../../../core/utils/log.dart';
 import '../application/notification_permission_provider.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// 알림 목록 — 홈 상단 종 아이콘에서 들어온다.
 class NotificationScreen extends ConsumerStatefulWidget {
@@ -140,57 +140,40 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
         enabled && feed != null && feed.notifications.isNotEmpty;
     final canMarkAll = showMarkAll && feed.unreadCount > 0 && !_markingAll;
 
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '알림',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
+    return AppTitleBar(
+      title: '알림',
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.home),
+      trailing: [
+        if (showMarkAll)
           Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
-            ),
-          ),
-          if (showMarkAll)
-            Positioned(
-              right: 8,
-              top: 0,
-              bottom: 0,
-              child: Semantics(
-                button: true,
-                enabled: canMarkAll,
-                child: GestureDetector(
-                  onTap: canMarkAll ? _markAllRead : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    // 글자만 누르기엔 작다 — 좌우로 넉넉히 받는다
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Center(
-                      child: Text(
-                        '모두 읽음',
-                        style: AppTypography.label1NormalMedium.copyWith(
-                          color: canMarkAll
-                              ? AppColors.labelNeutral
-                              : AppColors.labelDisable,
-                        ),
+            right: 8,
+            top: 0,
+            bottom: 0,
+            child: Semantics(
+              button: true,
+              enabled: canMarkAll,
+              child: GestureDetector(
+                onTap: canMarkAll ? _markAllRead : null,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  // 글자만 누르기엔 작다 — 좌우로 넉넉히 받는다
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Center(
+                    child: Text(
+                      '모두 읽음',
+                      style: AppTypography.label1NormalMedium.copyWith(
+                        color: canMarkAll
+                            ? AppColors.labelNeutral
+                            : AppColors.labelDisable,
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 

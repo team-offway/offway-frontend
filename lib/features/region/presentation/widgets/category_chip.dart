@@ -96,3 +96,46 @@ List<Map<String, dynamic>> filterCardsByCategory(
     return (counts?[selected['label']] as int? ?? 0) > 0;
   }).toList();
 }
+
+/// 카테고리 칩 한 줄 — 홈 '이번달 추천 여행지'와 추천 여행지 목록이 같이 쓴다.
+///
+/// 구성·순서는 서버가 정한다([filters]). 비어 오면 기본 구성으로 자리를
+/// 지킨다. '전체'는 아무것도 안 고른 상태([selected]가 null)도 켜진 것으로
+/// 본다. 줄 여백은 화면마다 달라 [padding]으로 받는다.
+class CategoryChipRow extends StatelessWidget {
+  const CategoryChipRow({
+    super.key,
+    required this.filters,
+    required this.selected,
+    required this.onSelect,
+    required this.padding,
+  });
+
+  final List<Map<String, dynamic>>? filters;
+  final Map<String, dynamic>? selected;
+  final void Function(Map<String, dynamic> filter) onSelect;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final given = filters ?? defaultCategoryFilters;
+    final chips = given.isEmpty ? defaultCategoryFilters : given;
+    return Padding(
+      padding: padding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          for (final filter in chips)
+            CategoryChip(
+              label: filter['label'] as String,
+              iconAsset: categoryIcons[filter['key']] ?? categoryIcons['ALL']!,
+              selected: filter['key'] == 'ALL'
+                  ? selected == null || selected!['key'] == 'ALL'
+                  : selected?['key'] == filter['key'],
+              onTap: () => onSelect(filter),
+            ),
+        ],
+      ),
+    );
+  }
+}

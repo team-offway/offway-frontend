@@ -11,7 +11,6 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/korean_josa.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/place_thumbnail.dart';
@@ -19,6 +18,9 @@ import '../application/course_wizard_provider.dart';
 import '../data/region_polygons.dart';
 import '../domain/random_map.dart';
 import '../application/wizard_recommend_provider.dart';
+import '../../../core/widgets/app_title_bar.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// 랜덤 지역 선택 — 핀을 던져 후보지역 중 한 곳을 고른다.
 ///
@@ -284,6 +286,8 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(wizardCandidatesProvider, retryFailureToast(context));
     _polygons = ref.watch(regionPolygonsProvider).value;
 
     return Scaffold(
@@ -297,16 +301,11 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
             // 시안: 상단바(98) 아래 23.5를 희게 두고 바다가 시작한다
             const SizedBox(height: 23.5),
             Expanded(
-              child: candidates.when(
+              child: candidates.whenRetryable(
                 loading: () => const AppLoadingView(title: '지도를 준비하고 있어요'),
-                error: (e, _) => Center(
-                  child: Text(
-                    e is ApiException ? e.detail : '후보지역을 불러오지 못했어요',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
+                error: (e, _) => AppErrorView(
+                  description: e is ApiException ? e.detail : '후보지역을 불러오지 못했어요',
+                  onRetry: () => ref.invalidate(wizardRecommendProvider),
                 ),
                 data: (list) => _buildBoard(_chipsFor(list)),
               ),
@@ -318,36 +317,25 @@ class _RandomRegionScreenState extends ConsumerState<RandomRegionScreen>
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '랜덤 지역 선택',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
+    return AppTitleBar(
+      title: '랜덤 지역 선택',
+      onBack: () => context.pop(),
+      trailing: [
+        Positioned(
+          right: 6,
+          child: AppIconButton(
+            icon: Icons.info_outline,
+            // 시안은 속이 빈 원형 i(Icon/Normal/Circle Info) — 기존
+            // ic_circle_info는 속이 찬 변형이라 따로 둔다
+            asset: 'assets/icons/ic_circle_info_outline.svg',
+            // 에셋에 박혀 있던 61%를 토큰으로 옮겼다 — 농도는 그대로다
+            tintAsset: true,
+            color: AppColors.labelAlternative,
+            semanticLabel: '어떤 지역이 나오는지 안내',
+            onTap: _showInfo,
           ),
-          Positioned(left: 6, child: AppBackButton(onTap: () => context.pop())),
-          Positioned(
-            right: 6,
-            child: AppIconButton(
-              icon: Icons.info_outline,
-              // 시안은 속이 빈 원형 i(Icon/Normal/Circle Info) — 기존
-              // ic_circle_info는 속이 찬 변형이라 따로 둔다
-              asset: 'assets/icons/ic_circle_info_outline.svg',
-              // 에셋에 박혀 있던 61%를 토큰으로 옮겼다 — 농도는 그대로다
-              tintAsset: true,
-              color: AppColors.labelAlternative,
-              semanticLabel: '어떤 지역이 나오는지 안내',
-              onTap: _showInfo,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

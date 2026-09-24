@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -19,6 +18,7 @@ import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
 import 'widgets/sparkle.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// 내 연차 — 잔여 일수와 사용 내역을 한 화면에 모은다.
 /// 홈의 '남은 연차 일수' 줄에서 들어온다.
@@ -205,29 +205,10 @@ class _MyLeaveScreenState extends ConsumerState<MyLeaveScreen>
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '내 연차',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
-            ),
-          ),
-        ],
-      ),
+    return AppTitleBar(
+      title: '내 연차',
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.home),
     );
   }
 }

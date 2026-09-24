@@ -437,29 +437,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildCategoryRow() {
-    // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
-    final filters =
-        ref.watch(homeSnapshotProvider).value?.filters ??
-        defaultCategoryFilters;
-    final chips = filters.isEmpty ? defaultCategoryFilters : filters;
-    return Padding(
+    return CategoryChipRow(
+      // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
+      filters: ref.watch(homeSnapshotProvider).value?.filters,
+      selected: _selected,
+      onSelect: (filter) =>
+          setState(() => _selected = Map<String, dynamic>.from(filter)),
       // 가이드는 칩 줄만 21에서 시작해 화면 폭에 균등 배치된다
       padding: const EdgeInsets.symmetric(horizontal: 21),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          for (final filter in chips)
-            CategoryChip(
-              label: filter['label'] as String,
-              iconAsset: categoryIcons[filter['key']] ?? categoryIcons['ALL']!,
-              selected: filter['key'] == 'ALL'
-                  ? _selected == null || _selected!['key'] == 'ALL'
-                  : _selected?['key'] == filter['key'],
-              onTap: () =>
-                  setState(() => _selected = Map<String, dynamic>.from(filter)),
-            ),
-        ],
-      ),
     );
   }
 

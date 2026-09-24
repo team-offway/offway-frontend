@@ -13,6 +13,8 @@ import '../../leave/data/leave_usages_provider.dart';
 import '../data/course_repository.dart';
 import '../application/course_providers.dart';
 import '../../leave/data/consumed_leave_provider.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// 저장한 코스의 여행 날짜 수정 (미확정 코스의 날짜 지정도 겸한다).
 ///
@@ -38,20 +40,21 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(savedCourseDetailProvider(widget.savedId));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(
+      savedCourseDetailProvider(widget.savedId),
+      retryFailureToast(context),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       body: SafeArea(
-        child: detail.when(
+        child: detail.whenRetryable(
           loading: () => const AppCircularLoadingView(),
-          error: (e, _) => Center(
-            child: Text(
-              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
-              textAlign: TextAlign.center,
-              style: AppTypography.label1NormalMedium.copyWith(
-                color: AppColors.labelAlternative,
-              ),
-            ),
+          error: (e, _) => AppErrorView(
+            description: e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+            onRetry: () =>
+                ref.invalidate(savedCourseDetailProvider(widget.savedId)),
           ),
           data: (data) => data == null
               ? const Center(child: Text('저장한 코스를 찾을 수 없어요'))

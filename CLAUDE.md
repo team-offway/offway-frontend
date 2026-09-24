@@ -94,6 +94,10 @@ grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/pr
 | 바텀시트 | `showAppBottomSheet` | `showModalBottomSheet` 직접 호출 |
 | 시트 제목 바 | `AppSheetTitleBar` | `height: 56` + `Stack` 직접 조립 |
 | 닫기 버튼 | `AppIconButton.close` | `Icons.close` 직접 사용 |
+| 화면 상단바(가운데 제목+뒤로가기) | `AppTitleBar` | `SizedBox(44)` + `Stack` + `Positioned(AppBackButton)` 직접 조립 |
+| 상단바 SVG 아이콘 버튼 | `AppSvgIconButton` | 44×44 `GestureDetector` + `SvgPicture` 직접 조립 |
+| 화면을 못 그릴 때 오류 | `AppErrorView` (+ `whenRetryable`·`retryFailureToast`) | 재시도 없는 `Center(Text(e.detail))` |
+| 카테고리 칩 줄 | `CategoryChipRow` | `CategoryChip` 을 `Row` 로 직접 나열 |
 
 ### 시안 치수 실측
 
