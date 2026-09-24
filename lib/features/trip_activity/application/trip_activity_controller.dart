@@ -91,11 +91,15 @@ class TripActivityController with WidgetsBindingObserver {
     // 켤 때까지 서버가 카드를 못 띄운다(core #585)
     _registerPushToStart();
     // 목록이 새로 읽힐 때마다 맞춘다. 로딩 중은 건너뛴다 — 값이 오면 온다.
-    // sync() 는 읽기만 하고 invalidate 하지 않으므로 돌지 않는다
+    // sync() 는 읽기만 하고 invalidate 하지 않으므로 돌지 않는다.
+    //
+    // **처음 맞추기도 이 구독이 한다**(fireImmediately). 예전에는 바로 한 번
+    // 부르고 목록이 로딩 → 데이터로 바뀔 때 또 불러, 앱을 켤 때마다 위젯용
+    // 코스 상세 조회와 잠금화면 띄우기가 두 번씩 나갔다(#395). 이미 받아 둔
+    // 목록이면 지금 한 번, 받는 중이면 값이 올 때 한 번이다
     _courses = _ref.listen(savedCoursesProvider('UPCOMING'), (_, next) {
       if (!next.isLoading) syncInBackground();
-    });
-    syncInBackground();
+    }, fireImmediately: true);
   }
 
   /// 세션이 끝났다 — 옵저버를 떼고 **잠금화면도 내린다**.
@@ -300,13 +304,25 @@ class TripActivityController with WidgetsBindingObserver {
       logDebug('내린 코스($courseId)의 토큰은 올리지 않는다');
       return;
     }
+    // **방금 올린 것과 같으면 다시 보내지 않는다**(#395). 앱을 앞으로 낼
+    // 때마다 네이티브가 같은 카드의 토큰 감시를 다시 걸고, iOS 는 그때 현재
+    // 토큰을 곧바로 다시 준다 — 기억이 없으면 복귀할 때마다 같은 PUT 이
+    // 나갔다. 실패하면 기억을 지워 다음에 다시 올린다
+    final key = '$courseId|$token';
+    if (_registeredLiveToken == key) return;
+    _registeredLiveToken = key;
     _ref
         .read(liveActivityRepositoryProvider)
         .register(courseId: courseId, token: token)
         .catchError((Object e) {
+          if (_registeredLiveToken == key) _registeredLiveToken = null;
           logDebug('잠금화면 갱신 토큰을 올리지 못했다: $e');
         });
   }
+
+  /// 마지막으로 서버에 올린 카드 토큰 — `코스|토큰`. 같은 값을 되풀이해
+  /// 올리지 않게 한다. 카드를 내리면(등록을 지우면) 비운다
+  String? _registeredLiveToken;
 
   /// 네이티브가 **기기**의 push-to-start 토큰을 올려 보냈다 (core #585).
   ///
@@ -406,6 +422,8 @@ class TripActivityController with WidgetsBindingObserver {
     final id = _liveCourseId;
     if (id == null) return;
     _liveCourseId = null;
+    // 등록을 지웠다 — 같은 코스를 다시 띄우면 토큰을 다시 올려야 한다
+    _registeredLiveToken = null;
     try {
       await _ref.read(liveActivityRepositoryProvider).unregister(id);
     } on Object catch (e) {
