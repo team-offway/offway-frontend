@@ -645,7 +645,15 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
       child: SizedBox(
         // 가이드: 접힘 198 · 펼침 452
         height: _mapExpanded ? 452 : 198,
-        child: CourseMap(places: places, dayKey: _selectedDay),
+        child: CourseMap(
+          places: places,
+          dayKey: _selectedDay,
+          // 펼친 지도는 한 번 눌러 접는다 — ▲ 버튼까지 내려가지 않아도 된다.
+          // 끌기·확대는 탭이 아니라 그대로 지도를 움직인다
+          onTap: _mapExpanded
+              ? () => setState(() => _mapExpanded = false)
+              : null,
+        ),
       ),
     );
     // 펼친 상태에서는 지도를 마음껏 옮기고 확대한다 — 그러라고 펼친 것이다.
