@@ -182,12 +182,22 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen>
   /// 목록을 다시 읽어 하늘색 바탕을 걷고, 홈 종 아이콘의 점도 함께 끈다
   Future<void> _markAllRead() async {
     setState(() => _markingAll = true);
+    // 응답 전에 화면을 닫아도 홈 종 아이콘의 점은 꺼야 한다 — 닫힌 뒤에는
+    // `ref`를 쓸 수 없으니 기다리기 전에 쥐어 둔다
+    final repository = ref.read(notificationRepositoryProvider);
+    final badge = ref.read(hasUnreadNotificationsProvider.notifier);
     try {
-      final unread = await ref
-          .read(notificationRepositoryProvider)
-          .markAllRead();
-      ref.read(hasUnreadNotificationsProvider.notifier).setUnreadCount(unread);
+      final unread = await repository.markAllRead();
+      badge.setUnreadCount(unread);
+      if (!mounted) return;
+      // 목록을 다시 읽을 때까지 버튼을 눌린 채로 둔다 — 먼저 풀면 옛 목록의
+      // 안읽음 수로 버튼이 잠깐 다시 켜진다
       ref.invalidate(notificationFeedProvider);
+      try {
+        await ref.read(notificationFeedProvider.future);
+      } catch (_) {
+        // 읽음 처리는 이미 됐다 — 목록 조회 실패는 목록 화면이 알린다
+      }
       if (mounted) {
         showAppToast(context, '모든 알림을 읽음 처리했어요.', kind: AppToastKind.success);
       }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +14,14 @@ import 'package:offway/features/notification/application/notification_permission
 
 /// 알림 화면 오른쪽 위 '모두 읽음' — 안 읽은 알림을 한 번에 읽음으로 바꾼다.
 class _FakeRepository extends NotificationRepository {
-  _FakeRepository({required this.unread, this.fail = false}) : super(Dio());
+  _FakeRepository({required this.unread, this.fail = false, this.gate})
+    : super(Dio());
 
   int unread;
   final bool fail;
+
+  /// 주면 응답을 이것이 끝날 때까지 붙잡는다
+  final Completer<void>? gate;
   int markAllCalls = 0;
 
   @override
@@ -39,6 +45,7 @@ class _FakeRepository extends NotificationRepository {
   @override
   Future<int> markAllRead() async {
     markAllCalls++;
+    await gate?.future;
     if (fail) {
       throw const ApiException(status: 500, code: 'X', detail: '서버 오류');
     }
@@ -104,5 +111,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('읽음 처리하지 못했어요. 잠시 후 다시 시도해 주세요'), findsOneWidget);
+  });
+
+  testWidgets('응답 전에 화면을 닫아도 홈 종 아이콘의 점은 꺼진다', (tester) async {
+    final gate = Completer<void>();
+    final repo = _FakeRepository(unread: 2, gate: gate);
+    final container = ProviderContainer(
+      overrides: [
+        notificationRepositoryProvider.overrideWithValue(repo),
+        notificationEnabledProvider.overrideWith((ref) => true),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const NotificationScreen(),
+                ),
+              ),
+              child: const Text('열기'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    expect(container.read(hasUnreadNotificationsProvider), isTrue);
+
+    await tester.tap(find.text('모두 읽음'));
+    await tester.pump();
+    // 응답이 오기 전에 뒤로 나간다
+    Navigator.of(tester.element(find.byType(NotificationScreen))).pop();
+    await tester.pumpAndSettle();
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(container.read(hasUnreadNotificationsProvider), isFalse);
   });
 }

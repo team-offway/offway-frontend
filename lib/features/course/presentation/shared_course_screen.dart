@@ -268,9 +268,10 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
     final end = DateTime.tryParse(days.last['date'] as String? ?? '');
     if (start == null || end == null) return const SizedBox.shrink();
 
-    final consumed = ref
-        .watch(tripConsumedLeaveProvider((start: start, end: end)))
-        .value;
+    final consumedAsync = ref.watch(
+      tripConsumedLeaveProvider((start: start, end: end)),
+    );
+    final consumed = consumedAsync.value;
     // 끝난 여행엔 뱃지를 달지 않는다 — 받은 사람은 다녀왔는지(visited)를
     // 몰라 '여행완료'·'미방문'을 가를 수 없다. 웹 공유 페이지와 같다
     final dDay = tripDDayLabel(
@@ -278,6 +279,12 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
       end,
       today: DateUtils.dateOnly(DateTime.now()),
     );
+
+    // 끝난 여행은 D-day 뱃지가 없어 연차 뱃지 하나만 남는다. 연차를 못
+    // 받았으면 줄째 접는다 — 빈 줄이 여백(16)만큼 자리를 차지하면 안 된다
+    if (consumed == null && dDay == null && !consumedAsync.isLoading) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -291,6 +298,17 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
               // 내 코스 배지와 같은 것 — 시계는 글자와 같은 농도다
               iconAsset: 'assets/icons/ic_clock_filled.svg',
               label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
+            )
+          else if (dDay == null)
+            // 연차 값이 오는 동안 자리를 잡아 둔다 — 비워 두면 값이 올 때
+            // 아래 지도·목록이 뱃지 높이만큼 한 번 밀린다
+            const Opacity(
+              opacity: 0,
+              child: CourseInfoBadge(
+                textStyle: AppTypography.label1NormalBold,
+                iconAsset: 'assets/icons/ic_clock_filled.svg',
+                label: '사용 연차 일수 0일',
+              ),
             ),
           if (dDay != null)
             CourseInfoBadge(
