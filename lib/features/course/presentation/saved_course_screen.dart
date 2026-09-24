@@ -536,6 +536,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     final start = DateTime.tryParse(saved['startDate'] as String? ?? '');
     final end = DateTime.tryParse(saved['endDate'] as String? ?? '');
     if (start == null || end == null) return null;
+    // 미방문 여행은 '미방문' 옆에 연차를 달지 않는다 — 화면과 같은 규칙
+    final visited = saved['leaveDeducted'] as bool? ?? false;
+    if (!visited &&
+        DateUtils.dateOnly(end).isBefore(DateUtils.dateOnly(DateTime.now()))) {
+      return null;
+    }
     return ref.read(tripConsumedLeaveProvider((start: start, end: end))).value;
   }
 
@@ -587,9 +593,19 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     // 공유 이미지 경로(`_consumedLeave`)가 쓰는 규칙과 같다.
     //
     // 없을 때만 서버가 평일−공휴일로 계산 (실패 시 provider 가 로컬 근사로 폴백)
-    final consumed =
-        consumedLeaveDays ??
-        ref.watch(tripConsumedLeaveProvider((start: start, end: end))).value;
+    //
+    // **미방문 여행에는 붙이지 않는다.** 날짜는 지났는데 다녀왔다고 답하지
+    // 않아 연차를 깎지 않은 여행이다 — '미방문' 옆에 '사용 연차 N일' 이 뜨면
+    // 연차를 쓴 것처럼 읽힌다
+    final unvisited =
+        !visited &&
+        DateUtils.dateOnly(end).isBefore(DateUtils.dateOnly(DateTime.now()));
+    final consumed = unvisited
+        ? null
+        : consumedLeaveDays ??
+              ref
+                  .watch(tripConsumedLeaveProvider((start: start, end: end)))
+                  .value;
     return Row(
       children: [
         if (consumed != null) ...[
