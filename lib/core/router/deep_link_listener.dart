@@ -8,6 +8,7 @@ import '../../features/course_wizard/application/course_wizard_provider.dart';
 import 'app_router.dart';
 import 'pending_deep_link.dart';
 import 'widget_deep_link.dart';
+import '../storage/secure_storage.dart';
 
 /// 공유 링크로 앱이 열렸을 때 그 코스 화면으로 보낸다.
 ///
@@ -49,13 +50,16 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
     _subscription = _appLinks.uriLinkStream.listen(_handle, onError: (_) {});
   }
 
-  void _handle(Uri uri) {
+  Future<void> _handle(Uri uri) async {
     // 위젯을 눌러 열렸다 — 공유 링크와 다른 스킴이라 먼저 가른다.
     //
-    // 홈이 스플래시의 다음 화면이라는 것이 곧 로그인돼 있다는 뜻이다(main 이
-    // 토큰을 보고 정한다). 로그인 전이면 푸는 쪽이 null 을 주어 여기를 지나
-    // 간다 — 스플래시가 정한 온보딩에 그대로 두기 위해서다
-    final signedIn = ref.read(postSplashRouteProvider) == AppRoutes.home;
+    // **로그인 여부는 누른 그 순간의 토큰으로 본다.** 예전에는 앱을 켤 때
+    // 정한 첫 화면(홈이면 로그인)으로 봐서, 켠 뒤 세션이 만료돼 로그인 화면에
+    // 있는데도 위젯을 누르면 로그인을 건너뛰어 홈에 앞사람의 이름·연차가
+    // 보였다. 반대로 로그인 전에 켰다가 로그인한 사람은 위젯을 눌러도 로그인
+    // 화면으로 갔다. 세션 만료·로그아웃은 토큰을 지우므로 이 판단이 맞는다
+    final signedIn = await hasStoredSession(ref.read(secureStorageProvider));
+    if (!mounted) return;
     final widgetRoute = widgetDeepLinkRoute(uri, signedIn: signedIn);
     if (widgetRoute != null) {
       // **스택을 바꾼다(go).** 위저드 중간에 위젯을 누르면 push 는 옛 위저드
@@ -113,4 +117,14 @@ class _DeepLinkListenerState extends ConsumerState<DeepLinkListener> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// 지금 로그인돼 있는가 — 저장된 토큰으로 본다(앱 시작 판단 `main.dart` 와
+/// 같은 기준). 못 읽으면 로그인 전으로 본다
+Future<bool> hasStoredSession(TokenStorage storage) async {
+  try {
+    return await storage.accessToken != null;
+  } on Exception {
+    return false;
+  }
 }
