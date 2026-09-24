@@ -15,7 +15,7 @@
 | 대상 | 내용 |
 |---|---|
 | **백엔드** | [github.com/team-offway/core](https://github.com/team-offway/core) — Java Spring, 기본 브랜치 **`dev`**. 로컬 기본 주소 `http://localhost:8080` |
-| **인증** | 소셜 로그인(카카오·Apple) 액세스 토큰을 **JSON 바디**로 `POST /api/v1/auth/callback/{provider}` 전달 → 서버가 우리 JWT 발급 |
+| **인증** | 소셜 로그인(카카오·Apple·구글) 액세스 토큰을 **JSON 바디**로 `POST /api/v1/auth/callback/{provider}` 전달 → 서버가 우리 JWT 발급 |
 | **응답 규격** | 모든 API가 공통 래퍼 `{status, data, detail, code}` 로 감싸짐 — `data`를 꺼내 사용 |
 | **지도** | 네이버 지도 SDK (Dynamic Map). 키 취급은 아래 [주의사항](#주의사항) 참고 |
 
@@ -41,21 +41,34 @@ lib/
 ├── app/app.dart               # 루트 위젯 (MaterialApp.router)
 ├── core/                      # 전역 공통 모듈
 │   ├── config/app_config.dart     # API base URL·공개 키 (--dart-define 주입)
-│   ├── network/dio_client.dart    # Dio 프로바이더 + JWT Auth 인터셉터
+│   ├── constants/                 # 여행 규칙 상수 (kMaxTripSpanDays 등)
+│   ├── network/                   # Dio 프로바이더·JWT Auth 인터셉터·ApiEnvelope(guard)·자동 재시도 규칙
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# 토큰 Keychain 저장소
-│   └── theme/app_theme.dart       # Material 3 테마
+│   ├── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
+│   ├── utils/                     # 날짜 표기(date_format)·로그(logDebug) 등 순수 함수
+│   └── widgets/                   # 공통 위젯 — 아래 표 참고
 ├── mock/mock_data_source.dart # 테스트 픽스처 로더 (assets/mock/*.json) — 앱 코드는 안 씀
 └── features/
-    ├── auth/                  # O-01 로그인 (카카오·Apple)
+    ├── splash/                # 스플래시 · 첫 화면 판정
+    ├── auth/                  # O-01 로그인 (카카오·Apple·구글)
     ├── onboarding/            # O-02 잔여연차 입력
     ├── home/                  # O-03 홈
-    ├── course_wizard/         # O-04~O-08 코스 추천 위저드
-    └── course/                # O-09 코스 확정 (네이버 지도)
+    ├── region/                # 지역 상세 · 추천 여행지 목록
+    ├── course_wizard/         # O-04~O-08 코스 추천 위저드 (출발지·랜덤 지역 포함)
+    ├── course/                # O-09 코스 확정 (네이버 지도) · 내 코스 · 공유
+    ├── leave/                 # 내 연차 · 사용 내역 · 연차 쓰기 좋은 날
+    ├── policy/                # 여행 혜택(정부·지자체 정책) 뱃지·카드·시트
+    ├── notification/          # 알림 목록 · 푸시
+    ├── trip_activity/         # 잠금화면·위젯·다이나믹 아일랜드 연동
+    ├── update/                # 앱 업데이트 안내
+    └── my/                    # 마이 · 회원탈퇴
 ```
 
 - 상태관리: flutter_riverpod 3 / 라우팅: go_router / HTTP: dio
-- 새 기능은 `features/<기능명>/` 아래 data·domain·presentation 구조로 추가
+- 새 기능은 `features/<기능명>/` 아래 `data`(API·repository) · `domain`(모델) · `application`(provider·상태) · `presentation`(화면) 구조로 추가
+  - **provider 는 화면 파일에 두지 않는다** — `application/`(또는 `data/`)에 둔다. 다른 기능이 화면 파일을 import 하게 되고 순환이 생긴다(#366)
+  - repository 메서드는 `ApiEnvelope.guard(() async { … })` 로 감싸 Dio 예외를 `ApiException` 으로 바꾼다
 - **위저드 상태**: `course_wizard/application/course_wizard_provider.dart`의 `CourseWizardDraft` 하나에 단계별 조건(날짜·기간스타일·이동수단·밀도)을 누적한다
 
 ## 작업 방식
@@ -97,7 +110,7 @@ grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/pr
 | 화면 상단바(가운데 제목+뒤로가기) | `AppTitleBar` | `SizedBox(44)` + `Stack` + `Positioned(AppBackButton)` 직접 조립 |
 | 상단바 SVG 아이콘 버튼 | `AppSvgIconButton` | 44×44 `GestureDetector` + `SvgPicture` 직접 조립 |
 | 화면을 못 그릴 때 오류 | `AppErrorView` (+ `whenRetryable`·`retryFailureToast`) | 재시도 없는 `Center(Text(e.detail))` |
-| 카테고리 칩 줄 | `CategoryChipRow` | `CategoryChip` 을 `Row` 로 직접 나열 |
+| 카테고리 칩 줄 | `CategoryChipRow` (`features/region/presentation/widgets/category_chip.dart`) | `CategoryChip` 을 `Row` 로 직접 나열 |
 
 ### 시안 치수 실측
 
@@ -134,6 +147,6 @@ grep -n "showDialog\|AlertDialog\|showModalBottomSheet" lib/features/<기능>/pr
   - **예외** — 아래 두 조건을 **모두** 만족하는 값만 커밋한다. 하나라도 불확실하면 커밋하지 않고 `--dart-define`으로 주입한다
     1. 제공자가 **클라이언트에 내장되는 공개 식별자**로 문서에 명시한 값일 것 (앱 바이너리에서 추출 가능하므로 은닉이 성립하지 않는 값)
     2. 제공자 콘솔에서 **번들 ID(`com.nth.offway`) 제한이 걸려 있어** 타 앱에서 재사용할 수 없을 것
-  - 현재 예외로 커밋된 값: 네이버 지도 Client ID, 카카오 **네이티브** 앱 키 (둘 다 위 조건 충족 확인)
+  - 현재 예외로 커밋된 값: 네이버 지도 Client ID, 카카오 **네이티브** 앱 키, 구글 `REVERSED_CLIENT_ID`(`ios/Flutter/AppKeys.xcconfig`) (모두 위 조건 충족 확인)
 - **카카오 앱 키를 바꿀 때**는 `ios/Flutter/AppKeys.xcconfig`(URL scheme)와 `AppConfig`(SDK 초기화) **두 곳을 함께** 수정해야 한다. 한쪽만 바꾸면 카카오톡에서 앱으로 복귀하지 못한다
-- 위젯 테스트는 실제 SDK를 호출하지 않도록 **stub 상태인 버튼**으로 플로우에 진입한다 (현재 구글 버튼)
+- 위젯 테스트는 실제 SDK를 호출하지 않는다 — 로그인은 `googleAuthServiceProvider` 를 가짜 서비스로 바꿔 끼워(`test/widget_test.dart` 의 `_FakeGoogleAuthService`) 구글 버튼으로 플로우에 진입한다

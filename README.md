@@ -122,7 +122,7 @@ Offway 는 **남은 연차**에 맞춰 89개 지역의 여행 코스를 완성�
 
 ## 앱 구조
 
-기능(도메인) 단위로 나눕니다. 각 기능은 `data`(API·repository) / `domain`(모델) / `presentation`(화면·상태) 세 층입니다. 모델은 코드 생성 없이 `Map<String, dynamic>` 기반입니다.
+기능(도메인) 단위로 나눕니다. 각 기능은 `data`(API·repository) / `domain`(모델) / `application`(provider·상태) / `presentation`(화면) 층입니다. provider 는 화면 파일에 두지 않아, 기능끼리 화면을 서로 import 하지 않습니다. 모델은 코드 생성 없이 `Map<String, dynamic>` 기반입니다.
 
 ```text
 lib/
@@ -130,25 +130,27 @@ lib/
 ├── app/app.dart               # 루트 위젯 (MaterialApp.router)
 ├── core/                      # 앱 전역 공통 모듈
 │   ├── config/app_config.dart     # API base URL·공개 키 (--dart-define 주입)
+│   ├── constants/                 # 여행 규칙 상수 (최대 2박3일 등)
 │   ├── network/dio_client.dart    # Dio 프로바이더 + Auth 인터셉터
 │   ├── router/app_router.dart     # GoRouter 라우트 정의
 │   ├── storage/secure_storage.dart# JWT 토큰 Keychain 저장소
 │   ├── theme/                     # Material 3 테마 + 디자인 토큰(tokens/)
-│   └── utils/bottom_inset.dart    # 홈 인디케이터 높이 — SafeArea 하단 규칙
+│   ├── utils/                     # 날짜 표기·홈 인디케이터 높이 등 순수 함수
+│   └── widgets/                   # 공통 위젯 (상단바·오류 화면·바텀시트·토스트 등)
 ├── mock/                      # 테스트 픽스처 로더 (앱 코드에서는 쓰지 않음)
 └── features/                  # 기능(도메인) 단위 모듈
     ├── splash/                    # 스플래시 · 첫 화면 판정
     ├── auth/                      # 로그인 (카카오·Apple·구글)
     ├── onboarding/                # 잔여연차 입력
     ├── home/                      # 홈
-    ├── region/                    # 지역 상세
+    ├── region/                    # 지역 상세 · 추천 여행지 목록
     ├── course_wizard/             # 코스 추천 위저드
     ├── course/                    # 코스 확정·내 코스·공유
     ├── leave/                     # 내 연차·사용 내역
     ├── notification/              # 알림
     ├── trip_activity/             # 잠금화면·다이나믹 아일랜드 여행 D-day
     ├── update/                    # 앱 업데이트 안내
-    ├── policy/                    # 약관·방침
+    ├── policy/                    # 여행 혜택(정부·지자체 정책)
     └── my/                        # 마이
 
 ios/TripActivity/              # Live Activity 확장 (Swift) — 카드 그리기·문구 조립
