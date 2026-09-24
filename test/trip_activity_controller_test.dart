@@ -144,6 +144,9 @@ void main() {
     _FakeCourseRepository? courses,
   }) {
     final c = ProviderContainer(
+      // 실패를 기다리는 테스트가 있다 — 기본 자동 재시도(최대 10번)가 돌면
+      // 결과가 늦게 와 시간을 넘긴다. 앱은 전역 규칙(`providerRetry`)을 쓴다
+      retry: (_, _) => null,
       overrides: [
         tripActivityServiceProvider.overrideWithValue(service),
         liveActivityRepositoryProvider.overrideWithValue(
@@ -192,6 +195,9 @@ void main() {
     // 두면 지난 여행 D-day 가 잠금화면에 무기한 남는다
     final service = _FakeService();
     final c = ProviderContainer(
+      // 실패를 기다리는 테스트가 있다 — 기본 자동 재시도(최대 10번)가 돌면
+      // 결과가 늦게 와 시간을 넘긴다. 앱은 전역 규칙(`providerRetry`)을 쓴다
+      retry: (_, _) => null,
       overrides: [
         tripActivityServiceProvider.overrideWithValue(service),
         // Future.error 로 준다 — `async => throw` 는 로딩 상태로 남아
@@ -648,6 +654,7 @@ void main() {
       final service = _FakeService(available: false, widgetAvailable: false);
       var reads = 0;
       final c = ProviderContainer(
+        retry: (_, _) => null,
         overrides: [
           tripActivityServiceProvider.overrideWithValue(service),
           liveActivityRepositoryProvider.overrideWithValue(_FakeRepository()),
@@ -682,6 +689,7 @@ void main() {
       // 비우면 잠깐의 통신 실패가 "예정된 여행이 없어요" 로 보인다
       final service = _FakeService();
       final c = ProviderContainer(
+        retry: (_, _) => null,
         overrides: [
           tripActivityServiceProvider.overrideWithValue(service),
           savedCoursesProvider('UPCOMING').overrideWith(
