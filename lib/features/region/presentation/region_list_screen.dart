@@ -78,9 +78,18 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
     if (remaining < 400) _load();
   }
 
-  /// [reset]이면 칩을 바꿔 처음부터 다시 받는다
+  /// 칩을 바꾸거나 다시 시도할 때마다 올린다. 늦게 온 옛 응답은 이 값이
+  /// 달라 버린다 — 불러오는 도중에 칩을 바꾸면 새 칩이 켜졌는데 목록은 옛
+  /// 카테고리로 채워졌다
+  int _generation = 0;
+
+  /// [reset]이면 칩을 바꿔 처음부터 다시 받는다.
+  ///
+  /// 처음부터 받을 때는 **불러오는 중이어도 새로 시작한다**(옛 요청은 위
+  /// [_generation]으로 버린다). 다음 장 읽기만 중복을 막는다
   Future<void> _load({bool reset = false}) async {
-    if (_loading) return;
+    if (_loading && !reset) return;
+    final generation = reset ? ++_generation : _generation;
     setState(() {
       _loading = true;
       _error = null;
@@ -94,7 +103,7 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
       final page = await ref
           .read(regionListRepositoryProvider)
           .fetch(category: _selected?['key'] as String?, page: _page);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _regions.addAll(page.regions);
         _hasMore = page.hasMore;
@@ -102,11 +111,13 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
         _page++;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       // 이미 받아둔 페이지는 남긴다 — 더 불러오다 실패했다고 목록을 비우지 않는다
       setState(() => _error = e);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
     }
   }
 
