@@ -12,7 +12,6 @@ import '../features/notification/application/push_presenter.dart';
 import '../features/notification/application/push_registration.dart';
 import '../features/trip_activity/application/trip_activity_controller.dart';
 import '../features/home/application/home_providers.dart';
-import '../core/network/image_cache.dart';
 
 class OffwayApp extends ConsumerStatefulWidget {
   const OffwayApp({super.key});
@@ -45,14 +44,7 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
       // 홈 데이터가 오는 대로 **첫 화면 사진**부터 받아 둔다. 홈이 그려진
       // 뒤 카드가 요청하면 이미 받았거나 받는 중인 것을 이어받는다(같은
       // 캐시·같은 주소는 한 번만 받는다). 실패해도 카드가 다시 받는다
-      unawaited(
-        ref.read(homeSnapshotProvider.future).then((snapshot) {
-          final prefetch = ref.read(imagePrefetcherProvider);
-          for (final url in homeFirstImageUrls(snapshot)) {
-            unawaited(prefetch(url));
-          }
-        }, onError: (_) {}),
-      );
+      prefetchHomeFirstImages(ref);
 
       // 잠금화면·다이나믹 아일랜드의 여행 D-day.
       //
@@ -60,6 +52,10 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
       // 남는다. 다만 시작·갱신은 앱이 켜져 있을 때만 하므로(1단계는 푸시
       // 갱신이 없다) 앱이 열릴 때마다 맞춘다
       ref.read(tripActivityControllerProvider).start();
+    } else {
+      // 로그인 전 — 처음 쓰는 사람은 로그인·연차 입력을 거쳐 홈에 온다.
+      // 그 사이에 홈 첫 화면 사진을 받아 둔다(누구에게나 같은 사진이다)
+      prefetchHomeImagesBeforeLogin(ref);
     }
   }
 
