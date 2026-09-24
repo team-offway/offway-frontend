@@ -367,7 +367,8 @@ class _CourseCard extends StatelessWidget {
   required DateTime today,
 }) {
   if (start == null || end == null) return null;
-  if (end.isBefore(today)) {
+  // 날짜만 견준다 — 시각이 섞이면 아래 [tripDDayLabel]과 판정이 갈린다
+  if (DateUtils.dateOnly(end).isBefore(DateUtils.dateOnly(today))) {
     if (visited) {
       return (
         label: '여행완료',
@@ -382,7 +383,7 @@ class _CourseCard extends StatelessWidget {
     );
   }
   return (
-    label: tripDDayLabel(start, end, today: today)!,
+    label: tripDDayLabel(start, end, today: today) ?? 'D-DAY',
     fg: AppColors.primaryNormal,
     bg: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
   );
