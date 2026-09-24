@@ -117,7 +117,19 @@ class AuthInterceptor extends Interceptor {
     final storage = _ref.read(secureStorageProvider);
 
     // 재발급 요청에 만료된 토큰을 실으면 서버가 그걸 먼저 보고 401을 낸다
-    final token = shouldSkipAuth(options) ? null : await storage.accessToken;
+    var token = shouldSkipAuth(options) ? null : await storage.accessToken;
+
+    // **만료됐거나 곧 만료될 토큰이면 보내기 전에 되살린다**(#394). 그대로
+    // 보내면 앱을 켜자마자 나가는 요청 대여섯 개가 전부 401을 맞고, 재발급한
+    // 뒤 다시 나간다 — 왕복 한 번이 더 든다. 되살리지 못하면 원래 토큰을
+    // 그대로 보낸다 — 401 경로(onError)가 안전망으로 남아 있다
+    if (token != null && !shouldSkipRefresh(options) && _expiresSoon(token)) {
+      final refreshed = await (_refreshing ??= _ref
+          .read(tokenRefresherProvider)()
+          .whenComplete(() => _refreshing = null));
+      if (refreshed) token = await storage.accessToken;
+    }
+
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     } else if (_basicCredential != null) {
@@ -182,4 +194,36 @@ class AuthInterceptor extends Interceptor {
 
   /// 재시도한 요청임을 표시 — 두 번 이상 되풀이하지 않게 막는다
   static const _retriedKey = 'authRetried';
+
+  /// 만료 전에 미리 되살리는 여유 — 요청이 서버에 닿는 사이 만료되지 않게
+  static const _refreshMargin = Duration(seconds: 30);
+
+  /// JWT 의 `exp` 를 보고 곧 만료되는지 본다. 서명은 서버가 검사한다 —
+  /// 여기서는 시각만 읽는다. **읽지 못하면 false** — 지금처럼 보내고 401
+  /// 경로에 맡긴다(형식이 바뀌어도 요청이 막히지 않게)
+  static bool _expiresSoon(String token, {DateTime? now}) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final exp = payload is Map<String, dynamic> ? payload['exp'] : null;
+      if (exp is! num) return false;
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+        (exp * 1000).toInt(),
+        isUtc: true,
+      );
+      return !(now ?? DateTime.now().toUtc())
+          .add(_refreshMargin)
+          .isBefore(expiresAt);
+    } on Object {
+      return false;
+    }
+  }
+
+  /// 테스트용 — [_expiresSoon] 을 시각을 정해 부른다
+  @visibleForTesting
+  static bool expiresSoonForTest(String token, DateTime now) =>
+      _expiresSoon(token, now: now);
 }

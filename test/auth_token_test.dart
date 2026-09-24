@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -266,6 +268,102 @@ void main() {
       );
       // 재시도하지 않았다 — 되살릴 방법이 없으면 되풀이가 무의미하다
       expect(adapter.calls, hasLength(1));
+    });
+  });
+
+  group('만료 전에 미리 되살리기 (#394)', () {
+    /// `exp` 만 담은 JWT — 서명은 서버가 보므로 여기선 아무 값이다
+    String jwt(DateTime expiresAt) {
+      String part(Map<String, dynamic> m) =>
+          base64Url.encode(utf8.encode(jsonEncode(m))).replaceAll('=', '');
+      final exp = expiresAt.toUtc().millisecondsSinceEpoch ~/ 1000;
+      return '${part({'alg': 'HS256'})}.${part({'exp': exp})}.sig';
+    }
+
+    test('만료 시각을 읽는다 — 30초 여유를 둔다', () {
+      final now = DateTime.utc(2026, 9, 24, 12);
+      expect(
+        AuthInterceptor.expiresSoonForTest(
+          jwt(now.subtract(const Duration(minutes: 1))),
+          now,
+        ),
+        isTrue,
+      );
+      expect(
+        AuthInterceptor.expiresSoonForTest(
+          jwt(now.add(const Duration(seconds: 10))),
+          now,
+        ),
+        isTrue,
+      );
+      expect(
+        AuthInterceptor.expiresSoonForTest(
+          jwt(now.add(const Duration(minutes: 10))),
+          now,
+        ),
+        isFalse,
+      );
+      // 못 읽는 토큰은 지금처럼 보낸다 — 401 경로에 맡긴다
+      expect(AuthInterceptor.expiresSoonForTest('not-a-jwt', now), isFalse);
+    });
+
+    test('만료된 토큰이면 보내기 전에 되살려, 401 왕복 없이 새 토큰으로 보낸다', () async {
+      final storage = _MemoryStorage()
+        ..access = jwt(DateTime.now().subtract(const Duration(hours: 1)));
+      final fresh = jwt(DateTime.now().add(const Duration(hours: 1)));
+      var refreshCount = 0;
+      final adapter = _StubAdapter((_) => _json(200, {'ok': 'yes'}));
+
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              refreshCount++;
+              storage.access = fresh;
+              return true;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      // 앱 시작처럼 여러 요청이 한꺼번에 나간다
+      await Future.wait([
+        dio.get<dynamic>('/api/v1/home'),
+        dio.get<dynamic>('/api/v1/users/me'),
+        dio.get<dynamic>('/api/v1/notifications'),
+      ]);
+
+      expect(refreshCount, 1, reason: '재발급은 한 번만 — 여럿이 하나를 기다린다');
+      expect(adapter.calls, hasLength(3), reason: '401 뒤 재시도가 없다');
+      expect(adapter.authorizations, everyElement('Bearer $fresh'));
+    });
+
+    test('아직 유효한 토큰은 그대로 보낸다', () async {
+      final valid = jwt(DateTime.now().add(const Duration(hours: 1)));
+      final storage = _MemoryStorage()..access = valid;
+      var refreshCount = 0;
+      final adapter = _StubAdapter((_) => _json(200, {'ok': 'yes'}));
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(storage),
+          tokenRefresherProvider.overrideWith(
+            (ref) => () async {
+              refreshCount++;
+              return true;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      await dio.get<dynamic>('/api/v1/home');
+
+      expect(refreshCount, 0);
+      expect(adapter.authorizations.single, 'Bearer $valid');
     });
   });
 
