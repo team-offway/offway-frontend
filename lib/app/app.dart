@@ -47,12 +47,9 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
       // 캐시·같은 주소는 한 번만 받는다). 실패해도 카드가 다시 받는다
       unawaited(
         ref.read(homeSnapshotProvider.future).then((snapshot) {
+          final prefetch = ref.read(imagePrefetcherProvider);
           for (final url in homeFirstImageUrls(snapshot)) {
-            unawaited(
-              appImageCacheManager
-                  .downloadFile(url)
-                  .then((_) {}, onError: (_) {}),
-            );
+            unawaited(prefetch(url));
           }
         }, onError: (_) {}),
       );
