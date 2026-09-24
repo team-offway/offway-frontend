@@ -63,7 +63,7 @@ class _FakeHomeRepository extends HomeRepository {
   _FakeHomeRepository() : super(Dio());
 
   @override
-  Future<HomeSnapshot> fetch() async => HomeSnapshot(
+  Future<HomeSnapshot> fetch({bool beforeLogin = false}) async => HomeSnapshot(
     user: await MockDataSource.user(),
     regions: await MockDataSource.allRegions(),
     filters: const [

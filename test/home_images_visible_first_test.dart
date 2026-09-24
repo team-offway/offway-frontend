@@ -195,6 +195,56 @@ void main() {
     // 게스트 값이 홈 데이터로 남지 않는다 — 로그인하면 제 계정으로 새로 받는다
     expect(container.exists(homeSnapshotProvider), isFalse);
   });
+
+  testWidgets('로그인 화면이 먼저 닫혀도 첫 화면 사진을 받는다', (tester) async {
+    // 로그인 직후 홈(또는 연차 입력)으로 넘어가며 로그인 화면이 닫힌다. 홈
+    // 데이터가 그보다 늦게 오면 닫힌 화면의 ref 로 읽다 미리 받기가 빠졌다
+    final home = Completer<HomeSnapshot>();
+    final prefetched = <String>[];
+    final container = ProviderContainer(
+      overrides: [
+        homeSnapshotProvider.overrideWith((ref) => home.future),
+        imagePrefetcherProvider.overrideWithValue((url) async {
+          prefetched.add(url);
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    var show = true;
+    late StateSetter setOuter;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              setOuter = setState;
+              if (!show) return const SizedBox();
+              return Consumer(
+                builder: (context, ref, _) => TextButton(
+                  onPressed: () => prefetchHomeFirstImages(ref),
+                  child: const Text('로그인'),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('로그인'));
+    // 로그인 화면이 닫힌다
+    setOuter(() => show = false);
+    await tester.pump();
+
+    // 그 뒤에 홈 데이터가 온다
+    home.complete(HomeSnapshot(user: const {}, regions: regions(8)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(prefetched, hasLength(5));
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _GuestHomeRepository implements HomeRepository {
@@ -203,7 +253,7 @@ class _GuestHomeRepository implements HomeRepository {
   final List<Map<String, dynamic>> regions;
 
   @override
-  Future<HomeSnapshot> fetch() async =>
+  Future<HomeSnapshot> fetch({bool beforeLogin = false}) async =>
       HomeSnapshot(user: const {}, regions: regions);
 
   @override

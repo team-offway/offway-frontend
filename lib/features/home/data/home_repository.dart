@@ -55,9 +55,16 @@ class HomeRepository {
 
   final Dio _dio;
 
-  Future<HomeSnapshot> fetch() async {
+  /// [beforeLogin]이면 **401 이어도 재발급·세션 만료로 넘어가지 않는다.**
+  /// 로그인 전 사진 미리 받기용이다 — 되살릴 세션이 애초에 없다. 이 표시가
+  /// 없으면 Basic 계정 없이 빌드한 앱에서 401 이 '로그인이 만료됐어요' 로
+  /// 이어져, 처음 켠 사람을 로그인 화면으로 튕겼다
+  Future<HomeSnapshot> fetch({bool beforeLogin = false}) async {
     return ApiEnvelope.guard(() async {
-      final response = await _dio.get<dynamic>('/api/v1/home');
+      final response = await _dio.get<dynamic>(
+        '/api/v1/home',
+        options: beforeLogin ? Options(extra: {kSkipRefreshKey: true}) : null,
+      );
       final data = ApiEnvelope.unwrap(response) as Map<String, dynamic>;
       final sources = ApiEnvelope.sourcesOf(response);
       final user = data['user'] as Map<String, dynamic>;

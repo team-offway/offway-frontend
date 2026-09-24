@@ -177,10 +177,14 @@ class _CourseScheduleScreenState extends ConsumerState<CourseScheduleScreen> {
           .read(courseRepositoryProvider)
           .reschedule(courseId: widget.savedId, travelDate: picked);
       if (!mounted) return;
-      // 날짜가 바뀌면 연차 차감량도 서버가 다시 계산하므로 둘 다 새로 읽는다
+      // 날짜가 바뀌면 연차 차감량도 서버가 다시 계산하므로 둘 다 새로 읽는다.
+      // 내 코스 목록도 — 목록 카드의 날짜·D-day 가 바뀌고, 예정 목록을
+      // 구독하는 잠금화면·위젯도 이 무효화로 새 날짜를 맞춘다. 목록은 세션
+      // 동안 남아(#402) 여기서 비우지 않으면 앱을 다시 열 때까지 옛 날짜였다
       ref
         ..invalidate(savedCourseDetailProvider(widget.savedId))
-        ..invalidate(myLeaveProvider);
+        ..invalidate(myLeaveProvider)
+        ..invalidate(savedCoursesProvider);
       final parent = Navigator.of(context).context;
       Navigator.of(context).pop();
       if (!parent.mounted) return;

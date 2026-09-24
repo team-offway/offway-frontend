@@ -174,9 +174,12 @@ List<String> homeFirstImageUrls(HomeSnapshot snapshot, {int count = 5}) {
 /// 홈이 그려질 때 부르면 그만큼 늦다. 홈이 그려진 뒤 카드가 같은 사진을
 /// 요청하면 이미 받았거나 받는 중인 것을 이어받는다. 실패해도 카드가 다시 받는다
 void prefetchHomeFirstImages(WidgetRef ref) {
+  // **기다리기 전에 쥐어 둔다.** 로그인 화면에서 부르면 홈으로 넘어가며 그
+  // 화면이 닫히고, 닫힌 뒤에는 `ref` 를 쓸 수 없다 — 홈 데이터가 늦게 오면
+  // 미리 받기가 통째로 빠졌다
+  final prefetch = ref.read(imagePrefetcherProvider);
   unawaited(
     ref.read(homeSnapshotProvider.future).then((snapshot) {
-      final prefetch = ref.read(imagePrefetcherProvider);
       for (final url in homeFirstImageUrls(snapshot)) {
         unawaited(prefetch(url));
       }
@@ -197,7 +200,7 @@ void prefetchHomeFirstImages(WidgetRef ref) {
 void prefetchHomeImagesBeforeLogin(WidgetRef ref) {
   final prefetch = ref.read(imagePrefetcherProvider);
   unawaited(
-    ref.read(homeRepositoryProvider).fetch().then((snapshot) {
+    ref.read(homeRepositoryProvider).fetch(beforeLogin: true).then((snapshot) {
       for (final url in homeFirstImageUrls(snapshot)) {
         unawaited(prefetch(url));
       }

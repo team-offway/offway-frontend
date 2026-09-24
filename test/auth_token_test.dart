@@ -7,6 +7,7 @@ import 'package:offway/core/network/dio_client.dart';
 import 'package:offway/core/router/app_router.dart';
 import 'package:offway/core/storage/secure_storage.dart';
 import 'package:offway/features/auth/data/auth_repository.dart';
+import 'package:offway/features/home/data/home_repository.dart';
 
 /// 메모리에만 담는 토큰 저장소 — Keychain 플러그인이 없는 테스트 환경용
 class _MemoryStorage implements TokenStorage {
@@ -364,6 +365,27 @@ void main() {
 
       expect(refreshCount, 0);
       expect(adapter.authorizations.single, 'Bearer $valid');
+    });
+  });
+
+  group('로그인 전 요청 (#412)', () {
+    test('401 이어도 세션 만료로 넘어가지 않는다 — 처음 켠 사람을 튕기지 않게', () async {
+      // Basic 계정 없이 빌드하면 로그인 전 홈 요청이 401 이다. 재발급·만료로
+      // 이어지면 '로그인이 만료됐어요' 와 함께 로그인 화면으로 튕겼다
+      final adapter = _StubAdapter((_) => _json(401, {}));
+      final container = ProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(_MemoryStorage())],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = adapter;
+
+      await expectLater(
+        HomeRepository(dio).fetch(beforeLogin: true),
+        throwsA(anything),
+      );
+
+      expect(container.read(sessionExpiredProvider), isFalse);
+      expect(adapter.calls, ['/api/v1/home'], reason: '재발급을 시도하지 않는다');
     });
   });
 
