@@ -23,22 +23,28 @@ String fullDateWithWeekday(DateTime d) =>
     '${d.year}.${d.month.toString().padLeft(2, '0')}'
     '.${d.day.toString().padLeft(2, '0')}(${weekdayLabel(d)})';
 
-/// 여행 날짜 범위 (`2026.7.20 - 7.22`). 하루짜리는 한 번만 쓴다(`2026.7.20`).
+/// 여행 날짜 범위 (`2026.7.20 - 7.22`).
 ///
-/// 내 코스 목록·상세, 공유 코스, 공유 이미지가 같은 표기를 쓴다.
-String tripDateRangeLabel(DateTime start, DateTime? end) =>
-    end == null || DateUtils.isSameDay(start, end)
+/// [collapseSameDay]가 참이면 하루짜리를 한 번만 쓴다(`2026.7.20`) — 공유
+/// 코스·공유 이미지의 표기다. 내 코스 목록·상세는 같은 날도 범위로 쓴다
+/// (`2026.7.20 - 7.20`) — 화면마다 지금 보이는 모양 그대로 둔다.
+String tripDateRangeLabel(
+  DateTime start,
+  DateTime? end, {
+  bool collapseSameDay = true,
+}) => end == null || (collapseSameDay && DateUtils.isSameDay(start, end))
     ? '${start.year}.${start.month}.${start.day}'
     : '${start.year}.${start.month}.${start.day} - ${end.month}.${end.day}';
 
 /// 여행 일수 → 기간 라벨 (`당일치기` · `1박2일` · `2박3일`).
 ///
-/// 붙여 쓴다 — 코스 제목·위저드 칩·서버 코스 이름이 모두 붙여 쓴다.
-/// 날짜와 함께 쓰는 [tripPeriodLabel]은 문장 속 표기라 띄어 쓴다.
-String tripDurationLabel(int days) => switch (days) {
+/// 코스 확정·공유 코스 제목은 붙여 쓰고, 저장 코스 카드에서 나오는 값(공유
+/// 이미지·위젯에 실린다)은 띄어 쓴다([spaced]) — 화면마다 지금 보이는 모양
+/// 그대로 둔다.
+String tripDurationLabel(int days, {bool spaced = false}) => switch (days) {
   <= 1 => '당일치기',
-  2 => '1박2일',
-  _ => '2박3일',
+  2 => spaced ? '1박 2일' : '1박2일',
+  _ => spaced ? '2박 3일' : '2박3일',
 };
 
 /// 요일을 괄호에 넣은 날짜 (`7.20(월)`).

@@ -338,7 +338,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
                       )
                     else
                       Text(
-                        tripDateRangeLabel(start, end),
+                        tripDateRangeLabel(start, end, collapseSameDay: false),
                         style: AppTypography.body1NormalMedium.copyWith(
                           color: AppColors.labelAlternative,
                         ),

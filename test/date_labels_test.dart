@@ -29,11 +29,23 @@ void main() {
       '2026.7.20',
     );
     expect(tripDateRangeLabel(DateTime(2026, 7, 20), null), '2026.7.20');
+    // 내 코스 목록·상세는 같은 날도 범위로 쓴다 — 지금 화면 그대로
+    expect(
+      tripDateRangeLabel(
+        DateTime(2026, 7, 20),
+        DateTime(2026, 7, 20),
+        collapseSameDay: false,
+      ),
+      '2026.7.20 - 7.20',
+    );
   });
 
-  test('기간 라벨은 붙여 쓴다', () {
+  test('기간 라벨', () {
     expect(tripDurationLabel(1), '당일치기');
     expect(tripDurationLabel(2), '1박2일');
     expect(tripDurationLabel(3), '2박3일');
+    // 저장 코스 카드 값(공유 이미지·위젯)은 띄어 쓴다 — 지금 화면 그대로
+    expect(tripDurationLabel(2, spaced: true), '1박 2일');
+    expect(tripDurationLabel(3, spaced: true), '2박 3일');
   });
 }

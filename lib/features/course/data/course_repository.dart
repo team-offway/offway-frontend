@@ -545,7 +545,7 @@ class CourseRepository {
       'regionName':
           summary['regionName'] as String? ??
           (detail == null ? '' : _regionNameOf(detail)),
-      'durationLabel': tripDurationLabel(travelDays),
+      'durationLabel': tripDurationLabel(travelDays, spaced: true),
       // 여행 날짜가 있어야 '일정 확정'이다 — 추정 날짜는 저장 시 싣지 않는다
       'confirmed': travelDate != null,
       // 연차를 이미 깎았는지 — 차감 액션 노출 여부를 이 값이 정한다
