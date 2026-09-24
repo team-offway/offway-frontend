@@ -28,6 +28,7 @@ import '../../policy/data/region_policies_provider.dart';
 import '../../region/presentation/widgets/region_card.dart';
 import '../../course_wizard/presentation/wizard_entry.dart';
 import '../application/home_providers.dart';
+import '../../../core/network/image_cache.dart';
 
 /// 히어로 카드 CTA 배경 — Figma가 Atomic Neutral/22(#303030)를 직접 쓴다
 const _heroCtaBackground = AppPalette.neutral22;
@@ -49,6 +50,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// 앞으로 넘겨도 사진이 사라지지 않게. 목록이 바뀌면(칩·섞기) 다시 센다
   int _placesLoadUntil = 0;
   Object? _placesListKey;
+
+  /// 첫 화면 사진을 다 받았다 — 이제 나머지 카드도 예전처럼 전부 받는다
+  bool _placesReleased = false;
+
+  /// 첫 화면 사진을 기다리는 한계 — 큰 원본(2MB 넘는 것도 있다)이 끼어도
+  /// 나머지가 한없이 기다리지 않게
+  static const _placesReleaseTimeout = Duration(seconds: 3);
+
+  /// **보이는 사진을 먼저 받고, 끝나면 나머지를 푼다.**
+  ///
+  /// 카드를 전부 만들면 사진 요청 50여 개가 왼쪽부터 줄을 서고 캐시가 10장씩
+  /// 받는다 — 보이는 3~4장이 화면 밖 6~7장과 대역폭을 나눠 썼다. 처음에는
+  /// 보이는 카드와 뒤 두 장만 받고, 그게 끝나면(또는 [_placesReleaseTimeout])
+  /// 예전처럼 전부 푼다. 그 뒤의 동작은 예전과 같다
+  void _releasePlacesAfter(Object listKey, List<String> firstUrls) {
+    final prefetch = ref.read(imagePrefetcherProvider);
+    Future.wait([for (final url in firstUrls) prefetch(url)])
+        .timeout(_placesReleaseTimeout, onTimeout: () => const [])
+        .whenComplete(() {
+          if (!mounted || _placesListKey != listKey) return;
+          setState(() => _placesReleased = true);
+        });
+  }
 
   /// 보이는 카드 뒤로 미리 받아 둘 장 수 — 넘기자마자 빈칸이 보이지 않게
   static const _placesLookahead = 2;
@@ -645,8 +669,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         if (listKey != _placesListKey) {
           _placesListKey = listKey;
           _placesLoadUntil = 0;
+          _placesReleased = false;
+          _releasePlacesAfter(listKey, [
+            for (final card in list.take(_placesVisibleUntil()))
+              if (card['imageUrl'] case final String url when url.isNotEmpty)
+                url,
+          ]);
         }
-        _placesLoadUntil = math.max(_placesLoadUntil, _placesVisibleUntil());
+        _placesLoadUntil = _placesReleased
+            ? list.length
+            : math.max(_placesLoadUntil, _placesVisibleUntil());
         // Row로 감싸 카드가 스스로 높이를 정하게 한다. 가로 ListView는
         // 부모가 높이를 정해줘야 해서 여유분이 빈 영역으로 남는다
         return SingleChildScrollView(
