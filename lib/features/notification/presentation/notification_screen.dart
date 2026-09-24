@@ -304,13 +304,45 @@ class _NotificationCell extends ConsumerWidget {
   }
 }
 
+/// 빈 상태 묶음의 **중심**을 상단바 아래 영역의 위에서 34% 지점에 둔다.
+///
+/// 시안은 가운데보다 위에 놓고, '알림 없음'·'알림 꺼짐' 두 상태의 중심선을
+/// 같은 높이로 맞췄다(상단바 아래 775 중 262). 가운데 정렬(`Center`)이면
+/// 16 Pro Max 에서 시안보다 130px 가까이 내려앉는다
+class _EmptyStateSlot extends StatelessWidget {
+  const _EmptyStateSlot({required this.child});
+
+  final Widget child;
+
+  static const _centerFraction = 262 / 775.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) => Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: box.maxHeight * _centerFraction,
+            child: FractionalTranslation(
+              translation: const Offset(0, -0.5),
+              child: Center(child: child),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 받은 알림이 하나도 없을 때 — 말풍선 위에 벨을 얹는다
 class _EmptyNotifications extends StatelessWidget {
   const _EmptyNotifications();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return _EmptyStateSlot(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -374,7 +406,7 @@ class _PermissionOff extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return _EmptyStateSlot(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
