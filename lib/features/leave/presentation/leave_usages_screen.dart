@@ -300,6 +300,9 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
         }
       }());
     }
+    // 화면이 닫혀도 지운 결과는 반영해야 한다 — 잔여 연차·코스 칩이 옛
+    // 값으로 남는다. 닫힌 뒤에는 `ref` 를 쓸 수 없어 컨테이너를 쥐어 둔다
+    final container = ProviderScope.containerOf(context, listen: false);
     final results = await Future.wait(jobs);
     final deleted = results.fold(0, (sum, r) => sum + r.deleted);
     final cancelledCourseIds = [
@@ -308,19 +311,19 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
     ];
     // 막힌 게 여럿이면 고른 순서에서 첫 번째 이유를 알린다 — 전과 같다
     final failure = results.map((r) => r.failure).nonNulls.firstOrNull;
-    if (!mounted) return;
     // 지운 만큼 잔여 연차가 늘었다 — 홈도 함께 다시 읽는다
-    if (deleted > 0) invalidateLeaveData(ref);
+    if (deleted > 0) invalidateLeaveDataIn(container);
     // 차감을 되돌린 코스는 카드 칩(여행완료 → 미방문)이 바뀐다
     if (cancelledCourseIds.isNotEmpty) {
-      ref.invalidate(savedCoursesProvider);
+      container.invalidate(savedCoursesProvider);
       for (final id in cancelledCourseIds) {
-        ref.invalidate(savedCourseDetailProvider('$id'));
+        container.invalidate(savedCourseDetailProvider('$id'));
       }
       // 서버가 취소 시 답변 기록까지 지우면(core #327) 그 코스가 다시
       // '물어볼 여행'이 된다 — 홈이 캐시를 들고 있지 않게 미리 비운다
-      ref.invalidate(pendingTripProvider);
+      container.invalidate(pendingTripProvider);
     }
+    if (!mounted) return;
     // 막힌 게 있으면 그 이유를 알려준다 — 코스 화면으로 갈 수 있게
     if (failure case final String message) {
       showAppToast(context, message);

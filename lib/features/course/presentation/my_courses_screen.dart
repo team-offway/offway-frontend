@@ -41,7 +41,8 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
   @override
   void initState() {
     super.initState();
-    // 탭에 들어올 때마다 새로 받는다 — 다른 기기에서 담거나 지운 것이 보이게.
+    // 탭에 들어올 때마다 보고 있는 칩을 새로 받는다 — 다른 기기에서 담거나
+    // 지운 것이 보이게.
     // **옛 목록은 보이는 채로** 받는다(기본 invalidate 는 이전 값을 들고
     // 있다) — 스켈레톤이 뜨지 않는다. 그리는 도중에는 바꿀 수 없어 첫 프레임
     // 뒤에 한다
@@ -50,10 +51,20 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
     // `asReload` 로 비운다)에 여기서 또 무효화하면 '옛 값을 보이는 새로고침'
     // 이 되어, 앞사람의 목록이 다시 보인다
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (ref.read(savedCoursesProvider(_scope.serverValue)).isLoading) return;
-      ref.invalidate(savedCoursesProvider);
+      if (mounted) _refresh(_scope);
     });
+  }
+
+  /// 보고 있는 칩의 목록만 새로 받는다 — 옛 목록을 보이는 채로.
+  ///
+  /// **family 전체를 무효화하지 않는다.** 예정 목록(UPCOMING)은 잠금화면
+  /// 컨트롤러가 구독하고 있어, 그것까지 다시 받으면 탭에 들어올 때마다
+  /// 잠금화면·위젯 맞추기가 한 번씩 돌았다. 예정 목록은 그 칩을 볼 때만
+  /// 새로 받는다(앱 복귀 때는 컨트롤러가 따로 받는다)
+  void _refresh(_Scope scope) {
+    final provider = savedCoursesProvider(scope.serverValue);
+    if (ref.read(provider).isLoading) return;
+    ref.invalidate(provider);
   }
 
   @override
@@ -84,7 +95,11 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
             ),
             _ScopeTabs(
               scope: _scope,
-              onSelect: (s) => setState(() => _scope = s),
+              onSelect: (s) {
+                setState(() => _scope = s);
+                // 한동안 안 본 칩이면 받아 둔 목록이 오래됐을 수 있다
+                _refresh(s);
+              },
             ),
             Expanded(
               child: courses.whenRetryable(

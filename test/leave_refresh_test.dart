@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offway/features/course/application/course_providers.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
@@ -74,8 +74,8 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         leaveRepositoryProvider.overrideWithValue(repository),
-        // 사용 내역은 코스 이름을 붙이려고 내 코스 목록을 함께 띄운다(#393)
-        savedCoursesProvider.overrideWith((ref, scope) async => const []),
+        // 사용 내역은 코스 이름을 붙이려고 코스 목록을 함께 받는다(#393)
+        courseRepositoryProvider.overrideWithValue(_EmptyCourseRepository()),
       ],
     );
     addTearDown(container.dispose);
@@ -129,4 +129,14 @@ void main() {
 
     expect(repository.fetched, greaterThan(before));
   });
+}
+
+class _EmptyCourseRepository implements CourseRepository {
+  @override
+  Future<List<Map<String, dynamic>>> savedCourseCards({
+    String scope = 'ALL',
+  }) async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

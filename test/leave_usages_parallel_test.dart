@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offway/features/course/application/course_providers.dart';
+import 'package:offway/features/course/data/course_repository.dart';
 import 'package:offway/features/leave/data/leave_usages_provider.dart';
 import 'package:offway/features/leave/domain/leave_usage.dart';
 import 'package:offway/features/onboarding/data/leave_repository.dart';
@@ -38,12 +38,14 @@ void main() {
       retry: (_, _) => null,
       overrides: [
         leaveRepositoryProvider.overrideWithValue(_LeaveRepository(gate)),
-        savedCoursesProvider.overrideWith((ref, scope) async {
-          courseCalls++;
-          return [
-            {'id': '7', 'regionName': '정선군'},
-          ];
-        }),
+        courseRepositoryProvider.overrideWithValue(
+          _CourseRepository(() {
+            courseCalls++;
+            return [
+              {'id': '7', 'regionName': '정선군'},
+            ];
+          }),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -66,9 +68,8 @@ void main() {
       retry: (_, _) => null,
       overrides: [
         leaveRepositoryProvider.overrideWithValue(_LeaveRepository(gate)),
-        savedCoursesProvider.overrideWith(
-          (ref, scope) =>
-              Future<List<Map<String, dynamic>>>.error(Exception('500')),
+        courseRepositoryProvider.overrideWithValue(
+          _CourseRepository(() => throw Exception('500')),
         ),
       ],
     );
@@ -79,4 +80,18 @@ void main() {
     expect(usages.single.id, 1);
     expect(usages.single.courseName, isNull);
   });
+}
+
+class _CourseRepository implements CourseRepository {
+  _CourseRepository(this.cards);
+
+  final List<Map<String, dynamic>> Function() cards;
+
+  @override
+  Future<List<Map<String, dynamic>>> savedCourseCards({
+    String scope = 'ALL',
+  }) async => cards();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
