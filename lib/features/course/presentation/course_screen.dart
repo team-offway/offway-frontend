@@ -1,10 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/network/image_cache.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gal/gal.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,7 +17,6 @@ import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
-import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../course_wizard/application/available_time_provider.dart';
 import '../../course_wizard/application/course_wizard_provider.dart';
@@ -36,6 +32,8 @@ import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import 'widgets/course_share_image.dart';
+import 'widgets/course_image_saver.dart';
+import '../../../core/widgets/app_svg_icon_button.dart';
 import 'widgets/course_share_sheet.dart';
 import '../../../core/utils/log.dart';
 import '../application/course_providers.dart';
@@ -172,12 +170,8 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               1,
               kMaxTripSpanDays + 1,
             ),
-            density: draft.scheduleDensity == ScheduleDensity.relaxed
-                ? 'RELAXED'
-                : 'PACKED',
-            transport: draft.transportMode == TransportMode.publicTransit
-                ? 'TRANSIT'
-                : 'CAR',
+            density: draft.densityServerValue,
+            transport: draft.transportServerValue,
             originCode: draft.origin?.code,
             travelDate:
                 availableTime?.startDate ??
@@ -322,13 +316,10 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
   ///
   /// 아직 담기 전이라 여행 날짜가 없다 — 이미지도 추천코스 형태로 그려진다
   /// (날짜·연차 뱃지 없이 안내 문구).
-  Future<void> _saveImage(Map<String, dynamic> course, int? day) async {
-    try {
-      // 시안이 1080 기준이라 위젯도 그 폭으로 그린다 — 배율은 1로 두어야
-      // 실제 결과가 1080이 된다
-      final png = await captureWidgetPng(
+  Future<void> _saveImage(Map<String, dynamic> course, int? day) =>
+      saveCourseImage(
         context,
-        widget: CourseShareImage(
+        image: CourseShareImage(
           saved: {
             'regionName': course['regionName'],
             'durationLabel': tripDurationLabel(
@@ -338,45 +329,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
           course: course,
           day: day,
         ),
-        width: 1080,
-        pixelRatio: 1,
-        precacheImages: _shareImages(course, day),
-      );
-      await Gal.putImageBytes(
-        png,
-        name:
+        fileName:
             'offway_course_${widget.regionId}${day == null ? '' : '_day$day'}',
       );
-      if (mounted) {
-        showAppToast(context, '이미지를 저장했어요.', kind: AppToastKind.success);
-      }
-    } on GalException catch (e) {
-      if (!mounted) return;
-      showAppToast(
-        context,
-        e.type == GalExceptionType.accessDenied
-            ? '설정에서 사진 접근 권한을 허용해 주세요'
-            : '이미지를 저장하지 못했어요',
-      );
-    } catch (_) {
-      if (mounted) showAppToast(context, '이미지를 저장하지 못했어요');
-    }
-  }
-
-  /// 이미지에 들어갈 사진들 — 캡처 전에 받아 둬야 빈 자리로 찍히지 않는다
-  List<ImageProvider> _shareImages(Map<String, dynamic> course, int? day) {
-    final allDays = (course['days'] as List).cast<Map<String, dynamic>>();
-    final days = day == null ? allDays : allDays.where((d) => d['day'] == day);
-    return [
-      const AssetImage('assets/images/share_hero.png'),
-      for (final d in days)
-        for (final p in (d['places'] as List).cast<Map<String, dynamic>>())
-          if (p['imageUrl'] case final String url when url.isNotEmpty)
-            // 목록이 이미 받아 둔 디스크 캐시를 그대로 쓴다 — NetworkImage는
-            // 캐시를 모르고 다시 받는다
-            CachedNetworkImageProvider(url, cacheManager: appImageCacheManager),
-    ];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -556,36 +511,22 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
               const Spacer(),
               // 내 코스 상세와 같은 DS 에셋을 쓴다 — Material 기본 아이콘은
               // 모양·굵기가 달라 두 화면의 공유 버튼이 서로 다르게 보였다
-              Semantics(
-                button: true,
-                label: '공유하기',
-                child: GestureDetector(
-                  // 링크를 발급하는 중에는 시트를 다시 열지 않는다
-                  onTap: _sharing
-                      ? null
-                      : () => CourseShareSheets.showEntry(
-                          context,
-                          dayCount: durationDays,
-                          // 담지 않아도 공유된다 — 서버가 링크만 따로 발급해 준다
-                          onCopyLink: () =>
-                              _shareBeforeSaving(course, kakao: false),
-                          onKakaoShare: () =>
-                              _shareBeforeSaving(course, kakao: true),
-                          onSaveImage: (day) => _saveImage(course, day),
-                        ),
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/icons/ic_share_ios.svg',
-                        width: 24,
-                        height: 24,
+              AppSvgIconButton(
+                asset: 'assets/icons/ic_share_ios.svg',
+                semanticLabel: '공유하기',
+                // 링크를 발급하는 중에는 시트를 다시 열지 않는다
+                onTap: _sharing
+                    ? null
+                    : () => CourseShareSheets.showEntry(
+                        context,
+                        dayCount: durationDays,
+                        // 담지 않아도 공유된다 — 서버가 링크만 따로 발급해 준다
+                        onCopyLink: () =>
+                            _shareBeforeSaving(course, kakao: false),
+                        onKakaoShare: () =>
+                            _shareBeforeSaving(course, kakao: true),
+                        onSaveImage: (day) => _saveImage(course, day),
                       ),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),

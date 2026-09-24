@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_envelope.dart';
@@ -14,6 +13,7 @@ import '../../../core/widgets/async_retry.dart';
 import 'my_courses_screen.dart' show tripDDayLabel;
 import '../../../core/utils/bottom_inset.dart';
 import 'widgets/course_day_tabs.dart';
+import 'widgets/course_info_badge.dart';
 import 'widgets/course_map.dart';
 import 'widgets/course_place_list.dart';
 import '../application/course_providers.dart';
@@ -286,54 +286,17 @@ class _SharedCourseScreenState extends ConsumerState<SharedCourseScreen> {
         runSpacing: 8,
         children: [
           if (consumed != null)
-            _SharedBadge(
+            CourseInfoBadge(
+              textStyle: AppTypography.label1NormalBold,
               // 내 코스 배지와 같은 것 — 시계는 글자와 같은 농도다
               iconAsset: 'assets/icons/ic_clock_filled.svg',
               label: '사용 연차 일수 ${formatLeaveDays(consumed)}일',
             ),
-          if (dDay != null) _SharedBadge(label: dDay),
-        ],
-      ),
-    );
-  }
-}
-
-/// 옅은 Primary 면 위의 정보 뱃지 — 내 코스 상세와 같은 모양
-class _SharedBadge extends StatelessWidget {
-  const _SharedBadge({required this.label, this.iconAsset});
-
-  final String label;
-  final String? iconAsset;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (iconAsset case final asset?) ...[
-            SvgPicture.asset(
-              asset,
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(
-                AppColors.primaryNormal,
-                BlendMode.srcIn,
-              ),
+          if (dDay != null)
+            CourseInfoBadge(
+              label: dDay,
+              textStyle: AppTypography.label1NormalBold,
             ),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: AppTypography.label1NormalBold.copyWith(
-              color: AppColors.primaryNormal,
-            ),
-          ),
         ],
       ),
     );

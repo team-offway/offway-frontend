@@ -58,12 +58,8 @@ final courseProvider = FutureProvider.autoDispose
               1,
               kMaxTripSpanDays + 1,
             ),
-            density: draft.scheduleDensity == ScheduleDensity.relaxed
-                ? 'RELAXED'
-                : 'PACKED',
-            transport: draft.transportMode == TransportMode.publicTransit
-                ? 'TRANSIT'
-                : 'CAR',
+            density: draft.densityServerValue,
+            transport: draft.transportServerValue,
             originCode: draft.origin?.code,
             travelDate:
                 availableTime?.startDate ??

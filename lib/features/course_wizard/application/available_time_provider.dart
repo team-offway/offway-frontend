@@ -15,9 +15,7 @@ final availableTimeProvider = FutureProvider.autoDispose<AvailableTime?>((
   ref,
 ) async {
   final draft = ref.watch(courseWizardProvider);
-  final transport = draft.transportMode == TransportMode.publicTransit
-      ? 'TRANSIT'
-      : 'CAR';
+  final transport = draft.transportServerValue;
 
   try {
     if (draft.hasDateRange) {

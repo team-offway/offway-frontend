@@ -28,9 +28,7 @@ final wizardRecommendProvider =
           .read(regionRecommendRepositoryProvider)
           .recommend(
             originCode: origin?.code,
-            transport: transport == TransportMode.publicTransit
-                ? 'TRANSIT'
-                : 'CAR',
+            transport: (transport ?? TransportMode.car).serverValue,
             maxReachMinutes: availableTime?.maxReachMinutes ?? kMaxReachMinutes,
           );
     });

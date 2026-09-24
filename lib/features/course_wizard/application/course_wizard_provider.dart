@@ -65,10 +65,26 @@ class WeekendDays {
 }
 
 /// 이동수단(O-05)
-enum TransportMode { publicTransit, car }
+enum TransportMode {
+  publicTransit('TRANSIT'),
+  car('CAR');
+
+  const TransportMode(this.serverValue);
+
+  /// 서버 API 가 받는 값 (`transport`)
+  final String serverValue;
+}
 
 /// 일정 밀도(O-06)
-enum ScheduleDensity { packed, relaxed }
+enum ScheduleDensity {
+  packed('PACKED'),
+  relaxed('RELAXED');
+
+  const ScheduleDensity(this.serverValue);
+
+  /// 서버 API 가 받는 값 (`density`)
+  final String serverValue;
+}
 
 // 2박3일 정책과 날짜 해석 규칙은 core로 이관 (core가 feature에 의존하지 않도록)
 
@@ -119,6 +135,14 @@ class CourseWizardDraft {
       null => 1,
     };
   }
+
+  /// 서버에 보낼 이동수단 — 아직 안 골랐으면 자차로 묻는다
+  String get transportServerValue =>
+      (transportMode ?? TransportMode.car).serverValue;
+
+  /// 서버에 보낼 일정 밀도 — 아직 안 골랐으면 알차게로 묻는다
+  String get densityServerValue =>
+      (scheduleDensity ?? ScheduleDensity.packed).serverValue;
 
   /// 여행 시작일의 로컬 추정 — **가용시간 계산(서버)이 실패했을 때의 폴백**.
   ///
