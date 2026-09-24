@@ -29,10 +29,15 @@ class RegionBenefitCard extends ConsumerWidget {
     // **이름이 실려 왔으면 그것으로 끝이다.** 색인이 정책 상세에서 이름·설명·
     // 신청 주소를 모두 담아 오므로 같은 정책을 다시 부를 이유가 없다 —
     // 예전에는 카드마다 `GET /policies/{id}` 가 한 건씩 더 나갔다(#313)
+    //
+    // 이름이 안 실려 오는 곳(코스 확정의 서버 혜택 목록 등)은 **앱을 켤 때
+    // 받아 둔 정책**을 먼저 쓴다 — 카드마다 서버를 부르면 이름·설명이 늦게
+    // 떠 카드 높이가 한 번 뛴다. 받아 둔 게 없을 때만 서버에 묻는다
     final needsDetail = benefit.policyName == null && policyId != null;
-    final policy = needsDetail
+    final known = needsDetail ? ref.watch(knownPolicyProvider(policyId)) : null;
+    final policy = needsDetail && known == null
         ? ref.watch(policyDetailProvider(policyId)).value
-        : null;
+        : known;
 
     // 신청 주소는 지역 상세에 실려 오는 값이 먼저다(core #418). 아직 안 적은
     // 정책이 있어 null일 수 있고, 그때는 정책 상세의 값으로 물러난다
