@@ -673,10 +673,25 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     );
   }
 
-  /// `여행 1일차 7.26 월` + 날씨 — 가까운 여행만 날씨가 붙고 당일엔 기온까지
+  /// `여행 1일차 7.26 월` + 날씨 — 가까운 여행만 날씨가 붙고 당일엔 기온까지.
+  ///
+  /// **그 일차의 날짜로 가른다.** 예전에는 출발일까지 남은 날(`dDay`)로만
+  /// 봐서, 여행 둘째 날부터는 "다녀온 여행" 으로 보고 오늘 탭의 날씨까지
+  /// 뺐다(#388) — 정작 여행지에 있을 때 날씨가 없었다. 지난 일차만 뺀다
+  /// (서버도 지난 날짜에는 날씨를 싣지 않는다). 기온은 **그 일차가 오늘**일
+  /// 때 붙인다. 먼 여행을 거르는 기준(출발 15일 이내)은 그대로다
   Widget _buildDayHeader(Map<String, dynamic> day, int? dDay) {
     final date = DateTime.tryParse(day['date'] as String? ?? '');
     final weather = day['weather'] as Map<String, dynamic>?;
+    final daysFromToday = date == null
+        ? null
+        : calendarDaysBetween(DateUtils.dateOnly(DateTime.now()), date);
+    final showWeather =
+        weather != null &&
+        dDay != null &&
+        dDay <= 15 &&
+        daysFromToday != null &&
+        daysFromToday >= 0;
 
     return Row(
       children: [
@@ -695,13 +710,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             ),
           ),
         ],
-        // 다녀온 여행(dDay 음수)에는 날씨를 붙이지 않는다
-        if (weather != null && dDay != null && dDay >= 0 && dDay <= 15) ...[
+        if (showWeather) ...[
           const SizedBox(width: 8),
           _WeatherChip(
             weather: weather,
-            // 당일에만 기온까지 — 멀수록 정보를 줄인다
-            showTemp: dDay == 0,
+            // 그 일차가 오늘일 때만 기온까지 — 멀수록 정보를 줄인다
+            showTemp: daysFromToday == 0,
           ),
         ],
       ],
