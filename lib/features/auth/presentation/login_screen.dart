@@ -128,7 +128,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       // 이번에 계정이 만들어졌으면 잔여 연차를 받아야 홈이 채워진다.
-      // 돌아온 사용자는 그 값이 이미 있어 홈으로 곧장 보낸다
+      // 돌아온 사용자는 그 값이 이미 있어 홈으로 곧장 보낸다.
+      //
+      // 홈으로 가는 사람은 **지금** 홈 데이터와 첫 화면 사진을 받기 시작한다
+      // — 앱을 켤 때는 스플래시가 해 주지만, 방금 로그인한 사람은 그 자리를
+      // 지나지 않았다
+      if (!tokens.isNewUser) prefetchHomeFirstImages(ref);
       context.go(tokens.isNewUser ? AppRoutes.onboardingLeave : AppRoutes.home);
     } catch (e) {
       if (isCancelled(e)) return; // 사용자가 스스로 취소 — 안내 없이 유지

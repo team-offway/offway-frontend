@@ -1,8 +1,10 @@
+import 'dart:async';
 // 홈 화면의 데이터·규칙 — 화면 파일 밖에 두어 다른 기능이 화면을 import 하지 않게 한다(#366).
 
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/home_repository.dart';
+import '../../../core/network/image_cache.dart';
 
 /// 홈 API 한 번으로 사용자·추천지역을 함께 받는다.
 /// 온보딩에서 연차를 저장한 뒤에는 invalidate로 다시 불러온다.
@@ -163,4 +165,21 @@ List<String> homeFirstImageUrls(HomeSnapshot snapshot, {int count = 5}) {
     for (final card in cards.take(count))
       if (card['imageUrl'] case final String url when url.isNotEmpty) url,
   ];
+}
+
+/// 홈 데이터를 받는 대로 **첫 화면 사진**부터 받아 둔다 — 홈이 그려지기 전에.
+///
+/// 로그인한 채 앱을 켜면 스플래시 동안(`OffwayApp`), 방금 로그인해 홈으로
+/// 가면 로그인 직후(`LoginScreen`) 부른다. 홈 데이터도 이때 요청이 나간다 —
+/// 홈이 그려질 때 부르면 그만큼 늦다. 홈이 그려진 뒤 카드가 같은 사진을
+/// 요청하면 이미 받았거나 받는 중인 것을 이어받는다. 실패해도 카드가 다시 받는다
+void prefetchHomeFirstImages(WidgetRef ref) {
+  unawaited(
+    ref.read(homeSnapshotProvider.future).then((snapshot) {
+      final prefetch = ref.read(imagePrefetcherProvider);
+      for (final url in homeFirstImageUrls(snapshot)) {
+        unawaited(prefetch(url));
+      }
+    }, onError: (_) {}),
+  );
 }

@@ -124,4 +124,38 @@ void main() {
       for (var i = 1; i <= 5; i++) 'https://example.com/$i.jpg',
     ]);
   });
+
+  testWidgets('홈 데이터가 오면 첫 화면 사진을 받는다 — 스플래시·로그인 직후 공통', (tester) async {
+    final prefetched = <String>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeSnapshotProvider.overrideWith(
+            (ref) async => HomeSnapshot(user: const {}, regions: regions(8)),
+          ),
+          imagePrefetcherProvider.overrideWithValue((url) async {
+            prefetched.add(url);
+          }),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              return TextButton(
+                onPressed: () => prefetchHomeFirstImages(ref),
+                child: const Text('로그인'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('로그인'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(prefetched, [
+      for (var i = 1; i <= 5; i++) 'https://example.com/$i.jpg',
+    ]);
+  });
 }
