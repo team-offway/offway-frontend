@@ -72,6 +72,23 @@ void main() {
   });
 
   group('isRetryFailure', () {
+    test('연결 실패 자동 재시도가 끝난 첫 오류는 아니다 — 누르지 않았다', () async {
+      final auto = FutureProvider<int>(
+        (ref) async =>
+            throw const ApiException(status: 0, code: 'NET', detail: '연결 실패'),
+        retry: (count, _) =>
+            count < 2 ? const Duration(milliseconds: 10) : null,
+      );
+      final hits = <bool>[];
+      container.listen<AsyncValue<int>>(
+        auto,
+        (previous, next) => hits.add(isRetryFailure(previous, next)),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(container.read(auto).hasError, isTrue);
+      expect(hits, isNot(contains(true)));
+    });
+
     test('오류 → 다시 읽는 중 → 오류 만 참이다', () async {
       fail = true;
       subscribe();
