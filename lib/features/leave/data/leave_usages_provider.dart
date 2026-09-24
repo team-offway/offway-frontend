@@ -1,7 +1,7 @@
 import '../../../core/utils/region_name.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../course/data/course_repository.dart';
+import '../../course/application/course_providers.dart';
 import '../../onboarding/data/leave_repository.dart';
 import '../domain/leave_usage.dart';
 import '../../home/application/home_providers.dart';
@@ -33,6 +33,12 @@ final myLeaveProvider = FutureProvider.autoDispose<MyLeave>(
 final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
   ref,
 ) async {
+  // **코스 목록을 먼저 띄워 두고** 내역을 기다린다(#393). 둘은 서로 필요
+  // 없는데 차례로 기다리면 내역이 왕복 한 번만큼 늦게 뜬다. 내 코스 탭과 같은
+  // 목록(`savedCoursesProvider('ALL')`)을 써서 이미 받아 둔 게 있으면 요청도
+  // 없다. 여기서 오류가 나도 내역은 보여 줘야 하니 먼저 삼켜 두고(ignore)
+  // 아래에서 기다릴 때 다시 받는다
+  final coursesFuture = ref.watch(savedCoursesProvider('ALL').future)..ignore();
   final leave = await ref.watch(myLeaveProvider.future);
   // 순서는 서버가 정한다 — 등록 시각 내림차순(core #384). 예전에는 서버가
   // 사용일 순으로 줘서 앱이 id로 다시 정렬했는데, 그 임시 처방을 걷어냈다
@@ -40,9 +46,7 @@ final leaveUsagesProvider = FutureProvider.autoDispose<List<LeaveUsage>>((
   if (usages.every((u) => u.courseId == null)) return usages;
 
   try {
-    final courses = await ref
-        .watch(courseRepositoryProvider)
-        .savedCourseCards();
+    final courses = await coursesFuture;
     final names = {
       for (final c in courses)
         if (c['id'] != null)
