@@ -148,3 +148,19 @@ List<Map<String, dynamic>> shuffledForRefresh(
   if (seed == null) return cards;
   return List.of(cards)..shuffle(Random(seed));
 }
+
+/// 홈 '이번달 추천 여행지' 줄에서 **처음 보일** 카드의 사진 주소 — 앞 [count]장.
+///
+/// 스플래시 동안 홈 데이터를 받자마자 이 사진부터 디스크 캐시에 받아 둔다
+/// (`OffwayApp`). 홈이 그려질 때 첫 화면 사진이 이미 와 있거나 받는 중이다.
+/// 화면과 같은 규칙으로 고른다 — 장소 카드가 있으면 '전체' 기준
+/// [homePlacesForChip], 없으면(배치 전) 지역 카드다
+List<String> homeFirstImageUrls(HomeSnapshot snapshot, {int count = 5}) {
+  final cards = snapshot.places.isNotEmpty
+      ? homePlacesForChip(snapshot.places, null)
+      : snapshot.regions;
+  return [
+    for (final card in cards.take(count))
+      if (card['imageUrl'] case final String url when url.isNotEmpty) url,
+  ];
+}

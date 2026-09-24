@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
 
@@ -41,9 +42,33 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TripOutcomePrompt, UpdatePrompt, WidgetsBindingObserver {
+  /// '이번달 추천 여행지' 가로 줄 — 어디까지 봤는지로 사진을 받을 카드를 정한다
+  final _placesScroll = ScrollController();
+
+  /// 사진을 받기 시작한 카드 수. 한 번 받은 카드는 되돌리지 않는다 — 다시
+  /// 앞으로 넘겨도 사진이 사라지지 않게. 목록이 바뀌면(칩·섞기) 다시 센다
+  int _placesLoadUntil = 0;
+  Object? _placesListKey;
+
+  /// 보이는 카드 뒤로 미리 받아 둘 장 수 — 넘기자마자 빈칸이 보이지 않게
+  static const _placesLookahead = 2;
+
+  /// 지금 스크롤 위치에서 사진을 받아야 할 카드 수(앞에서부터)
+  int _placesVisibleUntil() {
+    const step = RegionCard.boxedWidth + 20;
+    final width = MediaQuery.sizeOf(context).width;
+    final offset = _placesScroll.hasClients ? _placesScroll.offset : 0.0;
+    return ((offset + width) / step).ceil() + _placesLookahead;
+  }
+
+  void _onPlacesScroll() {
+    if (_placesVisibleUntil() > _placesLoadUntil) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    _placesScroll.addListener(_onPlacesScroll);
     WidgetsBinding.instance.addObserver(this);
     // 홈에 들어올 때마다 종의 점을 다시 맞춘다 — 로그인 직후이거나 앞선
     // 조회가 실패했을 수 있다. 가벼운 요청 하나다
@@ -52,6 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    _placesScroll.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -611,9 +637,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           );
         }
+        // **사진은 화면 근처의 카드만 받는다.** 카드는 전부 만들어야
+        // 줄 높이가 가장 긴 카드에 맞춰진다(아래 Row) — 그래서 카드는 그대로
+        // 두고 사진만 미룬다. 예전에는 50여 장을 한꺼번에 받아 보이는 사진이
+        // 대역폭을 나눠 쓰느라 늦게 떴다
+        final listKey = (_selected?['key'], _shuffleSeed, list.length);
+        if (listKey != _placesListKey) {
+          _placesListKey = listKey;
+          _placesLoadUntil = 0;
+        }
+        _placesLoadUntil = math.max(_placesLoadUntil, _placesVisibleUntil());
         // Row로 감싸 카드가 스스로 높이를 정하게 한다. 가로 ListView는
         // 부모가 높이를 정해줘야 해서 여유분이 빈 영역으로 남는다
         return SingleChildScrollView(
+          controller: _placesScroll,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
@@ -621,7 +658,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             children: [
               for (var i = 0; i < list.length; i++) ...[
                 if (i > 0) const SizedBox(width: 20),
-                RegionCard(region: list[i]),
+                RegionCard(region: list[i], loadImage: i < _placesLoadUntil),
               ],
             ],
           ),
