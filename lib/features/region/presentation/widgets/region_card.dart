@@ -24,10 +24,15 @@ class RegionCard extends StatelessWidget {
     super.key,
     required this.region,
     this.style = RegionCardStyle.boxed,
+    this.loadImage = true,
   });
 
   final Map<String, dynamic> region;
   final RegionCardStyle style;
+
+  /// 사진을 지금 받을지 — 화면 밖 카드는 가까워질 때까지 미룬다
+  /// ([PlaceThumbnail.deferLoad]). 모양·크기는 그대로다
+  final bool loadImage;
 
   /// 홈 가로 리스트에서 쓰는 고정 폭
   static const boxedWidth = 152.0;
@@ -179,6 +184,7 @@ class RegionCard extends StatelessWidget {
           height: double.infinity,
           radius: 0,
           iconSize: 48,
+          deferLoad: !loadImage,
         ),
         // DS Thumbnail Overlay — 밝은 사진 위에서도 글자가 읽히도록
         // 위쪽에만 검정을 35%까지 깔고 아래로 사라지게 한다

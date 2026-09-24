@@ -24,6 +24,7 @@ class PlaceThumbnail extends StatelessWidget {
     this.iconSize,
     this.decodeToFit = true,
     this.fit = BoxFit.cover,
+    this.deferLoad = false,
   });
 
   final String? imageUrl;
@@ -50,6 +51,13 @@ class PlaceThumbnail extends StatelessWidget {
   /// 빈 자리로 남는다(#155). 끄면 프리캐시와 같은 키라 바로 그려진다
   final bool decodeToFit;
 
+  /// 아직 받지 않는다 — **받는 중과 같은 모양**(자리색만)으로 둔다.
+  ///
+  /// 가로로 넘기는 카드 줄은 카드를 전부 한꺼번에 만든다. 그대로 두면 화면
+  /// 밖 사진까지 수십 장을 동시에 받아, 정작 보이는 사진이 대역폭을 나눠
+  /// 쓰느라 늦게 떴다. 화면 근처에 온 카드만 받게 한다(홈)
+  final bool deferLoad;
+
   /// 이미지를 자리에 맞추는 방식.
   ///
   /// 기본 [BoxFit.cover]는 자리를 꽉 채우려 가장자리를 잘라낸다 — 장소 사진은
@@ -68,6 +76,8 @@ class PlaceThumbnail extends StatelessWidget {
       color: background ?? AppColors.backgroundNormalAlternative,
       child: imageUrl == null
           ? _placeholder(w, h)
+          : deferLoad
+          ? const SizedBox.expand()
           : LayoutBuilder(
               builder: (context, constraints) => CachedNetworkImage(
                 imageUrl: imageUrl!,

@@ -12,6 +12,7 @@ import '../features/notification/application/push_presenter.dart';
 import '../features/notification/application/push_registration.dart';
 import '../features/trip_activity/application/trip_activity_controller.dart';
 import '../features/home/application/home_providers.dart';
+import '../core/network/image_cache.dart';
 
 class OffwayApp extends ConsumerStatefulWidget {
   const OffwayApp({super.key});
@@ -41,6 +42,20 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
       ref
         ..read(homeSnapshotProvider)
         ..read(currentUserProvider);
+      // 홈 데이터가 오는 대로 **첫 화면 사진**부터 받아 둔다. 홈이 그려진
+      // 뒤 카드가 요청하면 이미 받았거나 받는 중인 것을 이어받는다(같은
+      // 캐시·같은 주소는 한 번만 받는다). 실패해도 카드가 다시 받는다
+      unawaited(
+        ref.read(homeSnapshotProvider.future).then((snapshot) {
+          for (final url in homeFirstImageUrls(snapshot)) {
+            unawaited(
+              appImageCacheManager
+                  .downloadFile(url)
+                  .then((_) {}, onError: (_) {}),
+            );
+          }
+        }, onError: (_) {}),
+      );
 
       // 잠금화면·다이나믹 아일랜드의 여행 D-day.
       //
