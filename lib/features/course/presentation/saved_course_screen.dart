@@ -1,11 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/network/image_cache.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_bottom_sheet.dart';
@@ -20,7 +17,6 @@ import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/widgets/app_tooltip_bubble.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/utils/widget_capture.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/place_thumbnail.dart';
@@ -39,6 +35,9 @@ import 'widgets/course_day_tabs.dart';
 import 'widgets/course_map.dart';
 import 'widgets/transit_access_card.dart';
 import 'widgets/course_share_image.dart';
+import 'widgets/course_image_saver.dart';
+import 'widgets/course_info_badge.dart';
+import '../../../core/widgets/app_svg_icon_button.dart';
 import 'widgets/course_share_sheet.dart';
 import 'widgets/dotted_line.dart';
 import '../../../core/utils/log.dart';
@@ -465,12 +464,12 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
             color: AppColors.labelAlternative,
           ),
           const Spacer(),
-          _SvgIconButton(
+          AppSvgIconButton(
             asset: 'assets/icons/ic_write.svg',
             semanticLabel: '코스 편집',
             onTap: _showEditSheet,
           ),
-          _SvgIconButton(
+          AppSvgIconButton(
             asset: 'assets/icons/ic_share_ios.svg',
             semanticLabel: '공유하기',
             onTap: () => CourseShareSheets.showEntry(
@@ -530,21 +529,6 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     }
   }
 
-  /// 이미지에 들어갈 사진들 — 캡처 전에 받아 둬야 빈 자리로 찍히지 않는다
-  List<ImageProvider> _shareImages(Map<String, dynamic> course, int? day) {
-    final allDays = (course['days'] as List).cast<Map<String, dynamic>>();
-    final days = day == null ? allDays : allDays.where((d) => d['day'] == day);
-    return [
-      const AssetImage('assets/images/share_hero.png'),
-      for (final d in days)
-        for (final p in (d['places'] as List).cast<Map<String, dynamic>>())
-          if (p['imageUrl'] case final String url when url.isNotEmpty)
-            // 목록이 이미 받아 둔 디스크 캐시를 그대로 쓴다 — NetworkImage는
-            // 캐시를 모르고 다시 받는다
-            CachedNetworkImageProvider(url, cacheManager: appImageCacheManager),
-    ];
-  }
-
   /// 이미지에 넣을 사용 연차 — 날짜가 없으면 계산할 수 없다
   double? _consumedLeave(Map<String, dynamic> saved) {
     // 차감한 코스면 서버가 확정한 실제 차감량이 상세에 실려 온다(core #322)
@@ -560,43 +544,16 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     Map<String, dynamic> saved,
     Map<String, dynamic> course,
     int? day,
-  ) async {
-    try {
-      // 시안이 1080 기준이라 위젯도 그 폭으로 그린다 — 배율은 1로 두어야
-      // 실제 결과가 1080이 된다
-      final png = await captureWidgetPng(
-        context,
-        widget: CourseShareImage(
-          saved: saved,
-          course: course,
-          day: day,
-          consumedLeaveDays: _consumedLeave(saved),
-        ),
-        width: 1080,
-        pixelRatio: 1,
-        precacheImages: _shareImages(course, day),
-        // 사용 연차 뱃지의 시계 — 미리 안 넣으면 캡처된 이미지에 빈칸이다
-        precacheSvgs: const [CourseShareImage.clockAsset],
-      );
-      await Gal.putImageBytes(
-        png,
-        name: 'offway_course_${widget.savedId}${day == null ? '' : '_day$day'}',
-      );
-      if (mounted) {
-        showAppToast(context, '이미지를 저장했어요.', kind: AppToastKind.success);
-      }
-    } on GalException catch (e) {
-      if (!mounted) return;
-      showAppToast(
-        context,
-        e.type == GalExceptionType.accessDenied
-            ? '설정에서 사진 접근 권한을 허용해 주세요'
-            : '이미지를 저장하지 못했어요',
-      );
-    } catch (_) {
-      if (mounted) showAppToast(context, '이미지를 저장하지 못했어요');
-    }
-  }
+  ) => saveCourseImage(
+    context,
+    image: CourseShareImage(
+      saved: saved,
+      course: course,
+      day: day,
+      consumedLeaveDays: _consumedLeave(saved),
+    ),
+    fileName: 'offway_course_${widget.savedId}${day == null ? '' : '_day$day'}',
+  );
 
   /// `정선 여행, 2박3일` — 기간만 파란색으로 강조한다
   Widget _buildTitle(String regionName, String? durationLabel) {
@@ -636,7 +593,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
     return Row(
       children: [
         if (consumed != null) ...[
-          _Badge(
+          CourseInfoBadge(
             // 시안(1545:46487)은 시계가 글자와 같은 #3DC2FF **100%**다.
             // ic_clock 은 fill-opacity 0.61 이 박혀 있어 불투명 색을
             // srcIn 으로 씌워도 61%로 나갔다 — 글자보다 옅었다.
@@ -648,7 +605,7 @@ class _SavedCourseScreenState extends ConsumerState<SavedCourseScreen> {
           ),
           const SizedBox(width: 8),
         ],
-        _Badge(
+        CourseInfoBadge(
           // 목록 카드와 같은 규칙 — 날짜가 지났다고 '여행완료'가 아니라,
           // 모달에서 다녀왔다고 답해 차감된 여행만 완료다. 아니면 '미방문'.
           //
@@ -909,78 +866,6 @@ class _EditSheetRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 상단 바의 SVG 아이콘 버튼 — 터치 영역 44×44
-class _SvgIconButton extends StatelessWidget {
-  const _SvgIconButton({
-    required this.asset,
-    required this.semanticLabel,
-    required this.onTap,
-  });
-
-  final String asset;
-  final String semanticLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Center(child: SvgPicture.asset(asset, width: 24, height: 24)),
-        ),
-      ),
-    );
-  }
-}
-
-/// 옅은 Primary 면 위의 정보 뱃지 (사용 연차·D-day)
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, this.iconAsset});
-
-  final String label;
-  final String? iconAsset;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.primaryNormal.withValues(alpha: AppOpacity.o8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (iconAsset case final asset?) ...[
-            SvgPicture.asset(
-              asset,
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(
-                AppColors.primaryNormal,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: AppTypography.label2Bold.copyWith(
-              color: AppColors.primaryNormal,
-            ),
-          ),
-        ],
       ),
     );
   }
