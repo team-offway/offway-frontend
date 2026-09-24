@@ -183,3 +183,24 @@ void prefetchHomeFirstImages(WidgetRef ref) {
     }, onError: (_) {}),
   );
 }
+
+/// **로그인 전에** 홈 첫 화면 사진을 받아 둔다 — 처음 쓰는 사람을 위해.
+///
+/// 처음 설치한 사람은 스플래시 → 온보딩 소개 → 소셜 로그인 → 연차 입력을
+/// 거쳐 홈에 온다. 추천 여행지 사진은 누구에게나 같아 그 사이에 받아 둘 수
+/// 있다. 로그인 전 요청은 임시 Basic 계정으로 읽기만 된다(`AuthInterceptor`).
+///
+/// 홈 데이터는 **사진 주소를 고르는 데만** 쓴다 — 리포지토리를 직접 불러
+/// [homeSnapshotProvider] 에 게스트 값을 남기지 않는다. 로그인하면 홈은
+/// 제 계정으로 새로 받고, 사진은 디스크 캐시에서 바로 나온다. 실패하면 조용히
+/// 넘어간다 — 홈에 와서 받으면 된다
+void prefetchHomeImagesBeforeLogin(WidgetRef ref) {
+  final prefetch = ref.read(imagePrefetcherProvider);
+  unawaited(
+    ref.read(homeRepositoryProvider).fetch().then((snapshot) {
+      for (final url in homeFirstImageUrls(snapshot)) {
+        unawaited(prefetch(url));
+      }
+    }, onError: (_) {}),
+  );
+}

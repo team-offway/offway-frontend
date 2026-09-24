@@ -52,6 +52,10 @@ class _OffwayAppState extends ConsumerState<OffwayApp> {
       // 남는다. 다만 시작·갱신은 앱이 켜져 있을 때만 하므로(1단계는 푸시
       // 갱신이 없다) 앱이 열릴 때마다 맞춘다
       ref.read(tripActivityControllerProvider).start();
+    } else {
+      // 로그인 전 — 처음 쓰는 사람은 로그인·연차 입력을 거쳐 홈에 온다.
+      // 그 사이에 홈 첫 화면 사진을 받아 둔다(누구에게나 같은 사진이다)
+      prefetchHomeImagesBeforeLogin(ref);
     }
   }
 

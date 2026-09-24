@@ -158,4 +158,54 @@ void main() {
       for (var i = 1; i <= 5; i++) 'https://example.com/$i.jpg',
     ]);
   });
+
+  testWidgets('로그인 전에는 사진만 받고, 홈 데이터 상태에는 남기지 않는다', (tester) async {
+    // 처음 쓰는 사람은 로그인·연차 입력을 거쳐 홈에 온다 — 그 사이에 받는다
+    final prefetched = <String>[];
+    final container = ProviderContainer(
+      overrides: [
+        homeRepositoryProvider.overrideWithValue(
+          _GuestHomeRepository(regions(8)),
+        ),
+        imagePrefetcherProvider.overrideWithValue((url) async {
+          prefetched.add(url);
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) => TextButton(
+              onPressed: () => prefetchHomeImagesBeforeLogin(ref),
+              child: const Text('시작'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('시작'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(prefetched, hasLength(5));
+    // 게스트 값이 홈 데이터로 남지 않는다 — 로그인하면 제 계정으로 새로 받는다
+    expect(container.exists(homeSnapshotProvider), isFalse);
+  });
+}
+
+class _GuestHomeRepository implements HomeRepository {
+  _GuestHomeRepository(this.regions);
+
+  final List<Map<String, dynamic>> regions;
+
+  @override
+  Future<HomeSnapshot> fetch() async =>
+      HomeSnapshot(user: const {}, regions: regions);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
