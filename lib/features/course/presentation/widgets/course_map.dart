@@ -28,9 +28,18 @@ const _stayColor = AppAccentColors.backgroundPink;
 /// 코스의 장소들을 마커로 찍고 순서대로 이어 보여주는 지도.
 /// 코스 추천 결과·저장한 코스·공유받은 코스 화면이 함께 쓴다.
 class CourseMap extends StatelessWidget {
-  const CourseMap({super.key, required this.places, required this.dayKey});
+  const CourseMap({
+    super.key,
+    required this.places,
+    required this.dayKey,
+    this.onTap,
+  });
 
   final List<Map<String, dynamic>> places;
+
+  /// 지도를 한 번 눌렀을 때 — 끌기·확대와는 따로 온다. 지명 같은 심볼을
+  /// 눌러도 같이 부른다(네이버 지도는 심볼 탭을 지도 탭으로 넘기지 않는다)
+  final VoidCallback? onTap;
 
   /// Day가 바뀌면 지도를 다시 만들도록 하는 키 (마커 갱신용)
   final int dayKey;
@@ -52,10 +61,6 @@ class CourseMap extends StatelessWidget {
         child: const Text('지도', style: TextStyle(color: Colors.white)),
       );
     }
-    final center = NLatLng(
-      points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length,
-      points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length,
-    );
     return NaverMap(
       // Day 전환뿐 아니라 재추첨으로 장소가 통째로 바뀌어도 지도를 새로 만든다
       // — 마커는 onMapReady에서만 찍히므로 내용이 바뀌면 키도 바뀌어야 한다
@@ -67,12 +72,17 @@ class CourseMap extends StatelessWidget {
       ),
       // 리스트 스크롤보다 지도 제스처(이동/확대)가 우선하도록 설정
       forceGesture: true,
+      // **처음부터 1번에 서 있는다.** 코스는 1번에서 시작하니 첫 장소를
+      // 가운데 둔다. 예전에는 장소들의 가운데로 연 뒤 지도가 준비되면 1번으로
+      // 옮겨, 들어올 때마다 지도가 한 번 '쏵' 미끄러졌다
       options: NaverMapViewOptions(
         initialCameraPosition: NCameraPosition(
-          target: center,
+          target: points.first,
           zoom: _initialZoom,
         ),
       ),
+      onMapTapped: onTap == null ? null : (_, _) => onTap!(),
+      onSymbolTapped: onTap == null ? null : (_) => onTap!(),
       onMapReady: (controller) async {
         // 마커가 하나뿐이면 순서가 의미 없다 — 번호 원 대신 DS 핀을 꽂고,
         // 캡션에서도 숫자를 뺀다(QA).
@@ -136,12 +146,8 @@ class CourseMap extends StatelessWidget {
             ),
           );
         }
-        // 코스는 1번에서 시작한다 — 첫 장소를 가운데 두고 시작한다.
-        // 전체를 담는 fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다.
-        // 줌도 함께 준다 — 옮기기만 하면 초기값이 유지된다는 보장이 없다
-        controller.updateCamera(
-          NCameraUpdate.withParams(target: points.first, zoom: _initialZoom),
-        );
+        // 카메라는 처음부터 1번에 있다(initialCameraPosition) — 전체를 담는
+        // fitBounds 대신 1번 기준이라 사용자가 순서를 먼저 본다
       },
     );
   }
