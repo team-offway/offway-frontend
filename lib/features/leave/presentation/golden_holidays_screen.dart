@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../domain/golden_holiday.dart';
 import '../../../core/utils/bottom_inset.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// 황금연휴 — 연차를 조금 써서 길게 쉬는 구간들 (시안 18900:72317).
 ///
@@ -58,29 +58,12 @@ class GoldenHolidaysScreen extends StatelessWidget {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              GoldenHolidaysScreen.title,
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            // 목록 여백(20) 안쪽이라 다른 화면의 6보다 14만큼 당긴다
-            left: -14,
-            child: AppBackButton(
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
-            ),
-          ),
-        ],
-      ),
+    // 목록 여백(20) 안쪽이라 다른 화면의 6보다 14만큼 당긴다
+    return AppTitleBar(
+      title: GoldenHolidaysScreen.title,
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.home),
+      backLeft: -14,
     );
   }
 

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_circular_loading.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
@@ -25,6 +24,7 @@ import 'widgets/leave_empty_view.dart';
 import 'widgets/leave_new_chip.dart';
 import '../../course/application/course_providers.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// O-13 · 연차 사용 내역 전체.
 ///
@@ -307,44 +307,26 @@ class _LeaveUsagesScreenState extends ConsumerState<LeaveUsagesScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '연차 사용 내역',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
+    return AppTitleBar(
+      title: '연차 사용 내역',
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.myLeave),
+      trailing: [
+        if (!_selecting)
           Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () => context.canPop()
-                  ? context.pop()
-                  : context.go(AppRoutes.myLeave),
-            ),
-          ),
-          if (!_selecting)
-            Positioned(
-              right: 6,
-              child: IconButton(
-                onPressed: _showMenu,
-                tooltip: '더 보기',
-                // 에셋이 Label/Alternative(61%)를 이미 품고 있어 색을 덧입히지 않는다
-                icon: SvgPicture.asset(
-                  'assets/icons/ic_more_horizontal.svg',
-                  width: 24,
-                  height: 24,
-                ),
+            right: 6,
+            child: IconButton(
+              onPressed: _showMenu,
+              tooltip: '더 보기',
+              // 에셋이 Label/Alternative(61%)를 이미 품고 있어 색을 덧입히지 않는다
+              icon: SvgPicture.asset(
+                'assets/icons/ic_more_horizontal.svg',
+                width: 24,
+                height: 24,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

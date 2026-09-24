@@ -11,6 +11,8 @@ import '../../../core/widgets/place_thumbnail.dart';
 import '../../course_wizard/presentation/wizard_entry.dart';
 import '../application/course_providers.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// 서브탭 — 서버 scope 값과 짝을 이룬다. 빈 상태 문구도 탭마다 다르다
 enum _Scope {
@@ -39,6 +41,11 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
   @override
   Widget build(BuildContext context) {
     final courses = ref.watch(savedCoursesProvider(_scope.serverValue));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(
+      savedCoursesProvider(_scope.serverValue),
+      retryFailureToast(context),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -62,16 +69,12 @@ class _MyCoursesScreenState extends ConsumerState<MyCoursesScreen> {
               onSelect: (s) => setState(() => _scope = s),
             ),
             Expanded(
-              child: courses.when(
+              child: courses.whenRetryable(
                 loading: () => _buildSkeleton(),
-                error: (e, _) => Center(
-                  child: Text(
-                    e is ApiException ? e.detail : '코스를 불러오지 못했어요',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
+                error: (e, _) => AppErrorView(
+                  description: e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+                  onRetry: () =>
+                      ref.invalidate(savedCoursesProvider(_scope.serverValue)),
                 ),
                 data: (cards) =>
                     cards.isEmpty ? _buildEmpty() : _buildList(cards),

@@ -22,6 +22,8 @@ import '../../region/presentation/widgets/rising_chip.dart';
 import '../application/course_wizard_provider.dart';
 import '../../../core/utils/bottom_inset.dart';
 import '../application/wizard_recommend_provider.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// 후보지역 정렬 기준
 enum CandidateSort {
@@ -91,6 +93,8 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
   @override
   Widget build(BuildContext context) {
     final candidates = ref.watch(wizardCandidatesProvider);
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(wizardCandidatesProvider, retryFailureToast(context));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
@@ -115,19 +119,14 @@ class _CandidatesScreenState extends ConsumerState<CandidatesScreen> {
               ),
             ),
             Expanded(
-              child: candidates.when(
+              child: candidates.whenRetryable(
                 // O-07 로딩 화면에서 넘어온 직후라 같은 표시로 이어지게 한다
                 loading: () =>
                     const AppLoadingView(title: '조건에 맞는\n여행지를 찾고 있어요..'),
                 // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
-                error: (e, _) => Center(
-                  child: Text(
-                    e is ApiException ? e.detail : '후보지역을 불러오지 못했어요',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.label1NormalMedium.copyWith(
-                      color: AppColors.labelAlternative,
-                    ),
-                  ),
+                error: (e, _) => AppErrorView(
+                  description: e is ApiException ? e.detail : '후보지역을 불러오지 못했어요',
+                  onRetry: () => ref.invalidate(wizardRecommendProvider),
                 ),
                 data: (all) {
                   if (all.isEmpty) return _buildEmpty();

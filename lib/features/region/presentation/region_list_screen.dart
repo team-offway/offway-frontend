@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_empty_view.dart';
 import '../../../core/widgets/data_source_note.dart';
 import '../data/region_list_repository.dart';
@@ -14,6 +13,8 @@ import '../../../core/utils/bottom_inset.dart';
 import 'widgets/category_chip.dart';
 import 'widgets/region_card.dart';
 import '../../home/application/home_providers.dart';
+import '../../../core/widgets/app_title_bar.dart';
+import '../../../core/widgets/app_error_view.dart';
 
 /// 이번달 추천 여행지 — 카테고리 필터 + 2열 그리드.
 ///
@@ -211,14 +212,10 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
     // 서버 detail이 사용자 문구라 그대로 보여준다
     if (_regions.isEmpty && _error != null) {
       final e = _error;
-      return Center(
-        child: Text(
-          e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
-          textAlign: TextAlign.center,
-          style: AppTypography.label1NormalMedium.copyWith(
-            color: AppColors.labelAlternative,
-          ),
-        ),
+      return AppErrorView(
+        description: e is ApiException ? e.detail : '추천 여행지를 불러오지 못했어요',
+        // 오류를 지우고 처음부터 받는다 — 그동안 카드 자리가 먼저 깔린다
+        onRetry: () => _load(reset: true),
       );
     }
     if (_regions.isEmpty) return _buildEmpty();
@@ -294,54 +291,20 @@ class _RegionListScreenState extends ConsumerState<RegionListScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '이번달 추천 여행지',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.home),
-            ),
-          ),
-        ],
-      ),
+    return AppTitleBar(
+      title: '이번달 추천 여행지',
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.home),
     );
   }
 
   Widget _buildCategoryRow() {
-    final filters =
-        ref.watch(homeSnapshotProvider).value?.filters ??
-        defaultCategoryFilters;
-    final chips = filters.isEmpty ? defaultCategoryFilters : filters;
-
-    return Padding(
+    return CategoryChipRow(
+      // 구성·순서는 서버가 정한다. 응답 전에는 기본 구성으로 자리를 지킨다
+      filters: ref.watch(homeSnapshotProvider).value?.filters,
+      selected: _selected,
+      onSelect: _selectCategory,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          for (final filter in chips)
-            CategoryChip(
-              label: filter['label'] as String,
-              iconAsset: categoryIcons[filter['key']] ?? categoryIcons['ALL']!,
-              selected: filter['key'] == 'ALL'
-                  ? _selected == null || _selected!['key'] == 'ALL'
-                  : _selected?['key'] == filter['key'],
-              onTap: () => _selectCategory(filter),
-            ),
-        ],
-      ),
     );
   }
 }

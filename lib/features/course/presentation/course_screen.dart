@@ -37,6 +37,8 @@ import '../../../core/widgets/app_svg_icon_button.dart';
 import 'widgets/course_share_sheet.dart';
 import '../../../core/utils/log.dart';
 import '../application/course_providers.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/async_retry.dart';
 
 /// O-09 · 코스확정 (당일치기 / 1박 이상)
 class CourseScreen extends ConsumerStatefulWidget {
@@ -351,13 +353,15 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
       }
     });
     final course = ref.watch(courseProvider(providerKey));
+    // 다시 시도가 또 실패하면 알린다
+    ref.listen(courseProvider(providerKey), retryFailureToast(context));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundNormal,
       // 내용이 홈 인디케이터 아래로 흐르게 두고, 목록 끝에만 그만큼 더한다(#300)
       body: SafeArea(
         bottom: false,
-        child: course.when(
+        child: course.whenRetryable(
           // 실제 코스 생성이라 몇 초 걸릴 수 있다 — O-07 로딩 디자인을 쓴다
           // 시안(O-07): "{지역} 여행 코스를 만들고 있어요.."
           loading: () => AppLoadingView(
@@ -366,14 +370,9 @@ class _CourseScreenState extends ConsumerState<CourseScreen> {
                 : '${widget.regionName} 여행 코스를\n만들고 있어요..',
           ),
           // 서버 detail이 사용자 문구라 그대로 보여준다. 그 외에는 원인을 감춘다
-          error: (e, _) => Center(
-            child: Text(
-              e is ApiException ? e.detail : '코스를 불러오지 못했어요',
-              textAlign: TextAlign.center,
-              style: AppTypography.label1NormalMedium.copyWith(
-                color: AppColors.labelAlternative,
-              ),
-            ),
+          error: (e, _) => AppErrorView(
+            description: e is ApiException ? e.detail : '코스를 불러오지 못했어요',
+            onRetry: () => ref.invalidate(courseProvider(providerKey)),
           ),
           data: (data) {
             if (data == null) {

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_confirm_dialog.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../auth/application/current_user_provider.dart';
@@ -15,6 +14,7 @@ import '../../notification/application/app_icon_badge.dart';
 import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../home/application/home_providers.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
 ///
@@ -85,29 +85,9 @@ class WithdrawScreen extends ConsumerWidget {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '회원탈퇴',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () =>
-                  context.canPop() ? context.pop() : context.go(AppRoutes.my),
-            ),
-          ),
-        ],
-      ),
+    return AppTitleBar(
+      title: '회원탈퇴',
+      onBack: () => context.canPop() ? context.pop() : context.go(AppRoutes.my),
     );
   }
 

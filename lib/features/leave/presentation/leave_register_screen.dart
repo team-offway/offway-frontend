@@ -8,12 +8,12 @@ import '../../../core/network/api_envelope.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/tokens/tokens.dart';
 import '../../../core/utils/leave_format.dart';
-import '../../../core/widgets/app_back_button.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../onboarding/data/leave_repository.dart';
 import 'leave_date_picker_screen.dart';
 import 'widgets/leave_days_field.dart';
 import '../../home/application/home_providers.dart';
+import '../../../core/widgets/app_title_bar.dart';
 
 /// 사유 칩 — 서버는 자유 문자열(`reason`)을 받으므로 라벨을 그대로 보낸다
 const _reasons = ['여행', '개인 사유', '가족 행사', '병가', '기타'];
@@ -263,30 +263,10 @@ class _LeaveRegisterScreenState extends ConsumerState<LeaveRegisterScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Stack(
-        // 없으면 Stack이 제목 크기로 줄어 Positioned가 화면 기준이 아니게 된다
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Text(
-              '연차 사용 등록',
-              style: AppTypography.headline2Bold.copyWith(
-                color: AppColors.labelStrong,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 6,
-            child: AppBackButton(
-              onTap: () => context.canPop()
-                  ? context.pop()
-                  : context.go(AppRoutes.myLeave),
-            ),
-          ),
-        ],
-      ),
+    return AppTitleBar(
+      title: '연차 사용 등록',
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.myLeave),
     );
   }
 }
