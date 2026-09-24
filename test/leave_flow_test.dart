@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -429,6 +431,54 @@ void main() {
     expect(deletedIds, isEmpty);
     expect(cancelledCourseIds, [7]);
   });
+
+  testWidgets('삭제 모드: 여러 건을 고르면 한꺼번에 보낸다 (#397)', (tester) async {
+    // 차례로 기다리면 N건에 N번 왕복이다. 서버는 남은 연차를 사용 내역에서
+    // 매번 셈하므로 서로 다른 행을 동시에 지워도 어긋나지 않는다
+    final gate = Completer<void>();
+    final started = <String>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          leaveUsagesProvider.overrideWith((ref) async => _sampleUsages),
+          leaveRepositoryProvider.overrideWithValue(
+            _GatedLeaveRepository(gate, started),
+          ),
+          courseRepositoryProvider.overrideWithValue(
+            _GatedCourseRepository(gate, started),
+          ),
+        ],
+        child: const MaterialApp(home: LeaveUsagesScreen()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('더 보기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('사용 내역 삭제'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('코로나'));
+    await tester.pump();
+    await tester.tap(find.textContaining('청춘'));
+    await tester.pump();
+    await tester.tap(find.text('정선 여행'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '삭제하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: find.byType(Dialog), matching: find.text('삭제하기')),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // 첫 응답이 오기 전에 세 요청이 모두 나갔다
+    expect(started, unorderedEquals(['delete 1', 'delete 2', 'cancel 7']));
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('연차 사용 내역이 삭제됐어요.'), findsOneWidget);
+  });
 }
 
 /// 코스 차감 취소 요청만 기록하는 대역
@@ -458,6 +508,45 @@ class _NoAvailableTimeRepository implements LeaveRepository {
     String? weekendBridge,
     int? leaveDays,
   }) async => throw const ApiException(status: 500, code: 'X', detail: '');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// 요청이 **나간 순간**을 적고, 응답은 [gate] 가 열릴 때까지 붙잡는다
+class _GatedLeaveRepository implements LeaveRepository {
+  _GatedLeaveRepository(this.gate, this.started);
+
+  final Completer<void> gate;
+  final List<String> started;
+
+  @override
+  Future<MyLeave> deleteUsage(int usageId) async {
+    started.add('delete $usageId');
+    await gate.future;
+    return const MyLeave(
+      totalDays: 15,
+      usedDays: 0,
+      remainingDays: 15,
+      usages: [],
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _GatedCourseRepository implements CourseRepository {
+  _GatedCourseRepository(this.gate, this.started);
+
+  final Completer<void> gate;
+  final List<String> started;
+
+  @override
+  Future<void> cancelLeaveDeduction(int courseId) async {
+    started.add('cancel $courseId');
+    await gate.future;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
