@@ -15,6 +15,7 @@ import '../../notification/application/push_registration.dart';
 import '../../trip_activity/application/trip_activity_controller.dart';
 import '../../home/application/home_providers.dart';
 import '../../../core/widgets/app_title_bar.dart';
+import '../../course/application/course_providers.dart';
 
 /// 회원탈퇴 — 무엇이 사라지는지 알리고 한 번 더 묻는다.
 ///
@@ -168,7 +169,9 @@ class WithdrawScreen extends ConsumerWidget {
     // 지워진 계정의 이름·연차가 남아 있으면 다음 사람이 그걸로 인사받는다
     ref
       ..invalidate(currentUserProvider)
-      ..invalidate(homeSnapshotProvider);
+      ..invalidate(homeSnapshotProvider)
+      // 내 코스 목록은 세션 동안 들고 있다 — 계정이 바뀌면 비운다
+      ..invalidate(savedCoursesProvider, asReload: true);
 
     if (!context.mounted) return;
 
