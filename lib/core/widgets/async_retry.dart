@@ -37,11 +37,18 @@ extension AsyncRetryView<T> on AsyncValue<T> {
 /// 다시 시도가 또 실패했을 때의 문구
 const retryFailedMessage = '아직 불러올 수 없어요. 잠시 후 다시 시도해 주세요.';
 
-/// 오류 → (다시 읽는 중) → 오류 인 전이. 첫 실패(로딩 → 오류)는 아니다
+/// 오류 → (다시 읽는 중) → 오류 인 전이. 첫 실패(로딩 → 오류)는 아니다.
+///
+/// **자동 재시도가 끝난 자리도 아니다.** 연결 실패는 전역 `providerRetry`가
+/// 몇 번 되묻는데, 그동안 Riverpod 은 '오류를 든 로딩'(`retrying`)을 거쳐
+/// 마지막에 오류로 떨어진다 — 모양이 수동 재시도 실패와 같아, 누르지도 않은
+/// 첫 오류 화면에 "아직 불러올 수 없어요" 가 함께 떴다. 자동 재시도 중이던
+/// 상태에서 오는 전이는 뺀다
 bool isRetryFailure(AsyncValue<Object?>? previous, AsyncValue<Object?> next) {
   if (previous == null) return false;
   return previous.isLoading &&
       previous.hasError &&
+      !previous.retrying &&
       next.hasError &&
       !next.isLoading;
 }
